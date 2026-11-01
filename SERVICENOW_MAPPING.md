@@ -214,6 +214,6 @@ To be defined by the owner (placeholder). Candidates seen in the prototype:
 3. Invoice output: PDF generation and delivery to the customer (email, portal)? Numbering format?
 4. Credit notes: separate table or negative invoice? How do SLA credits on contracts flow in?
 5. Multi-currency: SGD only, or currency per contract?
-6. BSU: should department / account type of the bank account route deposits to different teams? (see docs/modules/BSU.md)
+6. BSU: who may upload statements, and can a wrong upload be deleted and redone? (see docs/modules/BSU.md)
 7. Who maintains customers and contracts: AR team only, or also project team via portal?
 8. Does an AR request ever produce more than one invoice (e.g. instalments)?

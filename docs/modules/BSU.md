@@ -22,6 +22,8 @@ the **Bank statements** table, where the AR team reviews it and matches it to in
 | 6 | Deposit ID | Each deposit is tagged `DEP-<bank code><last 4 of account>-<YYMMDD>-<NNN>`, e.g. `DEP-MB4521-261031-001`. | 2026-11-01 |
 | 7 | Bank accounts | Bank account master with bank, account number, name, **department** and **account type** (Revenue, Deposit, Operating). | 2026-11-01 |
 | 8 | Controls | Keep it simple for now: no duplicate, balance or continuity checks. | 2026-11-01 |
+| 9 | Routing by department / account type | **No routing.** All deposits go to one AR queue (Cash application). Department and account type are labels for reference only. | 2026-11-01 |
+| 10 | Non-customer deposits (interest, refunds, transfers) | **Leave them unmatched.** No special status; they stay in the to-match list and are handled outside the app. | 2026-11-01 |
 
 ## User stories
 
@@ -74,15 +76,13 @@ See `SERVICENOW_MAPPING.md` (generated) for full column lists.
 
 ## Open questions
 
-1. Should the department and account type of the bank account drive anything (e.g. only *Revenue*
-   accounts feed cash application; *Deposit* accounts go to a different team)?
-2. What happens to deposits that are not customer receipts (e.g. interest, refunds): mark as
-   *Not AR* on the deposit, or exclude at upload?
-3. Who may upload: any AR team member, or a named few?
-4. Should an upload be deletable/re-uploadable if the wrong file was used?
+1. Who may upload: any AR team member, or a named few?
+2. Should an upload be deletable/re-uploadable if the wrong file was used?
+3. Non-customer deposits stay in the to-match list (decision 10). Revisit if the list gets noisy?
 
 ## Change log
 
 | Date | Change |
 |---|---|
 | 2026-11-01 | Module specified from owner's answers; first prototype built. Auto-match removed app-wide. |
+| 2026-11-01 | Decisions 9–10: one AR queue, no routing by department/type; non-customer deposits left unmatched. No prototype change needed. |

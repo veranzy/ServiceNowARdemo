@@ -16,6 +16,13 @@ Opens with sample data; reloading resets everything.
 
 Every push to `main` redeploys automatically.
 
+## Project layout
+
+`index.html` (markup), `css/styles.css`, and ES modules in `js/` (entry: `js/main.js`).
+See `CLAUDE.md` for the data model and conventions, and `ROADMAP.md` for planned work.
+Run locally with `python3 -m http.server` and open http://localhost:8000 (modules don't load
+from a `file://` URL).
+
 ## Notes
 
 - GitHub Pages sites are public to anyone with the link. Use only sample or anonymised data.

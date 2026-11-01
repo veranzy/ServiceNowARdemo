@@ -10,7 +10,7 @@ All tables are **custom tables in the scoped app**. No CSM, Contract Management 
 
 | Persona | Role | Experience | Access |
 |---|---|---|---|
-| Accounts receivable team | `x_ar.ar_team` | Receivables Workspace (UI Builder, configurable workspace) | Read/write all AR tables; works AR request cases, issues invoices, applies payments. |
+| Accounts receivable team | `x_ar.ar_team` | Receivables Workspace (UI Builder, configurable workspace) | Read/write all AR tables; works AR request cases, issues invoices, uploads bank statements (BSU), matches deposits to invoices. |
 | Company project team | `x_ar.project_team` | Service Portal / Employee Center | Submit the AR form (record producer) and read/comment on their own AR requests. Read customer and contract reference data only. No workspace access. |
 
 ## Tables
@@ -25,7 +25,7 @@ Custom customer master (not core_company / customer_account).
 | `parent_group` | Parent group | String |  |
 | `payment_terms` | Payment terms (days) | Integer |  |
 | `credit_limit` | Credit limit | Currency |  |
-| `bank_names` | Names seen on bank statements | String (1000) | Comma-separated. Used by auto-match. |
+| `bank_names` | Names seen on bank statements | String (1000) | Comma-separated. Used to rank invoices in the invoice finder. |
 | `notes` | Notes for AR | String (4000) |  |
 
 ### Contract — `x_ar_contract`
@@ -88,32 +88,62 @@ System of record for customer invoices. Created by the AR team from an AR reques
 | `amount_due` | Amount due | Currency | Calculated: amount − accepted allocations (business rule on allocation insert/update) |
 | `payment_status` | Payment status | Choice | Calculated: Unpaid / Part paid / Paid, set with amount_due |
 
-### Payment — `x_ar_payment`
+### Bank account — `x_ar_bank_account`
 
-Incoming customer payment from the bank statement. Bank statement loading is a later requirement; today via CSV import. Number prefix: `PAY`.
+Company bank accounts that statements are uploaded for. Department and account type classify every deposit on the account.
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `bank` | Bank | Choice | Choices: Marina Bank (`MB`), Orchard Bank (`OB`), Union Straits Bank (`US`). Mandatory. Mock aliases for Singapore's three largest banks; each has its own CSV layout |
+| `account_number` | Account number | String | Mandatory |
+| `account_name` | Account name | String | Mandatory |
+| `department` | Department | Choice | Choices: Finance, Projects – Engineering, Projects – Digital, Projects – Marine. Mandatory |
+| `account_type` | Account type | Choice | Choices: Revenue account (`revenue`), Deposit account (`deposit`), Operating account (`operating`). Mandatory |
+| `currency` | Currency | String | Read-only on form |
+
+### Statement upload — `x_ar_bsu`
+
+Bank statement upload (BSU): one record per bank account per statement day. The CSV is kept as an attachment. Number prefix: `BSU`.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `number` | Number | String | Read-only on form |
-| `payer_name` | Payer (as on statement) | String | Read-only on form |
-| `received_date` | Received | Date | Read-only on form |
-| `amount` | Amount | Currency | Read-only on form |
-| `bank_reference` | Bank reference / remittance | String | Read-only on form |
-| `match_state` | Match state | Choice | Calculated: Unmatched / Proposed / Applied, from allocations |
-| `unapplied_amount` | Unapplied amount | Currency | Calculated: amount − accepted allocations |
+| `bank_account` | Bank account | Reference | → `x_ar_bank_account`. Read-only on form |
+| `statement_date` | Statement date | Date | Read-only on form |
+| `file_name` | File | String | Read-only on form |
+| `uploaded_by` | Uploaded by | Reference | → `sys_user`. Read-only on form |
+| `uploaded_at` | Uploaded | String | Read-only on form |
+| `deposit_count` | Deposits | Integer | Read-only on form |
+| `deposit_total` | Deposit total | Currency | Read-only on form |
+| `withdrawals_skipped` | Withdrawals skipped | Integer | Read-only on form |
 
-### Allocation — `x_ar_allocation`
+### Bank statements — `x_ar_bank_statement`
 
-Applies part or all of a payment to an invoice. Proposed by auto-match or created manually from the invoice finder.
+Bank statements table: one row per deposit (credit) loaded by BSU from the daily CSV statement. Matched to invoices manually; no auto-matching (D5). Number prefix: `DEP`.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
-| `payment` | Payment | Reference | → `x_ar_payment` |
+| `deposit_id` | Deposit ID | String | Read-only on form. Set by before-insert business rule |
+| `bank_account` | Bank account | Reference | → `x_ar_bank_account`. Read-only on form |
+| `bsu` | Statement upload | Reference | → `x_ar_bsu`. Read-only on form |
+| `value_date` | Value date | Date | Read-only on form |
+| `amount` | Amount | Currency | Read-only on form |
+| `payer_name` | Payer (as on statement) | String | Read-only on form |
+| `bank_reference` | Reference / remittance | String | Read-only on form |
+| `bank_transaction_ref` | Bank transaction ref | String | Read-only on form |
+| `match_state` | Match state | Choice | Calculated: Unmatched / Part matched / Matched, from accepted allocations |
+| `unmatched_amount` | Unmatched amount | Currency | Calculated: amount − accepted allocations |
+
+### Allocation — `x_ar_allocation`
+
+Applies part or all of a deposit to an invoice. Always created manually by the AR team from the invoice finder (no auto-matching, D5).
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `deposit` | Deposit | Reference | → `x_ar_bank_statement` |
 | `invoice` | Invoice | Reference | → `x_ar_invoice` |
 | `amount` | Amount | Currency |  |
-| `state` | State | Choice | Choices: Proposed (`proposed`), Accepted (`accepted`), Rejected (`rejected`) |
-| `method` | Method | Choice | Choices: Auto (`rule`), Manual (`manual`) |
-| `confidence` | Confidence | Decimal |  |
+| `state` | State | Choice | Choices: Applied (`accepted`), Removed (`removed`) |
 | `exception` | Exception | Choice | Choices: Exact (`none`), Multi-invoice (`multi_invoice`), Short pay (`short_pay`), Overpayment (`over_pay`), Partial (`partial`), Discount taken (`discount`) |
 | `reason` | Reason | String (1000) |  |
 
@@ -133,7 +163,8 @@ Applies part or all of a payment to an invoice. Proposed by auto-match or create
 - **Landing page**: single-score cards (new requests, assigned to me, awaiting info, draft invoices, overdue amount, unapplied cash), aging bar chart, new requests list, overdue invoices list.
 - **List menu**: AR requests (Open, New unassigned, Assigned to me, Awaiting info, All); Invoices (Drafts, Issued unpaid, Overdue, All); Payments (Unapplied, All); Master data (Customers, Contracts).
 - **Record pages** with header highlighted values, form sections, related lists, activity stream on AR requests.
-- **Cash application** custom page: auto-match proposals, accept/reject, invoice finder with allocation preview (modal or side panel), payments CSV import as an interim for bank statement loading.
+- **BSU (bank statement upload)** custom page: daily checklist of bank accounts for the statement date, upload form (bank account, statement date, CSV), preview of deposits with Deposit IDs, *Save to bank statements*, recent uploads. See `docs/modules/BSU.md`.
+- **Cash application** custom page: deposits from the Bank statements table with match state; **manual matching only** through the invoice finder with allocation preview (modal or side panel).
 
 ### UI actions
 
@@ -144,25 +175,37 @@ Applies part or all of a payment to an invoice. Proposed by auto-match or create
 | AR request | Request info | Requires an additional comment; state → Awaiting info |
 | AR request | Reject | Requires an additional comment; state → Rejected |
 | Invoice | Issue invoice | Draft → Issued; BR sets the AR request to Invoiced and posts a requester-visible comment |
-| Invoice | Cancel invoice | Only when no accepted allocations; removes pending proposals; request back to In progress |
-| Payment | Accept / Reject proposal | Allocation state → Accepted / Rejected |
-| Payment | Find invoice → Apply | Creates accepted allocations; exception = short pay / over pay / multi-invoice |
-| Cash application | Run auto-match | Script Include `x_ar.AutoMatch` (rules below), or a scheduled flow after bank statement load |
+| Invoice | Cancel invoice | Only when no allocations; request back to In progress |
+| Deposit | Match to invoice / Find invoice → Apply | Inserts `x_ar_allocation` records (manual); exception = short pay / over pay / multi-invoice |
+| Deposit | Remove match | Removes the deposit's allocations |
+| BSU page | Save to bank statements | Inserts `x_ar_bsu` + one `x_ar_bank_statement` row per deposit; withdrawals skipped |
+| Bank account | Upload statement | Opens the BSU page for that account |
 
-### Auto-match rules (current prototype)
+### Matching (manual only)
 
-1. Reference contains invoice number(s) (tolerates letter O for zero, missing prefix) and amount equals their combined open balance → proposed, confidence 0.99.
-2. No usable reference, and exactly one issued invoice for a customer whose name, parent group or bank-statement names match the payer has exactly that open amount → proposed, confidence 0.90.
-3. Otherwise unmatched; AR uses the invoice finder (ranked by reference, amount fit and name similarity).
+There is **no auto-matching** (decision D5). The invoice finder ranks issued invoices for a deposit by
+invoice number in the bank reference, amount fit and payer-name similarity (customer name, parent group,
+bank-statement names), purely as a suggestion. The AR team always chooses and applies the allocation.
+Only **issued** invoices receive deposits.
 
-Only **issued** invoices receive payments.
+## Bank statement upload (BSU)
+
+- One upload per bank account per statement day (previous day), CSV only, deposits (credits) only.
+- Deposit ID: `DEP-<bank code><last 4 of account>-<YYMMDD>-<NNN>` (before-insert business rule).
+- Parsing: Script Include `x_ar.BankStatementParser` with one column template per bank (or one Data Source + Transform Map per bank).
+
+| Bank (mock alias) | Code | Date format | Header columns |
+|---|---|---|---|
+| Marina Bank | MB | `D MMM YYYY` | Transaction Date, Value Date, Transaction Description 1, Transaction Description 2, Debit Amount, Credit Amount, Client Reference |
+| Orchard Bank | OB | `DD/MM/YYYY` | Transaction date, Value date, Description, Remarks, Withdrawals (SGD), Deposits (SGD) |
+| Union Straits Bank | US | `YYYY-MM-DD` | Date, Description, Reference, Deposit, Withdrawal, Ledger Balance |
 
 ## Automation
 
 To be defined by the owner (placeholder). Candidates seen in the prototype:
 - On AR request insert: assignment to AR team group, notification to the group.
 - On state change: notifications to the requester (Awaiting info, Invoiced, Rejected).
-- On bank statement load: run auto-match.
+- Reminder if a bank account has no upload for yesterday by a cut-off time (optional; controls kept out for now).
 
 ## Open questions
 
@@ -171,6 +214,6 @@ To be defined by the owner (placeholder). Candidates seen in the prototype:
 3. Invoice output: PDF generation and delivery to the customer (email, portal)? Numbering format?
 4. Credit notes: separate table or negative invoice? How do SLA credits on contracts flow in?
 5. Multi-currency: SGD only, or currency per contract?
-6. Bank statement load: file format (MT940, CAMT.053, CSV) and frequency.
+6. BSU: should department / account type of the bank account route deposits to different teams? (see docs/modules/BSU.md)
 7. Who maintains customers and contracts: AR team only, or also project team via portal?
 8. Does an AR request ever produce more than one invoice (e.g. instalments)?

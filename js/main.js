@@ -1,6 +1,7 @@
 // Entry point: delegated event handling for the demo bar, workspace and portal, then boot.
-import { exportCSV, importPayments } from "./io.js";
-import { act, runMatching } from "./matching.js";
+import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
+import { exportCSV } from "./io.js";
+import { act } from "./matching.js";
 import { cancelInvoice, createRequest, issueInvoice, journal, me, portalComment, recById, requestAction, saveRecord, validate } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES } from "./schema.js";
@@ -105,6 +106,30 @@ function portalFieldUpdated(el) {
   const side = $("pfSide"); if (side) side.innerHTML = formSide(P().draft);
 }
 
+// ---------- BSU ----------
+function parseCurrent() {
+  const b = S.bsu, a = acctById(b.acctId); if (!a || !b.text) { b.parsed = null; return; }
+  const r = parseStatement(b.text, a, b.date);
+  if (r.error) { b.error = r.error; b.parsed = null; } else { b.error = ""; b.parsed = r; }
+}
+function bsuAction(name) {
+  const b = S.bsu, a = acctById(b.acctId);
+  if (!a) return;
+  const fname = `${a.bank}_${a.number.replace(/\D/g, "")}_${b.date.replace(/-/g, "")}.csv`;
+  if (name === "sample") { b.text = sampleCSV(a, b.date); b.fileName = fname + " (sample)"; parseCurrent(); return render(); }
+  if (name === "download") {
+    const url = URL.createObjectURL(new Blob([sampleCSV(a, b.date)], { type: "text/csv" }));
+    const l = document.createElement("a"); l.href = url; l.download = fname; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); return;
+  }
+  if (name === "discard") { Object.assign(b, { text: "", fileName: "", parsed: null, error: "" }); return render(); }
+  if (name === "save" && b.parsed) {
+    const up = saveUpload(a, b.date, b.fileName.replace(" (sample)", ""), b.parsed);
+    Object.assign(b, { text: "", fileName: "", parsed: null, error: "" });
+    toast(`${up.number} saved: ${up.depositCount} deposit${up.depositCount === 1 ? "" : "s"} added to bank statements.`);
+    return render();
+  }
+}
+
 // ---------- events ----------
 document.addEventListener("click", e => {
   const t = e.target.closest("button, [data-open], [data-ticket], tr[data-open]");
@@ -130,13 +155,13 @@ document.addEventListener("click", e => {
   if (d.new) return newTab(d.new, d.prefillCustomer ? { customerId: d.prefillCustomer } : null);
   if (d.ui) return uiAction(d.ui);
   if (d.ckind) { const tab = activeTab(); const c = W().composer[tab.id] ||= { kind: "work_note", text: "" }; c.kind = d.ckind; c.text = $("composer-" + tab.id)?.value || c.text; return render(); }
+  // BSU
+  if (d.bsuAcct) { Object.assign(S.bsu, { acctId: d.bsuAcct, text: "", fileName: "", parsed: null, error: "" }); return showMain({ kind: "bsu" }); }
+  if (d.bsu) return bsuAction(d.bsu);
   // cash application
-  if (t.id === "runBtn") return runMatching();
-  if (t.id === "acceptHighBtn") { for (const m of Object.values(S.matches)) if (m?.status === "proposed" && m.confidence >= .95) m.status = "accepted"; return render(); }
-  if (t.id === "importToggle") { S.importOpen = !S.importOpen; return render(); }
+  if (d.matchdep) { S.pick[d.matchdep] = { open: true, q: "", sel: [], note: "" }; S.filter = "open"; showMain({ kind: "cash" }); return document.querySelector(`[data-pickopen="${d.matchdep}"]`)?.scrollIntoView({ block: "start" }); }
   if (t.id === "exportBtn") return exportCSV();
   if (t.id === "dismissBtn") { setStatus(); return render(); }
-  if (t.id === "importBtn") { const r = importPayments(S.importText, $("replaceChk")?.checked); if (r.ok) { S.importText = ""; setStatus("ok", r.msg); render(); } else { const m = $("importMsg"); if (m) m.textContent = r.msg; } return; }
   if (d.f) { S.filter = d.f; return render(); }
   if (d.act) return act(d.id, d.act);
   if (d.pickopen) { const pid = d.pickopen; if (S.pick[pid]?.open) delete S.pick[pid]; else S.pick[pid] = { open: true, q: "", sel: [], note: "" }; render(); return S.pick[pid] && $("pkq-" + pid)?.focus(); }
@@ -153,7 +178,9 @@ document.addEventListener("keydown", e => {
 document.addEventListener("change", e => {
   const el = e.target;
   if (el.id === "notesToggle") { S.ui.notes = el.checked; return render(); }
-  if (el.id === "fileIn") { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { S.importText = String(r.result); render(); }; r.readAsText(f); return; }
+  if (el.id === "bsuAcct") { Object.assign(S.bsu, { acctId: el.value, text: "", fileName: "", parsed: null, error: "" }); return render(); }
+  if (el.id === "bsuDate") { S.bsu.date = el.value; parseCurrent(); return render(); }
+  if (el.id === "bsuFile") { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { S.bsu.text = String(r.result); S.bsu.fileName = f.name; parseCurrent(); render(); }; r.readAsText(f); el.value = ""; return; }
   if (el.id === "pfAttach") { P().draft.attachments.push(...[...el.files].map(f => f.name)); return render(); }
   const cb = el.closest("[data-pick]");
   if (cb) { const pk = S.pick[cb.dataset.pick]; if (!pk) return;
@@ -181,7 +208,6 @@ document.addEventListener("change", e => {
 document.addEventListener("input", e => {
   const el = e.target;
   if (el.id === "listQ") { W().q = el.value; const m = W().main; const { rows, html } = listRows(m.table, m.filter); $("listBody").innerHTML = html; $("listCount").textContent = rows.length; return; }
-  if (el.id === "importText") { S.importText = el.value; return; }
   if (el.dataset.composer) { const c = W().composer[el.dataset.composer] ||= { kind: "work_note", text: "" }; c.text = el.value; return; }
   if (el.dataset.pickq && S.pick[el.dataset.pickq]) { S.pick[el.dataset.pickq].q = el.value; return refreshPicker(el.dataset.pickq, "list"); }
   if (el.dataset.picknote && S.pick[el.dataset.picknote]) { S.pick[el.dataset.picknote].note = el.value; return; }

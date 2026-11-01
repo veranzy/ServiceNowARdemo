@@ -17,6 +17,7 @@ export function recById(table, id) {
 export function displayOf(table, rec) {
   if (!rec) return "";
   if (table === "users") return rec.name;
+  if (table === "bankAccounts") return `${{ MB: "Marina", OB: "Orchard", US: "Union Straits" }[rec.bank]} · ${rec.number}`;
   return rec[TABLES[table].display === "name" ? "name" : "number"] || "";
 }
 
@@ -149,6 +150,7 @@ export function saveRecord(table, id, raw) {
   const rec = { id: uid(table[0]), ...vals };
   if (table === "customers") Object.assign(rec, { aliases: rec.aliases || [], terms: rec.terms || 30 });
   if (table === "contracts") Object.assign(rec, { terms: rec.terms || custById(rec.customerId)?.terms || 30 });
+  if (table === "bankAccounts") rec.currency = "SGD";
   S[table].push(rec);
   return { rec };
 }

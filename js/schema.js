@@ -6,7 +6,7 @@ export const SCOPE = "x_ar"; // placeholder: replace with the real application s
 
 export const ROLES = {
   ar: { role: `${SCOPE}.ar_team`, label: "Accounts receivable team", ui: "Receivables Workspace (UI Builder, configurable workspace)",
-    can: "Read/write all AR tables; works AR request cases, issues invoices, applies payments." },
+    can: "Read/write all AR tables; works AR request cases, issues invoices, uploads bank statements (BSU), matches deposits to invoices." },
   project: { role: `${SCOPE}.project_team`, label: "Company project team", ui: "Service Portal / Employee Center",
     can: "Submit the AR form (record producer) and read/comment on their own AR requests. Read customer and contract reference data only. No workspace access." }
 };
@@ -56,30 +56,58 @@ export const TABLES = {
     ]
   },
   payments: {
-    table: `${SCOPE}_payment`, label: "Payment", plural: "Payments", display: "number", prefix: "PAY",
-    note: "Incoming customer payment from the bank statement. Bank statement loading is a later requirement; today via CSV import.",
+    table: `${SCOPE}_bank_statement`, label: "Deposit", plural: "Deposits", tableLabel: "Bank statements", display: "number", prefix: "DEP",
+    note: "Bank statements table: one row per deposit (credit) loaded by BSU from the daily CSV statement. Matched to invoices manually; no auto-matching (D5).",
     fields: [
-      { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "PAY0001000" },
-      { key: "payer", name: "payer_name", label: "Payer (as on statement)", type: "String", readonly: true, wide: true },
-      { key: "date", name: "received_date", label: "Received", type: "Date", readonly: true },
+      { key: "number", name: "deposit_id", label: "Deposit ID", type: "String", readonly: true, auto: "DEP-<bank><acct4>-<YYMMDD>-<NNN>", help: "Set by before-insert business rule" },
+      { key: "bankAccountId", name: "bank_account", label: "Bank account", type: "Reference", ref: "bankAccounts", readonly: true },
+      { key: "uploadId", name: "bsu", label: "Statement upload", type: "Reference", ref: "uploads", readonly: true },
+      { key: "date", name: "value_date", label: "Value date", type: "Date", readonly: true },
       { key: "amount", name: "amount", label: "Amount", type: "Currency", readonly: true },
-      { key: "reference", name: "bank_reference", label: "Bank reference / remittance", type: "String", readonly: true, wide: true }
+      { key: "payer", name: "payer_name", label: "Payer (as on statement)", type: "String", readonly: true, wide: true },
+      { key: "reference", name: "bank_reference", label: "Reference / remittance", type: "String", readonly: true, wide: true },
+      { key: "bankRef", name: "bank_transaction_ref", label: "Bank transaction ref", type: "String", readonly: true }
     ],
     calculated: [
-      { name: "match_state", label: "Match state", type: "Choice", how: "Unmatched / Proposed / Applied, from allocations" },
-      { name: "unapplied_amount", label: "Unapplied amount", type: "Currency", how: "amount − accepted allocations" }
+      { name: "match_state", label: "Match state", type: "Choice", how: "Unmatched / Part matched / Matched, from accepted allocations" },
+      { name: "unmatched_amount", label: "Unmatched amount", type: "Currency", how: "amount − accepted allocations" }
+    ]
+  },
+  uploads: {
+    table: `${SCOPE}_bsu`, label: "Statement upload", plural: "Statement uploads", display: "number", prefix: "BSU",
+    note: "Bank statement upload (BSU): one record per bank account per statement day. The CSV is kept as an attachment.",
+    fields: [
+      { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "BSU0001000" },
+      { key: "bankAccountId", name: "bank_account", label: "Bank account", type: "Reference", ref: "bankAccounts", readonly: true },
+      { key: "statementDate", name: "statement_date", label: "Statement date", type: "Date", readonly: true },
+      { key: "fileName", name: "file_name", label: "File", type: "String", readonly: true },
+      { key: "uploadedBy", name: "uploaded_by", label: "Uploaded by", type: "Reference", ref: "users", readonly: true },
+      { key: "uploadedAt", name: "uploaded_at", label: "Uploaded", type: "String", readonly: true },
+      { key: "depositCount", name: "deposit_count", label: "Deposits", type: "Integer", readonly: true },
+      { key: "depositTotal", name: "deposit_total", label: "Deposit total", type: "Currency", readonly: true },
+      { key: "skippedCount", name: "withdrawals_skipped", label: "Withdrawals skipped", type: "Integer", readonly: true }
+    ]
+  },
+  bankAccounts: {
+    table: `${SCOPE}_bank_account`, label: "Bank account", plural: "Bank accounts", display: "number",
+    note: "Company bank accounts that statements are uploaded for. Department and account type classify every deposit on the account.",
+    fields: [
+      { key: "bank", name: "bank", label: "Bank", type: "Choice", choices: [["MB", "Marina Bank"], ["OB", "Orchard Bank"], ["US", "Union Straits Bank"]], mandatory: true, help: "Mock aliases for Singapore's three largest banks; each has its own CSV layout" },
+      { key: "number", name: "account_number", label: "Account number", type: "String", mandatory: true },
+      { key: "name", name: "account_name", label: "Account name", type: "String", mandatory: true },
+      { key: "department", name: "department", label: "Department", type: "Choice", choices: ["Finance", "Projects – Engineering", "Projects – Digital", "Projects – Marine"].map(x => [x, x]), mandatory: true },
+      { key: "accountType", name: "account_type", label: "Account type", type: "Choice", choices: [["revenue", "Revenue account"], ["deposit", "Deposit account"], ["operating", "Operating account"]], mandatory: true },
+      { key: "currency", name: "currency", label: "Currency", type: "String", readonly: true }
     ]
   },
   allocations: {
     table: `${SCOPE}_allocation`, label: "Allocation", plural: "Allocations", display: "number",
-    note: "Applies part or all of a payment to an invoice. Proposed by auto-match or created manually from the invoice finder.",
+    note: "Applies part or all of a deposit to an invoice. Always created manually by the AR team from the invoice finder (no auto-matching, D5).",
     fields: [
-      { key: "paymentId", name: "payment", label: "Payment", type: "Reference", ref: "payments" },
+      { key: "paymentId", name: "deposit", label: "Deposit", type: "Reference", ref: "payments" },
       { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices" },
       { key: "amount", name: "amount", label: "Amount", type: "Currency" },
-      { key: "status", name: "state", label: "State", type: "Choice", choices: [["proposed", "Proposed"], ["accepted", "Accepted"], ["rejected", "Rejected"]] },
-      { key: "method", name: "method", label: "Method", type: "Choice", choices: [["rule", "Auto"], ["manual", "Manual"]] },
-      { key: "confidence", name: "confidence", label: "Confidence", type: "Decimal" },
+      { key: "status", name: "state", label: "State", type: "Choice", choices: [["accepted", "Applied"], ["removed", "Removed"]] },
       { key: "exception", name: "exception", label: "Exception", type: "Choice", choices: [["none", "Exact"], ["multi_invoice", "Multi-invoice"], ["short_pay", "Short pay"], ["over_pay", "Overpayment"], ["partial", "Partial"], ["discount", "Discount taken"]] },
       { key: "reason", name: "reason", label: "Reason", type: "String (1000)" }
     ]
@@ -92,7 +120,7 @@ export const TABLES = {
       { key: "parent", name: "parent_group", label: "Parent group", type: "String" },
       { key: "terms", name: "payment_terms", label: "Payment terms (days)", type: "Integer" },
       { key: "creditLimit", name: "credit_limit", label: "Credit limit", type: "Currency" },
-      { key: "aliases", name: "bank_names", label: "Names seen on bank statements", type: "String (1000)", wide: true, help: "Comma-separated. Used by auto-match." },
+      { key: "aliases", name: "bank_names", label: "Names seen on bank statements", type: "String (1000)", wide: true, help: "Comma-separated. Used to rank invoices in the invoice finder." },
       { key: "notes", name: "notes", label: "Notes for AR", type: "String (4000)", wide: true }
     ]
   },
@@ -113,6 +141,19 @@ export const TABLES = {
       { key: "notes", name: "notes", label: "Notes", type: "String (4000)", wide: true }
     ]
   }
+};
+
+/** Mock bank CSV layouts (BSU). Column names as they appear in each bank's export header. */
+export const BANKS = {
+  MB: { name: "Marina Bank", short: "Marina", dateFmt: "D MMM YYYY",
+    header: ["Transaction Date", "Value Date", "Transaction Description 1", "Transaction Description 2", "Debit Amount", "Credit Amount", "Client Reference"],
+    cols: { date: "Transaction Date", payer: "Transaction Description 1", reference: "Transaction Description 2", debit: "Debit Amount", credit: "Credit Amount", bankRef: "Client Reference" } },
+  OB: { name: "Orchard Bank", short: "Orchard", dateFmt: "DD/MM/YYYY",
+    header: ["Transaction date", "Value date", "Description", "Remarks", "Withdrawals (SGD)", "Deposits (SGD)"],
+    cols: { date: "Transaction date", payer: "Description", reference: "Remarks", debit: "Withdrawals (SGD)", credit: "Deposits (SGD)", bankRef: null } },
+  US: { name: "Union Straits Bank", short: "Union Straits", dateFmt: "YYYY-MM-DD",
+    header: ["Date", "Description", "Reference", "Deposit", "Withdrawal", "Ledger Balance"],
+    cols: { date: "Date", payer: "Description", reference: "Reference", debit: "Withdrawal", credit: "Deposit", bankRef: null } }
 };
 
 export const fieldOf = (tableKey, key) => TABLES[tableKey].fields.find(f => f.key === key);

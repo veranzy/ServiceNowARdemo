@@ -1,67 +1,16 @@
-// Cash application: rule-based auto-match, accept/reject/manual actions, allocation planning.
+// Cash application: manual matching only (decision D5, no auto-match). Remove/manual actions, allocation planning,
+// and candidate ranking for the invoice finder.
 import { invById, invoiceState, invoiceUse, payerSim } from "./ledger.js";
 import { S } from "./state.js";
-import { digitRuns, normTok } from "./util.js";
-import { render, setStatus } from "./views/app.js";
+import { digitRuns } from "./util.js";
+import { render } from "./views/app.js";
 
 // Only issued invoices can receive payments (drafts and cancelled invoices are excluded).
 const issued = () => S.invoices.filter(i => i.state === "issued");
 
-export function rulesPass() {
-  let made = 0;
-  const pending = S.payments.filter(p => !S.matches[p.id] || S.matches[p.id].status === "unmatched");
-  for (const p of pending) {
-    const { applied, reserved } = invoiceUse();
-    const avail = i => i.amount - (applied[i.id] || 0) - (reserved[i.id] || 0);
-    const refTok = new Set(String(p.reference).toUpperCase().split(/[^A-Z0-9]+/).map(normTok).filter(Boolean));
-    const refDigits = new Set(digitRuns(p.reference));
-    const referenced = issued().filter(i => {
-      if (avail(i) <= 0) return false;
-      if (refTok.has(normTok(i.number))) return true;
-      const d = (String(i.number).match(/\d{3,}/g) || []);
-      return d.length && d.some(x => refDigits.has(x));
-    });
-    if (referenced.length) {
-      const total = referenced.reduce((s, i) => s + avail(i), 0);
-      if (total === p.amount) {
-        S.matches[p.id] = { status: "proposed", method: "rule", confidence: 0.99,
-          exception: referenced.length > 1 ? "multi_invoice" : "none",
-          allocations: referenced.map(i => ({ invoiceId: i.id, amount: avail(i) })),
-          reason: `Reference cites ${referenced.map(i => i.number).join(", ")} and the amount equals the open balance exactly.` };
-        made++; continue;
-      }
-    }
-    if (!refDigits.size || !referenced.length) {
-      const cands = issued().filter(i => avail(i) === p.amount && payerSim(p.payer, i) >= 0.5);
-      if (cands.length === 1) {
-        const i = cands[0];
-        S.matches[p.id] = { status: "proposed", method: "rule", confidence: 0.9, exception: "none",
-          allocations: [{ invoiceId: i.id, amount: p.amount }],
-          reason: `Only open invoice for this customer with exactly this amount (${i.number}); no reference given.` };
-        made++; continue;
-      }
-    }
-    S.matches[p.id] = S.matches[p.id] || { status: "unmatched", allocations: [] };
-  }
-  return made;
-}
-
-export async function runMatching() {
-  if (S.busy) return;
-  if (!S.payments.length || !issued().length) { setStatus("info", "Add issued invoices and payments first: reset the demo or import a payments CSV."); return; }
-  S.busy = true; render();
-  const r = rulesPass(); render();
-  S.busy = false;
-  const unm = S.payments.filter(p => S.matches[p.id]?.status !== "accepted" && S.matches[p.id]?.status !== "proposed").length;
-  setStatus("ok", `${r} payment${r === 1 ? "" : "s"} auto-matched${unm ? `, ${unm} left for manual matching with Find invoice` : ""}. Review the proposals, then accept or reject each.`);
-  render();
-}
-
 export function act(pid, what, extra) {
   const m = S.matches[pid];
-  if (what === "accept" && m) m.status = "accepted";
-  if (what === "reject" && m) { m.rejectedInvoices = [...new Set([...(m.rejectedInvoices || []), ...m.allocations.map(a => a.invoiceId)])]; m.status = "rejected"; m.allocations = []; m.reason = "Rejected. Run matching again for a new proposal, or assign manually."; m.method = m.method; m.confidence = 0; m.exception = "none"; }
-  if (what === "undo" && m) m.status = "proposed";
+  if (what === "remove" && m) { S.matches[pid] = { status: "unmatched", allocations: [], reason: "Allocations removed. Match again with Find invoice." }; }
   if (what === "manual") {
     const p = S.payments.find(x => x.id === pid); if (!p) return;
     const plan = allocationPlan(p, m, extra.ids); if (!plan.total) return;
@@ -70,8 +19,8 @@ export function act(pid, what, extra) {
     const leftOnInvoices = plan.rows.some(r => r.after > 0);
     const exception = plan.unapplied > 0 ? "over_pay" : leftOnInvoices ? "short_pay" : all.length > 1 ? "multi_invoice" : "none";
     const note = (extra.note || "").trim();
-    S.matches[pid] = { status: "accepted", method: "manual", confidence: 1, exception, allocations: all,
-      reason: "Assigned manually" + (note ? `: ${note}` : "."), rejectedInvoices: m?.rejectedInvoices || [] };
+    S.matches[pid] = { status: "accepted", method: "manual", exception, allocations: all,
+      reason: "Matched manually" + (note ? `: ${note}` : "."), by: S.ui.persona === "ar" ? "u_ar1" : null };
     delete S.pick[pid];
   }
   render();

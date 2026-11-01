@@ -7,8 +7,9 @@ ServiceNow (custom scoped app). It shows both experiences side by side:
 
 - **Project team · Portal**: submit the AR form (record producer) to ask Accounts Receivable for an
   invoice, follow it under My requests, and reply when AR asks for more information.
-- **AR team · Workspace**: work AR request cases, create and issue invoices, apply incoming payments
-  (auto-match plus a manual invoice finder), and maintain customers and contracts.
+- **AR team · Workspace**: work AR request cases, create and issue invoices, upload the daily bank
+  statements (BSU), match deposits to invoices manually, and maintain customers, contracts and bank
+  accounts.
 
 Use the demo bar at the top to switch persona, turn on **Build notes** (labels each element with its
 ServiceNow table, field, UI action or widget), or reset the sample data.
@@ -17,7 +18,8 @@ ServiceNow table, field, UI action or widget), or reset the sample data.
 
 - `SERVICENOW_MAPPING.md`: tables, fields, roles, record producer, workspace, UI actions, match rules
   and open questions. Generated from `js/schema.js` with `node tools/mapping.mjs`.
-- `CLAUDE.md`: project brief, code layout and conventions.
+- `docs/modules/`: one requirement spec per module (e.g. `BSU.md`), plus `docs/DECISIONS.md`.
+- `CLAUDE.md`: project brief, how we add modules, code layout and conventions.
 - `ROADMAP.md`: ideas and what has shipped.
 
 ## Run locally

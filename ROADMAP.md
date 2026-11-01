@@ -8,12 +8,14 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 <!-- Add ideas here, one line each. Detail can follow as indented notes. -->
 - Automation after AR form submission (owner to describe).
-- Bank statement loading for matching (owner to describe; replaces payments CSV import).
 
 ## Next
 
 ## Done
 
+- 2026-11-01 **BSU** bank statement upload: bank account master (department, account type), daily CSV
+  upload per account with preview, Deposit IDs, Bank statements table, three mock bank layouts.
+  **Auto-matching removed** app-wide (D5): deposits are matched manually. Module specs in `docs/modules/`.
 - 2026-11-01 Rebuilt around two personas: **Project team portal** (AR form record producer, My requests,
   ticket conversation) and **AR team workspace** (landing page, list menu, tabbed record pages with UI
   actions and activity stream, cash application). AR requests are cases; invoices have draft/issued/

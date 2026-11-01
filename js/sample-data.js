@@ -1,6 +1,7 @@
 // Demo dataset: customers, contracts, invoices and payments loaded on start.
 import { S } from "./state.js";
 import { DAY, cents, today, uid } from "./util.js";
+import { depositId } from "./bsu.js";
 import { render } from "./views/app.js";
 
 // Sample dates are authored as if "today" were SAMPLE_AS_OF, then shifted so the demo
@@ -79,7 +80,32 @@ export function loadSample() {
   S.contracts = ctr.map(r => { const k = { id: uid("k"), customerId: cid[r[0]].id, number: r[1], title: r[2], start: shiftDate(r[3]), end: shiftDate(r[4]), value: cents(r[5]), billing: r[6], terms: r[7], discPct: r[8], discDays: r[9], notes: r[10] }; kid[r[1]] = k; return k; });
   S.invoices = inv.map(r => ({ id: uid("i"), customerId: cid[r[0]].id, contractId: r[1] ? kid[r[1]].id : null, customer: cid[r[0]].name, number: r[2], date: shiftDate(r[3]), due: shiftDate(r[4]), amount: cents(r[5]), desc: r[6], currency: "SGD", state: "issued", requestId: null }));
   S.users = users.map(r => ({ id: r[0], name: r[1], team: r[2], title: r[3] }));
-  S.payments = pay.map((r, n) => ({ id: uid("p"), number: "PAY" + String(1001 + n).padStart(7, "0"), payer: r[0], date: shiftDate(r[1]), amount: cents(r[2]), reference: r[3], currency: "SGD" }));
+  // Company bank accounts (BSU): [key, bank, number, name, department, type]
+  const accts = [
+    ["mbRev", "MB", "072-104521-6", "AR collections", "Finance", "revenue"],
+    ["mbDep", "MB", "072-118830-1", "Project deposits – Engineering", "Projects – Engineering", "deposit"],
+    ["obRev", "OB", "601-337204-001", "Revenue SGD", "Finance", "revenue"],
+    ["usDep", "US", "451-302-118-7", "Retention and deposits – Marine", "Projects – Marine", "deposit"],
+    ["usOps", "US", "451-302-990-2", "Operating", "Finance", "operating"]
+  ];
+  const aid = {};
+  S.bankAccounts = accts.map(r => { const a = { id: uid("b"), bank: r[1], number: r[2], name: r[3], department: r[4], accountType: r[5], currency: "SGD" }; aid[r[0]] = a; return a; });
+  // Past statements already uploaded: deposits grouped into one BSU upload per account per day.
+  const payAcct = ["mbRev", "obRev", "mbRev", "obRev", "mbRev", "obRev", "mbRev", "obRev", "mbRev", "obRev", "usDep"];
+  S.uploads = []; S.payments = [];
+  const ups = {};
+  let upNo = 1000;
+  pay.forEach((r, n) => {
+    const a = aid[payAcct[n]], date = shiftDate(r[1]), key = a.id + date;
+    let up = ups[key];
+    if (!up) { up = ups[key] = { id: uid("u"), number: "BSU" + String(++upNo).padStart(7, "0"), bankAccountId: a.id, statementDate: date, fileName: `${a.bank}_${a.number.replace(/\D/g, "")}_${date.replace(/-/g, "")}.csv`,
+      uploadedBy: n % 2 ? "u_ar2" : "u_ar1", uploadedAt: shiftDate(r[1]).slice(0, 10) + " 09:1" + (n % 10), depositCount: 0, depositTotal: 0, skippedCount: n % 3 === 0 ? 1 : 0 }; S.uploads.push(up); }
+    up.depositCount++; up.depositTotal += cents(r[2]);
+    S.payments.push({ id: uid("p"), number: depositId(a, date, up.depositCount), bankAccountId: a.id, uploadId: up.id, date, payer: r[0], amount: cents(r[2]), reference: r[3], bankRef: "", currency: "SGD" });
+  });
+  // uploads are made the morning after the statement day
+  for (const u of S.uploads) { const d = new Date(u.statementDate + "T00:00:00"); d.setDate(d.getDate() + 1); u.uploadedAt = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) + u.uploadedAt.slice(10); }
+  S.bsu = { acctId: S.bankAccounts[0].id, date: "", text: "", fileName: "", parsed: null, error: "" };
   S.matches = {}; S.pick = {}; S.isSample = true;
 
   // AR request cases raised by the project team: [key, by, customer, contract, billing, title, amount, opened, state, assigned, invoiceNo, periodFrom, periodTo, po, details, activity]

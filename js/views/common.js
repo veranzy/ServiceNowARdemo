@@ -1,7 +1,7 @@
 // Shared view helpers: state chips, form fields from the schema, related lists, icons, build-note attributes.
 import { ctrById, custById, invoiceUse } from "../ledger.js";
 import { REQ_STATE, displayOf, recById, userById } from "../records.js";
-import { TABLES, fieldNote } from "../schema.js";
+import { BANKS, TABLES, fieldNote } from "../schema.js";
 import { S } from "../state.js";
 import { DAY, esc, fmt, today } from "../util.js";
 
@@ -31,10 +31,10 @@ export function invChip(i) {
 export function payMoney(p) {
   const m = S.matches[p.id];
   const applied = m && m.status === "accepted" ? m.allocations.reduce((s, a) => s + a.amount, 0) : 0;
-  const state = !m || m.status === "unmatched" || m.status === "rejected" ? "Unmatched" : m.status === "proposed" ? "Proposed" : applied >= p.amount ? "Applied" : "Part applied";
+  const state = applied <= 0 ? "Unmatched" : applied >= p.amount ? "Matched" : "Part matched";
   return { applied, unapplied: p.amount - applied, state };
 }
-export const payChip = p => { const s = payMoney(p).state; return `<span class="chip ${s === "Applied" ? "c-ok" : s === "Proposed" ? "c-warn" : s === "Part applied" ? "c-accent" : "c-bad"}">${s}</span>`; };
+export const payChip = p => { const s = payMoney(p).state; return `<span class="chip ${s === "Matched" ? "c-ok" : s === "Part matched" ? "c-accent" : "c-warn"}">${s}</span>`; };
 
 export function daysLabel(iso) {
   if (!iso) return "—";
@@ -50,6 +50,7 @@ export function refLink(table, id, label) {
 }
 
 function refOptions(f, rec, formVals) {
+  if (f.ref === "bankAccounts") return S.bankAccounts.map(a => [a.id, `${BANKS[a.bank].name} · ${a.number} · ${a.name}`]);
   if (f.ref === "users") return S.users.filter(u => !f.refFilter || u.team === f.refFilter).map(u => [u.id, u.name]);
   if (f.ref === "contracts") {
     const cust = formVals?.customerId ?? rec.customerId;
@@ -112,6 +113,8 @@ export const ctrNo = id => ctrById(id)?.number || "—";
 const P = {
   home: '<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>',
   list: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  upload: '<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 15v4.5h16V15"/>',
+  bank: '<path d="M3 9.5 12 4l9 5.5M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3 20h18"/>',
   cash: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',

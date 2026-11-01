@@ -5,6 +5,9 @@ import { REQ_OPEN, displayOf, me, recById, userById } from "../records.js";
 import { ROLES, TABLES } from "../schema.js";
 import { S } from "../state.js";
 import { DAY, esc, fmt, today } from "../util.js";
+import { acctById, acctLabel, yesterday } from "../bsu.js";
+import { BANKS } from "../schema.js";
+import { acctType, bsuPage } from "./bsu.js";
 import { cashPage } from "./cash.js";
 import { custName, ctrNo, daysLabel, fieldHtml, icon, initials, invChip, invMoney, meterRow, payChip, payMoney, refLink, relatedTable, reqChip, sn } from "./common.js";
 
@@ -42,14 +45,30 @@ export const LISTS = {
   },
   payments: {
     filters: {
-      unapplied: ["Unapplied", p => payMoney(p).unapplied > 0],
-      all: ["All", () => true]
+      unapplied: ["Deposits to match", p => payMoney(p).unapplied > 0],
+      all: ["All deposits", () => true]
     },
-    cols: [["Number", p => refLink("payments", p.id, p.number), "", "number"], ["Payer", p => esc(p.payer), "", "payer"], ["Received", p => esc(p.date), "", "date"],
-      ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap", "reference"], ["Amount", p => fmt(p.amount), "num", "amount"],
-      ["Unapplied", p => fmt(payMoney(p).unapplied), "num", null], ["Match", p => payChip(p), "", null]],
-    sort: (a, b) => String(b.date).localeCompare(String(a.date)),
-    text: p => [p.number, p.payer, p.reference].join(" ")
+    cols: [["Deposit ID", p => refLink("payments", p.id, p.number), "", "number"], ["Value date", p => esc(p.date), "", "date"], ["Bank account", p => esc(acctLabel(acctById(p.bankAccountId))), "", "bankAccountId"],
+      ["Payer", p => esc(p.payer), "", "payer"], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap", "reference"], ["Amount", p => fmt(p.amount), "num", "amount"],
+      ["Unmatched", p => fmt(payMoney(p).unapplied), "num", null], ["Match", p => payChip(p), "", null]],
+    sort: (a, b) => String(b.date).localeCompare(String(a.date)) || String(a.number).localeCompare(String(b.number)),
+    text: p => [p.number, p.payer, p.reference, acctLabel(acctById(p.bankAccountId))].join(" ")
+  },
+  uploads: {
+    filters: { all: ["Statement uploads", () => true] },
+    cols: [["Upload", u => refLink("uploads", u.id, u.number), "", "number"], ["Bank account", u => esc(acctLabel(acctById(u.bankAccountId))), "", "bankAccountId"], ["Department", u => esc(acctById(u.bankAccountId)?.department || "—"), "", null],
+      ["Statement date", u => esc(u.statementDate), "", "statementDate"], ["Deposits", u => String(u.depositCount), "num", "depositCount"], ["Total", u => fmt(u.depositTotal), "num", "depositTotal"],
+      ["Uploaded", u => `${esc(u.uploadedAt)}<span class="desc">${esc(userById(u.uploadedBy)?.name || "")}</span>`, "", "uploadedAt"]],
+    sort: (a, b) => String(b.statementDate).localeCompare(String(a.statementDate)) || String(b.number).localeCompare(String(a.number)),
+    text: u => [u.number, acctLabel(acctById(u.bankAccountId)), u.fileName].join(" ")
+  },
+  bankAccounts: {
+    filters: { all: ["Bank accounts", () => true] },
+    cols: [["Account", a => refLink("bankAccounts", a.id, `${BANKS[a.bank].name} · ${a.number}`), "", "number"], ["Name", a => esc(a.name), "", "name"], ["Department", a => esc(a.department), "", "department"],
+      ["Type", a => esc(acctType(a)), "", "accountType"], ["Last statement", a => esc(S.uploads.filter(u => u.bankAccountId === a.id).map(u => u.statementDate).sort().pop() || "—"), "", null]],
+    sort: (a, b) => a.bank.localeCompare(b.bank) || a.number.localeCompare(b.number),
+    text: a => [BANKS[a.bank].name, a.number, a.name, a.department].join(" "),
+    newable: true
   },
   customers: {
     filters: { all: ["Customers", () => true] },
@@ -73,7 +92,7 @@ const issuedOf = custId => S.invoices.filter(i => i.customerId === custId && i.s
 const MENU = [
   ["AR requests", [["requests", "open"], ["requests", "new"], ["requests", "mine"], ["requests", "awaiting"], ["requests", "all"]]],
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
-  ["Payments", [["payments", "unapplied"], ["payments", "all"]]],
+  ["Bank statements", [["uploads", "all"], ["payments", "unapplied"], ["payments", "all"], ["bankAccounts", "all"]]],
   ["Master data", [["customers", "all"], ["contracts", "all"]]]
 ];
 
@@ -82,6 +101,7 @@ function mainLabel() {
   const m = W().main;
   if (m.kind === "home") return "Home";
   if (m.kind === "cash") return "Cash application";
+  if (m.kind === "bsu") return "Bank statement upload";
   return `${TABLES[m.table].plural}: ${LISTS[m.table].filters[m.filter][0]}`;
 }
 
@@ -92,7 +112,7 @@ function tabLabel(t) {
 
 export function workspaceView() {
   const w = W(), m = w.main, u = me();
-  const rail = [["home", "Home", "home"], ["list", "Lists", "list"], ["cash", "Cash application", "cash"]];
+  const rail = [["home", "Home", "home"], ["list", "Lists", "list"], ["bsu", "Bank statement upload (BSU)", "upload"], ["cash", "Cash application", "cash"]];
   const railActive = k => k === "list" ? (w.listMenu || m.kind === "list") : m.kind === k && !w.listMenu;
   const counts = { new: S.requests.filter(LISTS.requests.filters.new[1]).length };
   return `<div class="ws">
@@ -126,6 +146,7 @@ export function workspaceView() {
 function mainContent() {
   const m = W().main;
   if (m.kind === "cash") return cashPage();
+  if (m.kind === "bsu") return bsuPage();
   if (m.kind === "list") return listPage(m.table, m.filter);
   return homePage();
 }
@@ -142,7 +163,8 @@ function homePage() {
     ["Awaiting info", S.requests.filter(f.awaiting[1]).length, "Waiting on the project team", "list", "requests:awaiting"],
     ["Draft invoices", S.invoices.filter(fi.draft[1]).length, "Created, not yet issued", "list", "invoices:draft"],
     ["Overdue", `SGD ${fmt(overdue.reduce((s, i) => s + invMoney(i).open, 0))}`, `${overdue.length} invoices past due`, "list", "invoices:overdue"],
-    ["Unapplied cash", `SGD ${fmt(unappliedPays.reduce((s, p) => s + payMoney(p).unapplied, 0))}`, `${unappliedPays.length} payments to apply`, "cash", ""]
+    ["Deposits to match", `SGD ${fmt(unappliedPays.reduce((s, p) => s + payMoney(p).unapplied, 0))}`, `${unappliedPays.length} deposits`, "cash", ""],
+    [`Statements for ${yesterday()}`, `${S.bankAccounts.filter(a => S.uploads.some(u => u.bankAccountId === a.id && u.statementDate === yesterday())).length} of ${S.bankAccounts.length}`, "Bank accounts uploaded (BSU)", "bsu", ""]
   ];
   // aging of issued, open invoices
   const buckets = [["Current", 0], ["1–30", 0], ["31–60", 0], ["61–90", 0], ["90+", 0]];
@@ -155,7 +177,7 @@ function homePage() {
   return `<div class="page">
     <div class="pagehead"><div><h1 class="pt">Good ${hr < 12 ? "morning" : hr < 18 ? "afternoon" : "evening"}, ${esc(u.name.split(" ")[0])}</h1><p class="psub">Receivables at a glance. Select a card to open the list behind it.</p></div></div>
     <section class="kpis"${sn("Landing page: single-score data visualisations, each linked to a list menu module")}>
-      ${cards.map(([k, v, n, kind, target]) => `<button type="button" class="kpi" ${kind === "cash" ? `data-rail="cash"` : `data-list="${target}"`}><span class="k">${esc(k)}</span><span class="v">${esc(String(v))}</span><span class="n">${esc(n)}</span></button>`).join("")}
+      ${cards.map(([k, v, n, kind, target]) => `<button type="button" class="kpi" ${kind === "list" ? `data-list="${target}"` : `data-rail="${kind}"`}><span class="k">${esc(k)}</span><span class="v">${esc(String(v))}</span><span class="n">${esc(n)}</span></button>`).join("")}
     </section>
     <div class="home-grid">
       <section class="card"${sn("Data visualisation: bar chart of x_ar_invoice.amount_due grouped by days past due_date")}>
@@ -203,7 +225,9 @@ function listPage(table, filter) {
 const LAYOUT = {
   requests: [["Request", ["customerId", "contractId", "billingType", "title", "amount", "invoiceDate", "periodStart", "periodEnd", "poNumber", "details"]], ["Case", ["state", "requestedBy", "assignedTo", "invoiceId", "opened"]]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "due"]], ["Source", ["state", "requestId"]]],
-  payments: [["Bank details", ["payer", "date", "amount", "reference"]]],
+  payments: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "bankRef", "payer", "reference"]]],
+  uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
+  bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
   customers: [["Customer", ["name", "parent", "terms", "creditLimit", "aliases", "notes"]]],
   contracts: [["Contract", ["number", "customerId", "title", "billing", "value", "start", "end", "terms", "discPct", "discDays", "notes"]]]
 };
@@ -211,7 +235,7 @@ const LAYOUT = {
 function editable(table, rec) {
   if (table === "requests") return REQ_OPEN.includes(rec.state);
   if (table === "invoices") return rec.state === "draft";
-  if (table === "payments") return false;
+  if (table === "payments" || table === "uploads") return false;
   return true;
 }
 
@@ -225,7 +249,9 @@ function headerFields(table, rec) {
     hf("Assigned to", esc(userById(rec.assignedTo)?.name || "Unassigned")), hf("Requested by", esc(userById(rec.requestedBy)?.name || "—")), hf("Opened", esc(rec.opened))];
   if (table === "invoices") { const m = invMoney(rec); return [hf("Status", invChip(rec)), hf("Amount", `<span class="mono">SGD ${fmt(rec.amount)}</span>`), hf("Amount due", `<span class="mono">SGD ${fmt(m.open)}</span>`),
     hf("Due", `${esc(rec.due || "—")}${rec.state === "issued" && m.open > 0 ? `<span class="desc${m.late ? " bad" : ""}">${esc(daysLabel(rec.due))}</span>` : ""}`), hf("Customer", refLink("customers", rec.customerId)), hf("AR request", refLink("requests", rec.requestId))]; }
-  if (table === "payments") { const m = payMoney(rec); return [hf("Match", payChip(rec)), hf("Amount", `<span class="mono">SGD ${fmt(rec.amount)}</span>`), hf("Applied", `<span class="mono">${fmt(m.applied)}</span>`), hf("Unapplied", `<span class="mono${m.unapplied ? " bad" : ""}">${fmt(m.unapplied)}</span>`), hf("Received", esc(rec.date))]; }
+  if (table === "payments") { const m = payMoney(rec), a = acctById(rec.bankAccountId); return [hf("Match", payChip(rec)), hf("Amount", `<span class="mono">SGD ${fmt(rec.amount)}</span>`), hf("Matched", `<span class="mono">${fmt(m.applied)}</span>`), hf("Unmatched", `<span class="mono${m.unapplied ? " bad" : ""}">${fmt(m.unapplied)}</span>`), hf("Value date", esc(rec.date)), hf("Department", esc(a?.department || "—")), hf("Account type", esc(a ? acctType(a) : "—"))]; }
+  if (table === "uploads") return [hf("Bank account", refLink("bankAccounts", rec.bankAccountId)), hf("Statement date", esc(rec.statementDate)), hf("Deposits", String(rec.depositCount)), hf("Total", `<span class="mono">SGD ${fmt(rec.depositTotal)}</span>`), hf("Uploaded by", esc(userById(rec.uploadedBy)?.name || "—"))];
+  if (table === "bankAccounts") { const ups = S.uploads.filter(u => u.bankAccountId === rec.id); return [hf("Bank", esc(BANKS[rec.bank]?.name || "—")), hf("Department", esc(rec.department || "—")), hf("Type", esc(acctType(rec))), hf("Uploads", String(ups.length)), hf("Last statement", esc(ups.map(u => u.statementDate).sort().pop() || "—"))]; }
   if (table === "customers") { const r = rollup(issuedOf(rec.id)); return [hf("Open AR", `<span class="mono">SGD ${fmt(r.open)}</span>`), hf("Overdue", `<span class="mono${r.overdue ? " bad" : ""}">${fmt(r.overdue)}</span>`),
     hf("Contracts", String(S.contracts.filter(k => k.customerId === rec.id).length)), hf("Credit limit", rec.creditLimit ? `<span class="mono">${fmt(rec.creditLimit)}</span>` : "Not set")]; }
   if (table === "contracts") { const r = rollup(S.invoices.filter(i => i.contractId === rec.id && i.state === "issued")); const s = ctrStatus(rec);
@@ -249,7 +275,9 @@ function actionsFor(table, rec, isNew, canEdit) {
     if (rec.state === "draft") a.push(action("Issue invoice", "issue", { primary: true, note: "UI action: Issue → state = Issued; BR sets AR request to Invoiced and posts comment to requester" }));
     if (rec.state !== "cancelled") a.push(action("Cancel invoice", "cancel", { danger: true, note: "UI action: Cancel → only when no accepted allocations" }));
   }
-  if (table === "payments") a.push(`<button type="button" class="btn" data-rail="cash">Open cash application</button>`);
+  if (table === "payments" && payMoney(rec).unapplied > 0) a.push(`<button type="button" class="btn primary" data-matchdep="${rec.id}"${sn("UI action: Match → opens the invoice finder for this deposit")}>Match to invoice</button>`);
+  if (table === "uploads") a.push(`<button type="button" class="btn" data-rail="bsu">Upload another</button>`);
+  if (table === "bankAccounts") a.push(`<button type="button" class="btn" data-bsu-acct="${rec.id}">Upload statement</button>`);
   if (table === "customers") a.push(`<button type="button" class="btn" data-new="contracts" data-prefill-customer="${rec.id}">New contract</button>`);
   if (canEdit) a.push(action("Save", "save", { note: "UI action: Save (update)" }));
   return a.join("");
@@ -289,13 +317,19 @@ function related(table, rec) {
       relatedTable("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { via: "contract" }) +
       relatedTable("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Amount", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { via: "contract" });
   }
+  if (table === "uploads" || table === "bankAccounts") {
+    const deps = S.payments.filter(p => table === "uploads" ? p.uploadId === rec.id : p.bankAccountId === rec.id).sort(LISTS.payments.sort);
+    const ups = table === "bankAccounts" ? relatedTable("Statement uploads", "uploads", S.uploads.filter(u => u.bankAccountId === rec.id).sort(LISTS.uploads.sort),
+      [["Upload", u => refLink("uploads", u.id, u.number)], ["Statement date", u => esc(u.statementDate)], ["Deposits", u => String(u.depositCount), "num"], ["Total", u => fmt(u.depositTotal), "num"]], { via: "bank_account" }) : "";
+    return ups + relatedTable("Deposits", "payments", deps, [["Deposit ID", p => refLink("payments", p.id, p.number)], ["Payer", p => esc(p.payer)], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap"], ["Amount", p => fmt(p.amount), "num"], ["Match", p => payChip(p)]], { via: table === "uploads" ? "bsu" : "bank_account" });
+  }
   if (table === "invoices" || table === "payments") {
     const rows = [];
     for (const [pid, m] of Object.entries(S.matches)) { if (!m || m.status === "rejected") continue;
       for (const a of m.allocations) if ((table === "invoices" && a.invoiceId === rec.id) || (table === "payments" && pid === rec.id)) rows.push({ pid, a, m }); }
     const cols = table === "invoices"
-      ? [["Payment", x => refLink("payments", x.pid, recById("payments", x.pid)?.number)], ["Payer", x => esc(recById("payments", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["State", x => `<span class="chip ${x.m.status === "accepted" ? "c-ok" : "c-warn"}">${x.m.status === "accepted" ? "Accepted" : "Proposed"}</span>`], ["Method", x => x.m.method === "manual" ? "Manual" : "Auto"]]
-      : [["Invoice", x => refLink("invoices", x.a.invoiceId)], ["Customer", x => esc(recById("invoices", x.a.invoiceId)?.customer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["State", x => `<span class="chip ${x.m.status === "accepted" ? "c-ok" : "c-warn"}">${x.m.status === "accepted" ? "Accepted" : "Proposed"}</span>`], ["Method", x => x.m.method === "manual" ? "Manual" : "Auto"]];
+      ? [["Deposit", x => refLink("payments", x.pid, recById("payments", x.pid)?.number)], ["Payer", x => esc(recById("payments", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]]
+      : [["Invoice", x => refLink("invoices", x.a.invoiceId)], ["Customer", x => esc(recById("invoices", x.a.invoiceId)?.customer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]];
     return relatedTable("Allocations", "allocations", rows, cols, { via: table === "invoices" ? "invoice" : "payment" });
   }
   return "";
@@ -312,7 +346,8 @@ function recordPage(tab) {
   const shown = vals ? { ...rec, ...vals } : rec;
   const sections = LAYOUT[table].map(([title, keys]) => `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit, errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
   const title = isNew ? `New ${def.label.toLowerCase()}` : displayOf(table, rec);
-  const sub = table === "requests" ? rec.title : table === "invoices" ? rec.desc : table === "contracts" ? rec.title : table === "payments" ? rec.payer : rec.parent ? `Part of ${rec.parent}` : "";
+  const sub = table === "requests" ? rec.title : table === "invoices" ? rec.desc : table === "contracts" ? rec.title : table === "payments" ? `${rec.payer} · ${acctLabel(acctById(rec.bankAccountId))}`
+    : table === "uploads" ? `${acctLabel(acctById(rec.bankAccountId))} · statement ${rec.statementDate}` : table === "bankAccounts" ? rec.name : rec.parent ? `Part of ${rec.parent}` : "";
   const twoCol = table === "requests" && !isNew;
   return `<div class="page rec">
     <div class="rec-head"${sn(`Record page (UI Builder default record page) · table ${def.table}${def.extends ? ` extends ${def.extends}` : ""}`)}>

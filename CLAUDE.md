@@ -24,8 +24,10 @@ For every new module or change:
 
 ## Change requests by build-note ID
 
-Every mapped element shows a purple **ID tag** (on by default, *Show IDs* in the demo bar; hover shows
-the ServiceNow note via `title`). The owner finds the element and writes `<ID> - <change>` (e.g.
+Two independent toggles in the demo bar: **Show IDs** (on by default) draws a small purple ID tag on
+every mapped element, for the owner's change requests; **ServiceNow notes** (off by default) is the
+developer view, labelling each element with `[ID] <ServiceNow table/field/UI action/widget>` (body
+classes `sn-notes` and `sn-dev`). Hover shows the note via `title` when either is on. The owner finds the element and writes `<ID> - <change>` (e.g.
 `BSU-03 - add a closing balance field`, `INV.due_date - default to end of next month`). To act on one:
 
 1. Look the ID up in `js/notes.js` (or `docs/BUILD_NOTES.md`). Field IDs are `<TABLE CODE>.<column>`

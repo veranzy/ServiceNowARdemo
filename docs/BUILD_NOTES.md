@@ -1,7 +1,8 @@
 # Build note IDs
 
 Every element of the prototype that maps to a ServiceNow build item carries a small purple **ID tag**
-(on by default; *Show IDs* in the demo bar hides them). Hover a tag to see its ServiceNow note;
+(on by default; *Show IDs* in the demo bar hides them). Developers can switch on *ServiceNow notes*
+to label every element with its full ServiceNow reference. Hover a tag to see its ServiceNow note;
 Alt/Option+click the element to copy its ID. To request a change, write `<ID> - <change>`, for example
 `BSU-03 - add a field for the statement's closing balance` or `INV.due_date - default to end of next month`.
 

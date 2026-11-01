@@ -27,8 +27,9 @@ function demoBar() {
     </div>
     <span class="db-who">Signed in as <b>${esc(u?.name || "")}</b> <span class="db-role mono">${esc(ROLES[p].role)}</span></span>
     <span class="sp"></span>
-    <label class="switch"><input type="checkbox" id="notesToggle"${S.ui.notes ? " checked" : ""}><span>Show IDs</span></label>
-    ${S.ui.notes ? `<span class="db-hint">Hover a tag for its ServiceNow note · Alt/Option+click to copy the ID</span>` : ""}
+    <label class="switch" title="Purple ID tags for change requests: write '<ID> - <change>'"><input type="checkbox" id="notesToggle"${S.ui.notes ? " checked" : ""}><span>Show IDs</span></label>
+    <label class="switch" title="Developer view: every element labelled with its ServiceNow table, field, UI action or widget"><input type="checkbox" id="devToggle"${S.ui.dev ? " checked" : ""}><span>ServiceNow notes</span></label>
+    ${S.ui.notes || S.ui.dev ? `<span class="db-hint">Alt/Option+click an element to copy its ID</span>` : ""}
     <button type="button" class="btn small ghost" id="resetDemo">Reset demo</button>
   </div>`;
 }
@@ -38,6 +39,7 @@ export function render() {
   // keep window scroll stable across re-renders
   const y = window.scrollY, focusId = document.activeElement?.id;
   document.body.classList.toggle("sn-notes", S.ui.notes);
+  document.body.classList.toggle("sn-dev", S.ui.dev);
   document.body.dataset.persona = S.ui.persona;
   root.innerHTML = demoBar() + (S.ui.persona === "ar" ? workspaceView() : portalView()) +
     `<div class="toast" id="toast" role="status" aria-live="polite"${S.ui.toast ? "" : " hidden"}>${esc(S.ui.toast || "")}</div>`;

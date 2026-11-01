@@ -385,6 +385,21 @@ body.sn-notes :is(button,th,a)[data-snid]::before{display:inline-block;margin-ri
 body.sn-notes label.ffield[data-snid]::before,body.sn-notes .ffield[data-snid]::before{align-self:flex-start;position:static}
 body.sn-notes .ws-head[data-snid]::before{top:auto;bottom:2px}
 body.sn-notes .ws-rail[data-snid]::before{top:auto;bottom:6px;right:50%;transform:translateX(50%)}
+/* ---------- ServiceNow notes (developer view) ---------- */
+/* Full label "[ID] ServiceNow reference" above each element; fields and column headers get it inline below. */
+body.sn-dev [data-snid]{outline:1.5px dashed #c77dff;outline-offset:2px}
+body.sn-dev :is(section,div,form,aside,article,dl,details,fieldset,button,label,th):not(.ws-listmenu)[data-snid],body.sn-dev .pt-head[data-snid]{position:relative}
+body.sn-dev [data-snid]::before{display:none!important}
+body.sn-dev [data-snid]::after{content:"[" attr(data-snid) "] " attr(data-sn);position:absolute;left:0;top:-2px;transform:translateY(-100%);z-index:30;max-width:min(440px,90vw);
+  font:500 10.5px/1.35 var(--f-mono);letter-spacing:0;text-transform:none;color:#2a0845;background:#efdcff;border:1px solid #c77dff;border-radius:4px;padding:2px 6px;
+  white-space:normal;pointer-events:none;text-align:left;width:max-content}
+body.sn-dev :is(.ffield,th)[data-snid]::after{position:static;transform:none;display:block;margin-top:4px;max-width:100%}
+body.sn-dev th[data-snid]{white-space:normal}
+body.sn-dev button[data-snid]::after{content:"[" attr(data-snid) "]";white-space:nowrap;max-width:none}
+body.sn-dev button[data-snid]:hover::after{content:"[" attr(data-snid) "] " attr(data-sn);white-space:normal;max-width:min(360px,90vw);z-index:40}
+body.sn-dev :is(.ws-head,.pt-head)[data-snid]::after{top:auto;bottom:-2px;transform:translateY(100%)}
+body.sn-dev .ws-rail[data-snid]::after{top:auto;bottom:8px;left:58px;transform:none;width:200px}
+body.sn-dev :is(.summary,.picker,.ws-tabs)[data-snid]::after{top:2px;left:auto;right:2px;transform:none;max-width:60%}
 .db-hint{color:#e6c8ff;font-size:12px}
 
 /* ---------- responsive ---------- */

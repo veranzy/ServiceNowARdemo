@@ -11,9 +11,13 @@ ServiceNow (custom scoped app). It shows both experiences side by side:
   statements (BSU), match deposits to invoices manually, and maintain customers, contracts and bank
   accounts.
 
-Every element that maps to a ServiceNow build item carries a small purple **ID tag** (hover it for the
-ServiceNow table, field, UI action or widget). Use the demo bar to switch persona, hide the tags
-(*Show IDs*) for a clean client demo, or reset the sample data.
+Demo bar toggles:
+- **Show IDs** (on): a small purple ID tag on every element that maps to a ServiceNow build item. Use the
+  ID in change requests: `<ID> - <change>`.
+- **ServiceNow notes** (off): developer view; every element labelled with its ServiceNow table, field,
+  UI action or widget.
+
+Turn both off for a clean client demo. You can also switch persona or reset the sample data there.
 
 ## Documents
 

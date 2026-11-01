@@ -133,7 +133,7 @@ function bsuAction(name) {
 // ---------- events ----------
 // Build notes: Alt/Option+click an outlined element copies "<ID> - " so the owner can paste a change request.
 document.addEventListener("click", e => {
-  if (!S.ui.notes || !e.altKey) return;
+  if (!(S.ui.notes || S.ui.dev) || !e.altKey) return;
   const n = e.target.closest("[data-snid]"); if (!n) return;
   e.preventDefault(); e.stopPropagation();
   const id = n.dataset.snid;
@@ -187,6 +187,7 @@ document.addEventListener("keydown", e => {
 document.addEventListener("change", e => {
   const el = e.target;
   if (el.id === "notesToggle") { S.ui.notes = el.checked; return render(); }
+  if (el.id === "devToggle") { S.ui.dev = el.checked; return render(); }
   if (el.id === "bsuAcct") { Object.assign(S.bsu, { acctId: el.value, text: "", fileName: "", parsed: null, error: "" }); return render(); }
   if (el.id === "bsuDate") { S.bsu.date = el.value; parseCurrent(); return render(); }
   if (el.id === "bsuFile") { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { S.bsu.text = String(r.result); S.bsu.fileName = f.name; parseCurrent(); render(); }; r.readAsText(f); el.value = ""; return; }

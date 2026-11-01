@@ -9,7 +9,8 @@ export const S = {
   // shell
   ui: {
     persona: "ar",          // "ar" → workspace, "project" → portal
-    notes: true,            // Build note ID tags (on by default; toggle in the demo bar)
+    notes: true,            // ID tags (on by default; "Show IDs" in the demo bar)
+    dev: false,             // ServiceNow notes: full developer labels ("ServiceNow notes" in the demo bar)
     toast: null,
     ws: { main: { kind: "home" }, tabs: [], active: "main", listMenu: false, q: "", composer: {} },
     portal: { page: "home", id: null, draft: null, errors: {} }

@@ -1,7 +1,7 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, displayOf, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
+import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, ctrLabel, displayOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
 import { CODE } from "../notes.js";
 import { ROLES, TABLES } from "../schema.js";
 import { S } from "../state.js";
@@ -108,14 +108,16 @@ export const LISTS = {
     newable: true
   },
   contracts: {
-    filters: { all: ["Contracts", () => true], active: ["Active", k => ctrStatus(k)[0] === "Active"] },
-    cols: [["Number", k => refLink("contracts", k.id, k.number), "", "number"], ["Title", k => esc(k.title), "wrap", "title"], ["Customer", k => esc(custName(k.customerId)), "", "customerId"],
-      ["Billing", k => esc(k.billing), "", "billing"], ["Value", k => fmt(k.value || 0), "num", "value"], ["End", k => esc(k.end || "—"), "", "end"], ["Status", k => { const s = ctrStatus(k); return `<span class="chip ${s[1]}">${s[0]}</span>`; }, "", "=CON.status"]],
-    sort: (a, b) => a.number.localeCompare(b.number),
-    text: k => [k.number, k.title, custName(k.customerId)].join(" "),
+    filters: { all: ["Contracts", () => true], active: ["Active", k => !isShell(k) && ctrStatus(k)[0] === "Active"], shell: ["No-contract shells", k => isShell(k)] },
+    cols: [["Number", k => refLink("contracts", k.id, k.number), "", "number"], ["Type", k => ctrTypeChip(k), "", "contractType"], ["Title", k => esc(k.title), "wrap", "title"], ["Customer", k => esc(custName(k.customerId)), "", "customerId"], ["Department", k => esc(k.department || "—"), "", "department"],
+      ["Bill-to", k => esc(k.billToName || "—"), "", "billToName"], ["Value", k => isShell(k) ? "—" : fmt(k.value || 0), "num", "value"], ["Lines", k => String(S.lines.filter(l => l.contractId === k.id).length), "num", "=CON.line_count"], ["Status", k => ctrStatusChip(k), "", "=CON.status"]],
+    sort: (a, b) => custName(a.customerId).localeCompare(custName(b.customerId)) || (isShell(a) - isShell(b)) || a.number.localeCompare(b.number),
+    text: k => [k.number, k.title, custName(k.customerId), k.department, k.billToName, isShell(k) ? "no contract shell" : ""].join(" "),
     newable: true
   }
 };
+const ctrTypeChip = k => isShell(k) ? `<span class="chip c-warn">No contract</span>` : `<span class="chip c-neutral">Contract</span>`;
+const ctrStatusChip = k => { const s = isShell(k) ? ["Open", "c-ok"] : ctrStatus(k); return `<span class="chip ${s[1]}">${s[0]}</span>`; };
 const issuedOf = custId => S.invoices.filter(i => i.customerId === custId && i.state === "issued");
 
 const MENU = [
@@ -123,7 +125,7 @@ const MENU = [
   ["Recurring billing", [["schedules", "due"], ["schedules", "active"], ["schedules", "all"]]],
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
   ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"]]],
-  ["Master data", [["customers", "all"], ["contracts", "all"], ["contacts", "all"], ["documents", "all"]]]
+  ["Master data", [["customers", "all"], ["contracts", "all"], ["contracts", "shell"], ["contacts", "all"], ["documents", "all"]]]
 ];
 
 // ---------- shell ----------
@@ -257,22 +259,25 @@ function listPage(table, filter) {
 const has = k => r => !!r[k], not = k => r => !r[k];
 const LAYOUT = {
   requests: [["AR form", ["form", "department", "title", "amount", "poNumber"]], ["Customer", ["customerId"], not("newCustomer")], ["New customer (to verify)", ["newCustName", "newCustUen", "newCustAddress"], has("newCustomer")],
-    ["Bill-to (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], has("billToName")], ["Contract", ["contractId", "contractLocation", "contractLocationRef"]],
+    ["Contract", ["contractOption", "contractId", "contractLocation", "contractLocationRef"]],
+    ["New contract (to create)", ["newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue"], r => r.contractOption === "new"],
+    ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], has("billToName")],
     ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => r.docContract || r.docAcra || r.docBillingForm],
     ["Case", ["state", "requestedBy", "assignedTo", "opened", "details"]]],
-  lines: [["Billing line", ["number", "requestId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]]],
+  lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
   deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "bankRef", "payer", "reference"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
   customers: [["Customer", ["name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]]],
-  contracts: [["Contract", ["number", "customerId", "title", "billing", "value", "start", "end", "terms", "discPct", "discDays", "contractLocation", "contractLocationRef", "notes"]]],
+  contracts: [["Contract", ["number", "contractType", "customerId", "department", "title", "billing", "value", "start", "end", "terms", "discPct", "discDays", "contractLocation", "contractLocationRef", "notes"]],
+    ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
   contacts: [["Billing contact", ["customerId", "department", "name", "email", "phone", "address", "requestId"]]],
   documents: [["Customer document", ["number", "customerId", "docType", "fileName", "contractId", "department", "requestId", "received"]]],
   schedules: [["Billing schedule", ["number", "customerId", "contractId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "requestId"]]]
 };
 /** Fields AR can't edit on the workspace form (set by the portal or by UI actions). */
-const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress"], lines: ["lineType"] };
+const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue"], lines: ["lineType"] };
 
 function editable(table, rec) {
   if (table === "requests") return REQ_OPEN.includes(rec.state);
@@ -288,7 +293,8 @@ function action(table, label, act, opts = {}) {
 
 function headerFields(table, rec) {
   const hf = (k, v) => `<div class="hf"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
-  if (table === "requests") return [hf("State", reqChip(rec)), hf("Form", `${esc(rec.form || "AR-i")} · ${esc(linesLabel(rec))}`), hf("Customer", rec.customerId ? refLink("customers", rec.customerId) : `${esc(rec.newCustName || "—")} <span class="chip c-warn">New</span>`), hf("Department", esc(rec.department || "—")), hf("Request value", `<span class="mono">SGD ${fmt(rec.amount)}</span>`),
+  if (table === "requests") return [hf("State", reqChip(rec)), hf("Form", `${esc(rec.form || "AR-i")} · ${esc(linesLabel(rec))}`), hf("Customer", rec.customerId ? refLink("customers", rec.customerId) : `${esc(rec.newCustName || "—")} <span class="chip c-warn">New</span>`),
+    hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : rec.contractOption === "new" ? `${esc(rec.newCtrRef || "—")} <span class="chip c-warn">New</span>` : rec.contractOption === "none" ? `<span class="chip c-warn">No contract</span>` : "—"), hf("Department", esc(rec.department || "—")), hf("Request value", `<span class="mono">SGD ${fmt(rec.amount)}</span>`),
     hf("Assigned to", esc(userById(rec.assignedTo)?.name || "Unassigned")), hf("Requested by", esc(userById(rec.requestedBy)?.name || "—")), hf("Opened", esc(rec.opened))];
   if (table === "invoices") { const m = invMoney(rec); return [hf("Status", invChip(rec)), hf("Amount", `<span class="mono">SGD ${fmt(rec.amount)}</span>`), hf("Amount due", `<span class="mono">SGD ${fmt(m.open)}</span>`),
     hf("Due", `${esc(rec.due || "—")}${rec.state === "issued" && m.open > 0 ? `<span class="desc${m.late ? " bad" : ""}">${esc(daysLabel(rec.due))}</span>` : ""}`), hf("Customer", refLink("customers", rec.customerId)), hf("AR request", refLink("requests", rec.requestId))]; }
@@ -297,11 +303,11 @@ function headerFields(table, rec) {
   if (table === "bankAccounts") { const ups = S.uploads.filter(u => u.bankAccountId === rec.id); return [hf("Bank", esc(BANKS[rec.bank]?.name || "—")), hf("Department", esc(rec.department || "—")), hf("Type", esc(acctType(rec))), hf("Uploads", String(ups.length)), hf("Last statement", esc(ups.map(u => u.statementDate).sort().pop() || "—"))]; }
   if (table === "customers") { const r = rollup(issuedOf(rec.id)); return [hf("Open AR", `<span class="mono">SGD ${fmt(r.open)}</span>`), hf("Overdue", `<span class="mono${r.overdue ? " bad" : ""}">${fmt(r.overdue)}</span>`),
     hf("Contracts", String(S.contracts.filter(k => k.customerId === rec.id).length)), hf("Credit limit", rec.creditLimit ? `<span class="mono">${fmt(rec.creditLimit)}</span>` : "Not set")]; }
-  if (table === "contracts") { const r = rollup(S.invoices.filter(i => i.contractId === rec.id && i.state === "issued")); const s = ctrStatus(rec);
-    return [hf("Status", `<span class="chip ${s[1]}">${s[0]}</span>`), hf("Customer", refLink("customers", rec.customerId)), hf("Value", `<span class="mono">${fmt(rec.value || 0)}</span>`), hf("Billed", `<span class="mono">${fmt(r.billed)}</span>`), hf("Collected", `<span class="mono">${fmt(r.collected)}</span>`)]; }
+  if (table === "contracts") { const r = rollup(S.invoices.filter(i => i.contractId === rec.id && i.state === "issued"));
+    return [hf("Type", ctrTypeChip(rec)), hf("Status", ctrStatusChip(rec)), hf("Customer", refLink("customers", rec.customerId)), hf("Bill-to", esc(rec.billToName || "Not set")), ...(isShell(rec) ? [] : [hf("Value", `<span class="mono">${fmt(rec.value || 0)}</span>`)]), hf("Billed", `<span class="mono">${fmt(r.billed)}</span>`), hf("Collected", `<span class="mono">${fmt(r.collected)}</span>`)]; }
   if (table === "schedules") { const due = periodsDue(rec).length; return [hf("Customer", refLink("customers", rec.customerId)), hf("Frequency", esc(freqLabel(rec.frequency))), hf("Amount per period", `<span class="mono">SGD ${fmt(rec.amount)}</span>`),
     hf("Next billing", esc(nextBilling(rec) || "Ended")), hf("Periods due", due ? `<span class="chip c-warn">${due} due</span>` : `<span class="chip c-ok">Up to date</span>`), hf("Department", esc(rec.department))]; }
-  if (table === "lines") { const st = lineStatus(rec); return [hf("Type", esc(LINE_TYPE[rec.lineType])), hf("Status", lineChip(rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Line value", `<span class="mono">SGD ${fmt(lineValue(rec))}</span>`)]; }
+  if (table === "lines") { const st = lineStatus(rec); return [hf("Type", esc(LINE_TYPE[rec.lineType])), hf("Status", lineChip(rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : "Set by Link to customer"), hf("Line value", `<span class="mono">SGD ${fmt(lineValue(rec))}</span>`)]; }
   if (table === "contacts") return [hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department)), hf("Email", esc(rec.email || "—"))];
   if (table === "documents") return [hf("Customer", refLink("customers", rec.customerId)), hf("Type", esc(DOC_LABEL[rec.docType])), hf("Received", esc(rec.received)), hf("From request", refLink("requests", rec.requestId))];
   return [];
@@ -328,7 +334,7 @@ function actionsFor(table, rec, isNew, canEdit) {
   if (table === "deposits" && depositMoney(rec).unapplied > 0) a.push(`<button type="button" class="btn primary" data-matchdep="${rec.id}"${sn("UA-DEP-match")}>Match to invoice</button>`);
   if (table === "uploads") a.push(`<button type="button" class="btn" data-rail="bsu">Upload another</button>`);
   if (table === "bankAccounts") a.push(`<button type="button" class="btn" data-bsu-acct="${rec.id}"${sn("UA-BNK-upload")}>Upload statement</button>`);
-  if (table === "lines") { const r = recById("requests", rec.requestId), ok = r && REQ_OPEN.includes(r.state) && r.customerId && !r.newCustomer;
+  if (table === "lines") { const r = recById("requests", rec.requestId), ok = r && REQ_OPEN.includes(r.state) && r.customerId && !r.newCustomer && rec.contractId;
     if (ok && lineStatus(rec) === "open") a.push(rec.lineType === "recurring" ? `<button type="button" class="btn primary" data-lineact="schedule:${rec.id}"${sn("UA-RQL-schedule")}>Set up billing schedule</button>` : `<button type="button" class="btn primary" data-lineact="invoice:${rec.id}"${sn("UA-RQL-invoice")}>Create invoice</button>`); }
   if (table === "customers") { a.push(`<button type="button" class="btn" data-new="contracts" data-prefill-customer="${rec.id}"${sn("UA-CUS-newcontract")}>New contract</button>`);
     a.push(`<button type="button" class="btn" data-new="contacts" data-prefill-customer="${rec.id}"${sn("UA-CUS-newcontact")}>Add billing contact</button>`); }
@@ -341,8 +347,8 @@ const lineChip = l => { const [lab, c] = LINE_CHIP[lineStatus(l)]; return `<span
 
 /** Link to customer is needed while the customer, bill-to, documents or contract location aren't on the customer master yet. */
 function setupPending(r, st = setupStatus(r)) {
-  if (!st.linked) return true;
-  if (r.billToName && !(st.contact && st.contact.name === r.billToName && st.contact.email === r.billToEmail)) return true;
+  if (!st.linked || !st.contractDone) return true;
+  if (r.billToName && !st.billToOk) return true;
   if (!st.docsDone) return true;
   return st.location === false;
 }
@@ -352,15 +358,16 @@ function setupPanel(r, tab) {
   const st = setupStatus(r), lines = reqLines(r), doneLines = lines.filter(l => ["invoiced", "scheduled"].includes(lineStatus(l))).length;
   const item = (ok, label, detail) => `<li class="${ok === true ? "ok" : ok === false ? "todo" : "na"}"><span class="tick" aria-hidden="true">${ok === true ? "✓" : ok === false ? "!" : "–"}</span><div><b>${label}</b>${detail ? `<span class="desc">${detail}</span>` : ""}</div></li>`;
   const similar = r.newCustomer ? S.customers.filter(c => nameSim(r.newCustName || "", c.name) >= .5) : [];
-  const contactOk = st.linked && st.contact && (!r.billToName || (st.contact.name === r.billToName && st.contact.email === r.billToEmail));
-  const ctr = r.contractId ? S.contracts.find(k => k.id === r.contractId) : null;
+  const ctr = st.ctr;
+  const ctrText = r.contractOption === "new" ? `new contract ${esc(r.newCtrRef || "")}` : r.contractOption === "none" ? `the ${esc(r.department)} no-contract shell` : "the contract";
   return `<section class="card setup"${sn("REQ-SETUP")}>
     <header><h2>Customer setup</h2><span class="muted small">${esc(r.form || "AR-i")}${r.newCustomer ? " · new customer (first request)" : ""}</span></header>
     <ul class="checklist">
       ${item(st.linked, st.linked ? `Customer: ${esc(custName(r.customerId))}` : `New customer to verify: ${esc(r.newCustName)}`, st.linked ? "" : `UEN ${esc(r.newCustUen || "not given")}. Link to customer creates it, or pick an existing customer below.`)}
-      ${item(contactOk ? true : false, `${esc(r.department)} billing contact`, contactOk ? `${esc(st.contact.name)} · ${esc(st.contact.email)}` : r.billToName ? `Will be ${st.contact ? "updated" : "added"} from this request: ${esc(r.billToName)} · ${esc(r.billToEmail)}` : "No billing contact on file and none on the request. Ask the requester.")}
+      ${item(st.contractDone, st.contractDone ? `${isShell(ctr) ? "No-contract shell" : "Contract"}: ${esc(ctr.number)}` : `Contract: ${ctrText}`, st.contractDone ? `${isShell(ctr) ? "No contract required; " : ""}all billing lines are filed under it` : r.contractOption === "new" ? `Link to customer creates ${esc(r.newCtrRef)} · ${esc(r.newCtrTitle || "")} and files the billing lines under it` : r.contractOption === "none" ? "Link to customer files the billing lines under the customer's no-contract shell for the department (created if needed)" : "Link to customer files the billing lines under the contract")}
+      ${item(st.billToOk ? true : false, `Bill-to on ${ctr ? esc(ctr.number) : "the contract"}`, st.billToOk ? `${esc(ctr.billToName)} · ${esc(ctr.billToEmail)}` : r.billToName ? `Will be ${ctr?.billToName ? "updated" : "set"} from this request: ${esc(r.billToName)} · ${esc(r.billToEmail)}` : "No bill-to on the contract and none on the request. Ask the requester.")}
       ${st.docsGiven.length ? item(st.docsDone, "Documents filed on the customer", st.docsGiven.map(t => `${esc(DOC_LABEL[t])}${st.filed.includes(t) ? " ✓" : ""}`).join(" · ")) : item(null, "Documents", "All already on file; nothing new supplied")}
-      ${ctr ? item(st.location !== false, `Contract location on ${esc(ctr.number)}`, ctr.contractLocation ? esc(ctr.contractLocationRef || ctr.contractLocation) : "Will be recorded from this request") : ""}
+      ${ctr && !isShell(ctr) ? item(st.location !== false, `Contract location on ${esc(ctr.number)}`, ctr.contractLocation ? esc(ctr.contractLocationRef || ctr.contractLocation) : "Will be recorded from this request") : ""}
       ${item(lines.length && doneLines === lines.length, `Billing lines ${doneLines} of ${lines.length} done`, lines.length && doneLines === lines.length ? "Every line is invoiced or scheduled" : st.linked ? "Create the invoice or billing schedule for each line below" : "Available once the customer is linked")}
     </ul>
     ${r.newCustomer && REQ_OPEN.includes(r.state) ? `<label class="ffield linkto"${sn("REQ-LINKTO")}><span class="flabel">Link to an existing customer instead (optional)</span>
@@ -390,7 +397,7 @@ function activity(rec) {
 
 function related(table, rec) {
   if (table === "requests") {
-    const r = rec, ok = REQ_OPEN.includes(r.state) && r.customerId && !r.newCustomer;
+    const r = rec, ok = REQ_OPEN.includes(r.state) && r.customerId && !r.newCustomer && !!r.contractId;
     return relatedTable("Billing lines", "lines", reqLines(r), [
       ["Line", l => refLink("lines", l.id, l.number)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"],
       ["Billing", l => l.lineType === "recurring" ? `${esc(freqLabel(l.frequency))} · ${esc(l.startDate)} to ${esc(l.endDate)}<span class="desc">${periodDates(l.frequency, l.startDate, l.endDate).length} invoices</span>` : esc(l.invoiceDate ? `around ${l.invoiceDate}` : "As soon as possible")],
@@ -398,7 +405,7 @@ function related(table, rec) {
       ["Status", l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId);
         return `${lineChip(l)}${inv ? ` ${refLink("invoices", inv.id, inv.number)}` : ""}${sch ? ` ${refLink("schedules", sch.id, sch.number)}` : ""}`; }],
       ["", l => !ok || lineStatus(l) !== "open" ? "" : l.lineType === "recurring" ? `<button type="button" class="btn small primary" data-lineact="schedule:${l.id}"${sn("UA-RQL-schedule")}>Set up billing schedule</button>` : `<button type="button" class="btn small primary" data-lineact="invoice:${l.id}"${sn("UA-RQL-invoice")}>Create invoice</button>`]
-    ], { id: "RL-REQ-RQL", actions: ok ? "" : `<span class="muted small">${REQ_OPEN.includes(r.state) ? "Link the request to a customer to bill the lines" : ""}</span>` });
+    ], { id: "RL-REQ-RQL", actions: ok ? "" : `<span class="muted small">${REQ_OPEN.includes(r.state) ? "Link to customer files the lines under the contract; then bill each line" : ""}</span>` });
   }
   if (table === "schedules") {
     const per = schedulePeriods(rec);
@@ -415,14 +422,18 @@ function related(table, rec) {
     const extra = relatedTable("Billing contacts", "contacts", S.contacts.filter(c => c.customerId === rec.id).sort(LISTS.contacts.sort), [["Department", c => esc(c.department)], ["Bill-to person", c => refLink("contacts", c.id, c.name)], ["Email", c => esc(c.email)], ["Billing address", c => esc(c.address || "—"), "wrap"]], { id: "RL-CUS-BCT" }) +
       relatedTable("Customer documents", "documents", S.documents.filter(d => d.customerId === rec.id).sort(LISTS.documents.sort), [["Type", d => esc(DOC_LABEL[d.docType])], ["File", d => refLink("documents", d.id, d.fileName), "wrap"], ["For", d => esc(d.contractId ? ctrNo(d.contractId) : d.department || "—")], ["Received", d => esc(d.received)]], { id: "RL-CUS-DOC" }) +
       relatedTable("Billing schedules", "schedules", S.schedules.filter(x => x.customerId === rec.id), [["Number", x => refLink("schedules", x.id, x.number)], ["What is billed", x => esc(x.desc), "wrap"], ["Frequency", x => esc(freqLabel(x.frequency))], ["Next billing", x => esc(nextBilling(x) || "Ended")]], { id: "RL-CUS-SCH" });
-    return extra + relatedTable("Contracts", "contracts", ks, [["Number", k => refLink("contracts", k.id, k.number)], ["Title", k => esc(k.title), "wrap"], ["Billing", k => esc(k.billing)], ["Value", k => fmt(k.value || 0), "num"]], { id: "RL-CUS-CON" }) +
-      relatedTable("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CUS-INV" }) +
-      relatedTable("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Amount", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CUS-REQ" });
+    return hierarchy(rec) +
+      relatedTable("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Contract", r => r.contractId ? refLink("contracts", r.contractId) : r.contractOption === "new" ? `${esc(r.newCtrRef || "")} <span class="chip c-warn">New</span>` : "—"], ["Value", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CUS-REQ" }) +
+      relatedTable("Contracts", "contracts", ks.sort(LISTS.contracts.sort), [["Number", k => refLink("contracts", k.id, k.number)], ["Type", k => ctrTypeChip(k)], ["Title", k => esc(k.title), "wrap"], ["Bill-to", k => esc(k.billToName || "—")], ["Lines", k => String(S.lines.filter(l => l.contractId === k.id).length), "num"], ["Billed", k => fmt(rollup(S.invoices.filter(i => i.contractId === k.id && i.state === "issued")).billed), "num"]], { id: "RL-CUS-CON" }) +
+      relatedTable("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Contract", i => esc(ctrNo(i.contractId))], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CUS-INV" }) + extra;
   }
   if (table === "contracts") {
     const is = S.invoices.filter(i => i.contractId === rec.id), rs = S.requests.filter(r => r.contractId === rec.id);
     const r = rollup(is.filter(i => i.state === "issued"));
-    return `<section class="rel meters">${meterRow("Billed against contract value", r.billed, rec.value || 0, "var(--accent)")}${meterRow("Collected of billed", r.collected, r.billed, "var(--ok)")}</section>` +
+    return `<section class="rel meters">${isShell(rec) ? "" : meterRow("Billed against contract value", r.billed, rec.value || 0, "var(--accent)")}${meterRow("Collected of billed", r.collected, r.billed, "var(--ok)")}</section>` +
+      relatedTable("Billing lines", "lines", S.lines.filter(l => l.contractId === rec.id), [["Line", l => refLink("lines", l.id, l.number)], ["AR request", l => refLink("requests", l.requestId)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"], ["Value", l => fmt(lineValue(l)), "num"],
+        ["Billed as", l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId); return `${lineChip(l)}${inv ? ` ${refLink("invoices", inv.id, inv.number)}` : ""}${sch ? ` ${refLink("schedules", sch.id, sch.number)}` : ""}`; }]], { id: "RL-CON-RQL" }) +
+      relatedTable("Billing schedules", "schedules", S.schedules.filter(x => x.contractId === rec.id), [["Number", x => refLink("schedules", x.id, x.number)], ["What is billed", x => esc(x.desc), "wrap"], ["Frequency", x => esc(freqLabel(x.frequency))], ["Next billing", x => esc(nextBilling(x) || "Ended")]], { id: "RL-CON-SCH" }) +
       relatedTable("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CON-INV" }) +
       relatedTable("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Amount", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CON-REQ" });
   }
@@ -442,6 +453,26 @@ function related(table, rec) {
     return relatedTable("Allocations", "allocations", rows, cols, { id: table === "invoices" ? "RL-INV-ALC" : "RL-DEP-ALC" });
   }
   return "";
+}
+
+/** Billing hierarchy on the customer (D15): customer › contract / shell › billing lines › invoices or schedule. Invoices not raised from a line are listed under their contract. */
+function hierarchy(c) {
+  const ks = S.contracts.filter(k => k.customerId === c.id).sort(LISTS.contracts.sort);
+  const invLink = i => `${refLink("invoices", i.id, i.number)} ${invChip(i)}`;
+  const node = k => {
+    const ls = S.lines.filter(l => l.contractId === k.id), lineInv = new Set(ls.map(l => l.invoiceId).filter(Boolean)), schIds = new Set(ls.map(l => l.scheduleId).filter(Boolean));
+    const loose = S.invoices.filter(i => i.contractId === k.id && !lineInv.has(i.id) && !(i.scheduleId && schIds.has(i.scheduleId)) && i.state !== "cancelled");
+    const schOnly = S.schedules.filter(x => x.contractId === k.id && !schIds.has(x.id));
+    const lineRow = l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId), sInv = sch ? S.invoices.filter(i => i.scheduleId === sch.id && i.state !== "cancelled") : [];
+      return `<li><span class="hl">${refLink("lines", l.id, l.number)} ${esc(l.desc)} <span class="desc">${esc(LINE_TYPE[l.lineType])} · SGD ${fmt(lineValue(l))} · ${refLink("requests", l.requestId)}</span></span>
+        ${inv || sch ? `<ul>${inv ? `<li>${invLink(inv)}</li>` : ""}${sch ? `<li>${refLink("schedules", sch.id, sch.number)} <span class="desc">${sInv.length} invoice${sInv.length === 1 ? "" : "s"} raised</span>${sInv.length ? `<ul>${sInv.map(i => `<li>${invLink(i)}</li>`).join("")}</ul>` : ""}</li>` : ""}</ul>` : ""}</li>`; };
+    const other = [...schOnly.map(x => `<li>${refLink("schedules", x.id, x.number)} <span class="desc">${esc(x.desc)} (not from a billing line)</span></li>`), ...loose.map(i => `<li>${invLink(i)} <span class="desc">${esc(i.desc)} (not from a billing line)</span></li>`)];
+    return `<li><span class="hl">${ctrTypeChip(k)} ${refLink("contracts", k.id, k.number)} ${esc(isShell(k) ? "" : k.title)}${k.department ? ` <span class="desc">${esc(k.department)}${k.billToName ? ` · bill to ${esc(k.billToName)}` : ""}</span>` : ""}</span>
+      ${ls.length || other.length ? `<ul>${ls.map(lineRow).join("")}${other.join("")}</ul>` : `<ul><li class="muted small">Nothing billed yet</li></ul>`}</li>`;
+  };
+  const pending = S.requests.filter(r => r.customerId === c.id && !r.contractId && REQ_OPEN.includes(r.state));
+  return `<section class="rel"${sn("CUS-TREE")}><header><h3>Billing hierarchy</h3><span class="muted small">Customer › contract or no-contract shell › billing lines › invoices</span></header>
+    <ul class="htree"><li><span class="hl"><b>${esc(c.name)}</b></span><ul>${ks.map(node).join("")}${pending.map(r => `<li><span class="hl"><span class="chip c-warn">Not filed</span> ${refLink("requests", r.id)} <span class="desc">waiting for Link to customer</span></span></li>`).join("")}</ul></li></ul></section>`;
 }
 
 function recordPage(tab) {

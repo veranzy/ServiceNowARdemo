@@ -30,6 +30,10 @@ master (or creates/updates it) and files the documents on the customer, so the p
 | 8 | Billing structure | An AR request has **one or more billing lines**. Each line is **One-off** (description, amount, preferred invoice date) or **Recurring** (description, amount per period, **from–to date range**, frequency). One request can mix both. | 2026-11-02 |
 | 9 | Finding the customer | **Search first, add if not found.** The project team searches AR's customers; if it isn't there, *Add as new customer* opens name, UEN and address. A new customer is what makes a request a "first request"; there is no separate choice. | 2026-11-02 |
 | 10 | Recurring frequency | **Monthly by default**; quarterly, half-yearly and annually can be chosen per recurring line. | 2026-11-02 |
+| 11 | Billing is contract level | Hierarchy **customer › contract › billing lines (one-off / recurring) › invoices**. On AR-i the requester chooses **Existing contract** (customer already has contracts), **New contract** (reference, title, start/end dates, value, where it is kept), or **No contract required**. Billing lines come after the contract. (D15) | 2026-11-02 |
+| 12 | No contract required | The lines are filed under the customer's **no-contract shell**: a contract record with `contract_type = shell`, one per customer + department, created by *Link to customer* when it doesn't exist yet. So every billing line and invoice has a contract and the hierarchy holds in ServiceNow. (D15) | 2026-11-02 |
+| 13 | Bill-to on the contract | The bill-to person sits **under the contract** (or shell), not the department. AR-i shows the contract's bill-to, or asks for one prefilled from the department's usual contact; *Change the bill-to person on this contract* updates it. Department billing contacts remain as the default used for prefill. (D16) | 2026-11-02 |
+| 14 | Relationships on the customer | The customer record shows **AR requests** (customer ↔ AR case), **Contracts** (incl. shells) and a **Billing hierarchy** of contract › lines › invoices / schedules. The contract record lists its billing lines, schedules, invoices and AR requests. | 2026-11-02 |
 
 Assumption to confirm: "where their contracts are" means the storage location of the signed contract
 (decision 5).
@@ -48,6 +52,10 @@ Assumption to confirm: "where their contracts are" means the storage location of
   documents and the department's billing contact, so that later requests reuse them.
 - As an AR team member, I want a list of recurring billing periods that are due, so that I raise each
   invoice on time.
+- As a project manager, I want to bill under an existing contract, register a new one, or say no contract
+  is needed, so that every charge is filed in the right place.
+- As an AR team member, I want every billing line and invoice to sit under a contract or the customer's
+  no-contract shell, so that I can trace any invoice back through contract to customer.
 
 ## Screens and flow
 
@@ -56,28 +64,36 @@ Assumption to confirm: "where their contracts are" means the storage location of
 2. AR-i form, in sections:
    - **Customer**: search AR's customers by name or UEN; pick one, or *Add as new customer* (name, UEN,
      registered address) when it isn't found.
-   - **Department and bill-to**: requesting department (11). If the customer has no billing contact for
-     that department, or "Change" is ticked: contact name, email, phone, billing address.
-   - **Contract**: existing contract (optional), contract location and link/reference.
-   - **What to bill**: request summary, PO, then **billing lines**: *Add one-off* / *Add recurring*.
+   - **Contract and bill-to** (decisions 11–13): *Existing contract* (pick one; its billing position is
+     shown), *New contract* (reference, title, start, end, value) or *No contract required* (files under
+     the department's no-contract shell). Contract location is asked for a new contract, or an existing
+     one with none recorded. Then the **bill-to person**: the contract's / shell's if it has one (tick to
+     change it), otherwise entered, prefilled from the department's usual contact.
+   - **What to bill** (after the contract): request summary, PO, then **billing lines**: *Add one-off* / *Add recurring*.
      One-off: description, amount, preferred invoice date. Recurring: description, amount per period,
      frequency (Monthly default), from and to dates; the line shows the number of invoices and total.
      A summary shows one-off total, recurring per period and total request value.
    - **Documents**: checklist of the three customer documents showing *On file* or *Needed*; upload
-     only what's needed.
+     only what's needed. The signed contract is only needed for a new contract kept as an attachment.
 3. My requests / ticket page shows the lines and, per line, the invoice or billing schedule.
 
 **Workspace**
-1. AR request record → **Customer setup** panel: checklist (customer linked, billing contact for the
-   department, documents filed, contract location recorded, billing schedule for Recurring).
+1. AR request record → **Customer setup** panel: checklist (customer linked, contract / shell, bill-to on
+   the contract, documents filed, contract location recorded, billing lines done).
    - UI action **Link to customer**: links an existing customer, or creates the customer from the new
-     customer details; upserts the department billing contact; files the documents on the customer;
-     records the contract location.
+     customer details; links the existing contract, creates the new contract, or finds/creates the
+     department's no-contract shell, and sets it on every billing line; writes the bill-to to the
+     contract (and the department default contact if there is none); files the documents on the
+     customer; records the contract location. Lines can only be billed once they have a contract.
    - **Billing lines** related list on the request: per line **Create invoice** (one-off → draft invoice)
      or **Set up billing schedule** (recurring → schedule over the line's date range). The request is
      **Billed** when every one-off line has an issued invoice and every recurring line has a schedule.
-2. Customer record → related lists **Billing contacts** (per department), **Customer documents**,
-   **Billing schedules**.
+2. Customer record → **Billing hierarchy** (customer › contract / shell › billing lines › invoices or
+   schedule; requests not yet linked shown as *Not filed*), then related lists **AR requests**,
+   **Contracts** (type, bill-to, lines, billed), **Invoices**, **Billing contacts**, **Customer
+   documents**, **Billing schedules**.
+2a. Contract record → type (Contract / No-contract shell), department, bill-to; related lists **Billing
+   lines**, **Billing schedules**, **Invoices**, **AR requests**. List menu → Master data → *No-contract shells*.
 3. Billing schedule record → periods with status (Due / Upcoming / Invoiced) and **Raise invoice**.
 4. List menu → *Recurring billing*: Billing schedules, Billing periods due.
 
@@ -86,10 +102,11 @@ Assumption to confirm: "where their contracts are" means the storage location of
 | Item | Build |
 |---|---|
 | Portal catalogue | Service catalog category "AR forms" with 16 record producers (AR-i … AR-xvi); AR-ii … AR-xvi inactive until defined. |
-| AR-i | Record producer on `x_ar_request` with variable sets: Request type, Customer, Department & bill-to, Contract, Billing, Recurring, Documents. UI policies show/hide sections by request type and *New customer*. Catalog client script reads documents on file (GlideAjax). |
-| `x_ar_request` | New fields: `ar_form`, `department`, new-customer fields, bill-to fields, `contract_location`, `contract_location_ref`. `amount` becomes the calculated request value (sum of lines). |
-| `x_ar_request_line` | Billing lines: request, line type (one-off / recurring), description, amount, preferred invoice date (one-off), frequency + from/to dates (recurring), invoice (one-off, once created), billing schedule (recurring, once set up). Portal: multi-row variable set. |
-| `x_ar_billing_contact` | Customer + department → contact name, email, phone, billing address. Unique per customer + department. |
+| AR-i | Record producer on `x_ar_request` with variable sets: Customer, Contract and bill-to, What to bill (multi-row billing lines), Documents. UI policies show/hide by *New customer* and `contract_option`. Catalog client scripts read documents on file and the contract's bill-to (GlideAjax). |
+| `x_ar_request` | Fields: `ar_form`, `department`, new-customer fields, `contract_option` (existing / new / none), `contract`, new-contract fields (`new_contract_ref`, `_title`, `_start`, `_end`, `_value`), bill-to fields (written to the contract), `contract_location`, `contract_location_ref`. `amount` is the calculated request value (sum of lines). |
+| `x_ar_contract` | New fields `contract_type` (contract / shell), `department`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`. Shell unique per customer + department (business rule). |
+| `x_ar_request_line` | Billing lines: request, **contract** (set at submit for an existing contract, else by Link to customer), line type (one-off / recurring), description, amount, preferred invoice date (one-off), frequency + from/to dates (recurring), invoice (one-off, once created), billing schedule (recurring, once set up). Portal: multi-row variable set. |
+| `x_ar_billing_contact` | Customer + department → the department's usual bill-to person; used to prefill the bill-to on a new contract or shell. Unique per customer + department. |
 | `x_ar_customer_document` | Customer documents: type (contract/PO, ACRA, billing form), file (sys_attachment), contract (optional), department (billing form), source AR request. |
 | `x_ar_billing_schedule` | Customer, contract, department, description, frequency, amount per period, first/last billing date, source AR request; periods computed (or a child table `x_ar_billing_period` in the build). |
 | UI actions | *Link to customer* on AR request; *Create invoice* / *Set up billing schedule* on each billing line; *Raise invoice* on billing period. |
@@ -106,7 +123,9 @@ Assumption to confirm: "where their contracts are" means the storage location of
 1. Confirm decision 5's reading of "where their contracts are".
 2. Is a billing contact needed per department for every customer, or only when it differs from the
    customer's default?
-3. Can a request for a customer with no contract go straight to invoicing, or does AR need a contract first?
+3. ~~Can a request for a customer with no contract go straight to invoicing?~~ Answered by decision 12: yes, under the no-contract shell.
+6. Should a no-contract request record a reason (ad-hoc service, contract pending, …)? Not asked for now.
+7. Should AR be able to move a shell's billing lines onto a real contract later (e.g. when a contract is signed)?
 5. Should a recurring line be able to change amount part-way (e.g. price step-up), or is that a second line with its own date range?
 4. Who maintains the list of 11 departments (fixed choice list vs. a department table)?
 
@@ -116,3 +135,4 @@ Assumption to confirm: "where their contracts are" means the storage location of
 |---|---|
 | 2026-11-02 | Module specified from owner's answers; AR forms catalogue and AR-i built. |
 | 2026-11-02 | **PT-05**: request type removed; customer search-first with *Add as new customer* (decision 9); billing lines one-off / recurring with date range and Monthly default (decisions 8, 10). Retired IDs: `PT-17` (request type), `PT-21` and `PT-22` (billing / recurring variable sets → `PT-26`), `PT-18` (→ `PT-25` customer search), `REQ.request_type`, `REQ.billing_type`, `REQ.requested_invoice_date`, `REQ.period_start`, `REQ.period_end`, `REQ.frequency`, `REQ.first_billing_date`, `REQ.last_billing_date` (→ `RQL.*` line fields), `UA-REQ-invoice`, `UA-REQ-schedule` (→ `UA-RQL-invoice`, `UA-RQL-schedule`). |
+| 2026-11-02 | **PT-05** (contract level): bill-to moved under the contract; contract chosen before billing lines as *Existing contract* / *New contract* / *No contract required*; no-contract shell per customer + department; billing lines carry the contract; customer billing hierarchy and contract related lists (decisions 11–14, D15, D16). New IDs: `PT-28`, `CUS-TREE`, `RL-CON-RQL`, `RL-CON-SCH`, `CON.line_count`, `REQ.contract_option`, `REQ.new_contract_*`, `CON.contract_type`, `CON.department`, `CON.bill_to_*`, `RQL.contract`. `PT-19` (bill-to) now sits inside `PT-20` (Contract and bill-to). No IDs retired. |

@@ -32,12 +32,14 @@ Custom customer master (not core_company / customer_account). Documents and per-
 
 ### Contract — `x_ar_contract`
 
-Custom contract table (not ast_contract). Holds billing terms the AR team invoices against.
+Custom contract table (not ast_contract). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `number` | Contract number | String | Mandatory |
+| `contract_type` | Type | Choice | Choices: Contract (`contract`), No-contract shell (`shell`). Mandatory |
 | `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
+| `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Owning department; a shell is unique per customer + department |
 | `short_description` | Title | String | Mandatory |
 | `billing_type` | Billing | Choice | Choices: Monthly, Milestone, Annual, Time & materials, Per PO |
 | `contract_value` | Contract value | Currency |  |
@@ -48,6 +50,10 @@ Custom contract table (not ast_contract). Holds billing terms the AR team invoic
 | `discount_days` | Discount if paid within (days) | Integer |  |
 | `contract_location` | Where the signed contract is kept | Choice | Choices: Attached to this form (`attached`), Already with AR (`on_file`), Document repository link (`repository`), Physical file (`physical`) |
 | `contract_location_ref` | Link or file location | String |  |
+| `bill_to_name` | Bill-to person | String |  |
+| `bill_to_email` | Bill-to email | String |  |
+| `bill_to_phone` | Bill-to phone | String |  |
+| `bill_to_address` | Billing address | String (1000) |  |
 | `notes` | Notes | String (4000) |  |
 
 ### AR request — `x_ar_request` (extends `task`)
@@ -66,13 +72,19 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `new_customer_name` | New customer name | String | Mandatory when New customer |
 | `new_customer_uen` | UEN (company registration no.) | String |  |
 | `new_customer_address` | Registered address | String (1000) |  |
-| `update_bill_to` | Update the department's bill-to person | True/False |  |
-| `bill_to_name` | Bill-to person | String | Mandatory when the department has no billing contact for this customer |
+| `contract_option` | Contract | Choice | Choices: Existing contract (`existing`), New contract (`new`), No contract required (`none`). Mandatory. Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15) |
+| `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer. Existing contract; for a new contract or No contract required, set by Link to customer |
+| `new_contract_ref` | Contract reference | String | Mandatory for a new contract, e.g. the customer's agreement or PO number |
+| `new_contract_title` | Contract title | String | Mandatory for a new contract |
+| `new_contract_start` | Contract start | Date | Mandatory for a new contract |
+| `new_contract_end` | Contract end | Date |  |
+| `new_contract_value` | Contract value | Currency | Mandatory for a new contract |
+| `update_bill_to` | Change the bill-to person on this contract | True/False |  |
+| `bill_to_name` | Bill-to person | String | Mandatory when the contract (or shell) has no bill-to person yet; Link to customer writes it to the contract |
 | `bill_to_email` | Bill-to email | String |  |
 | `bill_to_phone` | Bill-to phone | String |  |
 | `bill_to_address` | Billing address | String (1000) |  |
-| `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer |
-| `contract_location` | Where is the signed contract kept? | Choice | Choices: Attached to this form (`attached`), Already with AR (`on_file`), Document repository link (`repository`), Physical file (`physical`). Mandatory |
+| `contract_location` | Where is the signed contract kept? | Choice | Choices: Attached to this form (`attached`), Already with AR (`on_file`), Document repository link (`repository`), Physical file (`physical`). Mandatory for a new contract, or an existing one with no location recorded |
 | `contract_location_ref` | Link or file location | String | Mandatory for repository link or physical file |
 | `short_description` | Request summary | String | Mandatory. e.g. Data hall cooling project, phase 1 |
 | `amount` | Request value | Currency | Read-only on form. Calculated: one-off lines + recurring amount × number of periods |
@@ -167,7 +179,7 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 
 ## Portal (project team)
 
-- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `department`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `contract`, `contract_location`, `contract_location_ref`, `short_description`, `po_number`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
+- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `department`, `contract_option`, `contract`, `new_contract_ref`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `contract_location`, `contract_location_ref`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `po_number`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
   - Producer script: `current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;`
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.

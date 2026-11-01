@@ -14,6 +14,9 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 ## Done
 
+- 2026-11-02 **ARF / PT-05 contract level**: contract chosen before billing lines (existing / new / no contract
+  required); no-contract shell per customer + department; bill-to held on the contract; billing lines carry the
+  contract; customer billing hierarchy and contract related lists (D15, D16).
 - 2026-11-02 **ARF / PT-05**: AR-i reworked: no request type; customer search with *Add as new customer*;
   billing lines (one-off, or recurring over a from–to date range, Monthly default), mixed in one request.
   Workspace bills per line; request becomes *Billed* when every line is invoiced or scheduled.

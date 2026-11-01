@@ -27,6 +27,8 @@ export const AR_FORMS = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix",
 export const LINE_TYPES = [["one_off", "One-off"], ["recurring", "Recurring"]];
 export const FREQUENCIES = [["monthly", "Monthly", 1], ["quarterly", "Quarterly", 3], ["half_yearly", "Half-yearly", 6], ["annually", "Annually", 12]];
 export const DOC_TYPES = [["contract", "Signed contract / PO"], ["acra", "Company registration (ACRA / UEN)"], ["billing_form", "Billing contact & address form"]];
+export const CONTRACT_OPTIONS = [["existing", "Existing contract"], ["new", "New contract"], ["none", "No contract required"]];
+export const CONTRACT_TYPES = [["contract", "Contract"], ["shell", "No-contract shell"]];
 const CONTRACT_LOCATIONS = [["attached", "Attached to this form"], ["on_file", "Already with AR"], ["repository", "Document repository link"], ["physical", "Physical file"]];
 
 export const TABLES = {
@@ -44,13 +46,19 @@ export const TABLES = {
       { key: "newCustName", name: "new_customer_name", label: "New customer name", type: "String", wide: true, help: "Mandatory when New customer" },
       { key: "newCustUen", name: "new_customer_uen", label: "UEN (company registration no.)", type: "String" },
       { key: "newCustAddress", name: "new_customer_address", label: "Registered address", type: "String (1000)", wide: true },
-      { key: "updateBillTo", name: "update_bill_to", label: "Update the department's bill-to person", type: "True/False" },
-      { key: "billToName", name: "bill_to_name", label: "Bill-to person", type: "String", help: "Mandatory when the department has no billing contact for this customer" },
+      { key: "contractOption", name: "contract_option", label: "Contract", type: "Choice", choices: CONTRACT_OPTIONS, mandatory: true, help: "Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15)" },
+      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", dependsOn: "customerId", help: "Existing contract; for a new contract or No contract required, set by Link to customer" },
+      { key: "newCtrRef", name: "new_contract_ref", label: "Contract reference", type: "String", help: "Mandatory for a new contract, e.g. the customer's agreement or PO number" },
+      { key: "newCtrTitle", name: "new_contract_title", label: "Contract title", type: "String", wide: true, help: "Mandatory for a new contract" },
+      { key: "newCtrStart", name: "new_contract_start", label: "Contract start", type: "Date", help: "Mandatory for a new contract" },
+      { key: "newCtrEnd", name: "new_contract_end", label: "Contract end", type: "Date" },
+      { key: "newCtrValue", name: "new_contract_value", label: "Contract value", type: "Currency", help: "Mandatory for a new contract" },
+      { key: "updateBillTo", name: "update_bill_to", label: "Change the bill-to person on this contract", type: "True/False" },
+      { key: "billToName", name: "bill_to_name", label: "Bill-to person", type: "String", help: "Mandatory when the contract (or shell) has no bill-to person yet; Link to customer writes it to the contract" },
       { key: "billToEmail", name: "bill_to_email", label: "Bill-to email", type: "String" },
       { key: "billToPhone", name: "bill_to_phone", label: "Bill-to phone", type: "String" },
       { key: "billToAddress", name: "bill_to_address", label: "Billing address", type: "String (1000)", wide: true },
-      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", dependsOn: "customerId" },
-      { key: "contractLocation", name: "contract_location", label: "Where is the signed contract kept?", type: "Choice", choices: CONTRACT_LOCATIONS, mandatory: true },
+      { key: "contractLocation", name: "contract_location", label: "Where is the signed contract kept?", type: "Choice", choices: CONTRACT_LOCATIONS, help: "Mandatory for a new contract, or an existing one with no location recorded" },
       { key: "contractLocationRef", name: "contract_location_ref", label: "Link or file location", type: "String", wide: true, help: "Mandatory for repository link or physical file" },
       { key: "title", name: "short_description", label: "Request summary", type: "String", mandatory: true, wide: true, help: "e.g. Data hall cooling project, phase 1" },
       { key: "amount", name: "amount", label: "Request value", type: "Currency", readonly: true, help: "Calculated: one-off lines + recurring amount × number of periods" },
@@ -148,6 +156,7 @@ export const TABLES = {
     fields: [
       { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "RQL0001000" },
       { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
+      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", readonly: true, help: "Billing lines are contract level (D15). Existing contract at submit; otherwise set by Link to customer" },
       { key: "lineType", name: "line_type", label: "Line type", type: "Choice", choices: LINE_TYPES, mandatory: true },
       { key: "desc", name: "short_description", label: "Description", type: "String", mandatory: true, wide: true },
       { key: "amount", name: "amount", label: "Amount", type: "Currency", mandatory: true, help: "Recurring: amount per period" },
@@ -163,7 +172,7 @@ export const TABLES = {
   },
   contacts: {
     table: `${SCOPE}_billing_contact`, label: "Billing contact", plural: "Billing contacts", display: "name",
-    note: "Who to bill at a customer, per department (D11). Unique per customer + department. Created or updated by Link to customer from an AR-i.",
+    note: "The department's usual bill-to person at a customer (D11): unique per customer + department. Used to prefill the bill-to on a new contract or shell; the bill-to used for invoicing is on the contract (D16).",
     fields: [
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
       { key: "department", name: "department", label: "Department", type: "Choice", choices: DEPT_CHOICES, mandatory: true },
@@ -222,10 +231,12 @@ export const TABLES = {
   },
   contracts: {
     table: `${SCOPE}_contract`, label: "Contract", plural: "Contracts", display: "number",
-    note: "Custom contract table (not ast_contract). Holds billing terms the AR team invoices against.",
+    note: "Custom contract table (not ast_contract). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.",
     fields: [
       { key: "number", name: "number", label: "Contract number", type: "String", mandatory: true },
+      { key: "contractType", name: "contract_type", label: "Type", type: "Choice", choices: CONTRACT_TYPES, mandatory: true },
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
+      { key: "department", name: "department", label: "Department", type: "Choice", choices: DEPT_CHOICES, help: "Owning department; a shell is unique per customer + department" },
       { key: "title", name: "short_description", label: "Title", type: "String", mandatory: true, wide: true },
       { key: "billing", name: "billing_type", label: "Billing", type: "Choice", choices: ["Monthly", "Milestone", "Annual", "Time & materials", "Per PO"].map(x => [x, x]) },
       { key: "value", name: "contract_value", label: "Contract value", type: "Currency" },
@@ -236,6 +247,10 @@ export const TABLES = {
       { key: "discDays", name: "discount_days", label: "Discount if paid within (days)", type: "Integer" },
       { key: "contractLocation", name: "contract_location", label: "Where the signed contract is kept", type: "Choice", choices: CONTRACT_LOCATIONS },
       { key: "contractLocationRef", name: "contract_location_ref", label: "Link or file location", type: "String", wide: true },
+      { key: "billToName", name: "bill_to_name", label: "Bill-to person", type: "String" },
+      { key: "billToEmail", name: "bill_to_email", label: "Bill-to email", type: "String" },
+      { key: "billToPhone", name: "bill_to_phone", label: "Bill-to phone", type: "String" },
+      { key: "billToAddress", name: "bill_to_address", label: "Billing address", type: "String (1000)", wide: true },
       { key: "notes", name: "notes", label: "Notes", type: "String (4000)", wide: true }
     ]
   }
@@ -268,8 +283,9 @@ export function fieldNote(tableKey, key) {
 export const RECORD_PRODUCER = {
   name: "AR-i New AR request",
   table: "requests",
-  variables: ["customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "department", "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress",
-    "contractId", "contractLocation", "contractLocationRef", "title", "poNumber", "docContract", "docAcra", "docBillingForm", "details"],
+  variables: ["customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "department",
+    "contractOption", "contractId", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "contractLocation", "contractLocationRef",
+    "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "poNumber", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "lines",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;"
 };

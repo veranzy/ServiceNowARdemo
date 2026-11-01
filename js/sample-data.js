@@ -151,12 +151,13 @@ export function loadSample() {
   // A new customer's first AR-i, waiting for AR to link it to the customer master
   S.requests.push({ id: "r8", number: "ARQ0001008", form: "AR-i", requestType: "first", department: "Digital", requestedBy: "u_pm1", customerId: null, contractId: null,
     newCustomer: true, newCustName: "Zephyr Data Centres Pte Ltd", newCustUen: "201912345K", newCustAddress: "8 Tampines Industrial Ave 5, #04-01, Singapore 528763",
+    contractOption: "new", newCtrRef: "ZDC-SA-2026-01", newCtrTitle: "Data hall cooling services agreement", newCtrStart: shiftDate("2026-11-01"), newCtrEnd: shiftDate("2027-11-30"), newCtrValue: cents(42000),
     billToName: "Alicia Koh", billToEmail: "finance@zephyrdc.example", billToPhone: "+65 6123 4567", billToAddress: "Accounts Payable, 8 Tampines Industrial Ave 5, Singapore 528763",
     contractLocation: "attached", contractLocationRef: "", title: "Data hall cooling: design and monitoring", amount: 0, poNumber: "ZDC-PO-0042",
     docContract: "Zephyr - signed services agreement.pdf", docAcra: "Zephyr - ACRA business profile.pdf", docBillingForm: "Zephyr - billing contact form (Digital).pdf",
     details: "First project with Zephyr. Signed agreement attached.", invoiceDate: "", periodStart: "", periodEnd: "", state: "new", assignedTo: null, invoiceId: null, scheduleId: null,
     opened: shiftDate("2026-10-24"), updated: shiftDate("2026-10-24"), attachments: [],
-    activity: [{ at: shiftDate("2026-10-24") + "T08:40:00", by: "u_pm1", kind: "system", text: "Submitted from AR-i on the portal for a new customer with 1 one-off · 1 recurring." }] });
+    activity: [{ at: shiftDate("2026-10-24") + "T08:40:00", by: "u_pm1", kind: "system", text: "Submitted from AR-i on the portal for a new customer under new contract ZDC-SA-2026-01, with 1 one-off · 1 recurring." }] });
 
   // Billing lines (D13): one per earlier request; Zephyr mixes a one-off fee with 12 months of monitoring
   let ln = 1000;
@@ -194,6 +195,25 @@ export function loadSample() {
     ["lume", "Advisory", "Lionel Tan", "lionel@lumenprint.example", "+65 9123 4567", "Lumen Print Studio, 51 Ubi Ave 1, Singapore 408933"]
   ];
   S.contacts = ct.map(r => ({ id: uid("t"), customerId: cid[r[0]].id, department: r[1], name: r[2], email: r[3], phone: r[4], address: r[5], requestId: null }));
+  // Contracts: owning department and bill-to person (D16). HL-2026-02 has no bill-to yet (the requester is asked for one).
+  const ctrDept = { "HL-2026-01": "Logistics", "HL-2026-02": "Logistics", "MF-2025-07": "Logistics", "KE-2026-03": "Engineering", "TR-2026-02": "Digital", "OC-2026-01": "Healthcare",
+    "NB-2026-05": "Digital", "BW-S-2026": "Facilities", "BW-O-2026": "Facilities", "LP-PO-0193": "Advisory", "PC-2026-02": "Marine" };
+  for (const k of S.contracts) {
+    k.contractType = "contract"; k.department = ctrDept[k.number] || "";
+    const c = S.contacts.find(x => x.customerId === k.customerId && x.department === k.department);
+    if (c && k.number !== "HL-2026-02") Object.assign(k, { billToName: c.name, billToEmail: c.email, billToPhone: c.phone, billToAddress: c.address });
+  }
+  // A no-contract shell (D15): Meridian's ad-hoc sensor replacement was billed without a contract
+  const shell = { id: uid("k"), contractType: "shell", customerId: cid.meri.id, department: "Logistics", number: "NC-LOG-0001", title: "No contract – Logistics", start: "", end: "", value: 0, billing: "", terms: 30, discPct: 0, discDays: 0,
+    notes: "Holds billing for this customer and department that has no contract (D15).", billToName: "Joanne Lee", billToEmail: "ap@meridianfoods.example", billToPhone: "+65 6862 4400", billToAddress: "Meridian Foods, 9 Senoko Way, Singapore 758049" };
+  S.contracts.push(shell);
+  const sensors = invByNo("INV-10052"); sensors.contractId = shell.id;
+  // Requests and their lines sit under a contract or shell; r7 was rejected before it was linked
+  for (const r of S.requests) {
+    if (r.id === "r8") continue;
+    r.contractOption = r.contractId ? "existing" : "none";
+    for (const l of S.lines.filter(x => x.requestId === r.id)) l.contractId = r.contractId || null;
+  }
   // Customer documents on file (D10): [customer, type, file, contract, department, received]
   const dc = [
     ["harb", "acra", "Harbourline - ACRA profile.pdf", "", "", "2026-03-28"], ["harb", "contract", "HL-2026-01 signed.pdf", "HL-2026-01", "", "2026-03-28"], ["harb", "billing_form", "Harbourline - billing form (Logistics).pdf", "", "Logistics", "2026-03-28"],

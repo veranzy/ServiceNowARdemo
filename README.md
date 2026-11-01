@@ -6,8 +6,8 @@ A clickable prototype for clarifying requirements for an accounts receivable app
 ServiceNow (custom scoped app). It shows both experiences side by side:
 
 - **Project team · Portal**: a catalogue of 16 AR forms (AR-i … AR-xvi). AR-i *New AR request*: search
-  the customer (add it if AR doesn't have it), the department's bill-to person, billing lines (one-off,
-  or recurring over a date range) and customer documents (only those AR doesn't hold yet). Follow
+  the customer (add it if AR doesn't have it), the contract (existing, new, or no contract required) with
+  its bill-to person, billing lines (one-off, or recurring over a date range) and customer documents (only those AR doesn't hold yet). Follow
   requests under My requests.
 - **AR team · Workspace**: work AR request cases, create and issue invoices, upload the daily bank
   statements (BSU), match deposits to invoices manually, and maintain customers, contracts and bank

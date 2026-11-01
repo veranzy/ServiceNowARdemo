@@ -41,9 +41,15 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `REQ-ACT` | Activity stream: comments (visible to requester) + work_notes (AR only) + field changes |
-| `REQ-SETUP` | Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, department billing contact, documents filed, contract location, billing schedule |
+| `REQ-SETUP` | Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, contract location, billing lines done |
 | `REQ-LINKTO` | Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check) |
 | `REQ-ATT` | Attachments: sys_attachment on x_ar_request (added on the portal form) |
+
+## Customer record
+
+| ID | ServiceNow |
+|---|---|
+| `CUS-TREE` | Billing hierarchy on the customer record (D15): customer › contract / no-contract shell (x_ar_contract) › billing lines (x_ar_request_line.contract) › invoices / billing schedule. UI Builder component over related lists, or a hierarchical list |
 
 ## Cash application
 
@@ -85,8 +91,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-14` | Service catalog category "AR forms": 16 record producers AR-i … AR-xvi (D9) |
 | `PT-15` | Catalog item AR-i New AR request (active record producer) |
 | `PT-16` | Catalog item placeholder AR-ii … AR-xvi (inactive until defined) |
-| `PT-19` | Variable set Department & bill-to: shows the department's billing contact (x_ar_billing_contact) or asks for one (D11) |
-| `PT-20` | Variable set Contract: contract reference, contract location and link/file reference |
+| `PT-19` | Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one, prefilled from the department's x_ar_billing_contact; update_bill_to to change it |
+| `PT-20` | Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, contract location, bill-to. UI policies per option |
+| `PT-28` | No contract required: info message (UI policy on contract_option = none). Link to customer files the lines under the customer's no-contract shell for the department (x_ar_contract, contract_type = shell) |
 | `PT-25` | Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer) |
 | `PT-26` | Variable set What to bill: request summary, PO, and multi-row variable set Billing lines (x_ar_request_line); totals by catalog client script |
 | `PT-27` | Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden |
@@ -115,13 +122,19 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.new_customer_name` | x_ar_request.new_customer_name · String · Mandatory when New customer |
 | `REQ.new_customer_uen` | x_ar_request.new_customer_uen · String |
 | `REQ.new_customer_address` | x_ar_request.new_customer_address · String (1000) |
+| `REQ.contract_option` | x_ar_request.contract_option · Choice · mandatory · Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15) |
+| `REQ.contract` | x_ar_request.contract · Reference → x_ar_contract · Existing contract; for a new contract or No contract required, set by Link to customer |
+| `REQ.new_contract_ref` | x_ar_request.new_contract_ref · String · Mandatory for a new contract, e.g. the customer's agreement or PO number |
+| `REQ.new_contract_title` | x_ar_request.new_contract_title · String · Mandatory for a new contract |
+| `REQ.new_contract_start` | x_ar_request.new_contract_start · Date · Mandatory for a new contract |
+| `REQ.new_contract_end` | x_ar_request.new_contract_end · Date |
+| `REQ.new_contract_value` | x_ar_request.new_contract_value · Currency · Mandatory for a new contract |
 | `REQ.update_bill_to` | x_ar_request.update_bill_to · True/False |
-| `REQ.bill_to_name` | x_ar_request.bill_to_name · String · Mandatory when the department has no billing contact for this customer |
+| `REQ.bill_to_name` | x_ar_request.bill_to_name · String · Mandatory when the contract (or shell) has no bill-to person yet; Link to customer writes it to the contract |
 | `REQ.bill_to_email` | x_ar_request.bill_to_email · String |
 | `REQ.bill_to_phone` | x_ar_request.bill_to_phone · String |
 | `REQ.bill_to_address` | x_ar_request.bill_to_address · String (1000) |
-| `REQ.contract` | x_ar_request.contract · Reference → x_ar_contract |
-| `REQ.contract_location` | x_ar_request.contract_location · Choice · mandatory |
+| `REQ.contract_location` | x_ar_request.contract_location · Choice · Mandatory for a new contract, or an existing one with no location recorded |
 | `REQ.contract_location_ref` | x_ar_request.contract_location_ref · String · Mandatory for repository link or physical file |
 | `REQ.short_description` | x_ar_request.short_description · String · mandatory · e.g. Data hall cooling project, phase 1 |
 | `REQ.amount` | x_ar_request.amount · Currency · read-only · Calculated: one-off lines + recurring amount × number of periods |
@@ -271,7 +284,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `CON.number` | x_ar_contract.number · String · mandatory |
+| `CON.contract_type` | x_ar_contract.contract_type · Choice · mandatory |
 | `CON.customer` | x_ar_contract.customer · Reference → x_ar_customer · mandatory |
+| `CON.department` | x_ar_contract.department · Choice · Owning department; a shell is unique per customer + department |
 | `CON.short_description` | x_ar_contract.short_description · String · mandatory |
 | `CON.billing_type` | x_ar_contract.billing_type · Choice |
 | `CON.contract_value` | x_ar_contract.contract_value · Currency |
@@ -282,6 +297,10 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON.discount_days` | x_ar_contract.discount_days · Integer |
 | `CON.contract_location` | x_ar_contract.contract_location · Choice |
 | `CON.contract_location_ref` | x_ar_contract.contract_location_ref · String |
+| `CON.bill_to_name` | x_ar_contract.bill_to_name · String |
+| `CON.bill_to_email` | x_ar_contract.bill_to_email · String |
+| `CON.bill_to_phone` | x_ar_contract.bill_to_phone · String |
+| `CON.bill_to_address` | x_ar_contract.bill_to_address · String (1000) |
 | `CON.notes` | x_ar_contract.notes · String (4000) |
 
 ## Billing contact
@@ -367,6 +386,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `RQL.number` | x_ar_request_line.number · String · read-only |
 | `RQL.ar_request` | x_ar_request_line.ar_request · Reference → x_ar_request · read-only |
+| `RQL.contract` | x_ar_request_line.contract · Reference → x_ar_contract · read-only · Billing lines are contract level (D15). Existing contract at submit; otherwise set by Link to customer |
 | `RQL.line_type` | x_ar_request_line.line_type · Choice · mandatory |
 | `RQL.short_description` | x_ar_request_line.short_description · String · mandatory |
 | `RQL.amount` | x_ar_request_line.amount · Currency · mandatory · Recurring: amount per period |
@@ -387,7 +407,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `DEP.match_state` | Calculated: Unmatched / Part matched / Matched |
 | `CUS.open_ar` | Calculated: sum of amount_due on issued invoices |
 | `CUS.overdue` | Calculated: amount_due on issued invoices past due_date |
-| `CON.status` | Calculated: Active / Not started / Ended from start and end dates |
+| `CON.status` | Calculated: Active / Not started / Ended from start and end dates (shells: Open) |
+| `CON.line_count` | Calculated: number of billing lines filed under the contract |
 | `BSU.department` | Dot-walk: bank_account.department |
 | `RQL.line_value` | Calculated: one-off amount, or recurring amount × number of periods |
 | `RQL.periods` | Calculated: number of billing dates between From and To at the frequency |
@@ -409,6 +430,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RL-CUS-REQ` | Related list: x_ar_request where customer = this customer |
 | `RL-CON-INV` | Related list: x_ar_invoice where contract = this contract |
 | `RL-CON-REQ` | Related list: x_ar_request where contract = this contract |
+| `RL-CON-RQL` | Related list: x_ar_request_line where contract = this contract |
+| `RL-CON-SCH` | Related list: x_ar_billing_schedule where contract = this contract |
 | `RL-INV-ALC` | Related list: x_ar_allocation where invoice = this invoice |
 | `RL-DEP-ALC` | Related list: x_ar_allocation where deposit = this bsu deposit |
 | `RL-BSU-DEP` | Related list: x_ar_bank_statement where bsu = this statement upload |
@@ -422,7 +445,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-REQ-assign` | UI action: Assign to me → assigned_to = current user, state = In progress |
 | `UA-REQ-info` | UI action: Request info → state = Awaiting info; requires an additional comment (visible on portal) |
 | `UA-REQ-reject` | UI action: Reject → state = Rejected; requires an additional comment |
-| `UA-REQ-link` | UI action: Link to customer → creates or links x_ar_customer, upserts x_ar_billing_contact for the department, files documents to x_ar_customer_document, records contract location (D10, D11) |
+| `UA-REQ-link` | UI action: Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document; records contract location (D10, D15, D16) |
 | `UA-SCH-raise` | UI action: Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12) |
 | `UA-SCH-save` | UI action: Save (update) |
 | `UA-BCT-save` | UI action: Save (update) |

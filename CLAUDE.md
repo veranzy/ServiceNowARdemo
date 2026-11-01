@@ -53,11 +53,13 @@ rebuilt later from this codebase. Do not add Claude/LLM calls here unless the ow
 | Accounts receivable team | `x_ar.ar_team` | **Workspace only** (configurable workspace look) | Works AR request **cases**, creates and issues invoices, uploads bank statements (**BSU**), matches deposits to invoices **manually**, maintains customers, contracts and bank accounts |
 
 Core flow: project team submits **AR-i**: searches the customer and adds it as new only if not found
-(D14; a "first request" is just a request for a new customer), department + bill-to person, request
-summary + **billing lines** (D13: one-off, or recurring over a from–to date range, Monthly by default;
+(D14; a "first request" is just a request for a new customer), department, **contract** (D15: existing,
+new, or *No contract required* → the customer's no-contract shell per department) with its **bill-to
+person** (D16, held on the contract), request summary + **billing lines** (D13: one-off, or recurring over a from–to date range, Monthly by default;
 one request can mix both), contract location, documents only if not on file → `x_ar_request` case
-(New) in the workspace → AR **Link to customer** (creates/links the customer, upserts the department's
-billing contact, files documents on the customer, records contract location) → AR assigns,
+(New) in the workspace → AR **Link to customer** (creates/links the customer, links/creates the contract
+or shell and sets it on every line, writes the bill-to to the contract, files documents on the customer,
+records contract location) → AR assigns,
 may *Request info* (portal reply returns it to In progress) or *Reject* → per **billing line**: one-off →
 *Create invoice* (draft) → *Issue invoice*; recurring → *Set up billing schedule*, then **Raise invoice**
 per due period (never automatic, D12). The request becomes **Billed** when every line is invoiced
@@ -69,9 +71,9 @@ invoices. Automation after AR form submission is still to be defined by the owne
 
 ## Domain model (all custom tables, see `js/schema.js`)
 
-customer → contracts → AR requests → invoices ← allocations ← deposits (Bank statements) ← BSU uploads ← bank accounts
-AR request → billing lines (`x_ar_request_line`, code key `lines`) → invoice (one-off) or billing schedule (recurring)
-customer → billing contacts (one per department, D11) · customer documents (given once, D10) · billing schedules → invoices (per period)
+customer → contracts (incl. no-contract shells, `contract_type = shell`, D15) → billing lines → invoices ← allocations ← deposits (Bank statements) ← BSU uploads ← bank accounts
+AR request → billing lines (`x_ar_request_line`, code key `lines`, each with `contract`) → invoice (one-off) or billing schedule (recurring)
+contract → bill-to person (D16) · customer → billing contacts (department default for prefill, D11) · customer documents (given once, D10) · billing schedules → invoices (per period)
 
 **Departments:** 11 operational departments in `DEPARTMENTS` (`js/schema.js`); bank accounts may also be Finance.
 
@@ -145,8 +147,10 @@ docs/modules/           one spec per module (see "How we work"); docs/DECISIONS.
 ## Checking changes
 
 Serve with `python3 -m http.server` (modules don't load from `file://`). Click through: portal AR form
-AR-i (search → add new customer with one-off + recurring lines; existing customer with a recurring line,
-bad date range rejected) → workspace Link to customer → per line Create invoice / Set up billing
+AR-i with each contract option (new contract, existing contract with bill-to, no contract with existing /
+new shell); (search → add new customer with one-off + recurring lines; existing customer with a recurring line,
+bad date range rejected) → workspace Link to customer (contract / shell created, lines filed) → customer
+billing hierarchy → per line Create invoice / Set up billing
 schedule → request Billed → Raise invoice → portal ticket shows each line's invoice / schedule; BSU upload
 (sample file and a real CSV file, wrong-bank error); cash application Find invoice → Apply, Remove match;
 ID tags visible and unclipped; 400px wide in dark mode.

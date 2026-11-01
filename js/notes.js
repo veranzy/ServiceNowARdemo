@@ -21,7 +21,8 @@ export const NOTES = {
   "WS-09": "Landing page list: overdue invoices",
   // AR request record page extras
   "REQ-ACT": "Activity stream: comments (visible to requester) + work_notes (AR only) + field changes",
-  "REQ-SETUP": "Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, department billing contact, documents filed, contract location, billing schedule",
+  "REQ-SETUP": "Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, contract location, billing lines done",
+  "CUS-TREE": "Billing hierarchy on the customer record (D15): customer › contract / no-contract shell (x_ar_contract) › billing lines (x_ar_request_line.contract) › invoices / billing schedule. UI Builder component over related lists, or a hierarchical list",
   "REQ-LINKTO": "Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check)",
   "SCH-PER": "Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming",
   "REQ-ATT": `Attachments: sys_attachment on ${TABLES.requests.table} (added on the portal form)`,
@@ -54,8 +55,9 @@ export const NOTES = {
   "PT-14": "Service catalog category \"AR forms\": 16 record producers AR-i … AR-xvi (D9)",
   "PT-15": "Catalog item AR-i New AR request (active record producer)",
   "PT-16": "Catalog item placeholder AR-ii … AR-xvi (inactive until defined)",
-  "PT-19": "Variable set Department & bill-to: shows the department's billing contact (x_ar_billing_contact) or asks for one (D11)",
-  "PT-20": "Variable set Contract: contract reference, contract location and link/file reference",
+  "PT-19": "Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one, prefilled from the department's x_ar_billing_contact; update_bill_to to change it",
+  "PT-20": "Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, contract location, bill-to. UI policies per option",
+  "PT-28": "No contract required: info message (UI policy on contract_option = none). Link to customer files the lines under the customer's no-contract shell for the department (x_ar_contract, contract_type = shell)",
   "PT-25": "Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer)",
   "PT-26": "Variable set What to bill: request summary, PO, and multi-row variable set Billing lines (x_ar_request_line); totals by catalog client script",
   "PT-27": "Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden",
@@ -67,7 +69,7 @@ export const UI_ACTIONS = {
   "UA-REQ-assign": "Assign to me → assigned_to = current user, state = In progress",
   "UA-REQ-info": "Request info → state = Awaiting info; requires an additional comment (visible on portal)",
   "UA-REQ-reject": "Reject → state = Rejected; requires an additional comment",
-  "UA-REQ-link": "Link to customer → creates or links x_ar_customer, upserts x_ar_billing_contact for the department, files documents to x_ar_customer_document, records contract location (D10, D11)",
+  "UA-REQ-link": "Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document; records contract location (D10, D15, D16)",
   "UA-SCH-raise": "Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12)",
   "UA-SCH-save": "Save (update)",
   "UA-BCT-save": "Save (update)", "UA-BCT-new": "New (list action)", "UA-BCT-insert": "Submit (insert); unique per customer + department",
@@ -101,7 +103,7 @@ export const RELATED = {
   "RL-REQ-RQL": "ar_request",
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
-  "RL-CON-INV": "contract", "RL-CON-REQ": "contract",
+  "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",
   "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit",
   "RL-BSU-DEP": "bsu", "RL-BNK-BSU": "bank_account", "RL-BNK-DEP": "bank_account"
 };
@@ -114,7 +116,8 @@ export const CALC_COLS = {
   "DEP.match_state": "Calculated: Unmatched / Part matched / Matched",
   "CUS.open_ar": "Calculated: sum of amount_due on issued invoices",
   "CUS.overdue": "Calculated: amount_due on issued invoices past due_date",
-  "CON.status": "Calculated: Active / Not started / Ended from start and end dates",
+  "CON.status": "Calculated: Active / Not started / Ended from start and end dates (shells: Open)",
+  "CON.line_count": "Calculated: number of billing lines filed under the contract",
   "BSU.department": `Dot-walk: bank_account.department`,
   "RQL.line_value": "Calculated: one-off amount, or recurring amount × number of periods",
   "RQL.periods": "Calculated: number of billing dates between From and To at the frequency",
@@ -151,7 +154,7 @@ export function noteText(id) {
 export function allNotes() {
   const out = [];
   const add = (id, area) => out.push({ id, area, text: noteText(id) });
-  for (const id of Object.keys(NOTES)) add(id, id.startsWith("PT") ? "Portal" : id.startsWith("BSU") ? "BSU page" : id.startsWith("CSH") ? "Cash application" : id.startsWith("REQ") ? "AR request record" : "Workspace");
+  for (const id of Object.keys(NOTES)) add(id, id.startsWith("PT") ? "Portal" : id.startsWith("BSU") ? "BSU page" : id.startsWith("CSH") ? "Cash application" : id.startsWith("REQ") ? "AR request record" : id.startsWith("CUS") ? "Customer record" : "Workspace");
   for (const [key, code] of Object.entries(CODE)) {
     const label = TABLES[key].label;
     for (const p of ["LST", "RP", "HDR", "FRM"]) if (!(key === "allocations")) add(`${p}-${code}`, label);

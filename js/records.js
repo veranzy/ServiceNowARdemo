@@ -43,6 +43,29 @@ const DOC_KEY = { contract: "docContract", acra: "docAcra", billing_form: "docBi
 // ---------- AR-i: customer documents, billing contacts ----------
 export const contactFor = (customerId, department) => S.contacts.find(c => c.customerId === customerId && c.department === department);
 
+// ---------- contracts: billing hierarchy customer › contract / shell › billing lines › invoices (D15) ----------
+export const isShell = k => k?.contractType === "shell";
+/** The customer's no-contract shell for a department (one per customer + department). */
+export const shellFor = (customerId, department) => S.contracts.find(k => isShell(k) && k.customerId === customerId && k.department === department);
+export const ctrLabel = k => !k ? "—" : isShell(k) ? `${k.number} · No contract (${k.department})` : `${k.number} · ${k.title}`;
+/** The contract or shell an AR-i draft/request bills under, when it already exists. */
+export function targetContract(d) {
+  if (d.contractId) return ctrById(d.contractId);
+  if (d.newCustomer || !d.customerId) return null;
+  if (d.contractOption === "none") return shellFor(d.customerId, d.department) || null;
+  return null;
+}
+/** Bill-to lives on the contract (D16): ask for it when the contract/shell has none yet, or the requester changes it. */
+export const needBillTo = d => !!d.contractOption && (!targetContract(d)?.billToName || !!d.updateBillTo);
+/** Contract location is asked for a new contract, or an existing contract with none recorded. */
+export const needLocation = d => d.contractOption === "new" || (d.contractOption === "existing" && !!d.contractId && !ctrById(d.contractId)?.contractLocation);
+/** Prefill an empty bill-to from the department's usual billing contact. */
+export function prefillBillTo(d) {
+  if (!needBillTo(d) || d.billToName) return;
+  const c = !d.newCustomer && d.customerId && d.department ? contactFor(d.customerId, d.department) : null;
+  if (c) Object.assign(d, { billToName: c.name, billToEmail: c.email, billToPhone: c.phone || "", billToAddress: c.address || "", billToPrefilled: true });
+}
+
 /** Which customer documents are already on file. contract/PO is per contract when one is chosen; billing form per department. */
 export function docsOnFile(customerId, contractId, department) {
   const out = {};
@@ -60,20 +83,30 @@ export function validateARi(d) {
   need("department", "Choose your department.");
   if (d.newCustomer) need("newCustName", "Enter the new customer's name.");
   else need("customerId", "Search for the customer, or add it as a new customer.");
-  const contact = !d.newCustomer && d.customerId ? contactFor(d.customerId, d.department) : null;
-  if (d.newCustomer || !contact || d.updateBillTo) { need("billToName", "Enter who to bill in this department."); need("billToEmail", "Enter the bill-to email."); }
-  if (d.billToEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.billToEmail)) e.billToEmail = "Enter a valid email address.";
+  if (d.newCustomer || d.customerId) {
+    need("contractOption", "Choose an existing contract, a new contract, or No contract required.");
+    if (d.contractOption === "existing") need("contractId", "Choose the contract.");
+    if (d.contractOption === "new") {
+      need("newCtrRef", "Enter the contract reference."); need("newCtrTitle", "Give the contract a title."); need("newCtrStart", "Enter the contract start date.");
+      if (!(d.newCtrValue > 0)) e.newCtrValue = "Enter the contract value.";
+      if (d.newCtrStart && d.newCtrEnd && d.newCtrEnd < d.newCtrStart) e.newCtrEnd = "Must be on or after the start date.";
+    }
+    if (needBillTo(d)) { need("billToName", "Enter who to bill for this contract."); need("billToEmail", "Enter the bill-to email."); }
+    if (d.billToEmail && needBillTo(d) && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.billToEmail)) e.billToEmail = "Enter a valid email address.";
+    if (needLocation(d)) {
+      need("contractLocation", "Tell AR where the signed contract is kept.");
+      if (["repository", "physical"].includes(d.contractLocation)) need("contractLocationRef", "Give the link or file location.");
+      if (d.contractLocation === "attached" && !d.docContract && !(d.contractOption === "existing" && docsOnFile(d.customerId, d.contractId, d.department).contract)) e.docContract = "Attach the signed contract / PO, or choose another location.";
+    }
+  }
   need("title", "Give the request a short summary.");
   const lines = d.lines || [];
   if (!lines.length) e.lines = "Add at least one billing line.";
   lines.forEach((l, i) => {
     const le = lineErrors(l); for (const [k, m] of Object.entries(le)) e[`line:${i}:${k}`] = m;
   });
-  need("contractLocation", "Tell AR where the signed contract is kept.");
-  if (["repository", "physical"].includes(d.contractLocation)) need("contractLocationRef", "Give the link or file location.");
-  if (d.contractLocation === "attached" && !d.docContract) e.docContract = "Attach the signed contract / PO, or choose another location.";
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
-  for (const [t, label] of DOC_TYPES) if (!onFile[t] && !d[DOC_KEY[t]] && !(t === "contract" && d.contractLocation && d.contractLocation !== "attached")) e[DOC_KEY[t]] = `Attach the ${label.toLowerCase()} (not on file yet).`;
+  for (const [t, label] of DOC_TYPES) if (t !== "contract" && !onFile[t] && !d[DOC_KEY[t]]) e[DOC_KEY[t]] = `Attach the ${label.toLowerCase()} (not on file yet).`;
   return e;
 }
 
@@ -126,12 +159,13 @@ function updateBilled(r) {
 /** Setup checklist for an AR-i on the workspace record. */
 export function setupStatus(r) {
   const linked = !!r.customerId && !r.newCustomer;
-  const contact = linked ? contactFor(r.customerId, r.department) : null;
+  const ctr = r.contractId ? ctrById(r.contractId) : null;
+  const billToOk = !!ctr?.billToName && (!r.billToName || (ctr.billToName === r.billToName && ctr.billToEmail === r.billToEmail));
   const docsGiven = Object.entries(DOC_KEY).filter(([, k]) => r[k]).map(([t]) => t);
   const filed = docsGiven.filter(t => S.documents.some(d => d.requestId === r.id && d.docType === t));
-  const ctr = r.contractId ? S.contracts.find(k => k.id === r.contractId) : null;
-  return { linked, contact, docsGiven, filed, docsDone: filed.length === docsGiven.length,
-    location: !r.contractLocation || !ctr ? null : !!ctr.contractLocation };
+  const linesOnCtr = !!ctr && reqLines(r).every(l => l.contractId === ctr.id);
+  return { linked, ctr, contractDone: !!ctr && linesOnCtr, billToOk, docsGiven, filed, docsDone: filed.length === docsGiven.length,
+    location: !r.contractLocation || !ctr || isShell(ctr) ? null : !!ctr.contractLocation };
 }
 
 /** UI action "Link to customer": create or link the customer, upsert the department's billing contact,
@@ -145,10 +179,29 @@ export function linkCustomer(id, existingId) {
     else notes.push(`linked to existing customer ${c.name}`);
     r.customerId = c.id; r.newCustomer = false;
   } else notes.push(`customer ${custById(r.customerId)?.name} confirmed`);
-  if (r.billToName) {
-    const ex = contactFor(r.customerId, r.department), vals = { name: r.billToName, email: r.billToEmail || "", phone: r.billToPhone || "", address: r.billToAddress || "", requestId: r.id };
-    if (ex) { Object.assign(ex, vals); notes.push(`updated ${r.department} billing contact`); }
-    else { S.contacts.push({ id: uid("t"), customerId: r.customerId, department: r.department, ...vals }); notes.push(`added ${r.department} billing contact`); }
+  // contract level (D15): existing contract, new contract, or the customer's no-contract shell for the department
+  let ctr = r.contractId ? ctrById(r.contractId) : null;
+  if (ctr && ctr.customerId !== r.customerId) ctr = null;
+  if (!ctr && r.contractOption === "new") {
+    ctr = S.contracts.find(k => k.customerId === r.customerId && !isShell(k) && k.number.toLowerCase() === String(r.newCtrRef || "").trim().toLowerCase());
+    if (ctr) notes.push(`linked to existing contract ${ctr.number}`);
+    else { ctr = { id: uid("k"), contractType: "contract", customerId: r.customerId, department: r.department, number: String(r.newCtrRef || "").trim() || `NEW-${r.number}`, title: r.newCtrTitle || r.title,
+        start: r.newCtrStart || "", end: r.newCtrEnd || "", value: r.newCtrValue || 0, billing: "", terms: custById(r.customerId)?.terms || 30, discPct: 0, discDays: 0, notes: `Created from ${r.number}.` };
+      S.contracts.push(ctr); notes.push(`created contract ${ctr.number}`); }
+  }
+  if (!ctr && (r.contractOption === "none" || !r.contractOption)) {
+    ctr = shellFor(r.customerId, r.department);
+    if (ctr) notes.push(`filed under no-contract shell ${ctr.number}`);
+    else { ctr = { id: uid("k"), contractType: "shell", customerId: r.customerId, department: r.department, number: nextShellNumber(r.department), title: `No contract – ${r.department}`,
+        start: "", end: "", value: 0, billing: "", terms: custById(r.customerId)?.terms || 30, discPct: 0, discDays: 0, notes: "Holds billing for this customer and department that has no contract (D15)." };
+      S.contracts.push(ctr); notes.push(`created no-contract shell ${ctr.number}`); }
+  }
+  if (ctr) { r.contractId = ctr.id; for (const l of reqLines(r)) l.contractId = ctr.id; }
+  if (r.billToName && ctr) {
+    const changed = ctr.billToName && (ctr.billToName !== r.billToName || ctr.billToEmail !== r.billToEmail);
+    Object.assign(ctr, { billToName: r.billToName, billToEmail: r.billToEmail || "", billToPhone: r.billToPhone || "", billToAddress: r.billToAddress || "" });
+    notes.push(`${changed ? "updated" : "set"} bill-to on ${ctr.number}`);
+    if (!contactFor(r.customerId, r.department)) { S.contacts.push({ id: uid("t"), customerId: r.customerId, department: r.department, name: r.billToName, email: r.billToEmail || "", phone: r.billToPhone || "", address: r.billToAddress || "", requestId: r.id }); notes.push(`added ${r.department} default billing contact`); }
   }
   for (const [t, k] of Object.entries(DOC_KEY)) {
     if (!r[k] || S.documents.some(d => d.requestId === r.id && d.docType === t)) continue;
@@ -156,11 +209,15 @@ export function linkCustomer(id, existingId) {
       department: t === "billing_form" ? r.department : "", requestId: r.id, received: isoToday() });
     notes.push(`filed ${DOC_LABEL[t].toLowerCase()}`);
   }
-  const ctr = r.contractId ? S.contracts.find(k => k.id === r.contractId) : null;
-  if (ctr && r.contractLocation) { ctr.contractLocation = r.contractLocation; ctr.contractLocationRef = r.contractLocationRef || (r.contractLocation === "attached" ? `Customer document from ${r.number}` : ""); notes.push(`recorded contract location on ${ctr.number}`); }
+  if (ctr && !isShell(ctr) && r.contractLocation) { ctr.contractLocation = r.contractLocation; ctr.contractLocationRef = r.contractLocationRef || (r.contractLocation === "attached" ? `Customer document from ${r.number}` : ""); notes.push(`recorded contract location on ${ctr.number}`); }
   if (r.state === "new") { r.state = "in_progress"; if (!r.assignedTo) r.assignedTo = me().id; }
   journal(r, "work_note", `Link to customer: ${notes.join("; ")}.`);
   return null;
+}
+
+function nextShellNumber(dept) {
+  const n = S.contracts.filter(isShell).length + 1;
+  return `NC-${String(dept || "GEN").slice(0, 3).toUpperCase()}-${String(n).padStart(4, "0")}`;
 }
 
 // ---------- recurring billing ----------
@@ -189,9 +246,9 @@ export function setupSchedule(lineId) {
   const l = S.lines.find(x => x.id === lineId); if (!l) return "Billing line not found.";
   const r = reqById(l.requestId);
   if (l.lineType !== "recurring") return "Only recurring lines get a billing schedule.";
-  if (!r?.customerId || r.newCustomer) return "Link the request to a customer first.";
+  if (!r?.customerId || r.newCustomer || !l.contractId) return "Link the request to the customer and contract first.";
   if (l.scheduleId) return "This line already has a billing schedule.";
-  const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: r.contractId || null, department: r.department, desc: l.desc,
+  const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: l.contractId, department: r.department, desc: l.desc,
     frequency: l.frequency || "monthly", amount: l.amount, firstDate: l.startDate, lastDate: l.endDate, requestId: r.id, lineId: l.id };
   S.schedules.push(sch); l.scheduleId = sch.id; if (r.state === "new") r.state = "in_progress"; if (!r.assignedTo) r.assignedTo = me().id;
   const n = periodDates(sch.frequency, sch.firstDate, sch.lastDate).length;
@@ -205,11 +262,11 @@ export function lineInvoice(lineId) {
   const l = S.lines.find(x => x.id === lineId); if (!l) return "Billing line not found.";
   const r = reqById(l.requestId);
   if (l.lineType !== "one_off") return "Recurring lines are billed from a billing schedule.";
-  if (!r?.customerId || r.newCustomer) return "Link the request to a customer first (Link to customer).";
+  if (!r?.customerId || r.newCustomer || !l.contractId) return "Link the request to the customer and contract first (Link to customer).";
   if (lineStatus(l) !== "open") return "This line already has an invoice.";
-  const k = ctrById(r.contractId), c = custById(r.customerId);
+  const k = ctrById(l.contractId), c = custById(r.customerId);
   const date = l.invoiceDate && l.invoiceDate > isoToday() ? l.invoiceDate : isoToday();
-  const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: r.contractId || null, requestId: r.id, lineId: l.id,
+  const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: l.contractId, requestId: r.id, lineId: l.id,
     customer: c?.name || "", desc: l.desc, amount: l.amount, date, due: addDays(date, k?.terms || c?.terms || 30), currency: "SGD" };
   S.invoices.push(inv); l.invoiceId = inv.id; if (r.state === "new") r.state = "in_progress";
   if (!r.assignedTo) r.assignedTo = me().id;
@@ -243,10 +300,11 @@ export function createRequest(vals) {
     opened: isoToday(), updated: isoToday(), activity: [], attachments: rest.attachments || [], ...rest };
   req.amount = linesSummary(lines).total;
   S.requests.push(req);
-  for (const l of lines) S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, lineType: l.lineType, desc: l.desc.trim(), amount: l.amount,
+  for (const l of lines) S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, contractId: req.contractOption === "existing" ? req.contractId || null : null, lineType: l.lineType, desc: l.desc.trim(), amount: l.amount,
     invoiceDate: l.lineType === "one_off" ? l.invoiceDate || "" : "", frequency: l.lineType === "recurring" ? l.frequency || "monthly" : "",
     startDate: l.lineType === "recurring" ? l.startDate : "", endDate: l.lineType === "recurring" ? l.endDate : "", invoiceId: null, scheduleId: null });
-  journal(req, "system", `Submitted from ${req.form || "AR-i"} on the portal${req.newCustomer ? " for a new customer" : ""} with ${linesLabel(req)}.`, req.requestedBy);
+  const ctrText = req.contractOption === "existing" ? `under contract ${ctrById(req.contractId)?.number}` : req.contractOption === "new" ? `under new contract ${req.newCtrRef}` : "with no contract";
+  journal(req, "system", `Submitted from ${req.form || "AR-i"} on the portal${req.newCustomer ? " for a new customer" : ""} ${ctrText}, with ${linesLabel(req)}.`, req.requestedBy);
   return req;
 }
 
@@ -325,9 +383,12 @@ export function saveRecord(table, id, raw) {
   }
   const existing = id && id !== "new" ? recById(table, id) : null;
   const merged = { ...(existing || {}), ...vals };
+  if (table === "contracts" && !merged.contractType) merged.contractType = vals.contractType = "contract";
   const errors = validate(table, merged);
   if (table === "contacts" && S.contacts.some(c => c.id !== merged.id && c.customerId === merged.customerId && c.department === merged.department)) errors.department = `This customer already has a ${merged.department} billing contact. Edit that one instead.`;
   if (table === "contracts" && S.contracts.some(k => k.id !== merged.id && k.number && k.number.toLowerCase() === String(merged.number || "").toLowerCase())) errors.number = `Contract ${merged.number} already exists.`;
+  if (table === "contracts" && merged.contractType === "shell" && !merged.department) errors.department = "A no-contract shell needs a department.";
+  if (table === "contracts" && merged.contractType === "shell" && S.contracts.some(k => k.id !== merged.id && isShell(k) && k.customerId === merged.customerId && k.department === merged.department)) errors.department = `This customer already has a ${merged.department} no-contract shell.`;
   if (Object.keys(errors).length) return { errors };
   if (existing) {
     Object.assign(existing, vals);

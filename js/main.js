@@ -2,7 +2,7 @@
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { cancelInvoice, createRequest, issueInvoice, journal, lineInvoice, linkCustomer, me, portalComment, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { cancelInvoice, createRequest, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, needLocation, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES } from "./schema.js";
 import { $, S } from "./state.js";
@@ -112,6 +112,14 @@ function portalFieldUpdated(el) {
   const side = $("pfSide"); if (side) side.innerHTML = formSide(P().draft);
 }
 
+/** AR-i contract step changed: drop a prefilled bill-to (it belonged to the previous choice) and prefill again. */
+function contractChanged(d) {
+  if (d.billToPrefilled) { Object.assign(d, { billToName: "", billToEmail: "", billToPhone: "", billToAddress: "" }); delete d.billToPrefilled; }
+  d.updateBillTo = false; prefillBillTo(d);
+  const now = validateARi(d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k];
+}
+const resetContract = d => { Object.assign(d, { contractOption: "", contractId: null }); contractChanged(d); };
+
 // ---------- BSU ----------
 function parseCurrent() {
   const b = S.bsu, a = acctById(b.acctId); if (!a || !b.text) { b.parsed = null; return; }
@@ -167,9 +175,12 @@ document.addEventListener("click", e => {
   if (d.preply) { const err = portalComment(d.preply, $("ptReply")?.value); if (err) return toast(err); toast("Comment sent to Accounts Receivable."); return render(); }
   if (d.undoc) { P().draft[d.undoc] = ""; return render(); }
   // AR-i customer step (D14)
-  if (d.pickcust) { Object.assign(P().draft, { customerId: d.pickcust, newCustomer: false, contractId: null }); delete P().errors.customerId; return render(); }
-  if (d.newcust !== undefined) { const dr = P().draft; Object.assign(dr, { newCustomer: true, newCustName: dr.custQ || "", customerId: null, contractId: null }); delete P().errors.customerId; render(); return $("pf-newCustUen")?.focus(); }
-  if (d.custclear !== undefined) { Object.assign(P().draft, { customerId: null, newCustomer: false, contractId: null }); render(); return $("pfCustQ")?.focus(); }
+  if (d.pickcust) { Object.assign(P().draft, { customerId: d.pickcust, newCustomer: false }); resetContract(P().draft); delete P().errors.customerId; return render(); }
+  if (d.newcust !== undefined) { const dr = P().draft; Object.assign(dr, { newCustomer: true, newCustName: dr.custQ || "", customerId: null }); resetContract(dr); delete P().errors.customerId; render(); return $("pf-newCustUen")?.focus(); }
+  if (d.custclear !== undefined) { Object.assign(P().draft, { customerId: null, newCustomer: false }); resetContract(P().draft); render(); return $("pfCustQ")?.focus(); }
+  // AR-i contract step (D15)
+  if (d.ctropt) { const dr = P().draft; dr.contractOption = d.ctropt; if (d.ctropt !== "existing") dr.contractId = null; contractChanged(dr); delete P().errors.contractOption; render();
+    return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? $("pf-newCtrRef") : null)?.focus(); }
   // AR-i billing lines (D13)
   if (d.ladd) { P().draft.lines.push({ lineType: d.ladd, desc: "", amount: 0, invoiceDate: "", frequency: "monthly", startDate: "", endDate: "" }); delete P().errors.lines; render(); return $(`pl${P().draft.lines.length - 1}-desc`)?.focus(); }
   if (d.lremove !== undefined) { P().draft.lines.splice(+d.lremove, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith("line:"))); return render(); }
@@ -241,6 +252,7 @@ document.addEventListener("change", e => {
     if (el.name === "customerId" && d.contractId && S.contracts.find(k => k.id === d.contractId)?.customerId !== d.customerId) d.contractId = null;
     if (el.name === "contractId" && d.contractId) { const k = S.contracts.find(x => x.id === d.contractId); if (k && !d.customerId) d.customerId = k.customerId; }
     if (el.name === "contractLocation" && !["repository", "physical"].includes(d.contractLocation)) d.contractLocationRef = "";
+    if (el.name === "contractId" || el.name === "department") contractChanged(d);
     if (el.tagName === "SELECT" || ["checkbox", "radio", "file"].includes(el.type)) { const now = validateARi(d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k]; return render(); }
     return portalFieldUpdated(el);
   }
@@ -278,7 +290,11 @@ document.addEventListener("submit", e => {
   if (f.id === "arForm") {
     const d = P().draft, errors = validateARi(d);
     if (Object.keys(errors).length) { P().errors = errors; render(); return (document.querySelector("#arForm [aria-invalid], #arForm .has-err input, #arForm .has-err .btn"))?.focus(); }
-    const { custQ, ...vals } = d;
+    const { custQ, billToPrefilled, ...vals } = d;
+    if (!needBillTo(vals)) Object.assign(vals, { billToName: "", billToEmail: "", billToPhone: "", billToAddress: "", updateBillTo: false });
+    if (vals.contractOption !== "new") Object.assign(vals, { newCtrRef: "", newCtrTitle: "", newCtrStart: "", newCtrEnd: "", newCtrValue: 0 });
+    if (vals.contractOption !== "existing") vals.contractId = null;
+    if (!needLocation(vals)) Object.assign(vals, { contractLocation: "", contractLocationRef: "" });
     if (vals.newCustomer) vals.customerId = null; else { vals.newCustName = ""; vals.newCustUen = ""; vals.newCustAddress = ""; }
     const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;
     render(); return window.scrollTo(0, 0);

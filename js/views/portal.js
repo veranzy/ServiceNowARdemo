@@ -1,8 +1,8 @@
 // Project team experience: Service Portal / Employee Center with the AR forms catalogue (AR-i … AR-xvi),
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, docsOnFile, freqLabel, lineErrors, lineStatus, lineValue, linesLabel, linesSummary, me, periodDates, reqById, reqLines, validateARi } from "../records.js";
-import { AR_FORMS, DOC_TYPES, LINE_TYPES, ROLES, TABLES } from "../schema.js";
+import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, ctrLabel, docsOnFile, freqLabel, isShell, lineErrors, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, needLocation, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
+import { AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, LINE_TYPES, ROLES, TABLES } from "../schema.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
 import { custName, ctrNo, fieldHtml, icon, initials, reqChip, reqCustName, sn } from "./common.js";
@@ -49,7 +49,7 @@ function homePage() {
 }
 
 export function contractBox(d) {
-  const k = ctrById(d.contractId); if (!k) return "";
+  const k = ctrById(d.contractId); if (!k || isShell(k)) return "";
   const r = rollup(S.invoices.filter(i => i.contractId === k.id && i.state === "issued"));
   const pending = S.requests.filter(x => x.contractId === k.id && REQ_OPEN.includes(x.state)).reduce((s, x) => s + x.amount, 0);
   const left = (k.value || 0) - r.billed - pending;
@@ -79,12 +79,12 @@ const reqField = k => TABLES.requests.fields.find(f => f.key === k);
 
 function docRow(t, d, onFile) {
   const key = { contract: "docContract", acra: "docAcra", billing_form: "docBillingForm" }[t];
-  const f = reqField(key), err = P().errors?.[key], have = onFile[t];
-  const elsewhere = t === "contract" && d.contractLocation && d.contractLocation !== "attached";
+  const f = reqField(key), err = P().errors?.[key], have = t === "contract" && d.contractOption !== "existing" ? null : onFile[t];
+  const elsewhere = t === "contract" && !(needLocation(d) && d.contractLocation === "attached");
   let status, ctl = "";
   if (have) status = `<span class="chip c-ok">On file</span> <span class="desc">${esc(have.fileName)} · received ${esc(have.received)}</span>`;
   else if (d[key]) status = `<span class="chip c-accent">Attached</span> <span class="desc">${esc(d[key])}</span>`;
-  else if (elsewhere) status = `<span class="chip c-neutral">Not needed</span> <span class="desc">Kept elsewhere (see contract location)</span>`;
+  else if (elsewhere) status = `<span class="chip c-neutral">Not needed</span> <span class="desc">${d.contractOption === "none" ? "No contract required" : !d.contractOption ? "Choose the contract first" : "Kept elsewhere (see contract)"}</span>`;
   else status = `<span class="chip c-warn">Needed</span>`;
   if (!have && !elsewhere) ctl = `<label class="btn small" for="pfDoc-${key}">${icon("clip", 14)} ${d[key] ? "Replace" : "Attach"}</label><input type="file" id="pfDoc-${key}" name="${key}" hidden>${d[key] ? ` <button type="button" class="linkish small" data-undoc="${key}">Remove</button>` : ""}`;
   return `<div class="docrow${err ? " has-err" : ""}"${sn(`REQ.${f.name}`)}><div><b>${esc(DOC_LABEL[t])}</b>${t === "billing_form" && d.department ? `<span class="desc">for ${esc(d.department)}</span>` : ""}<div>${status}</div>${err ? `<span class="ferr">${esc(err)}</span>` : ""}</div><div class="docctl">${ctl}</div></div>`;
@@ -114,6 +114,31 @@ function customerStep(d, e, f) {
   return `<label class="ffield wide${e.customerId ? " has-err" : ""}" for="pfCustQ"${sn("REQ.customer")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Find the customer</span>
       <input type="search" id="pfCustQ" value="${esc(d.custQ || "")}" placeholder="Company name or UEN" autocomplete="off"${e.customerId ? ` aria-invalid="true"` : ""}>${e.customerId ? `<span class="ferr">${esc(e.customerId)}</span>` : ""}</label>
     ${custResults(d)}`;
+}
+
+/** Contract step (D15, D16): existing contract, new contract, or No contract required (the customer's no-contract shell). Bill-to sits under it. */
+function contractStep(d, e, f) {
+  const opts = CONTRACT_OPTIONS.filter(([k]) => k !== "existing" || (!d.newCustomer && S.contracts.some(c => c.customerId === d.customerId && !isShell(c))));
+  const ctrs = d.customerId && !d.newCustomer ? S.contracts.filter(k => k.customerId === d.customerId && !isShell(k)) : [];
+  const tgt = targetContract(d), shell = d.contractOption === "none" && d.customerId && !d.newCustomer ? shellFor(d.customerId, d.department) : null;
+  const optErr = e.contractOption;
+  let body = "";
+  if (d.contractOption === "existing") body = `<div class="fgrid"><label class="ffield wide${e.contractId ? " has-err" : ""}" for="pf-contractId"${sn("REQ.contract")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Contract</span>
+      <select id="pf-contractId" name="contractId"${e.contractId ? ` aria-invalid="true"` : ""}><option value="">-- Choose the contract --</option>${ctrs.map(k => `<option value="${k.id}"${k.id === d.contractId ? " selected" : ""}>${esc(k.number)} · ${esc(k.title)}${k.department ? ` (${esc(k.department)})` : ""}</option>`).join("")}</select>
+      ${e.contractId ? `<span class="ferr">${esc(e.contractId)}</span>` : ""}</label></div>${contractBox(d)}`;
+  else if (d.contractOption === "new") body = `<p class="pt-hint">AR creates the contract under ${esc(d.newCustomer ? d.newCustName || "the new customer" : custName(d.customerId))} when it links the request.</p>
+      <div class="fgrid">${f("newCtrRef", { mandatory: true, help: "The customer's agreement or PO number" })}${f("newCtrTitle", { mandatory: true, help: null })}${f("newCtrStart", { mandatory: true, help: null })}${f("newCtrEnd")}${f("newCtrValue", { mandatory: true, help: null })}</div>`;
+  else if (d.contractOption === "none") body = `<div class="pt-info"${sn("PT-28")}><b>No contract required</b><p class="small">AR files these billing lines under ${shell ? `the customer's no-contract shell <b class="mono">${esc(shell.number)}</b>` : `a new no-contract shell for ${esc(d.department || "your department")}`}, so the customer › contract › billing lines › invoices hierarchy stays complete.</p></div>`;
+  const loc = needLocation(d) ? `<div class="fgrid">${f("contractLocation", { mandatory: true, help: null })}${["repository", "physical"].includes(d.contractLocation) ? f("contractLocationRef", { mandatory: true, label: d.contractLocation === "repository" ? "Link to the contract" : "Where the physical file is", help: null }) : ""}</div>`
+    : tgt && !isShell(tgt) && tgt.contractLocation ? `<p class="pt-hint">Signed contract: ${esc(tgt.contractLocationRef || "with AR")}.</p>` : "";
+  const bt = !d.contractOption ? "" : `<div class="pbill"${sn("PT-19")}><h3 class="small">Bill-to person${tgt ? ` on ${esc(tgt.number)}` : d.contractOption === "new" ? " for the new contract" : ""}</h3>
+      ${tgt?.billToName && !d.updateBillTo ? `<div class="pt-info"><b>Invoices under ${esc(isShell(tgt) ? "this shell" : "this contract")} go to</b><p class="small">${esc(tgt.billToName)} · ${esc(tgt.billToEmail)}${tgt.billToPhone ? ` · ${esc(tgt.billToPhone)}` : ""}<br>${esc(tgt.billToAddress || "")}</p></div>` : ""}
+      ${tgt?.billToName ? `<div class="fgrid">${f("updateBillTo")}</div>` : `<p class="pt-hint">${d.billToPrefilled ? `Prefilled from the ${esc(d.department)} department's usual bill-to person. Change it if this contract bills someone else.` : "Tell AR who to bill for this contract."}</p>`}
+      ${needBillTo(d) ? `<div class="fgrid">${f("billToName", { mandatory: true, help: null })}${f("billToEmail", { mandatory: true })}${f("billToPhone")}${f("billToAddress")}</div>` : ""}</div>`;
+  return `<div class="ffield wide${optErr ? " has-err" : ""}"${sn("REQ.contract_option")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Which contract does this bill under?</span>
+      <div class="optcards" role="group" aria-label="Contract">${opts.map(([k, l]) => `<button type="button" class="optcard" data-ctropt="${k}" aria-pressed="${d.contractOption === k}">${esc(l)}<span>${k === "existing" ? `${ctrs.length} on file` : k === "new" ? "AR creates it" : "Ad-hoc billing"}</span></button>`).join("")}</div>
+      ${optErr ? `<span class="ferr">${esc(optErr)}</span>` : ""}</div>
+    ${body}${loc}${bt}`;
 }
 
 /** One billing line card (D13). */
@@ -149,8 +174,6 @@ function formPage() {
   if (!p.draft) p.draft = { form: "AR-i", department: me().department || "", newCustomer: false, custQ: "", attachments: [], lines: [{ lineType: "one_off", desc: "", amount: 0, invoiceDate: "", frequency: "monthly", startDate: "", endDate: "" }] };
   const d = p.draft, e = p.errors || {};
   const f = (k, o = {}) => fieldHtml("requests", reqField(k), d, { prefix: "pf", errors: e, vals: d, ...o });
-  const contact = !d.newCustomer && d.customerId && d.department ? contactFor(d.customerId, d.department) : null;
-  const needBillTo = d.newCustomer || !contact || d.updateBillTo;
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
   const nErr = Object.keys(e).length;
   const haveCust = d.newCustomer || d.customerId;
@@ -159,7 +182,7 @@ function formPage() {
     <div class="pt-item">
       <form class="pt-form pt-card" id="arForm" novalidate${sn("PT-05")}>
         <div><span class="ft-code">AR-i</span><h1>New AR request</h1></div>
-        <p class="pt-lead">Ask Accounts Receivable to bill a customer. Add one-off charges and recurring charges as billing lines; a recurring line runs over a date range and only needs to be submitted once.</p>
+        <p class="pt-lead">Ask Accounts Receivable to bill a customer. Billing is contract level: choose the contract (or No contract required), then add one-off and recurring billing lines. A recurring line runs over a date range and only needs to be submitted once.</p>
         <div id="pfAlert">${formAlert(nErr)}</div>
 
         <fieldset class="psec"${sn("PT-25")}><legend>1. Customer</legend>
@@ -167,13 +190,12 @@ function formPage() {
           ${customerStep(d, e, f)}
         </fieldset>
 
-        ${haveCust ? `<fieldset class="psec"${sn("PT-19")}><legend>2. Bill-to person (${esc(d.department || "department")})</legend>
-          ${contact && !d.updateBillTo ? `<div class="pt-info"><b>Invoices from ${esc(d.department)} to this customer go to</b><p class="small">${esc(contact.name)} · ${esc(contact.email)}${contact.phone ? ` · ${esc(contact.phone)}` : ""}<br>${esc(contact.address)}</p></div>` : ""}
-          ${contact ? `<div class="fgrid">${f("updateBillTo", { label: `Change the ${d.department} bill-to person for this customer` })}</div>` : `<p class="pt-hint">${d.newCustomer ? "New customer" : "AR has no billing contact for " + esc(d.department) + " at this customer yet"}: tell us who to bill.</p>`}
-          ${needBillTo ? `<div class="fgrid">${f("billToName", { mandatory: true, help: null })}${f("billToEmail", { mandatory: true })}${f("billToPhone")}${f("billToAddress")}</div>` : ""}
+        ${haveCust ? `<fieldset class="psec"${sn("PT-20")}><legend>2. Contract and bill-to</legend>
+          ${contractStep(d, e, f)}
         </fieldset>` : ""}
 
         <fieldset class="psec"${sn("PT-26")}><legend>${haveCust ? "3" : "2"}. What to bill</legend>
+          ${(() => { const k = targetContract(d); return d.contractOption ? `<p class="pt-hint">Billing lines are filed under ${d.contractOption === "new" ? `new contract ${esc(d.newCtrRef || "")}` : k ? esc(ctrLabel(k)) : d.contractOption === "none" ? "the no-contract shell" : "the chosen contract"}.</p>` : ""; })()}
           <div class="fgrid">${f("title")}${f("poNumber")}</div>
           <div class="lines${e.lines ? " has-err" : ""}" id="pfLines"${sn("RL-REQ-RQL")}>${(d.lines || []).map((l, i) => lineCard(l, i, e)).join("")}</div>
           ${e.lines ? `<span class="ferr">${esc(e.lines)}</span>` : ""}
@@ -181,13 +203,7 @@ function formPage() {
           ${linesTotals(d)}
         </fieldset>
 
-        <fieldset class="psec"${sn("PT-20")}><legend>${haveCust ? "4" : "3"}. Contract</legend>
-          <div class="fgrid">${d.newCustomer || !d.customerId ? "" : f("contractId", { help: "Optional." })}${f("contractLocation")}
-            ${["repository", "physical"].includes(d.contractLocation) ? f("contractLocationRef", { mandatory: true, label: d.contractLocation === "repository" ? "Link to the contract" : "Where the physical file is", help: null }) : ""}</div>
-          ${contractBox(d)}
-        </fieldset>
-
-        <fieldset class="psec"${sn("PT-23")}><legend>${haveCust ? "5" : "4"}. Customer documents</legend>
+        <fieldset class="psec"${sn("PT-23")}><legend>${haveCust ? "4" : "3"}. Customer documents</legend>
           <p class="pt-hint">${d.newCustomer ? "New customer: AR needs all three documents." : d.customerId ? "Documents AR already holds for this customer are marked On file." : "Find the customer to see which documents AR already holds."}</p>
           <div class="docs">${DOC_TYPES.map(([t]) => docRow(t, d, onFile)).join("")}</div>
           <div class="ffield wide"${sn("PT-08")}><span class="flabel">Other supporting documents</span>
@@ -202,6 +218,8 @@ function formPage() {
   </div>`;
 }
 
+const ctrSummary = d => d.contractOption === "existing" ? (d.contractId ? `Contract ${ctrById(d.contractId)?.number}` : "Existing contract (choose one)")
+  : d.contractOption === "new" ? `New contract ${d.newCtrRef || ""}`.trim() : d.contractOption === "none" ? "No contract required" : d.contractId ? ctrLabel(ctrById(d.contractId)) : "Contract not chosen yet";
 export const formAlert = n => n ? `<div class="pt-alert err" role="alert">Please fix ${n} field${n === 1 ? "" : "s"} below.</div>` : "";
 
 export function formSide(d) {
@@ -212,7 +230,7 @@ export function formSide(d) {
     <span class="ft-code">AR-i</span>
     <h2>Submit request</h2>
     <p class="small muted">Goes to the Accounts Receivable team as a case. You'll get updates on My requests.</p>
-    <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "New customer"} (new)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(linesLabel(d))} · SGD ${fmt(t.total)}</p>
+    <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "New customer"} (new)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(ctrSummary(d))}<br>${esc(linesLabel(d))} · SGD ${fmt(t.total)}</p>
     ${labels.length ? `<p class="small"><b>Still needed</b><br>${labels.map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
     <button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
   </div>`;
@@ -264,7 +282,7 @@ function ticketPage() {
       </section>
       <aside class="pt-card"${sn("PT-13")}>
         <h2>Details</h2>
-        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Customer", esc(reqCustName(r)))}${kv("Department", esc(r.department || "—"))}${kv("Contract", esc(ctrNo(r.contractId)))}
+        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Customer", esc(reqCustName(r)))}${kv("Department", esc(r.department || "—"))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : ctrSummary(r)))}
           ${kv("Billing", esc(linesLabel(r)))}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}
 ${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>
         ${r.details ? `<p class="small">${esc(r.details)}</p>` : ""}

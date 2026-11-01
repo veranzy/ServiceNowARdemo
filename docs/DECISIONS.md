@@ -19,3 +19,5 @@ module spec under `docs/modules/`.
 | D12 | 2026-11-02 | Recurring billing is requested **once** (as a recurring billing line); AR runs it from a **billing schedule** and raises each invoice manually. | Owner (ARF) |
 | D13 | 2026-11-02 | Every AR request has **billing lines**: one-off, or recurring over a **from–to date range** (frequency Monthly by default). One request can mix both. | Owner (ARF, PT-05) |
 | D14 | 2026-11-02 | The customer is **searched first**; a new customer is added only when not found. A "first request" is simply a request for a new customer. | Owner (ARF, PT-05) |
+| D15 | 2026-11-02 | **Billing is contract level**: customer › contract › billing lines › invoices. Billing with no contract is filed under the customer's **no-contract shell** (a contract record of type shell, one per customer + department), so the hierarchy always holds. | Owner (ARF, PT-05) |
+| D16 | 2026-11-02 | The **bill-to person is held on the contract** (or shell). The department billing contact is only the default used to prefill it. | Owner (ARF, PT-05) |

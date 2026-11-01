@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Receivables Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<style>
+/* Layout: ledger workbench — summary strip, action bar, then remittance worklist beside the open-invoice ledger */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --sunk:#e9edeb; --line:#d5dcd9; --fg:#18211e; --muted:#5b6964;
+  --accent:#23458f; --accent-soft:#e3e9f6; --on-accent:#ffffff;
+  --ok:#1d7a4f; --ok-soft:#dff1e7; --warn:#9a6200; --warn-soft:#fbefd6; --bad:#b03a2e; --bad-soft:#f8e1de;
+  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
+  --f-body:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121816; --surface:#19211e; --sunk:#202a26; --line:#2f3b37; --fg:#e4ebe8; --muted:#94a39d;
+  --accent:#8eaaf0; --accent-soft:#232f4a; --on-accent:#0f1622;
+  --ok:#6cc79a; --ok-soft:#183427; --warn:#e5b25a; --warn-soft:#3a2d14; --bad:#ec8a7e; --bad-soft:#3d1f1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121816; --surface:#19211e; --sunk:#202a26; --line:#2f3b37; --fg:#e4ebe8; --muted:#94a39d;
+  --accent:#8eaaf0; --accent-soft:#232f4a; --on-accent:#0f1622;
+  --ok:#6cc79a; --ok-soft:#183427; --warn:#e5b25a; --warn-soft:#3a2d14; --bad:#ec8a7e; --bad-soft:#3d1f1b; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.num{text-align:right;white-space:nowrap}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:14px}
+h1{font-family:var(--f-display);font-weight:600;font-size:30px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;max-width:62ch}
+
+.summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.stat{padding:12px 16px;border-left:1px solid var(--line);min-width:0}
+.stat:first-child{border-left:0}
+.stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.stat .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:20px;font-weight:500;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .n{font-size:12px;color:var(--muted)}
+.meter{height:4px;border-radius:2px;background:var(--sunk);margin-top:8px;overflow:hidden;display:flex}
+.meter i{display:block;height:100%}
+
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bar .sp{flex:1}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:4px 9px;font-size:12.5px}
+.btn.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.btn.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.notice{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.notice.run{border-color:var(--accent);background:var(--accent-soft)}
+.notice.err{border-color:var(--bad);background:var(--bad-soft)}
+.notice .grow{flex:1;min-width:0}
+.spin{width:14px;height:14px;border:2px solid var(--accent);border-right-color:transparent;border-radius:50%;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+.import{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:14px;display:grid;gap:10px}
+.import .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.import textarea{width:100%;min-height:130px;border:1px solid var(--line);border-radius:7px;background:var(--bg);padding:8px;font-family:var(--f-mono);font-size:12.5px;resize:vertical}
+.hint{font-size:12.5px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:6px 11px;cursor:pointer;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:18px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;min-width:0}
+.panel>header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin:0;font-weight:700}
+h2 small{font-weight:500;color:var(--muted);letter-spacing:.02em;text-transform:none;font-size:12.5px;margin-left:6px}
+
+.pay{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;padding:13px 14px;border-bottom:1px solid var(--line);border-left:3px solid transparent}
+.pay:last-child{border-bottom:0}
+.pay.s-accepted{border-left-color:var(--ok)}
+.pay.s-proposed{border-left-color:var(--warn)}
+.pay.s-unmatched,.pay.s-rejected{border-left-color:var(--bad)}
+.payer{font-weight:600;overflow-wrap:anywhere}
+.meta{font-size:12.5px;color:var(--muted)}
+.ref{font-family:var(--f-mono);font-size:12px;background:var(--sunk);border-radius:4px;padding:1px 6px;display:inline-block;margin-top:4px;overflow-wrap:anywhere}
+.amt{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:16px;font-weight:500;margin-top:4px}
+.match{display:flex;flex-direction:column;gap:6px;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--ok-soft);color:var(--ok)}
+.c-warn{background:var(--warn-soft);color:var(--warn)}
+.c-bad{background:var(--bad-soft);color:var(--bad)}
+.c-neutral{background:var(--sunk);color:var(--muted)}
+.c-accent{background:var(--accent-soft);color:var(--accent)}
+.alloc{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 10px;font-size:13px;align-items:baseline}
+.alloc .inv{font-family:var(--f-mono);font-size:12.5px}
+.alloc .cust{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conf{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.conf .track{width:64px;height:5px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.conf .track i{display:block;height:100%}
+.reason{font-size:12.5px;color:var(--muted);max-width:65ch}
+.actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.actions select{border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:4px 6px;font-size:12.5px;max-width:100%}
+
+.picker{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);border:1px solid var(--line);border-radius:9px;background:var(--bg);overflow:hidden}
+.pk-list{border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.pk-search{padding:10px;border-bottom:1px solid var(--line)}
+.pk-search input,.pv-note{width:100%;border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:7px 9px}
+.pk-rows{max-height:380px;overflow-y:auto}
+.cand{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.cand:hover{background:var(--surface)}
+.cand.on{background:var(--accent-soft)}
+.cand input{margin-top:3px;accent-color:var(--accent)}
+.cmain{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.crow{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.cline{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pk-prev{padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pv-empty .k,.pv-sum .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.pv-empty .amt{font-size:18px}
+.pv-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pv-sum .num{text-align:left;font-size:16px}
+.pv-cards{display:flex;flex-direction:column;gap:8px}
+.pv-inv{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;margin:8px 0 0;font-size:12.5px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;text-align:right}
+.kv dt b,.kv dd b{color:var(--fg)}
+.verdict{margin:0;font-size:13px;border-radius:7px;padding:8px 10px}
+.v-ok{background:var(--ok-soft);color:var(--ok)} .v-warn{background:var(--warn-soft);color:var(--warn)}
+.warn{margin:8px 0 0;font-size:12.5px;color:var(--bad)}
+@media (max-width:760px){.picker{grid-template-columns:minmax(0,1fr)}.pk-list{border-right:0;border-bottom:1px solid var(--line)}.pk-rows{max-height:300px}}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-top:-6px;overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:9px 14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.view{display:flex;flex-direction:column;gap:18px}
+.cgrid{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:18px;align-items:start}
+.clist #custRows{max-height:70vh;overflow-y:auto}
+.citem{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:10px 14px;cursor:pointer;border-left:3px solid transparent}
+.citem:hover{background:var(--bg)}
+.citem[aria-current="true"]{background:var(--accent-soft);border-left-color:var(--accent)}
+.citem .crow b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cdetail{display:flex;flex-direction:column;gap:14px;min-width:0}
+.chead{padding:16px}
+.ch-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:flex-start}
+h3.cname{font-family:var(--f-display);font-weight:600;font-size:24px;line-height:1.15;margin:0;text-wrap:balance}
+.facts{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:13px}
+.facts .k{color:var(--muted)}
+.cnotes{margin:10px 0 0;font-size:13px;color:var(--muted);max-width:70ch}
+.cstats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.cstats .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.cstats .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctr>header{align-items:flex-start}
+.ctr-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ctr-title .mono{font-size:12.5px;color:var(--muted)}
+.ctr-title b{font-size:15px}
+.ctr-bars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.ctr-bars .lbl{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--muted)}
+.ctr-bars .lbl .num{color:var(--fg)}
+.linkish{border:0;background:none;padding:0;color:inherit;cursor:pointer;text-align:left;font:inherit}
+.linkish:hover{color:var(--accent);text-decoration:underline}
+.eform{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 12px;padding:14px;border:1px solid var(--accent);border-radius:10px;background:var(--surface)}
+.eform h4{grid-column:1/-1;margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);min-width:0}
+.fld.wide{grid-column:1/-1}
+.fld input,.fld select,.fld textarea{border:1px solid var(--line);border-radius:7px;background:var(--bg);padding:7px 9px;color:var(--fg);width:100%}
+.factions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ferr{color:var(--bad)}
+.desc{display:block;font-size:12px;color:var(--muted)}
+@media (max-width:900px){.cgrid{grid-template-columns:minmax(0,1fr)}.clist #custRows{max-height:280px}.cstats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.cstats{grid-template-columns:repeat(2,minmax(0,1fr))}.ctr-bars{grid-template-columns:minmax(0,1fr)}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);text-align:left;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th.num{text-align:right}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td .cust{display:block;max-width:22ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td .due{font-size:12px;color:var(--muted)}
+td .due.late{color:var(--bad)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+footer.note{font-size:12.5px;color:var(--muted);max-width:80ch}
+
+@media (max-width:1000px){.grid{grid-template-columns:minmax(0,1fr)}.summary{grid-template-columns:repeat(3,minmax(0,1fr))}.stat:nth-child(4){border-left:0}.stat:nth-child(n+4){border-top:1px solid var(--line)}}
+@media (max-width:640px){.pay{grid-template-columns:minmax(0,1fr)}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{border-left:0!important;border-top:1px solid var(--line)}.stat:nth-child(-n+2){border-top:0}.stat:nth-child(even){border-left:1px solid var(--line)!important}h1{font-size:25px}}
+</style>
+<style>html{-webkit-text-size-adjust:100%}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Receivables Desk</h1>
+      <p class="sub">Accounts receivable from customer master and contracts through invoicing to cash application: track what each customer owes, apply incoming payments, and see what is still open or overdue.</p>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Modules">
+    <button role="tab" id="tabCust" data-view="customers" aria-selected="true">Customers &amp; contracts</button>
+    <button role="tab" id="tabCash" data-view="cash" aria-selected="false">Cash application</button>
+  </nav>
+
+  <div id="custView" class="view">
+    <div class="bar">
+      <button class="btn primary" id="newCustBtn">New customer</button>
+      <span class="sp"></span>
+      <span class="hint" id="custTotals"></span>
+    </div>
+    <div class="cgrid">
+      <aside class="panel clist" aria-label="Customer list">
+        <header><h2>Customers <small id="custCount"></small></h2></header>
+        <div class="pk-search"><input type="search" id="custQ" placeholder="Search name, alias or parent group" aria-label="Search customers"></div>
+        <div id="custRows"></div>
+      </aside>
+      <section id="custDetail" class="cdetail" aria-label="Customer detail"></section>
+    </div>
+  </div>
+
+  <div id="cashView" class="view" hidden>
+  <section class="summary" id="summary" aria-label="Summary"></section>
+
+  <div class="bar">
+    <button class="btn primary" id="runBtn">Run auto-match</button>
+    <button class="btn" id="acceptHighBtn">Accept all ≥ 95%</button>
+    <button class="btn" id="importToggle" aria-expanded="false">Import CSV</button>
+    <button class="btn" id="sampleBtn">Load sample data</button>
+    <button class="btn" id="clearBtn">Clear all</button>
+    <span class="sp"></span>
+    <button class="btn" id="exportBtn" hidden>Export matches (.csv)</button>
+  </div>
+
+  <div class="notice" id="status" hidden></div>
+
+  <section class="import" id="importPanel" hidden aria-label="Import">
+    <div class="row">
+      <div class="seg" role="group" aria-label="Import target">
+        <button id="tgtInv" aria-pressed="true">Open invoices</button>
+        <button id="tgtPay" aria-pressed="false">Payments / remittances</button>
+      </div>
+      <label class="btn small" for="fileIn">Choose .csv file</label>
+      <input type="file" id="fileIn" accept=".csv,text/csv,text/plain" hidden>
+      <label class="hint"><input type="checkbox" id="replaceChk" checked> Replace existing rows</label>
+    </div>
+    <p class="hint" id="importHint"></p>
+    <textarea id="importText" spellcheck="false" placeholder="Paste CSV with a header row"></textarea>
+    <div class="row"><button class="btn primary small" id="importBtn">Import rows</button><span class="hint" id="importMsg"></span></div>
+  </section>
+
+  <div class="grid">
+    <section class="panel" aria-label="Payments">
+      <header>
+        <h2>Payments received <small id="payCount"></small></h2>
+        <div class="seg" role="group" aria-label="Filter">
+          <button data-f="all" aria-pressed="true">All</button>
+          <button data-f="review" aria-pressed="false">To review</button>
+          <button data-f="open" aria-pressed="false">Unmatched</button>
+          <button data-f="done" aria-pressed="false">Applied</button>
+        </div>
+      </header>
+      <div id="payList"></div>
+    </section>
+
+    <section class="panel" aria-label="Open invoices">
+      <header><h2>Invoice ledger <small id="invCount"></small></h2></header>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Invoice</th><th>Customer</th><th class="num">Amount</th><th class="num">Open</th><th>Status</th></tr></thead>
+        <tbody id="invBody"></tbody>
+      </table></div>
+    </section>
+  </div>
+  </div>
+
+  <footer class="note">Demo environment with sample data. Everything runs in your browser and nothing is saved: reloading the page resets it. Use Clear all and Import CSV to try your own (anonymised) data.</footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  // ---------- state ----------
+  const S = { customers: [], contracts: [], invoices: [], payments: [], matches: {}, pick: {}, filter: "all", target: "inv", busy: false, isSample: false,
+    view: "customers", selCust: null, custQ: "", form: null };
+  let ctl = null;
+  const $ = id => document.getElementById(id);
+
+  // ---------- helpers ----------
+  const cents = v => { if (typeof v === "number") return Math.round(v * 100);
+    let s = String(v ?? "").trim(); const neg = /^\(.*\)$/.test(s) || /^-/.test(s);
+    s = s.replace(/[^0-9.,]/g, ""); if (/,\d{2}$/.test(s) && !/\.\d/.test(s)) s = s.replace(/\./g, "").replace(",", ".");
+    s = s.replace(/,/g, ""); const n = Math.round(parseFloat(s || "0") * 100); return neg ? -n : n; };
+  const fmt = c => (c < 0 ? "−" : "") + (Math.abs(c) / 100).toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+  const normTok = s => String(s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const STOP = new Set(["PTE","LTD","LIMITED","PRIVATE","INC","LLC","CO","CORP","COMPANY","SDN","BHD","THE","GROUP","GRP","HLDGS","HOLDINGS","AND","PL","PLC","GMBH"]);
+  const nameToks = s => String(s ?? "").toUpperCase().replace(/[^A-Z0-9 ]/g, " ").split(/\s+/).filter(t => t.length > 1 && !STOP.has(t));
+  const nameSim = (a, b) => { const A = new Set(nameToks(a)), B = new Set(nameToks(b)); if (!A.size || !B.size) return 0;
+    let hit = 0; A.forEach(t => { if (B.has(t) || [...B].some(u => (u.startsWith(t) || t.startsWith(u)) && Math.min(u.length, t.length) >= 4)) hit++; });
+    return hit / Math.min(A.size, B.size); };
+  const today = new Date(); today.setHours(0,0,0,0);
+  const uid = p => p + Math.random().toString(36).slice(2, 8);
+
+  // allocations: accepted ones are applied; proposed ones are reserved
+  function invoiceUse() {
+    const applied = {}, reserved = {};
+    for (const [pid, m] of Object.entries(S.matches)) {
+      if (!m || m.status === "rejected") continue;
+      for (const a of m.allocations) {
+        const tgt = m.status === "accepted" ? applied : reserved;
+        tgt[a.invoiceId] = (tgt[a.invoiceId] || 0) + a.amount;
+      }
+    }
+    return { applied, reserved };
+  }
+  const invById = id => S.invoices.find(i => i.id === id);
+
+  // ---------- rules pass ----------
+  function digitRuns(s) { return (String(s ?? "").toUpperCase().replace(/O(?=\d)|(?<=\d)O/g, "0").match(/\d{3,}/g) || []); }
+  function rulesPass() {
+    let made = 0;
+    const pending = S.payments.filter(p => !S.matches[p.id] || S.matches[p.id].status === "unmatched");
+    for (const p of pending) {
+      const { applied, reserved } = invoiceUse();
+      const avail = i => i.amount - (applied[i.id] || 0) - (reserved[i.id] || 0);
+      const refTok = new Set(String(p.reference).toUpperCase().split(/[^A-Z0-9]+/).map(normTok).filter(Boolean));
+      const refDigits = new Set(digitRuns(p.reference));
+      const referenced = S.invoices.filter(i => {
+        if (avail(i) <= 0) return false;
+        if (refTok.has(normTok(i.number))) return true;
+        const d = (String(i.number).match(/\d{3,}/g) || []);
+        return d.length && d.some(x => refDigits.has(x));
+      });
+      if (referenced.length) {
+        const total = referenced.reduce((s, i) => s + avail(i), 0);
+        if (total === p.amount) {
+          S.matches[p.id] = { status: "proposed", method: "rule", confidence: 0.99,
+            exception: referenced.length > 1 ? "multi_invoice" : "none",
+            allocations: referenced.map(i => ({ invoiceId: i.id, amount: avail(i) })),
+            reason: `Reference cites ${referenced.map(i => i.number).join(", ")} and the amount equals the open balance exactly.` };
+          made++; continue;
+        }
+      }
+      if (!refDigits.size || !referenced.length) {
+        const cands = S.invoices.filter(i => avail(i) === p.amount && payerSim(p.payer, i) >= 0.5);
+        if (cands.length === 1) {
+          const i = cands[0];
+          S.matches[p.id] = { status: "proposed", method: "rule", confidence: 0.9, exception: "none",
+            allocations: [{ invoiceId: i.id, amount: p.amount }],
+            reason: `Only open invoice for this customer with exactly this amount (${i.number}); no reference given.` };
+          made++; continue;
+        }
+      }
+      S.matches[p.id] = S.matches[p.id] || { status: "unmatched", allocations: [] };
+    }
+    return made;
+  }
+
+  async function runMatching() {
+    if (S.busy) return;
+    if (!S.payments.length || !S.invoices.length) { setStatus("info", "Add open invoices and payments first: load the sample data or import CSV."); return; }
+    S.busy = true; render();
+    const r = rulesPass(); render();
+    S.busy = false;
+    const unm = S.payments.filter(p => S.matches[p.id]?.status !== "accepted" && S.matches[p.id]?.status !== "proposed").length;
+    if (!$("status").classList.contains("err")) setStatus("ok", `${r} payment${r === 1 ? "" : "s"} auto-matched${unm ? `, ${unm} left for manual matching with Find invoice` : ""}. Review the proposals, then accept or reject each.`);
+    render();
+  }
+
+  // ---------- actions ----------
+  function act(pid, what, extra) {
+    const m = S.matches[pid];
+    if (what === "accept" && m) m.status = "accepted";
+    if (what === "reject" && m) { m.rejectedInvoices = [...new Set([...(m.rejectedInvoices || []), ...m.allocations.map(a => a.invoiceId)])]; m.status = "rejected"; m.allocations = []; m.reason = "Rejected. Run matching again for a new proposal, or assign manually."; m.method = m.method; m.confidence = 0; m.exception = "none"; }
+    if (what === "undo" && m) m.status = "proposed";
+    if (what === "manual") {
+      const p = S.payments.find(x => x.id === pid); if (!p) return;
+      const plan = allocationPlan(p, m, extra.ids); if (!plan.total) return;
+      const prev = m && m.status === "accepted" ? m.allocations : [];
+      const all = [...prev, ...plan.rows.filter(r => r.alloc > 0).map(r => ({ invoiceId: r.i.id, amount: r.alloc }))];
+      const leftOnInvoices = plan.rows.some(r => r.after > 0);
+      const exception = plan.unapplied > 0 ? "over_pay" : leftOnInvoices ? "short_pay" : all.length > 1 ? "multi_invoice" : "none";
+      const note = (extra.note || "").trim();
+      S.matches[pid] = { status: "accepted", method: "manual", confidence: 1, exception, allocations: all,
+        reason: "Assigned manually" + (note ? `: ${note}` : "."), rejectedInvoices: m?.rejectedInvoices || [] };
+      delete S.pick[pid];
+    }
+    render();
+  }
+
+  // ---------- invoice finder (manual matching with preview) ----------
+  const DAY = 86400000;
+  function remainingToApply(p, m) { return p.amount - (m && m.status === "accepted" ? m.allocations.reduce((s, a) => s + a.amount, 0) : 0); }
+  function invoiceState(i) {
+    const { applied, reserved } = invoiceUse();
+    const holders = Object.entries(S.matches).filter(([, mm]) => mm && mm.status === "proposed" && mm.allocations.some(a => a.invoiceId === i.id))
+      .map(([pid]) => S.payments.find(x => x.id === pid)?.payer).filter(Boolean);
+    return { applied: applied[i.id] || 0, reserved: reserved[i.id] || 0, open: i.amount - (applied[i.id] || 0) - (reserved[i.id] || 0), holders };
+  }
+  function signals(p, i, open, toApply) {
+    const refD = new Set(digitRuns(p.reference));
+    const invD = String(i.number).match(/\d{3,}/g) || [];
+    const ref = invD.some(x => refD.has(x));
+    const ns = payerSim(p.payer, i);
+    const diff = toApply - open;
+    const exact = diff === 0;
+    const near = !exact && Math.abs(diff) <= Math.round(open * 0.03);
+    return { ref, ns, exact, near, diff, score: (ref ? 3 : 0) + ns * 2 + (exact ? 2 : near ? 1 : 0) };
+  }
+  function candidateList(p, m) {
+    const toApply = remainingToApply(p, m);
+    const mine = new Set((m?.allocations || []).map(a => a.invoiceId));
+    return S.invoices.filter(i => !mine.has(i.id)).map(i => { const st = invoiceState(i); return { i, st, sg: signals(p, i, st.open, toApply) }; })
+      .filter(x => x.st.open > 0).sort((a, b) => b.sg.score - a.sg.score || a.i.due.localeCompare(b.i.due));
+  }
+  function allocationPlan(p, m, ids) {
+    let avail = remainingToApply(p, m); const rows = [];
+    for (const id of ids) { const i = invById(id); if (!i) continue; const st = invoiceState(i);
+      const alloc = Math.max(0, Math.min(st.open, avail)); avail -= alloc; rows.push({ i, st, alloc, after: st.open - alloc }); }
+    return { rows, total: rows.reduce((s, r) => s + r.alloc, 0), unapplied: avail, toApply: remainingToApply(p, m) };
+  }
+  function dueText(i) {
+    const d = new Date(i.due); if (isNaN(d)) return esc(i.due || "—");
+    const days = Math.round((today - d) / DAY);
+    return days > 0 ? `<span style="color:var(--bad)">${days} day${days > 1 ? "s" : ""} overdue</span>` : days === 0 ? "Due today" : `Due in ${-days} day${days < -1 ? "s" : ""}`;
+  }
+  function candRows(p, m) {
+    const pk = S.pick[p.id]; const q = (pk.q || "").trim().toLowerCase();
+    let list = candidateList(p, m);
+    if (q) list = list.filter(x => [x.i.number, x.i.customer, fmt(x.st.open), (x.st.open / 100).toFixed(2), x.i.due].join(" ").toLowerCase().includes(q));
+    const total = list.length, shown = q ? list : list.slice(0, 12);
+    if (!shown.length) return `<div class="empty">No open invoices match “${esc(pk.q)}”.</div>`;
+    return shown.map(({ i, st, sg }) => {
+      const on = pk.sel.includes(i.id);
+      const tags = [
+        sg.ref ? `<span class="chip c-accent">Cited in reference</span>` : "",
+        sg.exact ? `<span class="chip c-ok">Amount matches</span>` : sg.near ? `<span class="chip c-warn">Within 3% (${sg.diff < 0 ? "short" : "over"} ${fmt(Math.abs(sg.diff))})</span>` : "",
+        sg.ns >= .5 ? `<span class="chip c-neutral">Name ${Math.round(sg.ns * 100)}% similar</span>` : "",
+        (m?.rejectedInvoices || []).includes(i.id) ? `<span class="chip c-bad">You rejected this</span>` : ""
+      ].join("");
+      return `<label class="cand${on ? " on" : ""}" data-candrow="${i.id}">
+        <input type="checkbox" id="pk-${p.id}-${i.id}" data-pick="${p.id}" value="${i.id}"${on ? " checked" : ""}>
+        <span class="cmain"><span class="crow"><span class="mono">${esc(i.number)}</span><span class="num">${fmt(st.open)}</span></span>
+          <span class="meta cline">${esc(i.customer)}${ctrById(i.contractId) ? " · " + esc(ctrById(i.contractId).number) : ""} · ${dueText(i)}</span>${i.desc ? `<span class="desc">${esc(i.desc)}</span>` : ""}
+          ${tags ? `<span class="chips">${tags}</span>` : ""}</span></label>`;
+    }).join("") + (!q && total > shown.length ? `<div class="hint" style="padding:8px 12px">Showing the 12 likeliest of ${total}. Search to find others.</div>` : "");
+  }
+  function previewHtml(p, m) {
+    const pk = S.pick[p.id];
+    const plan = allocationPlan(p, m, pk.sel);
+    if (!plan.rows.length) return `<div class="pv-empty"><div class="k">Payment to apply</div><div class="amt">${fmt(plan.toApply)}</div>
+      <p class="hint">Tick one or more invoices to see their full details and exactly how this payment would be applied. Nothing changes until you press Apply.</p></div>`;
+    const cards = plan.rows.map(r => {
+      const i = r.i;
+      return `<div class="pv-inv">
+        <div class="crow"><span class="mono" style="font-weight:500">${esc(i.number)}</span><span class="chip ${r.after > 0 ? "c-warn" : "c-ok"}">${r.after > 0 ? "Stays open" : "Fully paid"}</span></div>
+        <div class="meta">${esc(i.customer)}${ctrById(i.contractId) ? ` · ${esc(ctrById(i.contractId).number)} ${esc(ctrById(i.contractId).title)}` : ""}</div>${i.desc ? `<div class="desc">${esc(i.desc)}</div>` : ""}
+        <dl class="kv">
+          <dt>Invoice date</dt><dd>${esc(i.date || "—")}</dd>
+          <dt>Due</dt><dd>${esc(i.due || "—")} · ${dueText(i)}</dd>
+          <dt>Original amount</dt><dd class="num">${fmt(i.amount)}</dd>
+          ${r.st.applied ? `<dt>Already applied</dt><dd class="num">−${fmt(r.st.applied)}</dd>` : ""}
+          ${r.st.reserved ? `<dt>Held by other proposals</dt><dd class="num">−${fmt(r.st.reserved)}</dd>` : ""}
+          <dt>Open now</dt><dd class="num">${fmt(r.st.open)}</dd>
+          <dt><b>Apply from this payment</b></dt><dd class="num"><b>${fmt(r.alloc)}</b></dd>
+          <dt>Balance after</dt><dd class="num" style="color:${r.after > 0 ? "var(--warn)" : "var(--ok)"}">${fmt(r.after)}</dd>
+        </dl>
+        ${r.st.holders.length ? `<p class="warn">Also proposed for ${esc(r.st.holders.join(", "))}. Review that proposal so the invoice isn't paid twice.</p>` : ""}
+        ${r.alloc === 0 ? `<p class="warn">Nothing left from this payment to apply here. Untick it or reorder your selection.</p>` : ""}
+      </div>`; }).join("");
+    const shortRow = plan.rows.find(r => r.after > 0 && r.alloc > 0);
+    let verdict = "";
+    if (plan.unapplied > 0) verdict = `<p class="verdict v-warn">${fmt(plan.unapplied)} of this payment stays unapplied and sits on account as unallocated cash.</p>`;
+    else if (shortRow) { const pct = shortRow.after / shortRow.st.open * 100;
+      verdict = `<p class="verdict v-warn">${esc(shortRow.i.number)} is short by ${fmt(shortRow.after)} (${pct.toFixed(pct < 10 ? 1 : 0)}%). ${pct <= 3 ? "That looks like an early-payment discount or bank charge." : "That looks like a partial payment or a deduction."} The balance stays open on the invoice.</p>`; }
+    else verdict = `<p class="verdict v-ok">The payment is fully applied and every selected invoice is settled.</p>`;
+    return `<div class="pv-sum">
+        <div><div class="k">Payment</div><div class="num">${fmt(plan.toApply)}</div></div>
+        <div><div class="k">Applied</div><div class="num">${fmt(plan.total)}</div></div>
+        <div><div class="k">Unapplied</div><div class="num" style="color:${plan.unapplied > 0 ? "var(--bad)" : "inherit"}">${fmt(plan.unapplied)}</div></div>
+      </div>${verdict}
+      ${plan.rows.length > 1 ? `<p class="hint">Applied in the order you ticked them.</p>` : ""}
+      <div class="pv-cards">${cards}</div>
+      <label class="hint" for="pknote-${p.id}">Note for the audit trail (optional)</label>
+      <input class="pv-note" id="pknote-${p.id}" data-picknote="${p.id}" value="${esc(pk.note || "")}" placeholder="e.g. Confirmed by customer email 22 Oct">
+      <div class="actions"><button class="btn primary small" data-apply="${p.id}"${plan.total ? "" : " disabled"}>Apply ${fmt(plan.total)} to ${plan.rows.filter(r => r.alloc > 0).length} invoice${plan.rows.filter(r => r.alloc > 0).length === 1 ? "" : "s"}</button>
+        <button class="btn small" data-pickclear="${p.id}">Clear selection</button></div>`;
+  }
+  function pickerPanel(p, m) {
+    const pk = S.pick[p.id];
+    return `<div class="picker">
+      <div class="pk-list">
+        <div class="pk-search"><input type="search" id="pkq-${p.id}" data-pickq="${p.id}" value="${esc(pk.q || "")}" placeholder="Search invoice no., customer or amount" aria-label="Search open invoices"></div>
+        <div class="pk-rows" id="pk-list-${p.id}">${candRows(p, m)}</div>
+      </div>
+      <div class="pk-prev" id="pk-prev-${p.id}" aria-live="polite">${previewHtml(p, m)}</div>
+    </div>`;
+  }
+  function refreshPicker(pid, which) {
+    const p = S.payments.find(x => x.id === pid), m = S.matches[pid];
+    if (!p || !S.pick[pid]) return;
+    if (which !== "preview") { const el = document.getElementById("pk-list-" + pid); if (el) el.innerHTML = candRows(p, m); }
+    if (which !== "list") { const el = document.getElementById("pk-prev-" + pid); if (el) el.innerHTML = previewHtml(p, m); }
+  }
+
+  // ---------- customers → contracts → invoices ----------
+  const custById = id => S.customers.find(c => c.id === id);
+  const ctrById = id => S.contracts.find(k => k.id === id);
+  const custNames = c => c ? [c.name, c.parent, ...(c.aliases || [])].filter(Boolean) : [];
+  function payerSim(payer, inv) { return Math.max(nameSim(payer, inv.customer), ...custNames(custById(inv.customerId)).map(n => nameSim(payer, n))); }
+  function customerContext(invs) {
+    const ids = new Set(invs.map(i => i.customerId).filter(Boolean));
+    return S.customers.filter(c => ids.has(c.id)).map(c => ({ customer_id: c.id, name: c.name, parent_group: c.parent || undefined,
+      known_payer_names: c.aliases?.length ? c.aliases : undefined, payment_terms_days: c.terms, notes: c.notes || undefined,
+      contracts: S.contracts.filter(k => k.customerId === c.id).map(k => ({ number: k.number, title: k.title, billing: k.billing,
+        early_settlement_discount: k.discPct ? `${k.discPct}% if paid within ${k.discDays || 0} days` : undefined, notes: k.notes || undefined })) }));
+  }
+  function findOrCreateCustomer(name) {
+    const n = String(name || "").trim(); if (!n) return null;
+    const key = nameToks(n).join(" ");
+    let c = S.customers.find(x => custNames(x).some(y => nameToks(y).join(" ") === key));
+    if (!c) { c = { id: uid("c"), name: n, parent: "", aliases: [], terms: 30, creditLimit: 0, notes: "" }; S.customers.push(c); }
+    return c;
+  }
+  function findOrCreateContract(c, number) {
+    const n = String(number || "").trim(); if (!c || !n) return null;
+    let k = S.contracts.find(x => x.customerId === c.id && normTok(x.number) === normTok(n));
+    if (!k) { k = { id: uid("k"), customerId: c.id, number: n, title: "Imported contract", start: "", end: "", value: 0, billing: "Milestone", terms: c.terms || 30, discPct: 0, discDays: 0, notes: "" }; S.contracts.push(k); }
+    return k;
+  }
+  function rollup(invs) {
+    const { applied, reserved } = invoiceUse();
+    const r = { billed: 0, collected: 0, open: 0, overdue: 0, proposed: 0, count: invs.length };
+    for (const i of invs) { const ap = applied[i.id] || 0, op = i.amount - ap, d = new Date(i.due);
+      r.billed += i.amount; r.collected += ap; r.open += op; r.proposed += reserved[i.id] || 0;
+      if (op > 0 && !isNaN(d) && d < today) r.overdue += op; }
+    return r;
+  }
+  function ctrStatus(k) {
+    const s = new Date(k.start), e = new Date(k.end);
+    if (!isNaN(s) && today < s) return ["Not started", "c-neutral"];
+    if (!isNaN(e) && today > e) return ["Ended", "c-neutral"];
+    return ["Active", "c-ok"];
+  }
+  function nextInvoiceNumber() {
+    let max = 0, prefix = "INV-";
+    for (const i of S.invoices) { const m = String(i.number).match(/^(.*?)(\d+)$/); if (m && +m[2] > max) { max = +m[2]; prefix = m[1]; } }
+    return prefix + String(max + 1).padStart(5, "0");
+  }
+  const addDays = (iso, n) => { const d = new Date(iso); if (isNaN(d)) return ""; d.setDate(d.getDate() + (Number(n) || 0)); return d.toISOString().slice(0, 10); };
+  const isoToday = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+
+  const F = {
+    customer: [
+      { name: "name", label: "Customer name", req: true },
+      { name: "parent", label: "Parent group", ph: "Optional, e.g. holding company that pays" },
+      { name: "terms", label: "Payment terms (days)", type: "number" },
+      { name: "creditLimit", label: "Credit limit", type: "number", step: "0.01" },
+      { name: "aliases", label: "Names seen on bank statements", wide: true, ph: "Comma-separated, e.g. KESTREL ENGG, KESTREL ENG SB" },
+      { name: "notes", label: "Notes for matching", type: "textarea", wide: true, ph: "Who pays, deduction habits, remittance quirks" }],
+    contract: [
+      { name: "number", label: "Contract number", req: true },
+      { name: "title", label: "Title", req: true },
+      { name: "billing", label: "Billing", type: "select", options: ["Monthly", "Milestone", "Annual", "Time & materials", "Per PO"].map(x => [x, x]) },
+      { name: "value", label: "Contract value", type: "number", step: "0.01" },
+      { name: "start", label: "Start", type: "date" },
+      { name: "end", label: "End", type: "date" },
+      { name: "terms", label: "Payment terms (days)", type: "number" },
+      { name: "discPct", label: "Early-settlement discount %", type: "number", step: "0.1" },
+      { name: "discDays", label: "Discount if paid within (days)", type: "number" },
+      { name: "notes", label: "Notes", type: "textarea", wide: true, ph: "Instalments, retention, special terms" }],
+    invoice: [
+      { name: "number", label: "Invoice number", req: true },
+      { name: "amount", label: "Amount", type: "number", step: "0.01", req: true },
+      { name: "date", label: "Invoice date", type: "date" },
+      { name: "due", label: "Due date", type: "date", ph: "Defaults from terms" },
+      { name: "desc", label: "Description", wide: true, ph: "e.g. Milestone 2: detailed design" }]
+  };
+  function formHtml(kind, vals, title, submit) {
+    const fields = F[kind].map(f => {
+      const v = vals[f.name] ?? "", id = `f-${kind}-${f.name}`;
+      const ctl = f.type === "select" ? `<select id="${id}" name="${f.name}">${f.options.map(o => `<option value="${esc(o[0])}"${String(v) === o[0] ? " selected" : ""}>${esc(o[1])}</option>`).join("")}</select>`
+        : f.type === "textarea" ? `<textarea id="${id}" name="${f.name}" rows="2" placeholder="${esc(f.ph || "")}">${esc(v)}</textarea>`
+        : `<input id="${id}" name="${f.name}" type="${f.type || "text"}"${f.step ? ` step="${f.step}"` : ""}${f.req ? " required" : ""} value="${esc(v)}" placeholder="${esc(f.ph || "")}">`;
+      return `<label class="fld${f.wide ? " wide" : ""}" for="${id}"><span>${esc(f.label)}</span>${ctl}</label>`;
+    }).join("");
+    return `<form class="eform" data-form="${kind}" novalidate><h4>${esc(title)}</h4>${fields}
+      <div class="factions"><button class="btn primary small" type="submit">${esc(submit)}</button><button class="btn small" type="button" data-cact="cancel">Cancel</button><span class="hint ferr" id="ferr"></span></div></form>`;
+  }
+
+  function renderCustomers() {
+    const q = S.custQ.trim().toLowerCase();
+    const all = S.customers.map(c => ({ c, r: rollup(S.invoices.filter(i => i.customerId === c.id)), nk: S.contracts.filter(k => k.customerId === c.id).length }))
+      .sort((a, b) => b.r.overdue - a.r.overdue || b.r.open - a.r.open || a.c.name.localeCompare(b.c.name));
+    const list = q ? all.filter(x => custNames(x.c).join(" ").toLowerCase().includes(q)) : all;
+    if (!S.selCust || !custById(S.selCust)) S.selCust = list[0]?.c.id || null;
+    $("custCount").textContent = S.customers.length ? String(S.customers.length) : "";
+    const tot = rollup(S.invoices);
+    $("custTotals").textContent = S.customers.length ? `${S.contracts.length} contracts · Open AR ${fmt(tot.open)} · Overdue ${fmt(tot.overdue)}` : "";
+    $("custRows").innerHTML = list.length ? list.map(({ c, r, nk }) => `
+      <button class="citem" data-cust="${c.id}" aria-current="${c.id === S.selCust}">
+        <span class="crow"><b>${esc(c.name)}</b><span class="num">${fmt(r.open)}</span></span>
+        <span class="crow meta"><span>${nk} contract${nk === 1 ? "" : "s"} · ${r.count} invoice${r.count === 1 ? "" : "s"}</span>${r.overdue > 0 ? `<span class="chip c-bad">${fmt(r.overdue)} overdue</span>` : r.open > 0 ? `<span class="chip c-neutral">Current</span>` : `<span class="chip c-ok">Settled</span>`}</span>
+      </button>`).join("") : `<div class="empty">${S.customers.length ? "No customers match." : "No customers yet."}</div>`;
+    renderCustomerDetail();
+  }
+
+  function invStatus(i, use) {
+    const ap = use.applied[i.id] || 0, rs = use.reserved[i.id] || 0, open = i.amount - ap;
+    return open <= 0 ? ["Paid", "c-ok"] : ap > 0 ? ["Part paid", "c-accent"] : rs > 0 ? ["Proposed", "c-warn"] : ["Open", "c-neutral"];
+  }
+  function invTable(invs, ctrId) {
+    const use = invoiceUse();
+    if (!invs.length) return `<div class="empty">No invoices on this ${ctrId ? "contract" : "customer"} yet.</div>`;
+    return `<div class="tablewrap"><table><thead><tr><th>Invoice</th><th>Dates</th><th class="num">Amount</th><th class="num">Open</th><th>Status</th></tr></thead><tbody>${
+      invs.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).map(i => { const ap = use.applied[i.id] || 0, open = i.amount - ap; const st = invStatus(i, use);
+        const d = new Date(i.due), late = open > 0 && !isNaN(d) && d < today;
+        return `<tr><td><span class="mono">${esc(i.number)}</span>${i.desc ? `<span class="desc">${esc(i.desc)}</span>` : ""}</td>
+          <td><span class="desc" style="color:var(--fg)">${esc(i.date || "—")}</span><span class="due ${late ? "late" : ""}">${late ? "Overdue · " : "Due "}${esc(i.due || "—")}</span></td>
+          <td class="num">${fmt(i.amount)}</td><td class="num">${fmt(open)}</td><td><span class="chip ${st[1]}">${st[0]}</span></td></tr>`; }).join("")}</tbody></table></div>`;
+  }
+  function meterRow(label, a, b, color) {
+    const pct = b > 0 ? Math.max(0, Math.min(100, a / b * 100)) : 0;
+    return `<div><div class="lbl"><span>${label}</span><span><span class="num">${fmt(a)}</span> of ${fmt(b)}${b > 0 ? ` · ${pct.toFixed(0)}%` : ""}</span></div>
+      <div class="meter"><i style="width:${pct}%;background:${color}"></i></div></div>`;
+  }
+
+  function renderCustomerDetail() {
+    const el = $("custDetail"); const f = S.form;
+    if (f && f.kind === "customer" && !f.id) { el.innerHTML = formHtml("customer", { terms: 30 }, "New customer", "Create customer"); return; }
+    const c = custById(S.selCust);
+    if (!c) { el.innerHTML = `<div class="panel empty">Add a customer to start building its contracts and invoices, or load the sample data with Load sample data on the Cash application tab.</div>`; return; }
+    const invs = S.invoices.filter(i => i.customerId === c.id);
+    const ctrs = S.contracts.filter(k => k.customerId === c.id).sort((a, b) => String(b.start).localeCompare(String(a.start)));
+    const r = rollup(invs);
+    const value = ctrs.reduce((s, k) => s + (k.value || 0), 0);
+    const head = f && f.kind === "customer" && f.id === c.id
+      ? formHtml("customer", { ...c, aliases: (c.aliases || []).join(", "), creditLimit: c.creditLimit ? (c.creditLimit / 100).toFixed(2) : "" }, "Edit customer", "Save changes")
+      : `<div class="panel chead">
+        <div class="ch-top"><div><h3 class="cname">${esc(c.name)}</h3>${c.parent ? `<div class="meta">Part of ${esc(c.parent)}</div>` : ""}</div>
+          <div class="actions"><button class="btn small" data-cact="editcust">Edit</button><button class="btn small primary" data-cact="newctr">New contract</button></div></div>
+        <div class="facts">
+          <span><span class="k">Terms</span> Net ${esc(c.terms || 0)}</span>
+          <span><span class="k">Credit limit</span> <span class="mono">${c.creditLimit ? fmt(c.creditLimit) : "Not set"}</span></span>
+          ${c.aliases?.length ? `<span><span class="k">Pays as</span> ${c.aliases.map(a => `<span class="ref" style="margin:0">${esc(a)}</span>`).join(" ")}</span>` : ""}
+        </div>
+        ${c.notes ? `<p class="cnotes">${esc(c.notes)}</p>` : ""}
+        ${c.creditLimit ? `<div style="margin-top:12px;max-width:420px">${meterRow("Credit used (open AR)", r.open, c.creditLimit, r.open > c.creditLimit ? "var(--bad)" : r.open > c.creditLimit * .8 ? "var(--warn)" : "var(--accent)")}</div>` : ""}
+        <div class="cstats">
+          <div><div class="k">Contract value</div><div class="v">${fmt(value)}</div></div>
+          <div><div class="k">Billed</div><div class="v">${fmt(r.billed)}</div></div>
+          <div><div class="k">Collected</div><div class="v">${fmt(r.collected)}</div></div>
+          <div><div class="k">Open AR</div><div class="v">${fmt(r.open)}</div></div>
+          <div><div class="k">Overdue</div><div class="v" style="color:${r.overdue > 0 ? "var(--bad)" : "inherit"}">${fmt(r.overdue)}</div></div>
+        </div></div>`;
+    const newCtr = f && f.kind === "contract" && !f.id ? formHtml("contract", { billing: "Monthly", terms: c.terms || 30, start: isoToday() }, `New contract for ${c.name}`, "Create contract") : "";
+    const ctrHtml = ctrs.map(k => {
+      if (f && f.kind === "contract" && f.id === k.id) return formHtml("contract", { ...k, value: k.value ? (k.value / 100).toFixed(2) : "" }, `Edit ${k.number}`, "Save contract");
+      const ki = invs.filter(i => i.contractId === k.id); const kr = rollup(ki); const st = ctrStatus(k);
+      const invForm = f && f.kind === "invoice" && f.parentId === k.id
+        ? `<div style="padding:12px 14px;border-bottom:1px solid var(--line)">${formHtml("invoice", { number: nextInvoiceNumber(), date: isoToday() }, `New invoice on ${k.number}`, "Create invoice")}</div>` : "";
+      return `<section class="panel ctr" aria-label="Contract ${esc(k.number)}">
+        <header><div class="ctr-title"><span class="mono">${esc(k.number)}</span><b>${esc(k.title)}</b>
+            <span class="meta">${esc(k.billing)} · ${esc(k.start || "?")} to ${esc(k.end || "open-ended")} · Net ${esc(k.terms || c.terms || 0)}${k.discPct ? ` · ${esc(k.discPct)}% discount within ${esc(k.discDays || 0)} days` : ""}</span>
+            ${k.notes ? `<span class="meta">${esc(k.notes)}</span>` : ""}</div>
+          <div class="actions"><span class="chip ${st[1]}">${st[0]}</span><button class="btn small" data-cact="editctr" data-id="${k.id}">Edit</button><button class="btn small" data-cact="newinv" data-id="${k.id}">Add invoice</button></div></header>
+        <div class="ctr-bars">${meterRow("Billed against contract value", kr.billed, k.value || 0, "var(--accent)")}${meterRow("Collected of billed", kr.collected, kr.billed, "var(--ok)")}</div>
+        ${invForm}${invTable(ki, k.id)}</section>`;
+    }).join("");
+    const loose = invs.filter(i => !i.contractId || !ctrById(i.contractId));
+    const looseHtml = loose.length ? `<section class="panel ctr"><header><div class="ctr-title"><b>Invoices without a contract</b><span class="meta">One-off or imported invoices. Edit the contract list to link future billing.</span></div></header>${invTable(loose, null)}</section>` : "";
+    el.innerHTML = head + newCtr + (ctrs.length || newCtr ? ctrHtml : `<div class="panel empty">No contracts yet for this customer. Use New contract to add one.</div>`) + looseHtml;
+  }
+
+  function submitForm(form) {
+    const kind = form.dataset.form, fd = Object.fromEntries(new FormData(form).entries()), f = S.form || {};
+    const err = msg => { const e = form.querySelector("#ferr"); if (e) e.textContent = msg; };
+    const t = s => String(s ?? "").trim();
+    if (kind === "customer") {
+      if (!t(fd.name)) return err("Enter the customer name.");
+      const vals = { name: t(fd.name), parent: t(fd.parent), terms: Number(fd.terms) || 0, creditLimit: fd.creditLimit ? cents(fd.creditLimit) : 0,
+        aliases: t(fd.aliases).split(",").map(t).filter(Boolean), notes: t(fd.notes) };
+      if (f.id) { const c = custById(f.id); Object.assign(c, vals); S.invoices.forEach(i => { if (i.customerId === c.id) i.customer = c.name; }); }
+      else { const c = { id: uid("c"), ...vals }; S.customers.push(c); S.selCust = c.id; }
+    } else if (kind === "contract") {
+      if (!t(fd.number) || !t(fd.title)) return err("Enter a contract number and title.");
+      const vals = { number: t(fd.number), title: t(fd.title), billing: fd.billing, value: fd.value ? cents(fd.value) : 0, start: fd.start, end: fd.end,
+        terms: Number(fd.terms) || 0, discPct: Number(fd.discPct) || 0, discDays: Number(fd.discDays) || 0, notes: t(fd.notes) };
+      if (S.contracts.some(k => k.id !== f.id && normTok(k.number) === normTok(vals.number))) return err(`Contract ${vals.number} already exists.`);
+      if (f.id) Object.assign(ctrById(f.id), vals); else S.contracts.push({ id: uid("k"), customerId: S.selCust, ...vals });
+    } else if (kind === "invoice") {
+      const k = ctrById(f.parentId), c = custById(k?.customerId); if (!k || !c) return;
+      const amount = cents(fd.amount);
+      if (!t(fd.number)) return err("Enter an invoice number.");
+      if (!(amount > 0)) return err("Enter an amount greater than zero.");
+      if (S.invoices.some(i => normTok(i.number) === normTok(fd.number))) return err(`Invoice ${t(fd.number)} already exists.`);
+      const date = fd.date || isoToday();
+      S.invoices.push({ id: uid("i"), customerId: c.id, contractId: k.id, customer: c.name, number: t(fd.number), desc: t(fd.desc), date,
+        due: fd.due || addDays(date, k.terms || c.terms || 30), amount, currency: "SGD" });
+      S.isSample = false;
+    }
+    S.form = null; render();
+  }
+
+  function setView(v) {
+    S.view = v;
+    $("cashView").hidden = v !== "cash"; $("custView").hidden = v !== "customers";
+    $("tabCash").setAttribute("aria-selected", v === "cash"); $("tabCust").setAttribute("aria-selected", v === "customers");
+    render();
+  }
+
+  // ---------- render ----------
+  const EXC = { none: ["Exact", "c-ok"], multi_invoice: ["Multi-invoice", "c-accent"], discount: ["Discount taken", "c-warn"], short_pay: ["Short pay", "c-warn"], partial: ["Partial", "c-warn"], over_pay: ["Overpayment", "c-warn"], ambiguous: ["Ambiguous", "c-bad"], unidentified: ["Unidentified", "c-bad"] };
+  const STATUS = { accepted: ["Applied", "c-ok"], proposed: ["Proposed", "c-warn"], unmatched: ["Unmatched", "c-bad"], rejected: ["Rejected", "c-bad"] };
+  const METHOD = { rule: "Auto", manual: "Manual" };
+
+  function render() {
+    const { applied, reserved } = invoiceUse();
+    // summary
+    const arTotal = S.invoices.reduce((s, i) => s + i.amount, 0);
+    const appliedTotal = Object.values(applied).reduce((s, v) => s + v, 0);
+    const reservedTotal = Object.values(reserved).reduce((s, v) => s + v, 0);
+    const cash = S.payments.reduce((s, p) => s + p.amount, 0);
+    const unapplied = cash - appliedTotal - reservedTotal;
+    const nAcc = S.payments.filter(p => S.matches[p.id]?.status === "accepted").length;
+    const nProp = S.payments.filter(p => S.matches[p.id]?.status === "proposed").length;
+    const pct = (a, b) => b ? Math.max(0, Math.min(100, a / b * 100)) : 0;
+    $("summary").innerHTML = `
+      <div class="stat"><div class="k">Open AR</div><div class="v">${fmt(arTotal - appliedTotal)}</div><div class="n">${S.invoices.length} invoices</div></div>
+      <div class="stat"><div class="k">Cash received</div><div class="v">${fmt(cash)}</div><div class="n">${S.payments.length} payments</div></div>
+      <div class="stat"><div class="k">Applied</div><div class="v">${fmt(appliedTotal)}</div><div class="n">${nAcc} accepted</div>
+        <div class="meter"><i style="width:${pct(appliedTotal, cash)}%;background:var(--ok)"></i><i style="width:${pct(reservedTotal, cash)}%;background:var(--warn)"></i></div></div>
+      <div class="stat"><div class="k">Awaiting review</div><div class="v">${fmt(reservedTotal)}</div><div class="n">${nProp} proposals</div></div>
+      <div class="stat"><div class="k">Unapplied cash</div><div class="v" style="color:${unapplied > 0 ? "var(--bad)" : "inherit"}">${fmt(unapplied)}</div><div class="n">${S.isSample ? "Sample data" : "On account"}</div></div>`;
+
+    // payments
+    const filt = p => { const st = S.matches[p.id]?.status || "unmatched";
+      return S.filter === "all" || (S.filter === "review" && st === "proposed") || (S.filter === "open" && (st === "unmatched" || st === "rejected")) || (S.filter === "done" && st === "accepted"); };
+    const rows = S.payments.filter(filt);
+    $("payCount").textContent = S.payments.length ? `${rows.length} of ${S.payments.length}` : "";
+    const openInv = S.invoices.map(i => ({ i, open: i.amount - (applied[i.id] || 0) - (reserved[i.id] || 0) })).filter(x => x.open > 0);
+    $("payList").innerHTML = rows.length ? rows.map(p => {
+      const m = S.matches[p.id] || { status: "unmatched", allocations: [] };
+      const [sl, sc] = STATUS[m.status] || STATUS.unmatched;
+      const exc = m.exception && m.exception !== "none" || m.status === "proposed" || m.status === "accepted" ? (EXC[m.exception] || [m.exception, "c-neutral"]) : null;
+      const allocTotal = m.allocations.reduce((s, a) => s + a.amount, 0);
+      const confColor = m.confidence >= .9 ? "var(--ok)" : m.confidence >= .7 ? "var(--warn)" : "var(--bad)";
+      const allocHtml = m.allocations.length ? `<div class="alloc">${m.allocations.map(a => { const i = invById(a.invoiceId) || {};
+          return `<span class="inv">${esc(i.number)}</span><span class="cust">${esc(i.customer)}</span><span class="num">${fmt(a.amount)}</span>`; }).join("")}
+          ${p.amount - allocTotal !== 0 ? `<span class="inv" style="color:var(--muted)">Unapplied</span><span></span><span class="num" style="color:var(--bad)">${fmt(p.amount - allocTotal)}</span>` : ""}</div>` : "";
+      const pickable = openInv.filter(x => !m.allocations.some(a => a.invoiceId === x.i.id));
+      const canAddManual = m.status !== "proposed" && (p.amount - (m.status === "accepted" ? allocTotal : 0)) > 0 && pickable.length;
+      const pk = S.pick[p.id];
+      const pkOpen = canAddManual && pk && pk.open;
+      const manual = canAddManual ? `<button class="btn small" data-pickopen="${p.id}" aria-expanded="${pkOpen ? "true" : "false"}">${pkOpen ? "Close finder" : m.status === "accepted" ? "Add invoice…" : "Find invoice…"}</button>` : "";
+      const pickerHtml = pkOpen ? pickerPanel(p, m) : "";
+      const btns = m.status === "proposed" ? `<button class="btn small ok" data-act="accept" data-id="${p.id}">Accept</button><button class="btn small bad" data-act="reject" data-id="${p.id}">Reject</button>`
+        : m.status === "accepted" && m.method !== "manual" ? `<button class="btn small" data-act="undo" data-id="${p.id}">Undo</button>`
+        : m.status === "accepted" ? `<button class="btn small" data-act="reject" data-id="${p.id}">Remove</button>` : "";
+      return `<article class="pay s-${m.status}">
+        <div><div class="payer">${esc(p.payer)}</div><div class="meta">${esc(p.date)} · ${esc(p.currency)}</div>
+          ${p.reference ? `<span class="ref">${esc(p.reference)}</span>` : `<span class="ref" style="color:var(--muted)">no reference</span>`}
+          <div class="amt">${fmt(p.amount)}</div></div>
+        <div class="match">
+          <div class="chips"><span class="chip ${sc}">${sl}</span>${exc ? `<span class="chip ${exc[1]}">${esc(exc[0])}</span>` : ""}${m.method && m.status !== "unmatched" && m.status !== "rejected" ? `<span class="chip c-neutral">${METHOD[m.method] || ""}</span>` : ""}
+            ${m.allocations.length && m.method !== "manual" ? `<span class="conf"><span class="track"><i style="width:${Math.round(m.confidence * 100)}%;background:${confColor}"></i></span>${Math.round(m.confidence * 100)}%</span>` : ""}</div>
+          ${allocHtml}
+          ${m.reason ? `<div class="reason">${esc(m.reason)}</div>` : (m.status === "unmatched" ? `<div class="reason">Not matched yet. Run auto-match or use Find invoice.</div>` : "")}
+          <div class="actions">${btns}${manual}</div>
+        </div>${pickerHtml}</article>`;
+    }).join("") : `<div class="empty">${S.payments.length ? "Nothing in this view." : "No payments yet. Load the sample data or import a bank statement / remittance CSV."}</div>`;
+
+    // invoices
+    $("invCount").textContent = S.invoices.length ? `${S.invoices.length}` : "";
+    $("invBody").innerHTML = S.invoices.length ? S.invoices.map(i => {
+      const ap = applied[i.id] || 0, rs = reserved[i.id] || 0, open = i.amount - ap;
+      const st = open <= 0 ? ["Paid", "c-ok"] : ap > 0 ? ["Part paid", "c-accent"] : rs > 0 ? ["Proposed", "c-warn"] : ["Open", "c-neutral"];
+      const dueD = new Date(i.due); const late = open > 0 && !isNaN(dueD) && dueD < today;
+      return `<tr><td><span class="mono">${esc(i.number)}</span><span class="due ${late ? "late" : ""}" style="display:block">${late ? "Overdue · " : "Due "}${esc(i.due)}</span></td>
+        <td><button class="linkish cust" data-gocust="${esc(i.customerId || "")}" title="Open ${esc(i.customer)}">${esc(i.customer)}</button><span class="desc">${esc(ctrById(i.contractId)?.number || "No contract")}</span></td>
+        <td class="num">${fmt(i.amount)}</td><td class="num">${fmt(open)}</td><td><span class="chip ${st[1]}">${st[0]}</span></td></tr>`;
+    }).join("") : `<tr><td colspan="5" class="empty">No invoices yet.</td></tr>`;
+
+    $("runBtn").disabled = S.busy; $("runBtn").textContent = S.busy ? "Matching…" : "Run auto-match";
+    $("acceptHighBtn").disabled = S.busy || !S.payments.some(p => S.matches[p.id]?.status === "proposed" && S.matches[p.id].confidence >= .95);
+    $("exportBtn").hidden = !Object.values(S.matches).some(m => m && m.allocations.length);
+    if (S.view === "customers") renderCustomers();
+  }
+
+  function setStatus(kind, text, withStop) {
+    const el = $("status"); el.hidden = false; el.className = "notice" + (kind === "run" ? " run" : kind === "err" ? " err" : "");
+    el.innerHTML = (kind === "run" ? `<span class="spin" aria-hidden="true"></span>` : "") + `<span class="grow">${esc(text)}</span>` +
+      (withStop ? `<button class="btn small" id="stopBtn">Stop</button>` : `<button class="btn small" id="dismissBtn" aria-label="Dismiss">Dismiss</button>`);
+  }
+
+
+  // ---------- CSV ----------
+  function parseCSV(text) {
+    const rows = []; let row = [], f = "", q = false;
+    for (let i = 0; i < text.length; i++) { const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+      else if (c === '"') q = true; else if (c === ",") { row.push(f); f = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+      else f += c; }
+    if (f.length || row.length) { row.push(f); rows.push(row); }
+    return rows.filter(r => r.some(x => x.trim() !== ""));
+  }
+  const COLS = {
+    inv: { customer: ["customer","client","account","bill to","name"], number: ["invoice","inv","number","doc"], date: ["invoice date","date","issued"], due: ["due"], amount: ["open","balance","amount","total"], currency: ["currency","ccy","cur"], contract: ["contract","agreement","po"], desc: ["description","desc","item","line"] },
+    pay: { payer: ["payer","remitter","from","customer","name","description"], date: ["date","value date","received"], amount: ["amount","credit","received","value"], reference: ["reference","ref","memo","remittance","narrative","details"], currency: ["currency","ccy","cur"] }
+  };
+  function mapHeader(head, spec) {
+    const h = head.map(x => x.trim().toLowerCase()); const out = {}; const used = new Set();
+    for (const [k, keys] of Object.entries(spec)) {
+      for (const key of keys) { const idx = h.findIndex((x, j) => !used.has(j) && (x === key || x.includes(key))); if (idx >= 0) { out[k] = idx; used.add(idx); break; } }
+    }
+    return out;
+  }
+  function importCSV() {
+    const text = $("importText").value; const rows = parseCSV(text);
+    if (rows.length < 2) { $("importMsg").textContent = "Need a header row and at least one data row."; return; }
+    const t = S.target, spec = COLS[t], map = mapHeader(rows[0], spec);
+    const need = t === "inv" ? ["customer","number","amount"] : ["payer","amount"];
+    const miss = need.filter(k => map[k] === undefined);
+    if (miss.length) { $("importMsg").textContent = `Couldn't find column${miss.length > 1 ? "s" : ""}: ${miss.join(", ")}. Rename the header and try again.`; return; }
+    const get = (r, k) => map[k] === undefined ? "" : (r[map[k]] ?? "").trim();
+    if (S.isSample) { S.customers = []; S.contracts = []; S.invoices = []; S.payments = []; S.matches = {}; S.pick = {}; S.isSample = false; S.selCust = null; }
+    const nCust = S.customers.length, nCtr = S.contracts.length;
+    const recs = t === "inv"
+      ? rows.slice(1).filter(r => get(r, "number") && cents(get(r, "amount")) > 0).map(r => {
+          const c = findOrCreateCustomer(get(r, "customer")), k = findOrCreateContract(c, get(r, "contract"));
+          return { id: uid("i"), customerId: c?.id, contractId: k?.id, customer: c ? c.name : get(r, "customer"), number: get(r, "number"), desc: get(r, "desc"),
+            date: get(r, "date"), due: get(r, "due") || addDays(get(r, "date"), k?.terms || c?.terms || 30) || get(r, "date"), amount: cents(get(r, "amount")), currency: get(r, "currency") || "SGD" }; })
+      : rows.slice(1).map(r => ({ id: uid("p"), payer: get(r, "payer"), date: get(r, "date"), amount: cents(get(r, "amount")), reference: get(r, "reference"), currency: get(r, "currency") || "SGD" }))
+          .filter(x => x.amount > 0);
+    if (t === "inv") { if ($("replaceChk").checked) { S.invoices = []; S.matches = {}; } S.invoices.push(...recs); }
+    else { if ($("replaceChk").checked) { S.payments = []; S.matches = {}; } S.payments.push(...recs); }
+    const extra = t === "inv" && (S.customers.length > nCust || S.contracts.length > nCtr) ? ` Created ${S.customers.length - nCust} customer${S.customers.length - nCust === 1 ? "" : "s"} and ${S.contracts.length - nCtr} contract${S.contracts.length - nCtr === 1 ? "" : "s"}; review them under Customers & contracts.` : "";
+    $("importMsg").textContent = `Imported ${recs.length} ${t === "inv" ? "invoices" : "payments"}.${extra}`;
+    $("importText").value = ""; render();
+  }
+  function setTarget(t) {
+    S.target = t; $("tgtInv").setAttribute("aria-pressed", t === "inv"); $("tgtPay").setAttribute("aria-pressed", t === "pay");
+    $("importHint").textContent = t === "inv"
+      ? "Columns: customer, invoice, invoice date, due date, amount (open balance), currency, and optionally contract and description. Customers and contracts are linked by name and number, and created if new."
+      : "Columns: payer, date, amount, reference (memo or remittance text), currency. Bank statement exports work if they have these.";
+  }
+
+  async function exportCSV() {
+    const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = [["payment_payer","payment_date","payment_amount","payment_reference","invoice_number","customer","allocated_amount","status","method","confidence","exception","reason"].join(",")];
+    for (const p of S.payments) { const m = S.matches[p.id];
+      if (!m || !m.allocations.length) { lines.push([q(p.payer), q(p.date), (p.amount/100).toFixed(2), q(p.reference), "", "", "0.00", q(m?.status || "unmatched"), q(m?.method || ""), "", q(m?.exception || ""), q(m?.reason || "")].join(",")); continue; }
+      for (const a of m.allocations) { const i = invById(a.invoiceId) || {};
+        lines.push([q(p.payer), q(p.date), (p.amount/100).toFixed(2), q(p.reference), q(i.number), q(i.customer), (a.amount/100).toFixed(2), q(m.status), q(m.method), m.confidence.toFixed(2), q(m.exception), q(m.reason)].join(",")); } }
+    const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
+    const a = document.createElement("a"); a.href = url; a.download = `cash-application-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // ---------- sample data ----------
+  function loadSample() {
+    const cus = [
+      ["harb","Harbourline Logistics Pte Ltd","",["HARBOURLINE LOGISTICS PTE"],30,60000,""],
+      ["meri","Meridian Foods Pte Ltd","",[],30,40000,""],
+      ["kest","Kestrel Engineering Sdn Bhd","",["KESTREL ENGG SDN BHD"],30,150000,"Malaysian entity; pays in SGD from a Singapore account."],
+      ["tanj","Tanjong Retail Group","",[],30,15000,"POS retainer billed on the 12th of each month."],
+      ["orch","Orchid Clinics Pte Ltd","",[],30,10000,"Raises credit notes for SLA downtime and deducts them from payments."],
+      ["nova","Novabay Software Pte Ltd","",["NOVABAY SW"],30,60000,""],
+      ["bws","Brightwater Hotels (Sentosa) Pte Ltd","Brightwater Hospitality Holdings",[],30,25000,"Group treasury pays for all Brightwater hotels in one transfer."],
+      ["bwo","Brightwater Hotels (Orchard) Pte Ltd","Brightwater Hospitality Holdings",[],30,25000,"Group treasury pays for all Brightwater hotels in one transfer."],
+      ["lume","Lumen Print Studio","",[],14,5000,"Sole proprietorship owned by Lionel Tan; sometimes pays from his personal account."],
+      ["paci","Pacific Crest Marine Pte Ltd","",[],30,80000,""]
+    ];
+    const ctr = [
+      ["harb","HL-2026-01","Warehouse management services","2026-04-01","2027-03-31",149760,"Monthly",30,0,0,""],
+      ["harb","HL-2026-02","Freight audit","2026-07-01","2026-12-31",20000,"Time & materials",30,0,0,""],
+      ["meri","MF-2025-07","Cold-chain monitoring subscription","2025-07-01","2027-06-30",34902,"Milestone",30,0,0,"Billed quarterly in arrears."],
+      ["kest","KE-2026-03","Plant retrofit design","2026-03-01","2027-02-28",120000,"Milestone",30,1,30,""],
+      ["tanj","TR-2026-02","POS support retainer","2026-02-01","2027-01-31",52800,"Monthly",30,0,0,""],
+      ["orch","OC-2026-01","Clinic scheduling licences","2026-01-01","2026-12-31",23760,"Monthly",30,0,0,"SLA credits are issued as credit notes."],
+      ["nova","NB-2026-05","Data platform implementation","2026-05-01","2026-12-31",60000,"Milestone",30,0,0,""],
+      ["bws","BW-S-2026","Guest Wi-Fi managed service","2026-01-01","2026-12-31",74880,"Monthly",30,0,0,""],
+      ["bwo","BW-O-2026","Guest Wi-Fi managed service","2026-01-01","2026-12-31",69120,"Monthly",30,0,0,""],
+      ["lume","LP-PO-0193","Event collateral printing","2026-09-01","2026-09-30",760,"Per PO",14,0,0,""],
+      ["paci","PC-2026-02","Vessel telemetry rollout","2026-06-01","2027-05-31",54900,"Milestone",30,0,0,"Milestone 2 may be paid in two instalments by agreement."]
+    ];
+    const inv = [
+      ["harb","HL-2026-01","INV-10041","2026-08-28","2026-09-27",12480,"Warehouse services, Aug 2026"],
+      ["harb","HL-2026-02","INV-10042","2026-09-04","2026-10-04",3150,"Freight audit hours, Aug 2026"],
+      ["meri","MF-2025-07","INV-10043","2026-09-05","2026-10-05",8725.5,"Monitoring subscription, Q3 2026"],
+      ["kest","KE-2026-03","INV-10044","2026-09-10","2026-10-10",21600,"Milestone 2: detailed design"],
+      ["tanj","TR-2026-02","INV-10045","2026-08-12","2026-09-11",4400,"Retainer, Aug 2026"],
+      ["tanj","TR-2026-02","INV-10046","2026-09-12","2026-10-12",4400,"Retainer, Sep 2026"],
+      ["orch","OC-2026-01","INV-10047","2026-09-15","2026-10-15",1980,"Licences, Sep 2026"],
+      ["nova","NB-2026-05","INV-10048","2026-09-18","2026-10-18",15000,"Milestone 3: data migration"],
+      ["bws","BW-S-2026","INV-10049","2026-09-20","2026-10-20",6240,"Managed Wi-Fi, Sep 2026"],
+      ["bwo","BW-O-2026","INV-10050","2026-09-20","2026-10-20",5760,"Managed Wi-Fi, Sep 2026"],
+      ["lume","LP-PO-0193","INV-10051","2026-09-22","2026-10-06",760,"Event brochures"],
+      ["meri","","INV-10052","2026-09-25","2026-10-25",2310,"Replacement temperature sensors"],
+      ["kest","KE-2026-03","INV-10053","2026-09-28","2026-10-28",9850,"Milestone 3: tender drawings"],
+      ["paci","PC-2026-02","INV-10054","2026-10-01","2026-10-31",18300,"Milestone 2: fleet installation"]
+    ];
+    const pay = [
+      ["HARBOURLINE LOGISTICS PTE","2026-10-02",15630,"INV 10041/10042"],
+      ["MERIDIAN FOODS PTE LTD","2026-10-05",8725.5,"PAYMENT INV-10043"],
+      ["KESTREL ENGG SDN BHD","2026-10-09",21384,"INV10044 LESS 1% EARLY SETTLEMENT"],
+      ["TANJONG RETAIL GRP","2026-10-11",4400,"OCT PAYMT"],
+      ["ORCHID CLINICS","2026-10-13",1780,"INV-10047 LESS CREDIT NOTE CN-221"],
+      ["BRIGHTWATER HOSPITALITY HLDGS","2026-10-16",12000,"SENTOSA+ORCHARD SEPT"],
+      ["NOVABAY SW","2026-10-17",15000,"INV-1OO48"],
+      ["L. TAN","2026-10-20",760,"LUMEN PRINT"],
+      ["MERIDIAN FOODS PTE LTD","2026-10-21",2310,""],
+      ["UNKNOWN REMITTER","2026-10-22",3500,"TRF 88213004"],
+      ["PACIFIC CREST MARINE","2026-10-23",9150,"INV-10054 PART 1 OF 2"]
+    ];
+    const cid = {}, kid = {};
+    S.customers = cus.map(r => { const c = { id: uid("c"), name: r[1], parent: r[2], aliases: r[3], terms: r[4], creditLimit: cents(r[5]), notes: r[6] }; cid[r[0]] = c; return c; });
+    S.contracts = ctr.map(r => { const k = { id: uid("k"), customerId: cid[r[0]].id, number: r[1], title: r[2], start: r[3], end: r[4], value: cents(r[5]), billing: r[6], terms: r[7], discPct: r[8], discDays: r[9], notes: r[10] }; kid[r[1]] = k; return k; });
+    S.invoices = inv.map(r => ({ id: uid("i"), customerId: cid[r[0]].id, contractId: r[1] ? kid[r[1]].id : null, customer: cid[r[0]].name, number: r[2], date: r[3], due: r[4], amount: cents(r[5]), desc: r[6], currency: "SGD" }));
+    S.selCust = null; S.form = null;
+    S.payments = pay.map(r => ({ id: uid("p"), payer: r[0], date: r[1], amount: cents(r[2]), reference: r[3], currency: "SGD" }));
+    S.matches = {}; S.pick = {}; S.isSample = true;
+    setStatus("info", "Sample data loaded: 10 customers, 11 contracts, 14 invoices and 11 payments covering exact, multi-invoice, discount, short-pay, typo, parent-company, partial and unidentified cases. Press Run auto-match.");
+    render();
+  }
+
+  // ---------- events ----------
+  $("runBtn").onclick = runMatching;
+  $("sampleBtn").onclick = loadSample;
+  $("clearBtn").onclick = () => { S.customers = []; S.contracts = []; S.selCust = null; S.form = null; S.invoices = []; S.payments = []; S.matches = {}; S.pick = {}; S.isSample = false; $("status").hidden = true; render(); };
+  $("acceptHighBtn").onclick = () => { for (const m of Object.values(S.matches)) if (m?.status === "proposed" && m.confidence >= .95) m.status = "accepted"; render(); };
+  $("exportBtn").onclick = exportCSV;
+  $("importToggle").onclick = () => { const p = $("importPanel"); p.hidden = !p.hidden; $("importToggle").setAttribute("aria-expanded", String(!p.hidden)); };
+  $("tgtInv").onclick = () => setTarget("inv"); $("tgtPay").onclick = () => setTarget("pay");
+  $("importBtn").onclick = importCSV;
+  $("fileIn").onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { $("importText").value = String(r.result); }; r.readAsText(f); e.target.value = ""; };
+  $("status").addEventListener("click", e => { if (e.target.id === "stopBtn") ctl?.abort(); if (e.target.id === "dismissBtn") $("status").hidden = true; });
+  document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { S.filter = b.dataset.f; document.querySelectorAll("[data-f]").forEach(x => x.setAttribute("aria-pressed", x === b)); render(); });
+  $("payList").addEventListener("click", e => {
+    const b = e.target.closest("[data-act]"); if (b) { act(b.dataset.id, b.dataset.act); return; }
+    const o = e.target.closest("[data-pickopen]");
+    if (o) { const pid = o.dataset.pickopen; const pk = S.pick[pid];
+      if (pk && pk.open) delete S.pick[pid]; else S.pick[pid] = { open: true, q: "", sel: [], note: "" };
+      render(); if (S.pick[pid]) document.getElementById("pkq-" + pid)?.focus(); return; }
+    const a = e.target.closest("[data-apply]");
+    if (a) { const pid = a.dataset.apply; act(pid, "manual", { ids: S.pick[pid]?.sel || [], note: S.pick[pid]?.note }); return; }
+    const c = e.target.closest("[data-pickclear]");
+    if (c) { const pid = c.dataset.pickclear; S.pick[pid].sel = []; refreshPicker(pid); }
+  });
+  $("payList").addEventListener("change", e => {
+    const cb = e.target.closest("[data-pick]"); if (!cb) return;
+    const pk = S.pick[cb.dataset.pick]; if (!pk) return;
+    pk.sel = cb.checked ? [...pk.sel.filter(x => x !== cb.value), cb.value] : pk.sel.filter(x => x !== cb.value);
+    cb.closest(".cand")?.classList.toggle("on", cb.checked);
+    refreshPicker(cb.dataset.pick, "preview");
+  });
+  document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
+  $("newCustBtn").onclick = () => { S.form = { kind: "customer" }; render(); $("f-customer-name")?.focus(); };
+  $("custQ").addEventListener("input", e => { S.custQ = e.target.value; renderCustomers(); });
+  $("invBody").addEventListener("click", e => { const b = e.target.closest("[data-gocust]"); if (b && b.dataset.gocust) { S.selCust = b.dataset.gocust; S.form = null; setView("customers"); window.scrollTo({ top: 0 }); } });
+  $("custRows").addEventListener("click", e => { const b = e.target.closest("[data-cust]"); if (b) { S.selCust = b.dataset.cust; S.form = null; renderCustomers(); } });
+  $("custDetail").addEventListener("click", e => {
+    const b = e.target.closest("[data-cact]"); if (!b) return;
+    const a = b.dataset.cact, id = b.dataset.id;
+    if (a === "cancel") S.form = null;
+    if (a === "editcust") S.form = { kind: "customer", id: S.selCust };
+    if (a === "newctr") S.form = { kind: "contract" };
+    if (a === "editctr") S.form = { kind: "contract", id };
+    if (a === "newinv") S.form = { kind: "invoice", parentId: id };
+    renderCustomers();
+    if (S.form) $("custDetail").querySelector(".eform input, .eform select")?.focus();
+  });
+  $("custDetail").addEventListener("submit", e => { const f = e.target.closest("[data-form]"); if (f) { e.preventDefault(); submitForm(f); } });
+  $("payList").addEventListener("input", e => {
+    const q = e.target.closest("[data-pickq]"); if (q && S.pick[q.dataset.pickq]) { S.pick[q.dataset.pickq].q = q.value; refreshPicker(q.dataset.pickq, "list"); return; }
+    const n = e.target.closest("[data-picknote]"); if (n && S.pick[n.dataset.picknote]) S.pick[n.dataset.picknote].note = n.value;
+  });
+
+  // ---------- boot ----------
+  setTarget("inv");
+  loadSample();
+  render();
+})();
+</script>
+
+</body>
+</html>

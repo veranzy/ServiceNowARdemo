@@ -1,12 +1,17 @@
 // Shared view helpers: state chips, form fields from the schema, related lists, icons, build-note attributes.
 import { ctrById, custById, invoiceUse } from "../ledger.js";
 import { REQ_STATE, displayOf, recById, userById } from "../records.js";
-import { BANKS, TABLES, fieldNote } from "../schema.js";
+import { CODE, noteText } from "../notes.js";
+import { BANKS, TABLES } from "../schema.js";
 import { S } from "../state.js";
 import { DAY, esc, fmt, today } from "../util.js";
 
-/** Build-notes attribute; the overlay shows it when "Build notes" is on. */
-export const sn = text => ` data-sn="${esc(text)}"`;
+/** Build-notes attributes for a registered note ID (js/notes.js); the overlay shows "[ID] text" when Build notes is on. */
+export const sn = id => {
+  const text = noteText(id);
+  if (text === null) console.warn(`Unregistered build note ID: ${id}`);
+  return ` data-snid="${esc(id)}" data-sn="${esc(text ?? "")}"`;
+};
 
 const REQ_CHIP = { new: "c-accent", in_progress: "c-neutral", awaiting_info: "c-warn", invoiced: "c-ok", rejected: "c-bad" };
 export const reqChip = r => `<span class="chip ${REQ_CHIP[r.state] || "c-neutral"}">${esc(REQ_STATE[r.state] || r.state)}</span>`;
@@ -87,13 +92,13 @@ export function fieldHtml(table, f, rec, ctx = {}) {
     else if (f.type === "Integer" || f.type === "Decimal") ctl = `<input ${common} type="number" step="${f.type === "Decimal" ? "0.1" : "1"}" value="${esc(v ?? "")}">`;
     else ctl = `<input ${common} type="text" value="${esc(f.key === "aliases" ? (v || []).join(", ") : v || "")}">`;
   }
-  return `<label class="ffield${f.wide ? " wide" : ""}${err ? " has-err" : ""}" for="${id}"${sn(fieldNote(table, f.key))}>${label}${ctl}${f.help && !ro ? `<span class="fhelp">${esc(f.help)}</span>` : ""}${err ? `<span class="ferr">${esc(err)}</span>` : ""}</label>`;
+  return `<label class="ffield${f.wide ? " wide" : ""}${err ? " has-err" : ""}" for="${id}"${sn(`${CODE[table]}.${f.name}`)}>${label}${ctl}${f.help && !ro ? `<span class="fhelp">${esc(f.help)}</span>` : ""}${err ? `<span class="ferr">${esc(err)}</span>` : ""}</label>`;
 }
 
 /** Compact related list table. cols: [label, fn(rec) → html, className?] */
 export function relatedTable(title, table, rows, cols, opts = {}) {
   const t = TABLES[table];
-  return `<section class="rel"${sn(`Related list: ${t.table}${opts.via ? ` (${opts.via})` : ""}`)}>
+  return `<section class="rel"${opts.id ? sn(opts.id) : ""}>
     <header><h3>${esc(title)} <span class="count">${rows.length}</span></h3>${opts.actions || ""}</header>
     ${rows.length ? `<div class="tablewrap"><table><thead><tr>${cols.map(c => `<th class="${c[2] || ""}">${esc(c[0])}</th>`).join("")}</tr></thead>
       <tbody>${rows.map(r => `<tr>${cols.map(c => `<td class="${c[2] || ""}">${c[1](r)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`

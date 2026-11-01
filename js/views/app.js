@@ -12,6 +12,7 @@ export function setStatus(kind, text) { S.status = text ? { kind, text } : null;
 
 export function toast(text) {
   S.ui.toast = text;
+  const el = $("toast"); if (el) { el.textContent = text; el.hidden = false; }
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { S.ui.toast = null; const t = $("toast"); if (t) t.hidden = true; }, 3800);
 }
@@ -27,6 +28,7 @@ function demoBar() {
     <span class="db-who">Signed in as <b>${esc(u?.name || "")}</b> <span class="db-role mono">${esc(ROLES[p].role)}</span></span>
     <span class="sp"></span>
     <label class="switch"><input type="checkbox" id="notesToggle"${S.ui.notes ? " checked" : ""}><span>Build notes</span></label>
+    ${S.ui.notes ? `<span class="db-hint">Alt/Option+click an outlined element to copy its ID</span>` : ""}
     <button type="button" class="btn small ghost" id="resetDemo">Reset demo</button>
   </div>`;
 }

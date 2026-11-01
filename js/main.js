@@ -131,6 +131,15 @@ function bsuAction(name) {
 }
 
 // ---------- events ----------
+// Build notes: Alt/Option+click an outlined element copies "<ID> - " so the owner can paste a change request.
+document.addEventListener("click", e => {
+  if (!S.ui.notes || !e.altKey) return;
+  const n = e.target.closest("[data-snid]"); if (!n) return;
+  e.preventDefault(); e.stopPropagation();
+  const id = n.dataset.snid;
+  navigator.clipboard?.writeText(`${id} - `).then(() => toast(`Copied ${id}. Paste it with your change.`), () => toast(`Build note ID: ${id}`)) ?? toast(`Build note ID: ${id}`);
+}, true);
+
 document.addEventListener("click", e => {
   const t = e.target.closest("button, [data-open], [data-ticket], tr[data-open]");
   if (!t) return;

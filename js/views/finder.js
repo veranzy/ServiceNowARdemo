@@ -2,6 +2,7 @@
 import { ctrById } from "../ledger.js";
 import { allocationPlan, candidateList } from "../matching.js";
 import { S } from "../state.js";
+import { sn } from "./common.js";
 import { DAY, esc, fmt, today } from "../util.js";
 
 export function dueText(i) {
@@ -70,13 +71,13 @@ export function previewHtml(p, m) {
     <div class="pv-cards">${cards}</div>
     <label class="hint" for="pknote-${p.id}">Note for the audit trail (optional)</label>
     <input class="pv-note" id="pknote-${p.id}" data-picknote="${p.id}" value="${esc(pk.note || "")}" placeholder="e.g. Confirmed by customer email 22 Oct">
-    <div class="actions"><button class="btn primary small" data-apply="${p.id}"${plan.total ? "" : " disabled"}>Match ${fmt(plan.total)} to ${plan.rows.filter(r => r.alloc > 0).length} invoice${plan.rows.filter(r => r.alloc > 0).length === 1 ? "" : "s"}</button>
+    <div class="actions"><button class="btn primary small" data-apply="${p.id}"${sn("UA-DEP-confirm")}${plan.total ? "" : " disabled"}>Match ${fmt(plan.total)} to ${plan.rows.filter(r => r.alloc > 0).length} invoice${plan.rows.filter(r => r.alloc > 0).length === 1 ? "" : "s"}</button>
       <button class="btn small" data-pickclear="${p.id}">Clear selection</button></div>`;
 }
 
 export function pickerPanel(p, m) {
   const pk = S.pick[p.id];
-  return `<div class="picker">
+  return `<div class="picker"${sn("CSH-04")}>
     <div class="pk-list">
       <div class="pk-search"><input type="search" id="pkq-${p.id}" data-pickq="${p.id}" value="${esc(pk.q || "")}" placeholder="Search invoice no., customer or amount" aria-label="Search open invoices"></div>
       <div class="pk-rows" id="pk-list-${p.id}">${candRows(p, m)}</div>

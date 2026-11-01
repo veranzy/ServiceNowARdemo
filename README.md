@@ -18,6 +18,8 @@ ServiceNow table, field, UI action or widget), or reset the sample data.
 
 - `SERVICENOW_MAPPING.md`: tables, fields, roles, record producer, workspace, UI actions, match rules
   and open questions. Generated from `js/schema.js` with `node tools/mapping.mjs`.
+- `docs/BUILD_NOTES.md`: every Build notes ID. Request changes as `<ID> - <change>`; with Build notes
+  on, Alt/Option+click an outlined element to copy its ID.
 - `docs/modules/`: one requirement spec per module (e.g. `BSU.md`), plus `docs/DECISIONS.md`.
 - `CLAUDE.md`: project brief, how we add modules, code layout and conventions.
 - `ROADMAP.md`: ideas and what has shipped.

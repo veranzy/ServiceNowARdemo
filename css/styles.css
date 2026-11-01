@@ -370,14 +370,17 @@ tr.sel td{background:var(--accent-soft)}
 .kvlist dt{font-size:12px;color:var(--muted)} .kvlist dd{margin:2px 0 0}
 
 /* ---------- build notes overlay ---------- */
-body.sn-notes [data-sn]{outline:1.5px dashed #c77dff;outline-offset:2px;position:relative}
-body.sn-notes [data-sn]::after{content:attr(data-sn);position:absolute;left:0;top:-2px;transform:translateY(-100%);z-index:30;max-width:min(440px,90vw);
+body.sn-notes [data-snid]{outline:1.5px dashed #c77dff;outline-offset:2px;position:relative}
+body.sn-notes [data-snid]::after{content:"[" attr(data-snid) "] " attr(data-sn);position:absolute;left:0;top:-2px;transform:translateY(-100%);z-index:30;max-width:min(440px,90vw);
   font:500 10.5px/1.35 var(--f-mono);letter-spacing:0;text-transform:none;color:#2a0845;background:#efdcff;border:1px solid #c77dff;border-radius:4px;padding:2px 6px;
   white-space:normal;pointer-events:none;text-align:left}
-body.sn-notes .ffield[data-sn]::after,body.sn-notes th[data-sn]::after{position:static;transform:none;display:block;margin-top:4px;width:max-content;max-width:100%}
-body.sn-notes th[data-sn]{white-space:normal}
-body.sn-notes .ws-head[data-sn]::after,body.sn-notes .pt-head[data-sn]::after{top:auto;bottom:-2px;transform:translateY(100%)}
-body.sn-notes .ws-rail[data-sn]::after{top:auto;bottom:8px;left:58px;transform:none;width:200px}
+body.sn-notes .ffield[data-snid]::after,body.sn-notes th[data-snid]::after{position:static;transform:none;display:block;margin-top:4px;width:max-content;max-width:100%}
+body.sn-notes th[data-snid]{white-space:normal}
+body.sn-notes .ws-head[data-snid]::after,body.sn-notes .pt-head[data-snid]::after{top:auto;bottom:-2px;transform:translateY(100%)}
+body.sn-notes .ws-rail[data-snid]::after{top:auto;bottom:8px;left:58px;transform:none;width:200px}
+
+.db-hint{color:#e6c8ff;font-size:12px}
+body.sn-notes [data-snid]:hover{outline-color:#9d4edd;outline-width:2px}
 
 /* ---------- responsive ---------- */
 @media (max-width:1100px){.rec-body.two{grid-template-columns:minmax(0,1fr)}}

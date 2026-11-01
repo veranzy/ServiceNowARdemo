@@ -12,3 +12,4 @@ module spec under `docs/modules/`.
 | D5 | 2026-11-01 | **No auto-matching.** Deposits are always matched to invoices manually by the AR team. | Owner (BSU) |
 | D6 | 2026-11-01 | Bank statements arrive as CSV exports, imported once a day for the previous day, deposits only. | Owner (BSU) |
 | D7 | 2026-11-01 | **Money received is only ever a BSU deposit.** No separate payments table or "payment received" step: cash application matches BSU deposits (Bank statements table) to invoices. | Owner |
+| D8 | 2026-11-01 | Change requests reference **Build notes IDs** (`<ID> - <change>`). IDs are stable and listed in `docs/BUILD_NOTES.md`. | Owner |

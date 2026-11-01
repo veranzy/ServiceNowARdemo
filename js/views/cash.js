@@ -18,7 +18,7 @@ function summary() {
   const matched = S.deposits.reduce((s, p) => s + depositMoney(p).applied, 0);
   const unmatched = S.deposits.filter(p => depositMoney(p).unapplied > 0);
   const pct = total ? Math.min(100, matched / total * 100) : 0;
-  return `<section class="summary" aria-label="Summary"${sn("Workspace data visualisation (UI Builder): single-score cards over x_ar_bank_statement / x_ar_allocation")}>
+  return `<section class="summary" aria-label="Summary"${sn("CSH-02")}>
     <div class="stat"><div class="k">Open AR</div><div class="v">${fmt(openAR)}</div><div class="n">${issued.length} issued invoices</div></div>
     <div class="stat"><div class="k">BSU deposits loaded</div><div class="v">${fmt(total)}</div><div class="n">${S.deposits.length} deposits · ${S.uploads.length} uploads</div></div>
     <div class="stat"><div class="k">Matched</div><div class="v">${fmt(matched)}</div><div class="n">${S.deposits.length - unmatched.length} fully matched</div>
@@ -49,8 +49,8 @@ function depositCard(p, openInv) {
       ${allocHtml}
       ${m.reason ? `<div class="reason">${esc(m.reason)}</div>` : `<div class="reason">Not matched yet. Use Find invoice to choose the invoice(s) this deposit pays.</div>`}
       <div class="actions">
-        ${canMatch ? `<button class="btn small${m.allocations.length ? "" : " primary"}" data-pickopen="${p.id}" aria-expanded="${pkOpen ? "true" : "false"}"${sn("UI action: Find invoice → invoice finder (modal / side panel); Apply inserts x_ar_allocation records")}>${pkOpen ? "Close finder" : m.allocations.length ? "Add invoice…" : "Find invoice…"}</button>` : ""}
-        ${m.allocations.length ? `<button class="btn small" data-act="remove" data-id="${p.id}"${sn("UI action: Remove allocations")}>Remove match</button>` : ""}
+        ${canMatch ? `<button class="btn small${m.allocations.length ? "" : " primary"}" data-pickopen="${p.id}" aria-expanded="${pkOpen ? "true" : "false"}"${sn("UA-DEP-find")}>${pkOpen ? "Close finder" : m.allocations.length ? "Add invoice…" : "Find invoice…"}</button>` : ""}
+        ${m.allocations.length ? `<button class="btn small" data-act="remove" data-id="${p.id}"${sn("UA-DEP-remove")}>Remove match</button>` : ""}
       </div>
     </div>${pkOpen ? pickerPanel(p, m) : ""}</article>`;
 }
@@ -63,12 +63,12 @@ export function cashPage() {
   const openInv = S.invoices.filter(i => i.state === "issued").map(i => ({ i, open: i.amount - (applied[i.id] || 0) })).filter(x => x.open > 0);
   const st = S.status;
   const hasAlloc = Object.values(S.matches).some(m => m && m.allocations.length);
-  return `<div class="page">
+  return `<div class="page"${sn("CSH-01")}>
     <div class="pagehead"><div><h1 class="pt">Cash application</h1><p class="psub">Match BSU deposits (money received, loaded from the daily bank statements) to issued invoices. Matching is always manual: open a deposit's invoice finder, pick the invoice(s), check the preview and confirm.</p></div>
-      <div class="bar"><button type="button" class="btn" data-rail="bsu">${"Upload statement"}</button><button class="btn" id="exportBtn"${hasAlloc ? "" : " hidden"}>Export matches (.csv)</button></div></div>
+      <div class="bar"><button type="button" class="btn" data-rail="bsu">${"Upload statement"}</button><button class="btn" id="exportBtn"${sn("UA-DEP-export")}${hasAlloc ? "" : " hidden"}>Export matches (.csv)</button></div></div>
     ${summary()}
     ${st ? `<div class="notice${st.kind === "err" ? " err" : ""}"><span class="grow">${esc(st.text)}</span><button class="btn small" id="dismissBtn">Dismiss</button></div>` : ""}
-    <section class="panel" aria-label="Deposits"${sn("Custom workspace page: list of x_ar_bank_statement with match state; filter = unmatched_amount > 0")}>
+    <section class="panel" aria-label="Deposits"${sn("CSH-03")}>
       <header><h2>BSU deposits <small>${S.deposits.length ? `${rows.length} of ${S.deposits.length}` : ""}</small></h2>
         <div class="seg" role="group" aria-label="Filter">${[["open", "To match"], ["done", "Matched"], ["all", "All"]].map(([k, l]) => `<button data-f="${k}" aria-pressed="${S.filter === k}">${l}</button>`).join("")}</div>
       </header>

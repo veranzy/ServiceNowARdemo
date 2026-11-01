@@ -22,6 +22,22 @@ For every new module or change:
 4. **Commit** with the module code as prefix (`BSU: …`), push to `main`, confirm the Pages deploy.
 5. **Prompt the next step.** End by suggesting the next module or refinement and the questions it needs.
 
+## Change requests by build-note ID
+
+The owner turns on **Build notes**, finds the element, and writes `<ID> - <change>` (e.g.
+`BSU-03 - add a closing balance field`, `INV.due_date - default to end of next month`). To act on one:
+
+1. Look the ID up in `js/notes.js` (or `docs/BUILD_NOTES.md`). Field IDs are `<TABLE CODE>.<column>`
+   from `js/schema.js`; element IDs are used as `sn("ID")` in `js/views/*` (grep for the ID).
+2. Make the change in the prototype (schema for fields, the view for elements).
+3. Every new outlined element gets a **new** registered ID: add it to `NOTES` / `UI_ACTIONS` /
+   `RELATED` / `CALC_COLS` in `js/notes.js` and call `sn("ID")`. `sn()` warns in the console for
+   unregistered IDs. IDs are stable: never renumber or reuse one; if an element is removed, leave a
+   line in the module spec change log saying the ID was retired.
+4. Record the request in the owning module spec's change log (quote the ID), regenerate
+   `node tools/notes.mjs` and `node tools/mapping.mjs`, commit with the module code prefix, push.
+5. If the request is ambiguous or changes a decision, ask before building.
+
 "App 1" was an earlier Claude-hosted prototype with Claude-powered matching. It is frozen and will be
 rebuilt later from this codebase. Do not add Claude/LLM calls here unless the owner asks.
 
@@ -84,6 +100,8 @@ js/views/bsu.js         BSU page: statement-day checklist, upload + preview, rec
 js/views/finder.js      invoice finder (ranked candidates + allocation preview)
 js/views/common.js      sn() build-note attribute, fieldHtml (forms from schema), chips, related lists, icons
 tools/mapping.mjs       generates SERVICENOW_MAPPING.md from the schema
+js/notes.js             build-note ID registry (table codes, element notes, UI actions, related lists)
+tools/notes.mjs         generates docs/BUILD_NOTES.md (every ID and what it maps to)
 docs/modules/           one spec per module (see "How we work"); docs/DECISIONS.md cross-module decisions
 ```
 
@@ -96,8 +114,9 @@ docs/modules/           one spec per module (see "How we work"); docs/DECISIONS.
 - **Escape** every data value with `esc()` in templates.
 - **Events are delegated** on `document` via `data-*` attributes (`data-open="table:id"`, `data-ui`,
   `data-list`, `data-rail`, `data-pnav`, `data-ticket`, …). Never attach listeners to rendered nodes.
-- **Build notes:** add `sn("…")` to any new element that corresponds to a ServiceNow artefact (table,
-  field, UI action, widget, business rule). Fields get notes automatically through `fieldHtml`.
+- **Build notes:** every element that corresponds to a ServiceNow artefact gets `sn("<ID>")` with an
+  ID registered in `js/notes.js` (see "Change requests by build-note ID"). Fields get `<CODE>.<column>`
+  IDs automatically through `fieldHtml`.
 - **Workspace vs portal:** AR features go in the workspace only; project-team features in the portal only.
 - Styling uses the tokens in `css/styles.css`; every colour must work in light and dark. Layout must
   work at 400px wide with no horizontal page scroll.

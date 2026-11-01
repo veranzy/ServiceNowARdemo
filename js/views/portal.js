@@ -1,8 +1,8 @@
 // Project team experience: Service Portal / Employee Center with the AR forms catalogue (AR-i … AR-xvi),
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, REQ_OPEN, REQ_TYPE, contactFor, docsOnFile, freqLabel, me, reqById, validateARi } from "../records.js";
-import { AR_FORMS, DOC_TYPES, RECORD_PRODUCER, REQUEST_TYPES, ROLES, TABLES } from "../schema.js";
+import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, docsOnFile, freqLabel, lineErrors, lineStatus, lineValue, linesLabel, linesSummary, me, periodDates, reqById, reqLines, validateARi } from "../records.js";
+import { AR_FORMS, DOC_TYPES, LINE_TYPES, ROLES, TABLES } from "../schema.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
 import { custName, ctrNo, fieldHtml, icon, initials, reqChip, reqCustName, sn } from "./common.js";
@@ -43,7 +43,7 @@ function homePage() {
       </div>
       <section class="pt-card">
         <header><h2>Recent requests</h2><button type="button" class="linkish small" data-pnav="requests">View all</button></header>
-        ${mine.length ? `<ul class="mini">${mine.slice(0, 4).map(r => `<li><button type="button" class="mini-row" data-ticket="${r.id}"><span><b class="mono">${esc(r.number)}</b> ${esc(r.title)}<span class="desc">${esc(reqCustName(r))} · ${esc(r.form || "AR-i")} ${esc(REQ_TYPE[r.requestType] || "")} · SGD ${fmt(r.amount)}</span></span>${reqChip(r)}</button></li>`).join("")}</ul>` : `<p class="empty small">You haven't submitted any requests yet.</p>`}
+        ${mine.length ? `<ul class="mini">${mine.slice(0, 4).map(r => `<li><button type="button" class="mini-row" data-ticket="${r.id}"><span><b class="mono">${esc(r.number)}</b> ${esc(r.title)}<span class="desc">${esc(reqCustName(r))} · ${esc(r.form || "AR-i")} · ${esc(linesLabel(r))} · SGD ${fmt(r.amount)}</span></span>${reqChip(r)}</button></li>`).join("")}</ul>` : `<p class="empty small">You haven't submitted any requests yet.</p>`}
       </section>
     </div>`;
 }
@@ -58,7 +58,7 @@ export function contractBox(d) {
     <dl><div><dt>Contract value</dt><dd class="mono">${fmt(k.value || 0)}</dd></div><div><dt>Invoiced so far</dt><dd class="mono">${fmt(r.billed)}</dd></div>
       <div><dt>Requested, not yet invoiced</dt><dd class="mono">${fmt(pending)}</dd></div><div><dt>Remaining to bill</dt><dd class="mono${left < 0 ? " bad" : ""}">${fmt(left)}</dd></div>
       <div><dt>Billing</dt><dd>${esc(k.billing)} · Net ${esc(k.terms)}</dd></div></dl>
-    ${d.amount && left - d.amount < 0 && k.value ? `<p class="bad small">This request takes billing over the contract value by SGD ${fmt(d.amount - left)}. AR may ask for a change order.</p>` : ""}
+    ${(() => { const amt = d.lines ? linesSummary(d.lines).total : d.amount || 0; return amt && left - amt < 0 && k.value ? `<p class="bad small">This request takes billing over the contract value by SGD ${fmt(amt - left)}. AR may ask for a change order.</p>` : ""; })()}
   </div>`;
 }
 
@@ -90,66 +90,105 @@ function docRow(t, d, onFile) {
   return `<div class="docrow${err ? " has-err" : ""}"${sn(`REQ.${f.name}`)}><div><b>${esc(DOC_LABEL[t])}</b>${t === "billing_form" && d.department ? `<span class="desc">for ${esc(d.department)}</span>` : ""}<div>${status}</div>${err ? `<span class="ferr">${esc(err)}</span>` : ""}</div><div class="docctl">${ctl}</div></div>`;
 }
 
+const lineField = k => TABLES.lines.fields.find(f => f.key === k);
+
+/** Customer step (D14): search AR's customers; pick one, or add as new when not found. */
+export function custResults(d) {
+  const q = String(d.custQ || "").trim().toLowerCase();
+  if (!q) return `<div id="pfCustResults"><p class="pt-hint">Start typing the company name or UEN. If AR doesn't have the customer yet, you can add it as a new customer.</p></div>`;
+  const hits = S.customers.map(c => ({ c, sc: Math.max(nameSim(q, c.name), c.name.toLowerCase().includes(q) ? 1 : 0, (c.uen || "").toLowerCase().includes(q) ? 1 : 0, ...(c.aliases || []).map(a => a.toLowerCase().includes(q) ? .8 : 0)) }))
+    .filter(x => x.sc >= .5).sort((a, b) => b.sc - a.sc).slice(0, 6);
+  return `<div id="pfCustResults">
+    ${hits.length ? `<ul class="custhits" aria-label="Matching customers">${hits.map(({ c }) => `<li><button type="button" class="custhit" data-pickcust="${c.id}"><b>${esc(c.name)}</b><span class="desc">${esc(c.uen ? `UEN ${c.uen}` : "")}${c.parent ? ` · ${esc(c.parent)}` : ""}</span></button></li>`).join("")}</ul>` : `<p class="pt-hint">No customer at AR matches "${esc(d.custQ)}".</p>`}
+    <button type="button" class="btn small" data-newcust${sn("UA-PT-newcust")}>+ Add "${esc(d.custQ)}" as a new customer</button>
+  </div>`;
+}
+
+function customerStep(d, e, f) {
+  if (d.customerId && !d.newCustomer) {
+    const c = custById(d.customerId);
+    return `<div class="custpick"><div><span class="desc">Customer</span><b>${esc(c?.name)}</b><span class="desc">${esc(c?.uen ? `UEN ${c.uen}` : "")}</span></div><button type="button" class="linkish small" data-custclear>Change</button></div>`;
+  }
+  if (d.newCustomer) return `<div class="custpick new"><div><span class="chip c-warn">New customer</span> <span class="desc">AR will verify and create it. This makes it a first request.</span></div><button type="button" class="linkish small" data-custclear>Search existing customers instead</button></div>
+    <div class="fgrid">${f("newCustName", { mandatory: true, help: null })}${f("newCustUen")}${f("newCustAddress")}</div>`;
+  return `<label class="ffield wide${e.customerId ? " has-err" : ""}" for="pfCustQ"${sn("REQ.customer")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Find the customer</span>
+      <input type="search" id="pfCustQ" value="${esc(d.custQ || "")}" placeholder="Company name or UEN" autocomplete="off"${e.customerId ? ` aria-invalid="true"` : ""}>${e.customerId ? `<span class="ferr">${esc(e.customerId)}</span>` : ""}</label>
+    ${custResults(d)}`;
+}
+
+/** One billing line card (D13). */
+function lineCard(l, i, e) {
+  const le = Object.fromEntries(Object.entries(e).filter(([k]) => k.startsWith(`line:${i}:`)).map(([k, v]) => [k.split(":")[2], v]));
+  const lf = (k, o = {}) => fieldHtml("lines", lineField(k), l, { prefix: `pl${i}`, name: `line:${i}:${k}`, errors: le, vals: l, ...o });
+  const rec = l.lineType === "recurring";
+  return `<div class="lcard${rec ? " rec" : ""}" data-line="${i}">
+    <div class="lhead"><b>Line ${i + 1}</b>
+      <div class="seg" role="group" aria-label="Line ${i + 1} type"${sn("RQL.line_type")}>${LINE_TYPES.map(([k, lab]) => `<button type="button" data-ltype="${i}:${k}" aria-pressed="${l.lineType === k}">${lab}</button>`).join("")}</div>
+      <span class="sp"></span>${i > 0 || P().draft.lines.length > 1 ? `<button type="button" class="linkish small" data-lremove="${i}" aria-label="Remove line ${i + 1}">Remove</button>` : ""}</div>
+    <div class="fgrid">
+      ${lf("desc", { label: rec ? "What is billed each period" : "What is billed" })}
+      ${lf("amount", { label: rec ? "Amount per period" : "Amount", help: null })}
+      ${rec ? `${lf("frequency", { help: null })}${lf("startDate", { label: "From (first invoice)", mandatory: true, help: null })}${lf("endDate", { label: "To (last invoice)", mandatory: true, help: null })}`
+        : lf("invoiceDate", { help: null })}
+    </div>
+    ${lineSum(l, i)}
+  </div>`;
+}
+export function lineSum(l, i) {
+  if (l.lineType !== "recurring") return `<p class="lsum" id="pfLineSum-${i}">${l.amount > 0 ? `One invoice of SGD ${fmt(l.amount)}${l.invoiceDate ? ` around ${esc(l.invoiceDate)}` : ""}.` : ""}</p>`;
+  const n = periodDates(l.frequency || "monthly", l.startDate, l.endDate).length;
+  return `<p class="lsum" id="pfLineSum-${i}">${n && l.amount > 0 ? `${n} ${esc(freqLabel(l.frequency || "monthly").toLowerCase())} invoice${n === 1 ? "" : "s"} × SGD ${fmt(l.amount)} = <b>SGD ${fmt(lineValue(l))}</b>. Submit once; AR raises each invoice.` : "Enter the amount and the date range to see the number of invoices."}</p>`;
+}
+export function linesTotals(d) {
+  const t = linesSummary(d.lines || []);
+  return `<dl class="ltotals" id="pfTotals"><div><dt>One-off</dt><dd class="mono">${fmt(t.oneOffTotal)}</dd></div><div><dt>Recurring (all periods)</dt><dd class="mono">${fmt(t.recurringValue)}</dd></div><div><dt>Request value</dt><dd class="mono"><b>SGD ${fmt(t.total)}</b></dd></div></dl>`;
+}
+
 function formPage() {
   const p = P();
-  if (!p.draft) p.draft = { form: "AR-i", requestType: "", department: me().department || "", newCustomer: false, attachments: [] };
+  if (!p.draft) p.draft = { form: "AR-i", department: me().department || "", newCustomer: false, custQ: "", attachments: [], lines: [{ lineType: "one_off", desc: "", amount: 0, invoiceDate: "", frequency: "monthly", startDate: "", endDate: "" }] };
   const d = p.draft, e = p.errors || {};
   const f = (k, o = {}) => fieldHtml("requests", reqField(k), d, { prefix: "pf", errors: e, vals: d, ...o });
-  const rec = d.requestType === "recurring";
   const contact = !d.newCustomer && d.customerId && d.department ? contactFor(d.customerId, d.department) : null;
   const needBillTo = d.newCustomer || !contact || d.updateBillTo;
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
   const nErr = Object.keys(e).length;
-  const typeCards = REQUEST_TYPES.map(([k, l]) => `<label class="tcard${d.requestType === k ? " on" : ""}" for="pf-requestType-${k}"><input type="radio" id="pf-requestType-${k}" name="requestType" value="${k}"${d.requestType === k ? " checked" : ""}>
-    <b>${esc(l)}</b><span>${{ first: "First billing for a new customer or a new contract. Customer documents are needed if AR doesn't have them yet.", adhoc: "One-off billing for an existing customer, e.g. a milestone or extra work.", recurring: "Billing that repeats, e.g. a monthly fee. Submit once; AR raises each invoice from a billing schedule." }[k]}</span></label>`).join("");
+  const haveCust = d.newCustomer || d.customerId;
   return `<div class="pt-inner pt-body">
     <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <button type="button" class="linkish" data-pnav="forms">AR forms</button> › <span>AR-i</span></nav>
     <div class="pt-item">
       <form class="pt-form pt-card" id="arForm" novalidate${sn("PT-05")}>
         <div><span class="ft-code">AR-i</span><h1>New AR request</h1></div>
-        <p class="pt-lead">Ask Accounts Receivable to bill a customer: the first billing, an ad-hoc billing, or a recurring billing. Customer documents are kept by AR, so you only send what they don't have yet.</p>
+        <p class="pt-lead">Ask Accounts Receivable to bill a customer. Add one-off charges and recurring charges as billing lines; a recurring line runs over a date range and only needs to be submitted once.</p>
         <div id="pfAlert">${formAlert(nErr)}</div>
 
-        <fieldset class="psec"${sn("PT-17")}><legend>1. Request type</legend>
-          <div class="tcards${e.requestType ? " has-err" : ""}" role="radiogroup" aria-label="Request type"${sn("REQ.request_type")}>${typeCards}</div>${e.requestType ? `<span class="ferr">${esc(e.requestType)}</span>` : ""}
+        <fieldset class="psec"${sn("PT-25")}><legend>1. Customer</legend>
+          <div class="fgrid"><label class="ffield"${sn("PT-06")}><span class="flabel">Requested by</span><div class="fro">${esc(me().name)}</div></label>${f("department")}</div>
+          ${customerStep(d, e, f)}
         </fieldset>
 
-        <fieldset class="psec"${sn("PT-18")}><legend>2. Customer</legend>
-          <div class="fgrid">
-            <label class="ffield"${sn("PT-06")}><span class="flabel">Requested by</span><div class="fro">${esc(me().name)}</div></label>
-            ${f("newCustomer", { help: "Tick if AR has never billed this customer before." })}
-            ${d.newCustomer ? `${f("newCustName", { mandatory: true, help: null })}${f("newCustUen")}${f("newCustAddress")}` : f("customerId", { mandatory: true, help: null })}
-          </div>
-          ${similarHint(d)}
-        </fieldset>
-
-        <fieldset class="psec"${sn("PT-19")}><legend>3. Department and bill-to person</legend>
-          <div class="fgrid">${f("department")}<div></div></div>
+        ${haveCust ? `<fieldset class="psec"${sn("PT-19")}><legend>2. Bill-to person (${esc(d.department || "department")})</legend>
           ${contact && !d.updateBillTo ? `<div class="pt-info"><b>Invoices from ${esc(d.department)} to this customer go to</b><p class="small">${esc(contact.name)} · ${esc(contact.email)}${contact.phone ? ` · ${esc(contact.phone)}` : ""}<br>${esc(contact.address)}</p></div>` : ""}
-          ${contact ? `<div class="fgrid">${f("updateBillTo", { label: `Change the ${d.department} bill-to person for this customer` })}</div>` : d.department && (d.customerId || d.newCustomer) ? `<p class="pt-hint">${d.newCustomer ? "New customer" : "AR has no billing contact for " + esc(d.department) + " at this customer yet"}: tell us who to bill.</p>` : ""}
+          ${contact ? `<div class="fgrid">${f("updateBillTo", { label: `Change the ${d.department} bill-to person for this customer` })}</div>` : `<p class="pt-hint">${d.newCustomer ? "New customer" : "AR has no billing contact for " + esc(d.department) + " at this customer yet"}: tell us who to bill.</p>`}
           ${needBillTo ? `<div class="fgrid">${f("billToName", { mandatory: true, help: null })}${f("billToEmail", { mandatory: true })}${f("billToPhone")}${f("billToAddress")}</div>` : ""}
+        </fieldset>` : ""}
+
+        <fieldset class="psec"${sn("PT-26")}><legend>${haveCust ? "3" : "2"}. What to bill</legend>
+          <div class="fgrid">${f("title")}${f("poNumber")}</div>
+          <div class="lines${e.lines ? " has-err" : ""}" id="pfLines"${sn("RL-REQ-RQL")}>${(d.lines || []).map((l, i) => lineCard(l, i, e)).join("")}</div>
+          ${e.lines ? `<span class="ferr">${esc(e.lines)}</span>` : ""}
+          <div class="row start"><button type="button" class="btn small" data-ladd="one_off"${sn("UA-PT-addline")}>+ One-off line</button><button type="button" class="btn small" data-ladd="recurring">+ Recurring line</button></div>
+          ${linesTotals(d)}
         </fieldset>
 
-        <fieldset class="psec"${sn("PT-20")}><legend>4. Contract</legend>
-          <div class="fgrid">${d.newCustomer ? "" : f("contractId", { help: "Optional for ad-hoc work." })}${f("contractLocation")}
+        <fieldset class="psec"${sn("PT-20")}><legend>${haveCust ? "4" : "3"}. Contract</legend>
+          <div class="fgrid">${d.newCustomer || !d.customerId ? "" : f("contractId", { help: "Optional." })}${f("contractLocation")}
             ${["repository", "physical"].includes(d.contractLocation) ? f("contractLocationRef", { mandatory: true, label: d.contractLocation === "repository" ? "Link to the contract" : "Where the physical file is", help: null }) : ""}</div>
           ${contractBox(d)}
         </fieldset>
 
-        <fieldset class="psec"${sn(rec ? "PT-22" : "PT-21")}><legend>5. ${rec ? "Recurring billing" : "Billing"}</legend>
-          <div class="fgrid">
-            ${rec ? "" : f("billingType")}
-            ${f("amount", { label: rec ? "Amount per billing period" : "Amount", help: null })}
-            ${f("title", { label: rec ? "What is billed each period" : "What should be invoiced" })}
-            ${rec ? `${f("frequency", { mandatory: true, help: null })}${f("firstBillDate", { mandatory: true, help: null })}${f("lastBillDate", { help: "Leave blank to bill until the contract ends." })}`
-              : `${f("invoiceDate")}${f("periodStart")}${f("periodEnd")}`}
-            ${f("poNumber")}
-          </div>
-          ${recurringHint(d)}
-        </fieldset>
-
-        <fieldset class="psec"${sn("PT-23")}><legend>6. Customer documents</legend>
-          <p class="pt-hint">${d.newCustomer ? "New customer: AR needs all three documents." : d.customerId ? "Documents AR already holds for this customer are marked On file." : "Choose the customer to see which documents AR already holds."}</p>
+        <fieldset class="psec"${sn("PT-23")}><legend>${haveCust ? "5" : "4"}. Customer documents</legend>
+          <p class="pt-hint">${d.newCustomer ? "New customer: AR needs all three documents." : d.customerId ? "Documents AR already holds for this customer are marked On file." : "Find the customer to see which documents AR already holds."}</p>
           <div class="docs">${DOC_TYPES.map(([t]) => docRow(t, d, onFile)).join("")}</div>
           <div class="ffield wide"${sn("PT-08")}><span class="flabel">Other supporting documents</span>
             <div><label class="btn small" for="pfAttach">${icon("clip", 15)} Add attachment</label><input type="file" id="pfAttach" multiple hidden></div>
@@ -163,24 +202,18 @@ function formPage() {
   </div>`;
 }
 
-export function similarHint(d) {
-  const similar = d.newCustomer && d.newCustName?.length > 3 ? S.customers.filter(c => nameSim(d.newCustName, c.name) >= .5).slice(0, 3) : [];
-  return `<div id="pfSimilar">${similar.length ? `<p class="pt-hint">Similar existing customers: ${similar.map(c => `<b>${esc(c.name)}</b>`).join(", ")}. If it's one of these, untick New customer and choose it.</p>` : ""}</div>`;
-}
-export function recurringHint(d) {
-  const ok = d.requestType === "recurring" && d.frequency && d.amount > 0 && d.firstBillDate;
-  return `<div id="pfRecHint">${ok ? `<p class="pt-hint">AR will set up a billing schedule: ${esc(freqLabel(d.frequency).toLowerCase())} invoices of SGD ${fmt(d.amount)} from ${esc(d.firstBillDate)}${d.lastBillDate ? ` to ${esc(d.lastBillDate)}` : " until the contract ends"}. You don't need to submit another form for these.</p>` : ""}</div>`;
-}
-
 export const formAlert = n => n ? `<div class="pt-alert err" role="alert">Please fix ${n} field${n === 1 ? "" : "s"} below.</div>` : "";
 
 export function formSide(d) {
-  const missing = Object.keys(validateARi(d)).map(k => reqField(k)?.label).filter(Boolean);
+  const keys = Object.keys(validateARi(d));
+  const labels = [...new Set(keys.map(k => k.startsWith("line:") ? `Line ${+k.split(":")[1] + 1} details` : k === "lines" ? "Billing lines" : reqField(k)?.label).filter(Boolean))];
+  const t = linesSummary(d.lines || []);
   return `<div class="pt-card sticky">
     <span class="ft-code">AR-i</span>
     <h2>Submit request</h2>
     <p class="small muted">Goes to the Accounts Receivable team as a case. You'll get updates on My requests.</p>
-    ${missing.length ? `<p class="small"><b>Still needed</b><br>${[...new Set(missing)].map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
+    <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "New customer"} (new)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(linesLabel(d))} · SGD ${fmt(t.total)}</p>
+    ${labels.length ? `<p class="small"><b>Still needed</b><br>${labels.map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
     <button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
   </div>`;
 }
@@ -189,8 +222,8 @@ function confirmPage() {
   const r = reqById(P().id); if (!r) return homePage();
   return `<div class="pt-inner pt-body"><section class="pt-card pt-done" role="status">
     <h1>Request submitted</h1>
-    <p>Your ${esc(r.form)} (${esc(REQ_TYPE[r.requestType])}) <b class="mono">${esc(r.number)}</b> for <b>SGD ${fmt(r.amount)}</b>${r.requestType === "recurring" ? ` ${esc(freqLabel(r.frequency).toLowerCase())}` : ""} to ${esc(reqCustName(r))} has been sent to Accounts Receivable.</p>
-    ${r.requestType === "recurring" ? `<p class="small">AR will set up a billing schedule and raise each invoice. You don't need to submit this form again for this billing.</p>` : ""}
+    <p>Your ${esc(r.form)} request <b class="mono">${esc(r.number)}</b> (${esc(linesLabel(r))}, request value <b>SGD ${fmt(r.amount)}</b>) for ${esc(reqCustName(r))} has been sent to Accounts Receivable.</p>
+    ${reqLines(r).some(l => l.lineType === "recurring") ? `<p class="small">AR will set up a billing schedule for each recurring line and raise each invoice. You don't need to submit this form again for those.</p>` : ""}
     <p class="muted small">Automation after submission (assignment, notifications, approvals) is still to be defined and will be added here.</p>
     <div class="row"><button type="button" class="btn primary" data-ticket="${r.id}">View request</button><button type="button" class="btn" data-pnav="forms">Back to AR forms</button></div>
   </section></div>`;
@@ -202,8 +235,8 @@ function requestsPage() {
     <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <span>My requests</span></nav>
     <section class="pt-card"${sn("PT-10")}>
       <header><h1 class="h2">My requests</h1><button type="button" class="btn primary small" data-pnav="forms">AR forms</button></header>
-      ${rows.length ? `<div class="tablewrap"><table class="list"><thead><tr><th>Number</th><th>Form</th><th>What should be invoiced</th><th>Customer</th><th class="num">Amount</th><th>State</th><th>Updated</th></tr></thead><tbody>
-        ${rows.map(r => `<tr data-ticket="${r.id}" tabindex="0"><td><button type="button" class="linkish mono" data-ticket="${r.id}">${esc(r.number)}</button></td><td>${esc(r.form || "AR-i")}<span class="desc">${esc(REQ_TYPE[r.requestType] || "")}</span></td><td class="wrap">${esc(r.title)}</td><td>${esc(reqCustName(r))}</td><td class="num">${fmt(r.amount)}</td><td>${reqChip(r)}</td><td>${esc(r.updated || r.opened)}</td></tr>`).join("")}
+      ${rows.length ? `<div class="tablewrap"><table class="list"><thead><tr><th>Number</th><th>Form</th><th>Request</th><th>Customer</th><th class="num">Amount</th><th>State</th><th>Updated</th></tr></thead><tbody>
+        ${rows.map(r => `<tr data-ticket="${r.id}" tabindex="0"><td><button type="button" class="linkish mono" data-ticket="${r.id}">${esc(r.number)}</button></td><td>${esc(r.form || "AR-i")}<span class="desc">${esc(linesLabel(r))}</span></td><td class="wrap">${esc(r.title)}</td><td>${esc(reqCustName(r))}</td><td class="num">${fmt(r.amount)}</td><td>${reqChip(r)}</td><td>${esc(r.updated || r.opened)}</td></tr>`).join("")}
       </tbody></table></div>` : `<p class="empty">No requests yet. Use AR-i to ask Accounts Receivable to bill a customer.</p>`}
     </section>
   </div>`;
@@ -211,10 +244,9 @@ function requestsPage() {
 
 function ticketPage() {
   const r = reqById(P().id); if (!r || r.requestedBy !== me().id) return requestsPage();
-  const inv = S.invoices.find(i => i.id === r.invoiceId && i.state === "issued");
+  const lines = reqLines(r);
   const feed = r.activity.filter(e => e.kind !== "work_note").slice().reverse();
-  const open = r.state !== "rejected" && r.state !== "invoiced" && r.state !== "scheduled";
-  const sch = r.scheduleId ? S.schedules.find(x => x.id === r.scheduleId) : null;
+  const open = r.state !== "rejected" && r.state !== "invoiced";
   const kv = (k, v) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
   return `<div class="pt-inner pt-body">
     <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <button type="button" class="linkish" data-pnav="requests">My requests</button> › <span>${esc(r.number)}</span></nav>
@@ -222,8 +254,9 @@ function ticketPage() {
       <section class="pt-card"${sn("PT-11")}>
         <header class="tk-head"><div><span class="mono muted">${esc(r.number)}</span><h1 class="h2">${esc(r.title)}</h1></div>${reqChip(r)}</header>
         ${r.state === "awaiting_info" ? `<div class="pt-alert" role="status"><b>Accounts Receivable needs more information.</b> Reply below. Your reply sends the request back to AR.</div>` : ""}
-        ${inv ? `<div class="pt-alert ok" role="status"${sn("PT-12")}><b>Invoice ${esc(inv.number)} issued</b> on ${esc(inv.date)} for SGD ${fmt(inv.amount)}, due ${esc(inv.due)}.</div>` : ""}
-        ${sch ? `<div class="pt-alert ok" role="status"${sn("PT-24")}><b>Recurring billing set up (${esc(sch.number)})</b>: ${esc(freqLabel(sch.frequency).toLowerCase())} SGD ${fmt(sch.amount)} from ${esc(sch.firstDate)}. AR raises each invoice; no further forms needed.</div>` : ""}
+        <div class="tklines"${sn("PT-27")}><h2 class="small">Billing lines</h2><ul>${lines.map(l => { const inv = l.invoiceId ? S.invoices.find(i => i.id === l.invoiceId) : null, sch = l.scheduleId ? S.schedules.find(x => x.id === l.scheduleId) : null, st = lineStatus(l);
+          return `<li><div><b>${esc(l.desc)}</b><span class="desc">${l.lineType === "recurring" ? `${esc(freqLabel(l.frequency).toLowerCase())} SGD ${fmt(l.amount)} · ${esc(l.startDate)} to ${esc(l.endDate)}` : `One-off SGD ${fmt(l.amount)}`}</span></div>
+            <div class="tkst">${st === "invoiced" ? `<span class="chip c-ok">Invoiced</span><span class="desc">${esc(inv.number)} · issued ${esc(inv.date)} · due ${esc(inv.due)}</span>` : st === "scheduled" ? `<span class="chip c-ok">Scheduled</span><span class="desc">${esc(sch.number)} · AR raises each invoice</span>` : st === "draft" ? `<span class="chip c-accent">Being invoiced</span>` : `<span class="chip c-neutral">With AR</span>`}</div></li>`; }).join("")}</ul></div>
         ${r.state === "rejected" ? `<div class="pt-alert err" role="status"><b>This request was rejected.</b> See the reason below. Submit a new AR form if needed.</div>` : ""}
         ${open ? `<div class="composer"><label class="flabel" for="ptReply">Add a comment</label><textarea id="ptReply" rows="3" placeholder="Message to Accounts Receivable"></textarea><div class="row"><span class="hint">Accounts Receivable sees your comment on the case.</span><button type="button" class="btn primary small" data-preply="${r.id}">Send</button></div></div>` : ""}
         <ol class="feed">${feed.map(e => { const u = S.users.find(x => x.id === e.by); const ar = u?.team === "ar";
@@ -231,9 +264,9 @@ function ticketPage() {
       </section>
       <aside class="pt-card"${sn("PT-13")}>
         <h2>Details</h2>
-        <dl class="kvlist">${kv("Form", `${esc(r.form || "AR-i")} · ${esc(REQ_TYPE[r.requestType] || "")}`)}${kv("Customer", esc(reqCustName(r)))}${kv("Department", esc(r.department || "—"))}${kv("Contract", esc(ctrNo(r.contractId)))}
-          ${r.requestType === "recurring" ? kv("Billing", `${esc(freqLabel(r.frequency))} from ${esc(r.firstBillDate || "?")}${r.lastBillDate ? ` to ${esc(r.lastBillDate)}` : ""}`) : kv("Billing type", esc(r.billingType || "—"))}${kv(r.requestType === "recurring" ? "Amount per period" : "Amount", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}
-          ${r.periodStart || r.periodEnd ? kv("Service period", `${esc(r.periodStart || "?")} to ${esc(r.periodEnd || "?")}`) : ""}${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>
+        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Customer", esc(reqCustName(r)))}${kv("Department", esc(r.department || "—"))}${kv("Contract", esc(ctrNo(r.contractId)))}
+          ${kv("Billing", esc(linesLabel(r)))}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}
+${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>
         ${r.details ? `<p class="small">${esc(r.details)}</p>` : ""}
         ${(() => { const docs = [["docContract", "Contract / PO"], ["docAcra", "ACRA"], ["docBillingForm", "Billing form"]].filter(([k]) => r[k]).map(([k, l]) => `${l}: ${r[k]}`).concat(r.attachments || []);
           return docs.length ? `<h3 class="small">Attachments</h3><ul class="attlist">${docs.map(a => `<li>${icon("clip", 14)} ${esc(a)}</li>`).join("")}</ul>` : ""; })()}

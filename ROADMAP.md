@@ -14,6 +14,9 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 ## Done
 
+- 2026-11-02 **ARF / PT-05**: AR-i reworked: no request type; customer search with *Add as new customer*;
+  billing lines (one-off, or recurring over a from–to date range, Monthly default), mixed in one request.
+  Workspace bills per line; request becomes *Billed* when every line is invoiced or scheduled.
 - 2026-11-02 **ARF / AR-i**: portal catalogue of 16 AR forms (AR-ii … AR-xvi placeholders); AR-i New AR request
   (1st / ad-hoc / recurring, new or existing customer, department bill-to, contract location, documents on-file
   check). Workspace: customer setup checklist + *Link to customer*, billing contacts per department (11

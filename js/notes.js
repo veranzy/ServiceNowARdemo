@@ -4,7 +4,7 @@
 import { RECORD_PRODUCER, ROLES, SCOPE, TABLES } from "./schema.js";
 
 /** Short code per table, used as the prefix of field IDs (e.g. INV.due_date) and record-page IDs. */
-export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH" };
+export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL" };
 const T = Object.fromEntries(Object.entries(CODE).map(([k, c]) => [c, k]));
 
 /** Screen elements that aren't a field, list, record page, related list or UI action. */
@@ -50,33 +50,33 @@ export const NOTES = {
   "PT-09": `Submit → inserts ${TABLES.requests.table} (state New, assignment group AR team). Automation to be defined`,
   "PT-10": `My Requests widget: ${TABLES.requests.table} where opened_by = me (ACL: project team reads own records)`,
   "PT-11": "Ticket page: conversation widget (comments only; work notes hidden)",
-  "PT-12": "Invoice reference shown to requester (number, issue and due date; payment status hidden)",
   "PT-13": "Ticket fields widget: read-only summary of the request",
   "PT-14": "Service catalog category \"AR forms\": 16 record producers AR-i … AR-xvi (D9)",
   "PT-15": "Catalog item AR-i New AR request (active record producer)",
   "PT-16": "Catalog item placeholder AR-ii … AR-xvi (inactive until defined)",
-  "PT-17": "Variable set Request type: 1st AR request / Ad-hoc AR / Recurring AR (UI policies show sections by type)",
-  "PT-18": "Variable set Customer: existing customer reference, or New customer with name, UEN, address (UI policy on new_customer)",
   "PT-19": "Variable set Department & bill-to: shows the department's billing contact (x_ar_billing_contact) or asks for one (D11)",
   "PT-20": "Variable set Contract: contract reference, contract location and link/file reference",
-  "PT-21": "Variable set Billing (1st / ad-hoc): billing type, amount, dates, PO",
-  "PT-22": "Variable set Recurring billing: frequency, amount per period, first/last billing date (D12)",
+  "PT-25": "Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer)",
+  "PT-26": "Variable set What to bill: request summary, PO, and multi-row variable set Billing lines (x_ar_request_line); totals by catalog client script",
+  "PT-27": "Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden",
   "PT-23": "Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10)",
-  "PT-24": "Ticket notice: billing schedule set up for a Recurring AR-i"
 };
 
 /** UI actions per table: "UA-<CODE>-<action>". */
 export const UI_ACTIONS = {
   "UA-REQ-assign": "Assign to me → assigned_to = current user, state = In progress",
-  "UA-REQ-invoice": `Create invoice → inserts draft ${TABLES.invoices.table} from request fields, links ar_request`,
   "UA-REQ-info": "Request info → state = Awaiting info; requires an additional comment (visible on portal)",
   "UA-REQ-reject": "Reject → state = Rejected; requires an additional comment",
   "UA-REQ-link": "Link to customer → creates or links x_ar_customer, upserts x_ar_billing_contact for the department, files documents to x_ar_customer_document, records contract location (D10, D11)",
-  "UA-REQ-schedule": "Set up billing schedule (Recurring AR-i) → inserts x_ar_billing_schedule; state = Billing scheduled; comment to requester (D12)",
   "UA-SCH-raise": "Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12)",
   "UA-SCH-save": "Save (update)",
   "UA-BCT-save": "Save (update)", "UA-BCT-new": "New (list action)", "UA-BCT-insert": "Submit (insert); unique per customer + department",
   "UA-CUS-newcontact": "Add billing contact → new billing contact form with customer prefilled",
+  "UA-RQL-invoice": "Create invoice (one-off line) → inserts draft x_ar_invoice for the line (request_line set)",
+  "UA-RQL-schedule": "Set up billing schedule (recurring line) → inserts x_ar_billing_schedule over the line's date range; comment to requester (D12, D13)",
+  "UA-RQL-save": "Save (update, while the line is open)",
+  "UA-PT-newcust": "Portal: Add as new customer (sets new_customer = true, copies the search text into the name)",
+  "UA-PT-addline": "Portal: Add one-off / recurring line (multi-row variable set)",
   "UA-REQ-post": "Post work note / additional comment to the activity stream",
   "UA-REQ-save": "Save (update)",
   "UA-INV-issue": "Issue invoice → state = Issued; BR sets AR request to Invoiced and posts a comment to the requester",
@@ -98,6 +98,7 @@ export const UI_ACTIONS = {
 
 /** Related lists: "RL-<PARENT>-<CHILD>" with the reference field that links them. */
 export const RELATED = {
+  "RL-REQ-RQL": "ar_request",
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract",
@@ -115,6 +116,8 @@ export const CALC_COLS = {
   "CUS.overdue": "Calculated: amount_due on issued invoices past due_date",
   "CON.status": "Calculated: Active / Not started / Ended from start and end dates",
   "BSU.department": `Dot-walk: bank_account.department`,
+  "RQL.line_value": "Calculated: one-off amount, or recurring amount × number of periods",
+  "RQL.periods": "Calculated: number of billing dates between From and To at the frequency",
   "SCH.next_billing_date": "Calculated: first period on or after today without an invoice",
   "SCH.periods_due": "Calculated: periods up to today without an invoice",
   "BNK.last_statement": `Calculated: latest ${TABLES.uploads.table}.statement_date for the account`

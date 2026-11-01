@@ -14,6 +14,8 @@ function shiftDate(iso) {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
+const monthsBetween = (a, b) => { if (!a || !b || b < a) return 0; const [y1, m1, d1] = a.split("-").map(Number), [y2, m2, d2] = b.split("-").map(Number); return (y2 - y1) * 12 + (m2 - m1) + (d2 >= d1 ? 1 : 0); };
+
 export function loadSample() {
   const users = [
     ["u_ar1", "Daniel Lim", "ar", "AR specialist", "Finance"],
@@ -142,7 +144,7 @@ export function loadSample() {
     const [type, dept, loc, extra] = ari[r[0]];
     Object.assign(rec, { form: "AR-i", requestType: type, department: dept, newCustomer: false, contractLocation: loc, contractLocationRef: "", scheduleId: null }, extra || {});
     if (rec.firstBillDate) rec.firstBillDate = shiftDate(rec.firstBillDate);
-    rec.activity.forEach(a => { if (a.text === "Submitted from the AR form on the portal.") a.text = `Submitted from AR-i (${{ first: "1st AR request", adhoc: "Ad-hoc AR", recurring: "Recurring AR" }[type]}) on the portal.`; });
+    rec.activity.forEach(a => { if (a.text === "Submitted from the AR form on the portal.") a.text = `Submitted from AR-i on the portal with 1 ${type === "recurring" ? "recurring" : "one-off"} line.`; });
     if (inv) inv.requestId = rec.id;
     return rec;
   });
@@ -150,11 +152,32 @@ export function loadSample() {
   S.requests.push({ id: "r8", number: "ARQ0001008", form: "AR-i", requestType: "first", department: "Digital", requestedBy: "u_pm1", customerId: null, contractId: null,
     newCustomer: true, newCustName: "Zephyr Data Centres Pte Ltd", newCustUen: "201912345K", newCustAddress: "8 Tampines Industrial Ave 5, #04-01, Singapore 528763",
     billToName: "Alicia Koh", billToEmail: "finance@zephyrdc.example", billToPhone: "+65 6123 4567", billToAddress: "Accounts Payable, 8 Tampines Industrial Ave 5, Singapore 528763",
-    contractLocation: "attached", contractLocationRef: "", billingType: "Milestone", title: "Design phase: data hall cooling assessment", amount: cents(24000), poNumber: "ZDC-PO-0042",
+    contractLocation: "attached", contractLocationRef: "", title: "Data hall cooling: design and monitoring", amount: 0, poNumber: "ZDC-PO-0042",
     docContract: "Zephyr - signed services agreement.pdf", docAcra: "Zephyr - ACRA business profile.pdf", docBillingForm: "Zephyr - billing contact form (Digital).pdf",
     details: "First project with Zephyr. Signed agreement attached.", invoiceDate: "", periodStart: "", periodEnd: "", state: "new", assignedTo: null, invoiceId: null, scheduleId: null,
     opened: shiftDate("2026-10-24"), updated: shiftDate("2026-10-24"), attachments: [],
-    activity: [{ at: shiftDate("2026-10-24") + "T08:40:00", by: "u_pm1", kind: "system", text: "Submitted from AR-i (1st AR request) on the portal." }] });
+    activity: [{ at: shiftDate("2026-10-24") + "T08:40:00", by: "u_pm1", kind: "system", text: "Submitted from AR-i on the portal for a new customer with 1 one-off · 1 recurring." }] });
+
+  // Billing lines (D13): one per earlier request; Zephyr mixes a one-off fee with 12 months of monitoring
+  let ln = 1000;
+  const L = (r, lineType, desc, amount, extra = {}) => S.lines.push({ id: uid("l"), number: "RQL" + String(++ln).padStart(7, "0"), requestId: r.id, lineType, desc, amount,
+    invoiceDate: "", frequency: lineType === "recurring" ? "monthly" : "", startDate: "", endDate: "", invoiceId: null, scheduleId: null, ...extra });
+  S.lines = [];
+  for (const r of S.requests) {
+    if (r.id === "r8") {
+      L(r, "one_off", "Design phase: data hall cooling assessment", cents(24000), { invoiceDate: shiftDate("2026-11-15") });
+      L(r, "recurring", "Cooling performance monitoring service", cents(1500), { startDate: shiftDate("2026-12-01"), endDate: shiftDate("2027-11-01") });
+    } else if (r.requestType === "recurring") {
+      L(r, "recurring", r.title, r.amount, { frequency: r.frequency || "monthly", startDate: r.firstBillDate, endDate: S.contracts.find(k => k.id === r.contractId)?.end || shiftDate("2027-03-31") });
+      r.title = "Warehouse management services, rest of contract";
+    } else {
+      L(r, "one_off", r.title, r.amount, { invoiceDate: r.invoiceDate || "", invoiceId: r.invoiceId || null });
+      const inv = r.invoiceId && S.invoices.find(i => i.id === r.invoiceId); if (inv) inv.lineId = S.lines[S.lines.length - 1].id;
+    }
+    for (const k of ["requestType", "billingType", "invoiceDate", "periodStart", "periodEnd", "frequency", "firstBillDate", "lastBillDate", "invoiceId", "scheduleId"]) delete r[k];
+    const ls = S.lines.filter(l => l.requestId === r.id);
+    r.amount = ls.reduce((sum, l) => sum + (l.lineType === "recurring" ? l.amount * monthsBetween(l.startDate, l.endDate) : l.amount), 0);
+  }
 
   // Billing contacts per customer per department (D11)
   const ct = [

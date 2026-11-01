@@ -1,7 +1,7 @@
 // Single in-memory app state shared by every module, plus a DOM lookup helper.
 export const S = {
   // data (tables)
-  users: [], customers: [], contracts: [], requests: [], invoices: [], deposits: [], matches: {}, bankAccounts: [], uploads: [], contacts: [], documents: [], schedules: [],
+  users: [], customers: [], contracts: [], requests: [], invoices: [], deposits: [], matches: {}, bankAccounts: [], uploads: [], contacts: [], documents: [], schedules: [], lines: [],
   // cash application UI
   pick: {}, filter: "open", status: null,
   // BSU upload page draft

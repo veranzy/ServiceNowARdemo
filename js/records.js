@@ -36,7 +36,7 @@ export function nextNumber(table) {
 
 export const REQ_STATE = Object.fromEntries(TABLES.requests.fields.find(f => f.key === "state").choices);
 export const REQ_OPEN = ["new", "in_progress", "awaiting_info"];
-export const REQ_TYPE = { first: "1st AR request", adhoc: "Ad-hoc AR", recurring: "Recurring AR" };
+export const LINE_TYPE = { one_off: "One-off", recurring: "Recurring" };
 export const DOC_LABEL = Object.fromEntries(DOC_TYPES);
 const DOC_KEY = { contract: "docContract", acra: "docAcra", billing_form: "docBillingForm" };
 
@@ -53,27 +53,74 @@ export function docsOnFile(customerId, contractId, department) {
   return out;
 }
 
-/** AR-i record producer validation (UI policies + mandatory variables). Returns {key: message}. */
+/** AR-i record producer validation (UI policies + mandatory variables + billing lines). Returns {key: message}.
+ *  Line errors are keyed "line:<index>:<field>"; "lines" when there are no lines. */
 export function validateARi(d) {
   const e = {}, need = (k, msg) => { const v = d[k]; if (v === undefined || v === null || v === "" || v === false) e[k] = msg; };
-  need("requestType", "Choose the request type.");
   need("department", "Choose your department.");
   if (d.newCustomer) need("newCustName", "Enter the new customer's name.");
-  else need("customerId", "Choose the customer, or tick New customer.");
+  else need("customerId", "Search for the customer, or add it as a new customer.");
   const contact = !d.newCustomer && d.customerId ? contactFor(d.customerId, d.department) : null;
   if (d.newCustomer || !contact || d.updateBillTo) { need("billToName", "Enter who to bill in this department."); need("billToEmail", "Enter the bill-to email."); }
   if (d.billToEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.billToEmail)) e.billToEmail = "Enter a valid email address.";
-  need("title", d.requestType === "recurring" ? "Describe what is billed each period." : "Describe what should be invoiced.");
-  if (!(d.amount > 0)) e.amount = "Enter an amount greater than zero.";
-  if (d.requestType === "recurring") { need("frequency", "Choose how often to bill."); need("firstBillDate", "Enter the first billing date.");
-    if (d.lastBillDate && d.firstBillDate && d.lastBillDate < d.firstBillDate) e.lastBillDate = "Must be on or after the first billing date."; }
+  need("title", "Give the request a short summary.");
+  const lines = d.lines || [];
+  if (!lines.length) e.lines = "Add at least one billing line.";
+  lines.forEach((l, i) => {
+    const le = lineErrors(l); for (const [k, m] of Object.entries(le)) e[`line:${i}:${k}`] = m;
+  });
   need("contractLocation", "Tell AR where the signed contract is kept.");
   if (["repository", "physical"].includes(d.contractLocation)) need("contractLocationRef", "Give the link or file location.");
   if (d.contractLocation === "attached" && !d.docContract) e.docContract = "Attach the signed contract / PO, or choose another location.";
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
   for (const [t, label] of DOC_TYPES) if (!onFile[t] && !d[DOC_KEY[t]] && !(t === "contract" && d.contractLocation && d.contractLocation !== "attached")) e[DOC_KEY[t]] = `Attach the ${label.toLowerCase()} (not on file yet).`;
-  if (d.periodStart && d.periodEnd && d.periodEnd < d.periodStart) e.periodEnd = "Must be on or after the start of the period.";
   return e;
+}
+
+/** Errors for one billing line. */
+export function lineErrors(l) {
+  const e = {};
+  if (!String(l.desc || "").trim()) e.desc = "Describe what this line bills.";
+  if (!(l.amount > 0)) e.amount = l.lineType === "recurring" ? "Enter the amount per period." : "Enter an amount greater than zero.";
+  if (l.lineType === "recurring") {
+    if (!l.startDate) e.startDate = "Enter the first billing date.";
+    if (!l.endDate) e.endDate = "Enter the last billing date.";
+    if (l.startDate && l.endDate && l.endDate < l.startDate) e.endDate = "Must be on or after the From date.";
+  }
+  return e;
+}
+
+/** Billing dates of a recurring line (or schedule): start, then every n months up to and including end. */
+export function periodDates(freq, start, end, cap = 120) {
+  const step = FREQ[freq]?.[2] || 1, out = [];
+  if (!start || !end || end < start) return out;
+  for (let n = 0; n < cap; n++) { const d = addMonths(start, step * n); if (d > end) break; out.push(d); }
+  return out;
+}
+export function lineValue(l) { return l.lineType === "recurring" ? (l.amount || 0) * periodDates(l.frequency || "monthly", l.startDate, l.endDate).length : (l.amount || 0); }
+export function linesSummary(lines) {
+  const one = lines.filter(l => l.lineType !== "recurring"), rec = lines.filter(l => l.lineType === "recurring");
+  return { oneOffTotal: one.reduce((s, l) => s + (l.amount || 0), 0), recurringValue: rec.reduce((s, l) => s + lineValue(l), 0),
+    total: lines.reduce((s, l) => s + lineValue(l), 0), nOne: one.length, nRec: rec.length };
+}
+export const reqLines = r => S.lines.filter(l => l.requestId === r.id);
+/** Short label like "2 one-off · 1 recurring". */
+export function linesLabel(r) {
+  const ls = r.lines || reqLines(r), s = linesSummary(ls);
+  return [s.nOne ? `${s.nOne} one-off` : "", s.nRec ? `${s.nRec} recurring` : ""].filter(Boolean).join(" · ") || "No lines";
+}
+/** A line is done when its one-off invoice is issued, or its recurring schedule exists. */
+export function lineStatus(l) {
+  if (l.lineType === "recurring") return l.scheduleId ? "scheduled" : "open";
+  const inv = l.invoiceId ? S.invoices.find(i => i.id === l.invoiceId) : null;
+  return !inv || inv.state === "cancelled" ? "open" : inv.state === "issued" ? "invoiced" : "draft";
+}
+/** Business rule: request becomes Billed when every line is invoiced or scheduled. */
+function updateBilled(r) {
+  const ls = reqLines(r);
+  if (ls.length && ls.every(l => ["invoiced", "scheduled"].includes(lineStatus(l)))) {
+    if (r.state !== "invoiced") { r.state = "invoiced"; journal(r, "system", "All billing lines are invoiced or scheduled; state changed to Billed."); }
+  } else if (r.state === "invoiced") r.state = "in_progress";
 }
 
 /** Setup checklist for an AR-i on the workspace record. */
@@ -84,7 +131,7 @@ export function setupStatus(r) {
   const filed = docsGiven.filter(t => S.documents.some(d => d.requestId === r.id && d.docType === t));
   const ctr = r.contractId ? S.contracts.find(k => k.id === r.contractId) : null;
   return { linked, contact, docsGiven, filed, docsDone: filed.length === docsGiven.length,
-    location: !r.contractLocation || !ctr ? null : !!ctr.contractLocation, schedule: r.scheduleId ? S.schedules.find(x => x.id === r.scheduleId) : null };
+    location: !r.contractLocation || !ctr ? null : !!ctr.contractLocation };
 }
 
 /** UI action "Link to customer": create or link the customer, upsert the department's billing contact,
@@ -121,17 +168,15 @@ const FREQ = Object.fromEntries(FREQUENCIES.map(f => [f[0], f]));
 export const freqLabel = f => FREQ[f]?.[1] || f || "—";
 const addMonths = (iso, n) => { const d = new Date(iso + "T00:00:00"), day = d.getDate(); d.setMonth(d.getMonth() + n); if (d.getDate() !== day) d.setDate(0); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
 
-/** Billing periods of a schedule: date, invoice (if raised), status Invoiced / Due / Upcoming. */
+/** Billing periods of a schedule: date, invoice (if raised), status Invoiced / Due / Upcoming. Upcoming periods beyond the horizon collapse into one "more" row. */
 export function schedulePeriods(sch, horizonMonths = 3) {
-  const step = FREQ[sch.frequency]?.[2] || 1, out = [];
-  const ctrEnd = sch.contractId ? S.contracts.find(k => k.id === sch.contractId)?.end : "";
-  const last = sch.lastDate || ctrEnd || addMonths(isoToday(), 12);
-  const horizon = addMonths(isoToday(), horizonMonths);
-  for (let n = 0, d = sch.firstDate; d && d <= last && n < 60; n++, d = addMonths(sch.firstDate, step * n)) {
-    if (n === 0) d = sch.firstDate;
+  const out = [], horizon = addMonths(isoToday(), horizonMonths);
+  const last = sch.lastDate || sch.contractId && S.contracts.find(k => k.id === sch.contractId)?.end || addMonths(isoToday(), 12);
+  const dates = periodDates(sch.frequency, sch.firstDate, last);
+  for (const d of dates) {
     const inv = S.invoices.find(i => i.scheduleId === sch.id && i.periodDate === d && i.state !== "cancelled");
     const status = inv ? "Invoiced" : d <= isoToday() ? "Due" : "Upcoming";
-    if (status === "Upcoming" && d > horizon) { out.push({ date: d, inv: null, status, more: true }); break; }
+    if (status === "Upcoming" && d > horizon) { out.push({ date: d, inv: null, status, more: true, remaining: dates.filter(x => x >= d).length }); break; }
     out.push({ date: d, inv, status });
   }
   return out;
@@ -139,17 +184,37 @@ export function schedulePeriods(sch, horizonMonths = 3) {
 export const periodsDue = sch => schedulePeriods(sch).filter(p => p.status === "Due");
 export function nextBilling(sch) { const p = schedulePeriods(sch).find(x => !x.inv); return p ? p.date : null; }
 
-/** UI action "Set up billing schedule" (Recurring AR-i). */
-export function setupSchedule(id) {
-  const r = reqById(id); if (!r) return "Record not found.";
-  if (r.requestType !== "recurring") return "Only Recurring AR requests get a billing schedule.";
-  if (!r.customerId || r.newCustomer) return "Link the request to a customer first.";
-  if (r.scheduleId) return "A billing schedule already exists.";
-  const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: r.contractId || null, department: r.department, desc: r.title,
-    frequency: r.frequency, amount: r.amount, firstDate: r.firstBillDate, lastDate: r.lastBillDate || "", requestId: r.id };
-  S.schedules.push(sch); r.scheduleId = sch.id; r.state = "scheduled"; if (!r.assignedTo) r.assignedTo = me().id;
-  journal(r, "comment", `Recurring billing set up as ${sch.number}: ${freqLabel(sch.frequency).toLowerCase()} SGD ${(sch.amount / 100).toFixed(2)} from ${sch.firstDate}${sch.lastDate ? ` to ${sch.lastDate}` : ""}. AR will raise each invoice; no further AR forms are needed for this billing.`);
+/** UI action "Set up billing schedule" on a recurring billing line. */
+export function setupSchedule(lineId) {
+  const l = S.lines.find(x => x.id === lineId); if (!l) return "Billing line not found.";
+  const r = reqById(l.requestId);
+  if (l.lineType !== "recurring") return "Only recurring lines get a billing schedule.";
+  if (!r?.customerId || r.newCustomer) return "Link the request to a customer first.";
+  if (l.scheduleId) return "This line already has a billing schedule.";
+  const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: r.contractId || null, department: r.department, desc: l.desc,
+    frequency: l.frequency || "monthly", amount: l.amount, firstDate: l.startDate, lastDate: l.endDate, requestId: r.id, lineId: l.id };
+  S.schedules.push(sch); l.scheduleId = sch.id; if (r.state === "new") r.state = "in_progress"; if (!r.assignedTo) r.assignedTo = me().id;
+  const n = periodDates(sch.frequency, sch.firstDate, sch.lastDate).length;
+  journal(r, "comment", `Recurring line "${l.desc}" set up as billing schedule ${sch.number}: ${n} ${freqLabel(sch.frequency).toLowerCase()} invoice${n === 1 ? "" : "s"} of SGD ${(sch.amount / 100).toFixed(2)} from ${sch.firstDate} to ${sch.lastDate}. AR raises each invoice; no further AR forms are needed for this line.`);
+  updateBilled(r);
   return { opened: sch };
+}
+
+/** UI action "Create invoice" on a one-off billing line. */
+export function lineInvoice(lineId) {
+  const l = S.lines.find(x => x.id === lineId); if (!l) return "Billing line not found.";
+  const r = reqById(l.requestId);
+  if (l.lineType !== "one_off") return "Recurring lines are billed from a billing schedule.";
+  if (!r?.customerId || r.newCustomer) return "Link the request to a customer first (Link to customer).";
+  if (lineStatus(l) !== "open") return "This line already has an invoice.";
+  const k = ctrById(r.contractId), c = custById(r.customerId);
+  const date = l.invoiceDate && l.invoiceDate > isoToday() ? l.invoiceDate : isoToday();
+  const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: r.contractId || null, requestId: r.id, lineId: l.id,
+    customer: c?.name || "", desc: l.desc, amount: l.amount, date, due: addDays(date, k?.terms || c?.terms || 30), currency: "SGD" };
+  S.invoices.push(inv); l.invoiceId = inv.id; if (r.state === "new") r.state = "in_progress";
+  if (!r.assignedTo) r.assignedTo = me().id;
+  journal(r, "work_note", `Draft invoice ${inv.number} created for line "${l.desc}".`);
+  return { opened: inv };
 }
 
 /** UI action "Raise invoice" on a billing period: draft invoice for that period. */
@@ -173,11 +238,15 @@ export function journal(req, kind, text, by) {
 
 /** Record producer submit (portal AR form). */
 export function createRequest(vals) {
-  const req = { id: uid("r"), number: nextNumber("requests"), state: "new", requestedBy: me().id, assignedTo: null, invoiceId: null,
-    opened: isoToday(), updated: isoToday(), activity: [], attachments: vals.attachments || [], ...vals };
-  delete req.attachments_input;
+  const { lines = [], ...rest } = vals;
+  const req = { id: uid("r"), number: nextNumber("requests"), state: "new", requestedBy: me().id, assignedTo: null,
+    opened: isoToday(), updated: isoToday(), activity: [], attachments: rest.attachments || [], ...rest };
+  req.amount = linesSummary(lines).total;
   S.requests.push(req);
-  journal(req, "system", `Submitted from ${req.form || "AR-i"} (${REQ_TYPE[req.requestType] || "AR form"}) on the portal.`, req.requestedBy);
+  for (const l of lines) S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, lineType: l.lineType, desc: l.desc.trim(), amount: l.amount,
+    invoiceDate: l.lineType === "one_off" ? l.invoiceDate || "" : "", frequency: l.lineType === "recurring" ? l.frequency || "monthly" : "",
+    startDate: l.lineType === "recurring" ? l.startDate : "", endDate: l.lineType === "recurring" ? l.endDate : "", invoiceId: null, scheduleId: null });
+  journal(req, "system", `Submitted from ${req.form || "AR-i"} on the portal${req.newCustomer ? " for a new customer" : ""} with ${linesLabel(req)}.`, req.requestedBy);
   return req;
 }
 
@@ -189,7 +258,7 @@ export function validate(table, vals) {
     const v = vals[f.key];
     if (v === undefined || v === null || v === "" || (f.type === "Currency" && !(v > 0))) err[f.key] = f.type === "Currency" ? "Enter an amount greater than zero." : `${f.label} is required.`;
   }
-  if (vals.periodStart && vals.periodEnd && vals.periodEnd < vals.periodStart) err.periodEnd = "Must be on or after the start of the period.";
+  if (table === "lines") Object.assign(err, lineErrors(vals));
   return err;
 }
 
@@ -206,18 +275,6 @@ export function requestAction(id, action, text) {
   } else if (action === "reject") {                // UI action: Reject
     if (!t) return "Add a customer-visible comment explaining the rejection first.";
     r.state = "rejected"; journal(r, "comment", t); journal(r, "system", "State changed to Rejected."); S.ui.ws.composer[id] = { kind: "comment", text: "" };
-  } else if (action === "invoice") {               // UI action: Create invoice
-    if (r.invoiceId) return "An invoice already exists for this request.";
-    if (!r.customerId || r.newCustomer) return "Link the request to a customer first (Link to customer).";
-    if (r.requestType === "recurring") return "Recurring requests are billed from a billing schedule. Use Set up billing schedule.";
-    const k = ctrById(r.contractId), c = custById(r.customerId);
-    const date = r.invoiceDate && r.invoiceDate > isoToday() ? r.invoiceDate : isoToday();
-    const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: r.contractId || null, requestId: r.id,
-      customer: c?.name || "", desc: r.title, amount: r.amount, date, due: addDays(date, k?.terms || c?.terms || 30), currency: "SGD" };
-    S.invoices.push(inv); r.invoiceId = inv.id; if (r.state === "new") r.state = "in_progress";
-    if (!r.assignedTo) r.assignedTo = me().id;
-    journal(r, "work_note", `Draft invoice ${inv.number} created from this request.`);
-    return { opened: inv };
   }
   return null;
 }
@@ -237,7 +294,7 @@ export function issueInvoice(id) {
   i.state = "issued"; if (!i.date) i.date = isoToday();
   if (!i.due) { const k = ctrById(i.contractId), c = custById(i.customerId); i.due = addDays(i.date, k?.terms || c?.terms || 30); }
   const r = reqById(i.requestId);
-  if (r) { r.state = "invoiced"; journal(r, "comment", `Invoice ${i.number} was issued on ${i.date}, due ${i.due}.`); }
+  if (r) { journal(r, "comment", `Invoice ${i.number} (${i.desc}) was issued on ${i.date} for SGD ${(i.amount / 100).toFixed(2)}, due ${i.due}.`); updateBilled(r); }
   return null;
 }
 
@@ -248,7 +305,8 @@ export function cancelInvoice(id) {
   i.state = "cancelled";
   for (const m of Object.values(S.matches)) if (m && m.status === "proposed" && m.allocations.some(a => a.invoiceId === i.id)) { m.status = "unmatched"; m.allocations = []; m.reason = `Proposal removed: ${i.number} was cancelled.`; }
   const r = reqById(i.requestId);
-  if (r) { r.invoiceId = null; if (r.state === "invoiced") r.state = "in_progress"; journal(r, "work_note", `Invoice ${i.number} was cancelled.`); }
+  const l = i.lineId ? S.lines.find(x => x.id === i.lineId) : null; if (l && l.invoiceId === i.id) l.invoiceId = null;
+  if (r) { journal(r, "work_note", `Invoice ${i.number} was cancelled.`); updateBilled(r); }
   return null;
 }
 
@@ -276,6 +334,7 @@ export function saveRecord(table, id, raw) {
     if (table === "customers") S.invoices.forEach(i => { if (i.customerId === existing.id) i.customer = existing.name; });
     if (table === "invoices") existing.customer = custById(existing.customerId)?.name || "";
     if (table === "requests") existing.updated = isoToday();
+    if (table === "lines") { const r = reqById(existing.requestId); if (r) r.amount = linesSummary(reqLines(r)).total; }
     return { rec: existing };
   }
   const rec = { id: uid(table[0]), ...vals };

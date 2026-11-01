@@ -11,7 +11,7 @@ export const ROLES = {
     can: "Submit AR forms (record producers AR-i … AR-xvi) and read/comment on their own AR requests. Read customers, contracts, billing contacts and which customer documents are on file. No workspace access." }
 };
 
-const STATE_REQ = [["new", "New"], ["in_progress", "In progress"], ["awaiting_info", "Awaiting info"], ["invoiced", "Invoiced"], ["scheduled", "Billing scheduled"], ["rejected", "Rejected"]];
+const STATE_REQ = [["new", "New"], ["in_progress", "In progress"], ["awaiting_info", "Awaiting info"], ["invoiced", "Billed"], ["rejected", "Rejected"]];
 
 /** The 11 operational departments (D11). Bank accounts may also belong to Finance. */
 export const DEPARTMENTS = ["Engineering", "Marine", "Digital", "Infrastructure", "Energy", "Facilities", "Logistics", "Healthcare", "Environmental", "Rail", "Advisory"];
@@ -20,11 +20,11 @@ const DEPT_CHOICES = DEPARTMENTS.map(d => [d, d]);
 /** Portal AR forms catalogue (D9): AR-i … AR-xvi. Only AR-i is defined so far. */
 export const AR_FORMS = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii", "xiv", "xv", "xvi"].map((r, n) => ({
   code: `AR-${r}`, name: n === 0 ? "New AR request" : "To be defined",
-  desc: n === 0 ? "First, ad-hoc or recurring billing for a customer. Supply customer documents once." : "Form not yet specified.",
+  desc: n === 0 ? "Bill a customer: one-off and recurring lines, new or existing customer. Customer documents are given once." : "Form not yet specified.",
   active: n === 0
 }));
 
-export const REQUEST_TYPES = [["first", "1st AR request"], ["adhoc", "Ad-hoc AR"], ["recurring", "Recurring AR"]];
+export const LINE_TYPES = [["one_off", "One-off"], ["recurring", "Recurring"]];
 export const FREQUENCIES = [["monthly", "Monthly", 1], ["quarterly", "Quarterly", 3], ["half_yearly", "Half-yearly", 6], ["annually", "Annually", 12]];
 export const DOC_TYPES = [["contract", "Signed contract / PO"], ["acra", "Company registration (ACRA / UEN)"], ["billing_form", "Billing contact & address form"]];
 const CONTRACT_LOCATIONS = [["attached", "Attached to this form"], ["on_file", "Already with AR"], ["repository", "Document repository link"], ["physical", "Physical file"]];
@@ -38,7 +38,6 @@ export const TABLES = {
       { key: "state", name: "state", label: "State", type: "Choice", choices: STATE_REQ, readonly: true },
       { key: "requestedBy", name: "opened_by", label: "Requested by", type: "Reference", ref: "users", readonly: true },
       { key: "form", name: "ar_form", label: "AR form", type: "Choice", choices: AR_FORMS.map(f => [f.code, `${f.code} ${f.name}`]), readonly: true },
-      { key: "requestType", name: "request_type", label: "Request type", type: "Choice", choices: REQUEST_TYPES, mandatory: true },
       { key: "department", name: "department", label: "Requesting department", type: "Choice", choices: DEPT_CHOICES, mandatory: true },
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", help: "Mandatory unless New customer is ticked" },
       { key: "newCustomer", name: "new_customer", label: "New customer", type: "True/False" },
@@ -53,23 +52,14 @@ export const TABLES = {
       { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", dependsOn: "customerId" },
       { key: "contractLocation", name: "contract_location", label: "Where is the signed contract kept?", type: "Choice", choices: CONTRACT_LOCATIONS, mandatory: true },
       { key: "contractLocationRef", name: "contract_location_ref", label: "Link or file location", type: "String", wide: true, help: "Mandatory for repository link or physical file" },
-      { key: "billingType", name: "billing_type", label: "Billing type", type: "Choice", choices: [["Milestone", "Milestone"], ["Monthly fee", "Monthly fee"], ["Time & materials", "Time & materials"], ["Other", "Other"]] },
-      { key: "title", name: "short_description", label: "What should be invoiced", type: "String", mandatory: true, wide: true },
-      { key: "amount", name: "amount", label: "Amount", type: "Currency", mandatory: true, help: "For Recurring AR: amount per billing period" },
-      { key: "invoiceDate", name: "requested_invoice_date", label: "Preferred invoice date", type: "Date" },
-      { key: "periodStart", name: "period_start", label: "Service period from", type: "Date" },
-      { key: "periodEnd", name: "period_end", label: "Service period to", type: "Date" },
+      { key: "title", name: "short_description", label: "Request summary", type: "String", mandatory: true, wide: true, help: "e.g. Data hall cooling project, phase 1" },
+      { key: "amount", name: "amount", label: "Request value", type: "Currency", readonly: true, help: "Calculated: one-off lines + recurring amount × number of periods" },
       { key: "poNumber", name: "po_number", label: "Customer PO number", type: "String" },
-      { key: "frequency", name: "frequency", label: "Billing frequency", type: "Choice", choices: FREQUENCIES.map(f => [f[0], f[1]]), help: "Recurring AR only" },
-      { key: "firstBillDate", name: "first_billing_date", label: "First billing date", type: "Date", help: "Recurring AR only" },
-      { key: "lastBillDate", name: "last_billing_date", label: "Last billing date", type: "Date", help: "Recurring AR; blank = until the contract ends" },
       { key: "docContract", name: "doc_contract_po", label: "Signed contract / PO", type: "Attachment", help: "Only when not already on file for the customer" },
       { key: "docAcra", name: "doc_acra", label: "Company registration (ACRA / UEN)", type: "Attachment", help: "Only when not already on file" },
       { key: "docBillingForm", name: "doc_billing_form", label: "Billing contact & address form", type: "Attachment", help: "Only when not already on file for this department" },
       { key: "details", name: "description", label: "Additional details", type: "String (4000)", wide: true },
       { key: "assignedTo", name: "assigned_to", label: "Assigned to", type: "Reference", ref: "users", refFilter: "ar" },
-      { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices", readonly: true },
-      { key: "scheduleId", name: "billing_schedule", label: "Billing schedule", type: "Reference", ref: "schedules", readonly: true },
       { key: "opened", name: "opened_at", label: "Opened", type: "Date", readonly: true }
     ]
   },
@@ -82,6 +72,7 @@ export const TABLES = {
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
       { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", dependsOn: "customerId" },
       { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
+      { key: "lineId", name: "request_line", label: "Billing line", type: "Reference", ref: "lines", readonly: true },
       { key: "scheduleId", name: "billing_schedule", label: "Billing schedule", type: "Reference", ref: "schedules", readonly: true },
       { key: "periodDate", name: "billing_period", label: "Billing period", type: "Date", readonly: true },
       { key: "desc", name: "short_description", label: "Description", type: "String", wide: true, mandatory: true },
@@ -151,6 +142,25 @@ export const TABLES = {
       { key: "reason", name: "reason", label: "Reason", type: "String (1000)" }
     ]
   },
+  lines: {
+    table: `${SCOPE}_request_line`, label: "Billing line", plural: "Billing lines", display: "number", prefix: "RQL",
+    note: "What to bill on an AR request (D13): one-off, or recurring over a from–to date range. Portal: multi-row variable set on AR-i.",
+    fields: [
+      { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "RQL0001000" },
+      { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
+      { key: "lineType", name: "line_type", label: "Line type", type: "Choice", choices: LINE_TYPES, mandatory: true },
+      { key: "desc", name: "short_description", label: "Description", type: "String", mandatory: true, wide: true },
+      { key: "amount", name: "amount", label: "Amount", type: "Currency", mandatory: true, help: "Recurring: amount per period" },
+      { key: "invoiceDate", name: "preferred_invoice_date", label: "Preferred invoice date", type: "Date", help: "One-off only" },
+      { key: "frequency", name: "frequency", label: "Frequency", type: "Choice", choices: FREQUENCIES.map(f => [f[0], f[1]]), help: "Recurring only; Monthly by default (decision 10)" },
+      { key: "startDate", name: "start_date", label: "From", type: "Date", help: "Recurring only: first billing date" },
+      { key: "endDate", name: "end_date", label: "To", type: "Date", help: "Recurring only: last billing date" },
+      { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices", readonly: true },
+      { key: "scheduleId", name: "billing_schedule", label: "Billing schedule", type: "Reference", ref: "schedules", readonly: true }
+    ],
+    calculated: [{ name: "periods", label: "Number of invoices", type: "Integer", how: "recurring: periods between start and end at the frequency" },
+      { name: "line_value", label: "Line value", type: "Currency", how: "one-off: amount; recurring: amount × periods" }]
+  },
   contacts: {
     table: `${SCOPE}_billing_contact`, label: "Billing contact", plural: "Billing contacts", display: "name",
     note: "Who to bill at a customer, per department (D11). Unique per customer + department. Created or updated by Link to customer from an AR-i.",
@@ -180,7 +190,7 @@ export const TABLES = {
   },
   schedules: {
     table: `${SCOPE}_billing_schedule`, label: "Billing schedule", plural: "Billing schedules", display: "number", prefix: "SCH",
-    note: "Recurring billing set up once from a Recurring AR-i (D12). Periods are listed; AR raises each invoice manually.",
+    note: "Recurring billing set up once from a recurring billing line (D12, D13): from–to date range and frequency. Periods are listed; AR raises each invoice manually.",
     fields: [
       { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "SCH0001000" },
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
@@ -190,8 +200,9 @@ export const TABLES = {
       { key: "frequency", name: "frequency", label: "Frequency", type: "Choice", choices: FREQUENCIES.map(f => [f[0], f[1]]), mandatory: true },
       { key: "amount", name: "amount", label: "Amount per period", type: "Currency", mandatory: true },
       { key: "firstDate", name: "first_billing_date", label: "First billing date", type: "Date", mandatory: true },
-      { key: "lastDate", name: "last_billing_date", label: "Last billing date", type: "Date", help: "Blank = until the contract ends" },
-      { key: "requestId", name: "source_request", label: "From AR request", type: "Reference", ref: "requests", readonly: true }
+      { key: "lastDate", name: "last_billing_date", label: "Last billing date", type: "Date", mandatory: true },
+      { key: "requestId", name: "source_request", label: "From AR request", type: "Reference", ref: "requests", readonly: true },
+      { key: "lineId", name: "source_line", label: "From billing line", type: "Reference", ref: "lines", readonly: true }
     ],
     calculated: [{ name: "next_billing_date", label: "Next billing date", type: "Date", how: "first period on or after today without an invoice" }]
   },
@@ -257,8 +268,8 @@ export function fieldNote(tableKey, key) {
 export const RECORD_PRODUCER = {
   name: "AR-i New AR request",
   table: "requests",
-  variables: ["requestType", "customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "department", "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress",
-    "contractId", "contractLocation", "contractLocationRef", "billingType", "title", "amount", "invoiceDate", "periodStart", "periodEnd", "poNumber", "frequency", "firstBillDate", "lastBillDate",
-    "docContract", "docAcra", "docBillingForm", "details"],
+  variables: ["customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "department", "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress",
+    "contractId", "contractLocation", "contractLocationRef", "title", "poNumber", "docContract", "docAcra", "docBillingForm", "details"],
+  lineSet: "lines",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;"
 };

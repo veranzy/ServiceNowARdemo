@@ -82,14 +82,14 @@ export function fieldHtml(table, f, rec, ctx = {}) {
   const err = ctx.errors?.[f.key];
   if (ctx.label || ctx.mandatory !== undefined || ctx.help !== undefined) f = { ...f, label: ctx.label ?? f.label, mandatory: ctx.mandatory ?? f.mandatory, help: ctx.help === undefined ? f.help : ctx.help };
   if (f.type === "True/False" && !ro) {
-    return `<div class="ffield fcheckwrap${f.wide ? " wide" : ""}"${sn(`${CODE[table]}.${f.name}`)}><label class="fcheck" for="${id}"><input type="checkbox" id="${id}" name="${f.key}"${rec[f.key] ? " checked" : ""}> <span>${esc(f.label)}</span></label>${f.help ? `<span class="fhelp">${esc(f.help)}</span>` : ""}</div>`;
+    return `<div class="ffield fcheckwrap${f.wide ? " wide" : ""}"${sn(`${CODE[table]}.${f.name}`)}><label class="fcheck" for="${id}"><input type="checkbox" id="${id}" name="${ctx.name || f.key}"${rec[f.key] ? " checked" : ""}> <span>${esc(f.label)}</span></label>${f.help ? `<span class="fhelp">${esc(f.help)}</span>` : ""}</div>`;
   }
   const label = `<span class="flabel">${f.mandatory && !ro ? `<i class="req" aria-hidden="true">*</i>` : ""}${esc(f.label)}</span>`;
   let ctl;
   if (ro) ctl = `<div class="fro" id="${id}">${readValue(table, f, rec)}</div>`;
   else {
     const v = rec[f.key];
-    const common = `id="${id}" name="${f.key}"${f.mandatory ? ` aria-required="true"` : ""}${err ? ` aria-invalid="true"` : ""}`;
+    const common = `id="${id}" name="${ctx.name || f.key}"${f.mandatory ? ` aria-required="true"` : ""}${err ? ` aria-invalid="true"` : ""}`;
     if (f.type === "Reference") ctl = `<select ${common}><option value="">-- None --</option>${refOptions(f, rec, ctx.vals).map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     else if (f.type === "Choice") ctl = `<select ${common}>${f.mandatory ? "" : `<option value="">-- None --</option>`}${f.choices.map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     else if (f.type.startsWith("String (")) ctl = `<textarea ${common} rows="3">${esc(f.key === "aliases" ? (v || []).join(", ") : v || "")}</textarea>`;

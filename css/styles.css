@@ -370,6 +370,29 @@ tr.sel td{background:var(--accent-soft)}
 .kvlist{display:grid;gap:10px;margin:12px 0}
 .kvlist dt{font-size:12px;color:var(--muted)} .kvlist dd{margin:2px 0 0}
 
+/* AR-i customer search + billing lines (portal) */
+.custhits{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.custhit{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 12px;cursor:pointer;color:var(--fg)}
+.custhit:hover{border-color:var(--brand)}
+#pfCustResults{display:grid;gap:8px}
+.custpick{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--brand);border-radius:9px;padding:10px 14px;background:color-mix(in srgb,var(--brand) 6%,var(--surface))}
+.custpick>div{display:grid;gap:2px;min-width:0}
+.custpick.new{border-color:var(--warn);background:var(--warn-soft)}
+.lines{display:grid;gap:10px}
+.lcard{border:1px solid var(--line);border-radius:9px;padding:10px 12px;display:grid;gap:10px;background:var(--surface);border-left:4px solid var(--accent)}
+.lcard.rec{border-left-color:var(--ok)}
+.lhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.lhead .sp{flex:1}
+.lhead .seg button{padding:4px 10px}
+.lsum{margin:0;font-size:12.5px;color:var(--muted);min-height:1em}
+.ltotals{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0;padding:10px 12px;border-radius:8px;background:var(--bg)}
+.ltotals dt{font-size:12px;color:var(--muted)} .ltotals dd{margin:0}
+.tklines{margin:12px 0}
+.tklines ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px}
+.tklines li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 14px;border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.tklines li>div{display:grid;gap:2px;min-width:0}
+.tkst{justify-items:end;text-align:right}
+
 /* AR-i customer setup (workspace) */
 .setup .checklist{list-style:none;margin:0;padding:8px 14px 12px;display:grid;gap:8px}
 .checklist li{display:flex;gap:10px;align-items:flex-start}

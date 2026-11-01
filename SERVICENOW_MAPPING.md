@@ -57,10 +57,9 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `number` | Number | String | Read-only on form |
-| `state` | State | Choice | Choices: New (`new`), In progress (`in_progress`), Awaiting info (`awaiting_info`), Invoiced (`invoiced`), Billing scheduled (`scheduled`), Rejected (`rejected`). Read-only on form |
+| `state` | State | Choice | Choices: New (`new`), In progress (`in_progress`), Awaiting info (`awaiting_info`), Billed (`invoiced`), Rejected (`rejected`). Read-only on form |
 | `opened_by` | Requested by | Reference | → `sys_user`. Read-only on form |
 | `ar_form` | AR form | Choice | Choices: AR-i New AR request (`AR-i`), AR-ii To be defined (`AR-ii`), AR-iii To be defined (`AR-iii`), AR-iv To be defined (`AR-iv`), AR-v To be defined (`AR-v`), AR-vi To be defined (`AR-vi`), AR-vii To be defined (`AR-vii`), AR-viii To be defined (`AR-viii`), AR-ix To be defined (`AR-ix`), AR-x To be defined (`AR-x`), AR-xi To be defined (`AR-xi`), AR-xii To be defined (`AR-xii`), AR-xiii To be defined (`AR-xiii`), AR-xiv To be defined (`AR-xiv`), AR-xv To be defined (`AR-xv`), AR-xvi To be defined (`AR-xvi`). Read-only on form |
-| `request_type` | Request type | Choice | Choices: 1st AR request (`first`), Ad-hoc AR (`adhoc`), Recurring AR (`recurring`). Mandatory |
 | `department` | Requesting department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory |
 | `customer` | Customer | Reference | → `x_ar_customer`. Mandatory unless New customer is ticked |
 | `new_customer` | New customer | True/False |  |
@@ -75,23 +74,14 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer |
 | `contract_location` | Where is the signed contract kept? | Choice | Choices: Attached to this form (`attached`), Already with AR (`on_file`), Document repository link (`repository`), Physical file (`physical`). Mandatory |
 | `contract_location_ref` | Link or file location | String | Mandatory for repository link or physical file |
-| `billing_type` | Billing type | Choice | Choices: Milestone, Monthly fee, Time & materials, Other |
-| `short_description` | What should be invoiced | String | Mandatory |
-| `amount` | Amount | Currency | Mandatory. For Recurring AR: amount per billing period |
-| `requested_invoice_date` | Preferred invoice date | Date |  |
-| `period_start` | Service period from | Date |  |
-| `period_end` | Service period to | Date |  |
+| `short_description` | Request summary | String | Mandatory. e.g. Data hall cooling project, phase 1 |
+| `amount` | Request value | Currency | Read-only on form. Calculated: one-off lines + recurring amount × number of periods |
 | `po_number` | Customer PO number | String |  |
-| `frequency` | Billing frequency | Choice | Choices: Monthly (`monthly`), Quarterly (`quarterly`), Half-yearly (`half_yearly`), Annually (`annually`). Recurring AR only |
-| `first_billing_date` | First billing date | Date | Recurring AR only |
-| `last_billing_date` | Last billing date | Date | Recurring AR; blank = until the contract ends |
 | `doc_contract_po` | Signed contract / PO | Attachment | Only when not already on file for the customer |
 | `doc_acra` | Company registration (ACRA / UEN) | Attachment | Only when not already on file |
 | `doc_billing_form` | Billing contact & address form | Attachment | Only when not already on file for this department |
 | `description` | Additional details | String (4000) |  |
 | `assigned_to` | Assigned to | Reference | → `sys_user` (users with x_ar.ar_team) |
-| `invoice` | Invoice | Reference | → `x_ar_invoice`. Read-only on form |
-| `billing_schedule` | Billing schedule | Reference | → `x_ar_billing_schedule`. Read-only on form |
 | `opened_at` | Opened | Date | Read-only on form |
 | `comments` / `work_notes` | Additional comments / Work notes | Journal (inherited from task) | Comments visible on portal; work notes AR team only |
 
@@ -106,6 +96,7 @@ System of record for customer invoices. Created by the AR team from an AR reques
 | `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
 | `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer |
 | `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
+| `request_line` | Billing line | Reference | → `x_ar_request_line`. Read-only on form |
 | `billing_schedule` | Billing schedule | Reference | → `x_ar_billing_schedule`. Read-only on form |
 | `billing_period` | Billing period | Date | Read-only on form |
 | `short_description` | Description | String | Mandatory |
@@ -176,7 +167,7 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 
 ## Portal (project team)
 
-- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `request_type`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `department`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `contract`, `contract_location`, `contract_location_ref`, `billing_type`, `short_description`, `amount`, `requested_invoice_date`, `period_start`, `period_end`, `po_number`, `frequency`, `first_billing_date`, `last_billing_date`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
+- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `department`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `contract`, `contract_location`, `contract_location_ref`, `short_description`, `po_number`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
   - Producer script: `current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;`
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.

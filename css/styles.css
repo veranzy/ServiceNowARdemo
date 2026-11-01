@@ -369,18 +369,23 @@ tr.sel td{background:var(--accent-soft)}
 .kvlist{display:grid;gap:10px;margin:12px 0}
 .kvlist dt{font-size:12px;color:var(--muted)} .kvlist dd{margin:2px 0 0}
 
-/* ---------- build notes overlay ---------- */
-body.sn-notes [data-snid]{outline:1.5px dashed #c77dff;outline-offset:2px;position:relative}
-body.sn-notes [data-snid]::after{content:"[" attr(data-snid) "] " attr(data-sn);position:absolute;left:0;top:-2px;transform:translateY(-100%);z-index:30;max-width:min(440px,90vw);
-  font:500 10.5px/1.35 var(--f-mono);letter-spacing:0;text-transform:none;color:#2a0845;background:#efdcff;border:1px solid #c77dff;border-radius:4px;padding:2px 6px;
-  white-space:normal;pointer-events:none;text-align:left}
-body.sn-notes .ffield[data-snid]::after,body.sn-notes th[data-snid]::after{position:static;transform:none;display:block;margin-top:4px;width:max-content;max-width:100%}
-body.sn-notes th[data-snid]{white-space:normal}
-body.sn-notes .ws-head[data-snid]::after,body.sn-notes .pt-head[data-snid]::after{top:auto;bottom:-2px;transform:translateY(100%)}
-body.sn-notes .ws-rail[data-snid]::after{top:auto;bottom:8px;left:58px;transform:none;width:200px}
-
+/* ---------- build note ID tags ---------- */
+/* Every element with data-snid gets a small purple ID tag drawn inside it (never clipped by parents).
+   Containers: tag in the top-right corner. Buttons and column headers: tag inline before the text.
+   Fields: tag above the label. Hover shows the full ServiceNow note (title attribute). */
+body.sn-notes [data-snid]{outline:1px dashed color-mix(in srgb,#9d4edd 55%,transparent);outline-offset:1px}
+body.sn-notes [data-snid]:hover{outline:2px solid #9d4edd}
+body.sn-notes [data-snid]::before{content:attr(data-snid);font:600 10px/1.35 var(--f-mono);letter-spacing:0;text-transform:none;color:#fff;background:#7b2cbf;
+  border-radius:3px;padding:0 4px;white-space:nowrap;pointer-events:none}
+body.sn-notes :is(section,div,form,aside,article,dl,details,fieldset):not(.ws-listmenu)[data-snid],body.sn-notes .pt-head[data-snid]{position:relative}
+body.sn-notes :is(section,div,form,aside,article,dl,details,fieldset,header,nav)[data-snid]::before{position:absolute;top:-8px;left:10px;z-index:31}
+/* containers that clip their own overflow keep the tag inside */
+body.sn-notes :is(.summary,.picker,.ws-tabs)[data-snid]::before{top:3px;left:auto;right:3px}
+body.sn-notes :is(button,th,a)[data-snid]::before{display:inline-block;margin-right:6px;vertical-align:1px}
+body.sn-notes label.ffield[data-snid]::before,body.sn-notes .ffield[data-snid]::before{align-self:flex-start;position:static}
+body.sn-notes .ws-head[data-snid]::before{top:auto;bottom:2px}
+body.sn-notes .ws-rail[data-snid]::before{top:auto;bottom:6px;right:50%;transform:translateX(50%)}
 .db-hint{color:#e6c8ff;font-size:12px}
-body.sn-notes [data-snid]:hover{outline-color:#9d4edd;outline-width:2px}
 
 /* ---------- responsive ---------- */
 @media (max-width:1100px){.rec-body.two{grid-template-columns:minmax(0,1fr)}}

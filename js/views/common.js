@@ -10,7 +10,7 @@ import { DAY, esc, fmt, today } from "../util.js";
 export const sn = id => {
   const text = noteText(id);
   if (text === null) console.warn(`Unregistered build note ID: ${id}`);
-  return ` data-snid="${esc(id)}" data-sn="${esc(text ?? "")}"`;
+  return ` data-snid="${esc(id)}" data-sn="${esc(text ?? "")}"${S.ui.notes ? ` title="${esc(`${id}: ${text ?? ""}`)}"` : ""}`;
 };
 
 const REQ_CHIP = { new: "c-accent", in_progress: "c-neutral", awaiting_info: "c-warn", invoiced: "c-ok", rejected: "c-bad" };

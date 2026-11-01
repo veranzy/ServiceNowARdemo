@@ -27,8 +27,8 @@ function demoBar() {
     </div>
     <span class="db-who">Signed in as <b>${esc(u?.name || "")}</b> <span class="db-role mono">${esc(ROLES[p].role)}</span></span>
     <span class="sp"></span>
-    <label class="switch"><input type="checkbox" id="notesToggle"${S.ui.notes ? " checked" : ""}><span>Build notes</span></label>
-    ${S.ui.notes ? `<span class="db-hint">Alt/Option+click an outlined element to copy its ID</span>` : ""}
+    <label class="switch"><input type="checkbox" id="notesToggle"${S.ui.notes ? " checked" : ""}><span>Show IDs</span></label>
+    ${S.ui.notes ? `<span class="db-hint">Hover a tag for its ServiceNow note · Alt/Option+click to copy the ID</span>` : ""}
     <button type="button" class="btn small ghost" id="resetDemo">Reset demo</button>
   </div>`;
 }

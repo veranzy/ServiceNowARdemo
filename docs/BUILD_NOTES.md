@@ -1,9 +1,9 @@
 # Build note IDs
 
-Every element outlined by **Build notes** in the prototype has an ID, shown in brackets on its label.
-To request a change, write `<ID> - <change>`, for example `BSU-03 - add a field for the statement's closing balance`
-or `INV.due_date - default to end of next month`. With Build notes on, Alt/Option+click an outlined
-element to copy its ID.
+Every element of the prototype that maps to a ServiceNow build item carries a small purple **ID tag**
+(on by default; *Show IDs* in the demo bar hides them). Hover a tag to see its ServiceNow note;
+Alt/Option+click the element to copy its ID. To request a change, write `<ID> - <change>`, for example
+`BSU-03 - add a field for the statement's closing balance` or `INV.due_date - default to end of next month`.
 
 ID patterns:
 

@@ -9,7 +9,7 @@ export const S = {
   // shell
   ui: {
     persona: "ar",          // "ar" → workspace, "project" → portal
-    notes: false,           // Build notes overlay
+    notes: true,            // Build note ID tags (on by default; toggle in the demo bar)
     toast: null,
     ws: { main: { kind: "home" }, tabs: [], active: "main", listMenu: false, q: "", composer: {} },
     portal: { page: "home", id: null, draft: null, errors: {} }

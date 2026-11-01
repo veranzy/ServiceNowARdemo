@@ -24,7 +24,8 @@ For every new module or change:
 
 ## Change requests by build-note ID
 
-The owner turns on **Build notes**, finds the element, and writes `<ID> - <change>` (e.g.
+Every mapped element shows a purple **ID tag** (on by default, *Show IDs* in the demo bar; hover shows
+the ServiceNow note via `title`). The owner finds the element and writes `<ID> - <change>` (e.g.
 `BSU-03 - add a closing balance field`, `INV.due_date - default to end of next month`). To act on one:
 
 1. Look the ID up in `js/notes.js` (or `docs/BUILD_NOTES.md`). Field IDs are `<TABLE CODE>.<column>`
@@ -114,7 +115,7 @@ docs/modules/           one spec per module (see "How we work"); docs/DECISIONS.
 - **Escape** every data value with `esc()` in templates.
 - **Events are delegated** on `document` via `data-*` attributes (`data-open="table:id"`, `data-ui`,
   `data-list`, `data-rail`, `data-pnav`, `data-ticket`, …). Never attach listeners to rendered nodes.
-- **Build notes:** every element that corresponds to a ServiceNow artefact gets `sn("<ID>")` with an
+- **ID tags (Build notes):** every element that corresponds to a ServiceNow artefact gets `sn("<ID>")` with an
   ID registered in `js/notes.js` (see "Change requests by build-note ID"). Fields get `<CODE>.<column>`
   IDs automatically through `fieldHtml`.
 - **Workspace vs portal:** AR features go in the workspace only; project-team features in the portal only.
@@ -127,7 +128,7 @@ docs/modules/           one spec per module (see "How we work"); docs/DECISIONS.
 Serve with `python3 -m http.server` (modules don't load from `file://`). Click through: portal AR form
 submit → workspace new request → assign → create invoice → issue → portal shows invoice; BSU upload
 (sample file and a real CSV file, wrong-bank error); cash application Find invoice → Apply, Remove match;
-Build notes on; 400px wide in dark mode.
+ID tags visible and unclipped; 400px wide in dark mode.
 No console errors.
 
 ## Deploy

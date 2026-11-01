@@ -11,15 +11,16 @@ ServiceNow (custom scoped app). It shows both experiences side by side:
   statements (BSU), match deposits to invoices manually, and maintain customers, contracts and bank
   accounts.
 
-Use the demo bar at the top to switch persona, turn on **Build notes** (labels each element with its
-ServiceNow table, field, UI action or widget), or reset the sample data.
+Every element that maps to a ServiceNow build item carries a small purple **ID tag** (hover it for the
+ServiceNow table, field, UI action or widget). Use the demo bar to switch persona, hide the tags
+(*Show IDs*) for a clean client demo, or reset the sample data.
 
 ## Documents
 
 - `SERVICENOW_MAPPING.md`: tables, fields, roles, record producer, workspace, UI actions, match rules
   and open questions. Generated from `js/schema.js` with `node tools/mapping.mjs`.
-- `docs/BUILD_NOTES.md`: every Build notes ID. Request changes as `<ID> - <change>`; with Build notes
-  on, Alt/Option+click an outlined element to copy its ID.
+- `docs/BUILD_NOTES.md`: every ID tag and what it maps to. Request changes as `<ID> - <change>`;
+  Alt/Option+click a tagged element to copy its ID.
 - `docs/modules/`: one requirement spec per module (e.g. `BSU.md`), plus `docs/DECISIONS.md`.
 - `CLAUDE.md`: project brief, how we add modules, code layout and conventions.
 - `ROADMAP.md`: ideas and what has shipped.

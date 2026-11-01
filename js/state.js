@@ -10,7 +10,9 @@ export const S = {
   ui: {
     persona: "ar",          // "ar" → workspace, "project" → portal
     notes: true,            // ID tags (on by default; "Show IDs" in the demo bar)
-    dev: false,             // ServiceNow notes: full developer labels ("ServiceNow notes" in the demo bar)
+    dev: false,             // ServiceNow notes: developer cards ("ServiceNow notes" in the demo bar)
+    devOpen: new Set(),     // expanded note cards (by ID)
+    devDismissed: new Set(), // dismissed note cards (by ID)
     toast: null,
     ws: { main: { kind: "home" }, tabs: [], active: "main", listMenu: false, q: "", composer: {} },
     portal: { page: "home", id: null, draft: null, errors: {} }

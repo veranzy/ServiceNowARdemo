@@ -8,6 +8,7 @@ import { TABLES } from "./schema.js";
 import { $, S } from "./state.js";
 import { cents, uid } from "./util.js";
 import { render, setStatus, toast } from "./views/app.js";
+import { initDevNotes } from "./views/devnotes.js";
 import { refreshPicker } from "./views/finder.js";
 import { contractBox, formAlert, formSide } from "./views/portal.js";
 import { listRows } from "./views/workspace.js";
@@ -145,6 +146,7 @@ document.addEventListener("click", e => {
   if (!t) return;
   const d = t.dataset;
   if (d.persona) { S.ui.persona = d.persona; return render(); }
+  if (t.id === "devRestore") { S.ui.devDismissed.clear(); return render(); }
   if (t.id === "resetDemo") { loadSample(); toast("Demo data reset."); return render(); }
   // portal
   if (d.pnav) { P().page = d.pnav; P().errors = {}; render(); return window.scrollTo(0, 0); }
@@ -245,3 +247,5 @@ document.addEventListener("submit", e => {
 
 // boot
 loadSample();
+initDevNotes();
+document.addEventListener("sn:dismissed", () => render());

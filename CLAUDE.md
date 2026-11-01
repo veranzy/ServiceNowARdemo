@@ -26,8 +26,9 @@ For every new module or change:
 
 Two independent toggles in the demo bar: **Show IDs** (on by default) draws a small purple ID tag on
 every mapped element, for the owner's change requests; **ServiceNow notes** (off by default) is the
-developer view, labelling each element with `[ID] <ServiceNow table/field/UI action/widget>` (body
-classes `sn-notes` and `sn-dev`). Hover shows the note via `title` when either is on. The owner finds the element and writes `<ID> - <change>` (e.g.
+developer view: interactive note cards `[ID] <ServiceNow table/field/UI action/widget>` drawn on a
+separate layer (`js/views/devnotes.js`, `#snLayer`) so nothing clips them; click a card to expand,
+× to dismiss, "Restore" in the demo bar (body classes `sn-notes` and `sn-dev`). Hover shows the note via `title` when either is on. The owner finds the element and writes `<ID> - <change>` (e.g.
 `BSU-03 - add a closing balance field`, `INV.due_date - default to end of next month`). To act on one:
 
 1. Look the ID up in `js/notes.js` (or `docs/BUILD_NOTES.md`). Field IDs are `<TABLE CODE>.<column>`
@@ -101,6 +102,7 @@ js/views/portal.js      portal home, AR form, confirmation, My requests, ticket 
 js/views/cash.js        cash application page (manual matching of deposits)
 js/views/bsu.js         BSU page: statement-day checklist, upload + preview, recent uploads
 js/views/finder.js      invoice finder (ranked candidates + allocation preview)
+js/views/devnotes.js    ServiceNow notes cards layer (expand / dismiss / restore, follows scroll and re-renders)
 js/views/common.js      sn() build-note attribute, fieldHtml (forms from schema), chips, related lists, icons
 tools/mapping.mjs       generates SERVICENOW_MAPPING.md from the schema
 js/notes.js             build-note ID registry (table codes, element notes, UI actions, related lists)

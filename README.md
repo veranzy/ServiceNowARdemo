@@ -14,8 +14,9 @@ ServiceNow (custom scoped app). It shows both experiences side by side:
 Demo bar toggles:
 - **Show IDs** (on): a small purple ID tag on every element that maps to a ServiceNow build item. Use the
   ID in change requests: `<ID> - <change>`.
-- **ServiceNow notes** (off): developer view; every element labelled with its ServiceNow table, field,
-  UI action or widget.
+- **ServiceNow notes** (off): developer view; a note card on every element with its ServiceNow table,
+  field, UI action or widget. Click a card to expand the full note, × to dismiss, *Restore* to bring
+  dismissed cards back.
 
 Turn both off for a clean client demo. You can also switch persona or reset the sample data there.
 

@@ -29,7 +29,8 @@ function demoBar() {
     <span class="sp"></span>
     <label class="switch" title="Purple ID tags for change requests: write '<ID> - <change>'"><input type="checkbox" id="notesToggle"${S.ui.notes ? " checked" : ""}><span>Show IDs</span></label>
     <label class="switch" title="Developer view: every element labelled with its ServiceNow table, field, UI action or widget"><input type="checkbox" id="devToggle"${S.ui.dev ? " checked" : ""}><span>ServiceNow notes</span></label>
-    ${S.ui.notes || S.ui.dev ? `<span class="db-hint">Alt/Option+click an element to copy its ID</span>` : ""}
+    ${S.ui.dev && S.ui.devDismissed.size ? `<button type="button" class="btn small ghost" id="devRestore">Restore ${S.ui.devDismissed.size} dismissed note${S.ui.devDismissed.size === 1 ? "" : "s"}</button>` : ""}
+    ${S.ui.dev ? `<span class="db-hint">Click a note to expand · × to dismiss</span>` : S.ui.notes ? `<span class="db-hint">Alt/Option+click an element to copy its ID</span>` : ""}
     <button type="button" class="btn small ghost" id="resetDemo">Reset demo</button>
   </div>`;
 }

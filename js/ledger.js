@@ -61,9 +61,3 @@ export function ctrStatus(k) {
   if (!isNaN(e) && today > e) return ["Ended", "c-neutral"];
   return ["Active", "c-ok"];
 }
-
-export function nextInvoiceNumber() {
-  let max = 0, prefix = "INV-";
-  for (const i of S.invoices) { const m = String(i.number).match(/^(.*?)(\d+)$/); if (m && +m[2] > max) { max = +m[2]; prefix = m[1]; } }
-  return prefix + String(max + 1).padStart(5, "0");
-}

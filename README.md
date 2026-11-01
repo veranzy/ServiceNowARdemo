@@ -1,30 +1,35 @@
-# Receivables Desk (demo)
+# Receivables Desk — ServiceNow AR prototype
 
-A browser-only accounts receivable demo: customers → contracts → invoices, plus cash application
-(rule-based auto-match and a manual invoice finder with allocation preview). No backend, no API keys.
-Opens with sample data; reloading resets everything.
+Live demo: https://veranzy.github.io/ServiceNowARdemo/
 
-## Publish on GitHub Pages
+A clickable prototype for clarifying requirements for an accounts receivable app to be built on
+ServiceNow (custom scoped app). It shows both experiences side by side:
 
-1. Create a new repository on GitHub (for example `receivables-desk`).
-2. Upload the contents of this folder to the repository root, including the hidden `.github` folder
-   and `.nojekyll`, and commit to the `main` branch.
-   - Command line: `git init && git add . && git commit -m "Receivables Desk demo" && git branch -M main && git remote add origin https://github.com/<you>/receivables-desk.git && git push -u origin main`
-3. In the repository go to **Settings → Pages** and set **Source** to **GitHub Actions**.
-4. Open the **Actions** tab and wait for "Deploy to GitHub Pages" to finish (about a minute).
-5. Your demo is live at `https://<you>.github.io/receivables-desk/`.
+- **Project team · Portal**: submit the AR form (record producer) to ask Accounts Receivable for an
+  invoice, follow it under My requests, and reply when AR asks for more information.
+- **AR team · Workspace**: work AR request cases, create and issue invoices, apply incoming payments
+  (auto-match plus a manual invoice finder), and maintain customers and contracts.
 
-Every push to `main` redeploys automatically.
+Use the demo bar at the top to switch persona, turn on **Build notes** (labels each element with its
+ServiceNow table, field, UI action or widget), or reset the sample data.
 
-## Project layout
+## Documents
 
-`index.html` (markup), `css/styles.css`, and ES modules in `js/` (entry: `js/main.js`).
-See `CLAUDE.md` for the data model and conventions, and `ROADMAP.md` for planned work.
-Run locally with `python3 -m http.server` and open http://localhost:8000 (modules don't load
-from a `file://` URL).
+- `SERVICENOW_MAPPING.md`: tables, fields, roles, record producer, workspace, UI actions, match rules
+  and open questions. Generated from `js/schema.js` with `node tools/mapping.mjs`.
+- `CLAUDE.md`: project brief, code layout and conventions.
+- `ROADMAP.md`: ideas and what has shipped.
+
+## Run locally
+
+`python3 -m http.server` in this folder, then open http://localhost:8000 (ES modules don't load from a
+`file://` URL).
+
+## Deploy
+
+Every push to `main` deploys to GitHub Pages (Settings → Pages → Source: GitHub Actions).
 
 ## Notes
 
-- GitHub Pages sites are public to anyone with the link. Use only sample or anonymised data.
-- Imported CSV data never leaves the visitor's browser.
-- To try your own data: Cash application → Clear all → Import CSV (invoices first, then payments).
+- The site is public to anyone with the link. Use only sample or anonymised data.
+- Everything runs in the browser and nothing is saved; reloading resets the demo.

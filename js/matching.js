@@ -1,9 +1,11 @@
 // Cash application: rule-based auto-match, accept/reject/manual actions, allocation planning.
 import { invById, invoiceState, invoiceUse, payerSim } from "./ledger.js";
-import { $, S } from "./state.js";
+import { S } from "./state.js";
 import { digitRuns, normTok } from "./util.js";
-import { render } from "./views/cash.js";
-import { setStatus } from "./views/shell.js";
+import { render, setStatus } from "./views/app.js";
+
+// Only issued invoices can receive payments (drafts and cancelled invoices are excluded).
+const issued = () => S.invoices.filter(i => i.state === "issued");
 
 export function rulesPass() {
   let made = 0;
@@ -13,7 +15,7 @@ export function rulesPass() {
     const avail = i => i.amount - (applied[i.id] || 0) - (reserved[i.id] || 0);
     const refTok = new Set(String(p.reference).toUpperCase().split(/[^A-Z0-9]+/).map(normTok).filter(Boolean));
     const refDigits = new Set(digitRuns(p.reference));
-    const referenced = S.invoices.filter(i => {
+    const referenced = issued().filter(i => {
       if (avail(i) <= 0) return false;
       if (refTok.has(normTok(i.number))) return true;
       const d = (String(i.number).match(/\d{3,}/g) || []);
@@ -30,7 +32,7 @@ export function rulesPass() {
       }
     }
     if (!refDigits.size || !referenced.length) {
-      const cands = S.invoices.filter(i => avail(i) === p.amount && payerSim(p.payer, i) >= 0.5);
+      const cands = issued().filter(i => avail(i) === p.amount && payerSim(p.payer, i) >= 0.5);
       if (cands.length === 1) {
         const i = cands[0];
         S.matches[p.id] = { status: "proposed", method: "rule", confidence: 0.9, exception: "none",
@@ -46,12 +48,12 @@ export function rulesPass() {
 
 export async function runMatching() {
   if (S.busy) return;
-  if (!S.payments.length || !S.invoices.length) { setStatus("info", "Add open invoices and payments first: load the sample data or import CSV."); return; }
+  if (!S.payments.length || !issued().length) { setStatus("info", "Add issued invoices and payments first: reset the demo or import a payments CSV."); return; }
   S.busy = true; render();
   const r = rulesPass(); render();
   S.busy = false;
   const unm = S.payments.filter(p => S.matches[p.id]?.status !== "accepted" && S.matches[p.id]?.status !== "proposed").length;
-  if (!$("status").classList.contains("err")) setStatus("ok", `${r} payment${r === 1 ? "" : "s"} auto-matched${unm ? `, ${unm} left for manual matching with Find invoice` : ""}. Review the proposals, then accept or reject each.`);
+  setStatus("ok", `${r} payment${r === 1 ? "" : "s"} auto-matched${unm ? `, ${unm} left for manual matching with Find invoice` : ""}. Review the proposals, then accept or reject each.`);
   render();
 }
 
@@ -91,7 +93,7 @@ export function signals(p, i, open, toApply) {
 export function candidateList(p, m) {
   const toApply = remainingToApply(p, m);
   const mine = new Set((m?.allocations || []).map(a => a.invoiceId));
-  return S.invoices.filter(i => !mine.has(i.id)).map(i => { const st = invoiceState(i); return { i, st, sg: signals(p, i, st.open, toApply) }; })
+  return issued().filter(i => !mine.has(i.id)).map(i => { const st = invoiceState(i); return { i, st, sg: signals(p, i, st.open, toApply) }; })
     .filter(x => x.st.open > 0).sort((a, b) => b.sg.score - a.sg.score || a.i.due.localeCompare(b.i.due));
 }
 

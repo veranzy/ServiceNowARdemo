@@ -6,7 +6,7 @@ export const SCOPE = "x_ar"; // placeholder: replace with the real application s
 
 export const ROLES = {
   ar: { role: `${SCOPE}.ar_team`, label: "Accounts receivable team", ui: "Receivables Workspace (UI Builder, configurable workspace)",
-    can: "Read/write all AR tables; works AR request cases, issues invoices, uploads bank statements (BSU), matches deposits to invoices." },
+    can: "Read/write all AR tables; works AR request cases, issues invoices, uploads bank statements (BSU), matches BSU deposits to invoices." },
   project: { role: `${SCOPE}.project_team`, label: "Company project team", ui: "Service Portal / Employee Center",
     can: "Submit the AR form (record producer) and read/comment on their own AR requests. Read customer and contract reference data only. No workspace access." }
 };
@@ -55,9 +55,9 @@ export const TABLES = {
       { name: "payment_status", label: "Payment status", type: "Choice", how: "Unpaid / Part paid / Paid, set with amount_due" }
     ]
   },
-  payments: {
-    table: `${SCOPE}_bank_statement`, label: "Deposit", plural: "Deposits", tableLabel: "Bank statements", display: "number", prefix: "DEP",
-    note: "Bank statements table: one row per deposit (credit) loaded by BSU from the daily CSV statement. Matched to invoices manually; no auto-matching (D5).",
+  deposits: {
+    table: `${SCOPE}_bank_statement`, label: "BSU deposit", plural: "BSU deposits", tableLabel: "Bank statements (BSU deposits)", display: "number", prefix: "DEP",
+    note: "The only record of money received (D7): one row per deposit (credit) loaded by BSU from the daily CSV statement. There is no separate payments table. Matched to invoices manually; no auto-matching (D5).",
     fields: [
       { key: "number", name: "deposit_id", label: "Deposit ID", type: "String", readonly: true, auto: "DEP-<bank><acct4>-<YYMMDD>-<NNN>", help: "Set by before-insert business rule" },
       { key: "bankAccountId", name: "bank_account", label: "Bank account", type: "Reference", ref: "bankAccounts", readonly: true },
@@ -102,9 +102,9 @@ export const TABLES = {
   },
   allocations: {
     table: `${SCOPE}_allocation`, label: "Allocation", plural: "Allocations", display: "number",
-    note: "Applies part or all of a deposit to an invoice. Always created manually by the AR team from the invoice finder (no auto-matching, D5).",
+    note: "Applies part or all of a BSU deposit to an invoice. Always created manually by the AR team from the invoice finder (no auto-matching, D5).",
     fields: [
-      { key: "paymentId", name: "deposit", label: "Deposit", type: "Reference", ref: "payments" },
+      { key: "depositId", name: "deposit", label: "BSU deposit", type: "Reference", ref: "deposits" },
       { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices" },
       { key: "amount", name: "amount", label: "Amount", type: "Currency" },
       { key: "status", name: "state", label: "State", type: "Choice", choices: [["accepted", "Applied"], ["removed", "Removed"]] },

@@ -20,7 +20,7 @@ export function bsuPage() {
   const p = b.parsed;
   return `<div class="page">
     <div class="pagehead"><div><h1 class="pt">Bank statement upload</h1><p class="psub">Load the previous day's CSV statement for each company bank account. Deposits are tagged with a Deposit ID and saved to the Bank statements table, ready for manual matching. Withdrawals are skipped.</p></div>
-      <button type="button" class="btn" data-list="payments:unapplied">Deposits to match</button></div>
+      <button type="button" class="btn" data-list="deposits:unapplied">BSU deposits to match</button></div>
 
     <section class="card"${sn("Workspace data list: x_ar_bank_account (active) left-joined to x_ar_bsu for the chosen statement_date")}>
       <header><h2>Statements for ${esc(b.date)}</h2><span class="muted small">${S.bankAccounts.filter(a => S.uploads.some(u => u.bankAccountId === a.id && u.statementDate === b.date)).length} of ${S.bankAccounts.length} accounts uploaded</span></header>

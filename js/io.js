@@ -16,7 +16,7 @@ export function parseCSV(text) {
 export function exportCSV() {
   const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const lines = [["deposit_id","value_date","payer","bank_reference","deposit_amount","invoice_number","customer","allocated_amount","match_state","exception","note"].join(",")];
-  for (const p of S.payments) { const m = S.matches[p.id];
+  for (const p of S.deposits) { const m = S.matches[p.id];
     if (!m || !m.allocations.length) { lines.push([q(p.number), q(p.date), q(p.payer), q(p.reference), (p.amount/100).toFixed(2), "", "", "0.00", "unmatched", "", ""].join(",")); continue; }
     for (const a of m.allocations) { const i = invById(a.invoiceId) || {};
       lines.push([q(p.number), q(p.date), q(p.payer), q(p.reference), (p.amount/100).toFixed(2), q(i.number), q(i.customer), (a.amount/100).toFixed(2), "matched", q(m.exception), q(m.reason)].join(",")); } }

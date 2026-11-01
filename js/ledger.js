@@ -19,7 +19,7 @@ export const invById = id => S.invoices.find(i => i.id === id);
 export function invoiceState(i) {
   const { applied, reserved } = invoiceUse();
   const holders = Object.entries(S.matches).filter(([, mm]) => mm && mm.status === "proposed" && mm.allocations.some(a => a.invoiceId === i.id))
-    .map(([pid]) => S.payments.find(x => x.id === pid)?.payer).filter(Boolean);
+    .map(([pid]) => S.deposits.find(x => x.id === pid)?.payer).filter(Boolean);
   return { applied: applied[i.id] || 0, reserved: reserved[i.id] || 0, open: i.amount - (applied[i.id] || 0) - (reserved[i.id] || 0), holders };
 }
 

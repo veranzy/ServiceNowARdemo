@@ -66,7 +66,7 @@ export function saveUpload(acct, statementDate, fileName, parsed) {
     depositCount: parsed.deposits.length, depositTotal: parsed.total, skippedCount: parsed.skipped.length };
   S.uploads.push(up);
   for (const d of parsed.deposits)
-    S.payments.push({ id: uid("p"), number: d.depositId, bankAccountId: acct.id, uploadId: up.id, date: d.date, payer: d.payer, reference: d.reference, amount: d.amount, bankRef: d.bankRef, currency: "SGD" });
+    S.deposits.push({ id: uid("p"), number: d.depositId, bankAccountId: acct.id, uploadId: up.id, date: d.date, payer: d.payer, reference: d.reference, amount: d.amount, bankRef: d.bankRef, currency: "SGD" });
   return up;
 }
 
@@ -76,7 +76,7 @@ const money = c => c ? (c / 100).toFixed(2) : "";
 /** Demo: build a realistic CSV for the account and day in its bank's layout. */
 export function sampleCSV(acct, iso) {
   const bank = BANKS[acct.bank];
-  const open = S.invoices.filter(i => i.state === "issued").filter(i => !S.payments.some(p => (p.reference || "").includes(i.number.replace("INV-", ""))));
+  const open = S.invoices.filter(i => i.state === "issued").filter(i => !S.deposits.some(p => (p.reference || "").includes(i.number.replace("INV-", ""))));
   const seed = [...(acct.number + iso)].reduce((s, ch) => s + ch.charCodeAt(0), 0);
   const pick = k => open.length ? open[(seed + k * 7) % open.length] : null;
   const custOf = i => S.customers.find(c => c.id === i.customerId);

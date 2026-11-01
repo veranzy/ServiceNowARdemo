@@ -9,7 +9,7 @@ import { acctById, acctLabel, yesterday } from "../bsu.js";
 import { BANKS } from "../schema.js";
 import { acctType, bsuPage } from "./bsu.js";
 import { cashPage } from "./cash.js";
-import { custName, ctrNo, daysLabel, fieldHtml, icon, initials, invChip, invMoney, meterRow, payChip, payMoney, refLink, relatedTable, reqChip, sn } from "./common.js";
+import { custName, ctrNo, daysLabel, fieldHtml, icon, initials, invChip, invMoney, meterRow, depositChip, depositMoney, refLink, relatedTable, reqChip, sn } from "./common.js";
 
 const W = () => S.ui.ws;
 const mine = r => r.assignedTo === me()?.id;
@@ -43,14 +43,14 @@ export const LISTS = {
     sort: (a, b) => String(b.number).localeCompare(String(a.number)),
     text: i => [i.number, i.customer, i.desc, ctrNo(i.contractId)].join(" ")
   },
-  payments: {
+  deposits: {
     filters: {
-      unapplied: ["Deposits to match", p => payMoney(p).unapplied > 0],
-      all: ["All deposits", () => true]
+      unapplied: ["BSU deposits to match", p => depositMoney(p).unapplied > 0],
+      all: ["All BSU deposits", () => true]
     },
-    cols: [["Deposit ID", p => refLink("payments", p.id, p.number), "", "number"], ["Value date", p => esc(p.date), "", "date"], ["Bank account", p => esc(acctLabel(acctById(p.bankAccountId))), "", "bankAccountId"],
+    cols: [["Deposit ID", p => refLink("deposits", p.id, p.number), "", "number"], ["Value date", p => esc(p.date), "", "date"], ["Bank account", p => esc(acctLabel(acctById(p.bankAccountId))), "", "bankAccountId"],
       ["Payer", p => esc(p.payer), "", "payer"], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap", "reference"], ["Amount", p => fmt(p.amount), "num", "amount"],
-      ["Unmatched", p => fmt(payMoney(p).unapplied), "num", null], ["Match", p => payChip(p), "", null]],
+      ["Unmatched", p => fmt(depositMoney(p).unapplied), "num", null], ["Match", p => depositChip(p), "", null]],
     sort: (a, b) => String(b.date).localeCompare(String(a.date)) || String(a.number).localeCompare(String(b.number)),
     text: p => [p.number, p.payer, p.reference, acctLabel(acctById(p.bankAccountId))].join(" ")
   },
@@ -92,7 +92,7 @@ const issuedOf = custId => S.invoices.filter(i => i.customerId === custId && i.s
 const MENU = [
   ["AR requests", [["requests", "open"], ["requests", "new"], ["requests", "mine"], ["requests", "awaiting"], ["requests", "all"]]],
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
-  ["Bank statements", [["uploads", "all"], ["payments", "unapplied"], ["payments", "all"], ["bankAccounts", "all"]]],
+  ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"]]],
   ["Master data", [["customers", "all"], ["contracts", "all"]]]
 ];
 
@@ -118,7 +118,7 @@ export function workspaceView() {
   return `<div class="ws">
     <header class="ws-head"${sn("Unified navigation header (Next Experience). Workspace: Receivables Workspace, role " + ROLES.ar.role)}>
       <div class="ws-brand"><span class="ws-logo" aria-hidden="true">AR</span><span>Receivables Workspace</span></div>
-      <form class="ws-search" role="search" id="wsSearch"${sn("Global search: AR request, invoice, payment, contract numbers and customer names")}>${icon("search", 16)}<input id="wsQ" type="search" placeholder="Search number or customer" aria-label="Search records" autocomplete="off"></form>
+      <form class="ws-search" role="search" id="wsSearch"${sn("Global search: AR request, invoice, Deposit ID, contract numbers and customer names")}>${icon("search", 16)}<input id="wsQ" type="search" placeholder="Search number or customer" aria-label="Search records" autocomplete="off"></form>
       <div class="ws-user"><span class="ws-bell" title="${counts.new} new AR requests">${icon("bell", 18)}${counts.new ? `<b>${counts.new}</b>` : ""}</span><span class="avatar" aria-hidden="true">${esc(initials(u.name))}</span><span class="ws-uname">${esc(u.name)}</span></div>
     </header>
     <div class="ws-body">
@@ -156,14 +156,14 @@ function homePage() {
   const u = me();
   const f = LISTS.requests.filters, fi = LISTS.invoices.filters;
   const overdue = S.invoices.filter(fi.overdue[1]);
-  const unappliedPays = S.payments.filter(p => payMoney(p).unapplied > 0);
+  const unappliedPays = S.deposits.filter(p => depositMoney(p).unapplied > 0);
   const cards = [
     ["New AR requests", S.requests.filter(f.new[1]).length, "Unassigned cases from the portal", "list", "requests:new"],
     ["Assigned to me", S.requests.filter(f.mine[1]).length, "Open cases you own", "list", "requests:mine"],
     ["Awaiting info", S.requests.filter(f.awaiting[1]).length, "Waiting on the project team", "list", "requests:awaiting"],
     ["Draft invoices", S.invoices.filter(fi.draft[1]).length, "Created, not yet issued", "list", "invoices:draft"],
     ["Overdue", `SGD ${fmt(overdue.reduce((s, i) => s + invMoney(i).open, 0))}`, `${overdue.length} invoices past due`, "list", "invoices:overdue"],
-    ["Deposits to match", `SGD ${fmt(unappliedPays.reduce((s, p) => s + payMoney(p).unapplied, 0))}`, `${unappliedPays.length} deposits`, "cash", ""],
+    ["BSU deposits to match", `SGD ${fmt(unappliedPays.reduce((s, p) => s + depositMoney(p).unapplied, 0))}`, `${unappliedPays.length} deposits from bank statements`, "cash", ""],
     [`Statements for ${yesterday()}`, `${S.bankAccounts.filter(a => S.uploads.some(u => u.bankAccountId === a.id && u.statementDate === yesterday())).length} of ${S.bankAccounts.length}`, "Bank accounts uploaded (BSU)", "bsu", ""]
   ];
   // aging of issued, open invoices
@@ -225,7 +225,7 @@ function listPage(table, filter) {
 const LAYOUT = {
   requests: [["Request", ["customerId", "contractId", "billingType", "title", "amount", "invoiceDate", "periodStart", "periodEnd", "poNumber", "details"]], ["Case", ["state", "requestedBy", "assignedTo", "invoiceId", "opened"]]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "due"]], ["Source", ["state", "requestId"]]],
-  payments: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "bankRef", "payer", "reference"]]],
+  deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "bankRef", "payer", "reference"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
   customers: [["Customer", ["name", "parent", "terms", "creditLimit", "aliases", "notes"]]],
@@ -235,7 +235,7 @@ const LAYOUT = {
 function editable(table, rec) {
   if (table === "requests") return REQ_OPEN.includes(rec.state);
   if (table === "invoices") return rec.state === "draft";
-  if (table === "payments" || table === "uploads") return false;
+  if (table === "deposits" || table === "uploads") return false;
   return true;
 }
 
@@ -249,7 +249,7 @@ function headerFields(table, rec) {
     hf("Assigned to", esc(userById(rec.assignedTo)?.name || "Unassigned")), hf("Requested by", esc(userById(rec.requestedBy)?.name || "—")), hf("Opened", esc(rec.opened))];
   if (table === "invoices") { const m = invMoney(rec); return [hf("Status", invChip(rec)), hf("Amount", `<span class="mono">SGD ${fmt(rec.amount)}</span>`), hf("Amount due", `<span class="mono">SGD ${fmt(m.open)}</span>`),
     hf("Due", `${esc(rec.due || "—")}${rec.state === "issued" && m.open > 0 ? `<span class="desc${m.late ? " bad" : ""}">${esc(daysLabel(rec.due))}</span>` : ""}`), hf("Customer", refLink("customers", rec.customerId)), hf("AR request", refLink("requests", rec.requestId))]; }
-  if (table === "payments") { const m = payMoney(rec), a = acctById(rec.bankAccountId); return [hf("Match", payChip(rec)), hf("Amount", `<span class="mono">SGD ${fmt(rec.amount)}</span>`), hf("Matched", `<span class="mono">${fmt(m.applied)}</span>`), hf("Unmatched", `<span class="mono${m.unapplied ? " bad" : ""}">${fmt(m.unapplied)}</span>`), hf("Value date", esc(rec.date)), hf("Department", esc(a?.department || "—")), hf("Account type", esc(a ? acctType(a) : "—"))]; }
+  if (table === "deposits") { const m = depositMoney(rec), a = acctById(rec.bankAccountId); return [hf("Match", depositChip(rec)), hf("Amount", `<span class="mono">SGD ${fmt(rec.amount)}</span>`), hf("Matched", `<span class="mono">${fmt(m.applied)}</span>`), hf("Unmatched", `<span class="mono${m.unapplied ? " bad" : ""}">${fmt(m.unapplied)}</span>`), hf("Value date", esc(rec.date)), hf("Department", esc(a?.department || "—")), hf("Account type", esc(a ? acctType(a) : "—"))]; }
   if (table === "uploads") return [hf("Bank account", refLink("bankAccounts", rec.bankAccountId)), hf("Statement date", esc(rec.statementDate)), hf("Deposits", String(rec.depositCount)), hf("Total", `<span class="mono">SGD ${fmt(rec.depositTotal)}</span>`), hf("Uploaded by", esc(userById(rec.uploadedBy)?.name || "—"))];
   if (table === "bankAccounts") { const ups = S.uploads.filter(u => u.bankAccountId === rec.id); return [hf("Bank", esc(BANKS[rec.bank]?.name || "—")), hf("Department", esc(rec.department || "—")), hf("Type", esc(acctType(rec))), hf("Uploads", String(ups.length)), hf("Last statement", esc(ups.map(u => u.statementDate).sort().pop() || "—"))]; }
   if (table === "customers") { const r = rollup(issuedOf(rec.id)); return [hf("Open AR", `<span class="mono">SGD ${fmt(r.open)}</span>`), hf("Overdue", `<span class="mono${r.overdue ? " bad" : ""}">${fmt(r.overdue)}</span>`),
@@ -275,7 +275,7 @@ function actionsFor(table, rec, isNew, canEdit) {
     if (rec.state === "draft") a.push(action("Issue invoice", "issue", { primary: true, note: "UI action: Issue → state = Issued; BR sets AR request to Invoiced and posts comment to requester" }));
     if (rec.state !== "cancelled") a.push(action("Cancel invoice", "cancel", { danger: true, note: "UI action: Cancel → only when no accepted allocations" }));
   }
-  if (table === "payments" && payMoney(rec).unapplied > 0) a.push(`<button type="button" class="btn primary" data-matchdep="${rec.id}"${sn("UI action: Match → opens the invoice finder for this deposit")}>Match to invoice</button>`);
+  if (table === "deposits" && depositMoney(rec).unapplied > 0) a.push(`<button type="button" class="btn primary" data-matchdep="${rec.id}"${sn("UI action: Match → opens the invoice finder for this deposit")}>Match to invoice</button>`);
   if (table === "uploads") a.push(`<button type="button" class="btn" data-rail="bsu">Upload another</button>`);
   if (table === "bankAccounts") a.push(`<button type="button" class="btn" data-bsu-acct="${rec.id}">Upload statement</button>`);
   if (table === "customers") a.push(`<button type="button" class="btn" data-new="contracts" data-prefill-customer="${rec.id}">New contract</button>`);
@@ -318,19 +318,19 @@ function related(table, rec) {
       relatedTable("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Amount", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { via: "contract" });
   }
   if (table === "uploads" || table === "bankAccounts") {
-    const deps = S.payments.filter(p => table === "uploads" ? p.uploadId === rec.id : p.bankAccountId === rec.id).sort(LISTS.payments.sort);
+    const deps = S.deposits.filter(p => table === "uploads" ? p.uploadId === rec.id : p.bankAccountId === rec.id).sort(LISTS.deposits.sort);
     const ups = table === "bankAccounts" ? relatedTable("Statement uploads", "uploads", S.uploads.filter(u => u.bankAccountId === rec.id).sort(LISTS.uploads.sort),
       [["Upload", u => refLink("uploads", u.id, u.number)], ["Statement date", u => esc(u.statementDate)], ["Deposits", u => String(u.depositCount), "num"], ["Total", u => fmt(u.depositTotal), "num"]], { via: "bank_account" }) : "";
-    return ups + relatedTable("Deposits", "payments", deps, [["Deposit ID", p => refLink("payments", p.id, p.number)], ["Payer", p => esc(p.payer)], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap"], ["Amount", p => fmt(p.amount), "num"], ["Match", p => payChip(p)]], { via: table === "uploads" ? "bsu" : "bank_account" });
+    return ups + relatedTable("BSU deposits", "deposits", deps, [["Deposit ID", p => refLink("deposits", p.id, p.number)], ["Payer", p => esc(p.payer)], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap"], ["Amount", p => fmt(p.amount), "num"], ["Match", p => depositChip(p)]], { via: table === "uploads" ? "bsu" : "bank_account" });
   }
-  if (table === "invoices" || table === "payments") {
+  if (table === "invoices" || table === "deposits") {
     const rows = [];
     for (const [pid, m] of Object.entries(S.matches)) { if (!m || m.status === "rejected") continue;
-      for (const a of m.allocations) if ((table === "invoices" && a.invoiceId === rec.id) || (table === "payments" && pid === rec.id)) rows.push({ pid, a, m }); }
+      for (const a of m.allocations) if ((table === "invoices" && a.invoiceId === rec.id) || (table === "deposits" && pid === rec.id)) rows.push({ pid, a, m }); }
     const cols = table === "invoices"
-      ? [["Deposit", x => refLink("payments", x.pid, recById("payments", x.pid)?.number)], ["Payer", x => esc(recById("payments", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]]
+      ? [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]]
       : [["Invoice", x => refLink("invoices", x.a.invoiceId)], ["Customer", x => esc(recById("invoices", x.a.invoiceId)?.customer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]];
-    return relatedTable("Allocations", "allocations", rows, cols, { via: table === "invoices" ? "invoice" : "payment" });
+    return relatedTable("Allocations", "allocations", rows, cols, { via: table === "invoices" ? "invoice" : "deposit" });
   }
   return "";
 }
@@ -346,7 +346,7 @@ function recordPage(tab) {
   const shown = vals ? { ...rec, ...vals } : rec;
   const sections = LAYOUT[table].map(([title, keys]) => `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit, errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
   const title = isNew ? `New ${def.label.toLowerCase()}` : displayOf(table, rec);
-  const sub = table === "requests" ? rec.title : table === "invoices" ? rec.desc : table === "contracts" ? rec.title : table === "payments" ? `${rec.payer} · ${acctLabel(acctById(rec.bankAccountId))}`
+  const sub = table === "requests" ? rec.title : table === "invoices" ? rec.desc : table === "contracts" ? rec.title : table === "deposits" ? `${rec.payer} · ${acctLabel(acctById(rec.bankAccountId))}`
     : table === "uploads" ? `${acctLabel(acctById(rec.bankAccountId))} · statement ${rec.statementDate}` : table === "bankAccounts" ? rec.name : rec.parent ? `Part of ${rec.parent}` : "";
   const twoCol = table === "requests" && !isNew;
   return `<div class="page rec">

@@ -10,7 +10,7 @@ All tables are **custom tables in the scoped app**. No CSM, Contract Management 
 
 | Persona | Role | Experience | Access |
 |---|---|---|---|
-| Accounts receivable team | `x_ar.ar_team` | Receivables Workspace (UI Builder, configurable workspace) | Read/write all AR tables; works AR request cases, issues invoices, uploads bank statements (BSU), matches deposits to invoices. |
+| Accounts receivable team | `x_ar.ar_team` | Receivables Workspace (UI Builder, configurable workspace) | Read/write all AR tables; works AR request cases, issues invoices, uploads bank statements (BSU), matches BSU deposits to invoices. |
 | Company project team | `x_ar.project_team` | Service Portal / Employee Center | Submit the AR form (record producer) and read/comment on their own AR requests. Read customer and contract reference data only. No workspace access. |
 
 ## Tables
@@ -117,9 +117,9 @@ Bank statement upload (BSU): one record per bank account per statement day. The 
 | `deposit_total` | Deposit total | Currency | Read-only on form |
 | `withdrawals_skipped` | Withdrawals skipped | Integer | Read-only on form |
 
-### Bank statements — `x_ar_bank_statement`
+### Bank statements (BSU deposits) — `x_ar_bank_statement`
 
-Bank statements table: one row per deposit (credit) loaded by BSU from the daily CSV statement. Matched to invoices manually; no auto-matching (D5). Number prefix: `DEP`.
+The only record of money received (D7): one row per deposit (credit) loaded by BSU from the daily CSV statement. There is no separate payments table. Matched to invoices manually; no auto-matching (D5). Number prefix: `DEP`.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
@@ -136,11 +136,11 @@ Bank statements table: one row per deposit (credit) loaded by BSU from the daily
 
 ### Allocation — `x_ar_allocation`
 
-Applies part or all of a deposit to an invoice. Always created manually by the AR team from the invoice finder (no auto-matching, D5).
+Applies part or all of a BSU deposit to an invoice. Always created manually by the AR team from the invoice finder (no auto-matching, D5).
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
-| `deposit` | Deposit | Reference | → `x_ar_bank_statement` |
+| `deposit` | BSU deposit | Reference | → `x_ar_bank_statement` |
 | `invoice` | Invoice | Reference | → `x_ar_invoice` |
 | `amount` | Amount | Currency |  |
 | `state` | State | Choice | Choices: Applied (`accepted`), Removed (`removed`) |
@@ -160,8 +160,8 @@ Applies part or all of a deposit to an invoice. Always created manually by the A
 ## Workspace (AR team)
 
 - Configurable workspace **Receivables Workspace** (UI Builder), role `x_ar.ar_team`.
-- **Landing page**: single-score cards (new requests, assigned to me, awaiting info, draft invoices, overdue amount, unapplied cash), aging bar chart, new requests list, overdue invoices list.
-- **List menu**: AR requests (Open, New unassigned, Assigned to me, Awaiting info, All); Invoices (Drafts, Issued unpaid, Overdue, All); Payments (Unapplied, All); Master data (Customers, Contracts).
+- **Landing page**: single-score cards (new requests, assigned to me, awaiting info, draft invoices, overdue amount, BSU deposits to match, statements uploaded for yesterday), aging bar chart, new requests list, overdue invoices list.
+- **List menu**: AR requests (Open, New unassigned, Assigned to me, Awaiting info, All); Invoices (Drafts, Issued unpaid, Overdue, All); Bank statements (Statement uploads, BSU deposits to match, All BSU deposits, Bank accounts); Master data (Customers, Contracts).
 - **Record pages** with header highlighted values, form sections, related lists, activity stream on AR requests.
 - **BSU (bank statement upload)** custom page: daily checklist of bank accounts for the statement date, upload form (bank account, statement date, CSV), preview of deposits with Deposit IDs, *Save to bank statements*, recent uploads. See `docs/modules/BSU.md`.
 - **Cash application** custom page: deposits from the Bank statements table with match state; **manual matching only** through the invoice finder with allocation preview (modal or side panel).

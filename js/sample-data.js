@@ -92,7 +92,7 @@ export function loadSample() {
   S.bankAccounts = accts.map(r => { const a = { id: uid("b"), bank: r[1], number: r[2], name: r[3], department: r[4], accountType: r[5], currency: "SGD" }; aid[r[0]] = a; return a; });
   // Past statements already uploaded: deposits grouped into one BSU upload per account per day.
   const payAcct = ["mbRev", "obRev", "mbRev", "obRev", "mbRev", "obRev", "mbRev", "obRev", "mbRev", "obRev", "usDep"];
-  S.uploads = []; S.payments = [];
+  S.uploads = []; S.deposits = [];
   const ups = {};
   let upNo = 1000;
   pay.forEach((r, n) => {
@@ -101,7 +101,7 @@ export function loadSample() {
     if (!up) { up = ups[key] = { id: uid("u"), number: "BSU" + String(++upNo).padStart(7, "0"), bankAccountId: a.id, statementDate: date, fileName: `${a.bank}_${a.number.replace(/\D/g, "")}_${date.replace(/-/g, "")}.csv`,
       uploadedBy: n % 2 ? "u_ar2" : "u_ar1", uploadedAt: shiftDate(r[1]).slice(0, 10) + " 09:1" + (n % 10), depositCount: 0, depositTotal: 0, skippedCount: n % 3 === 0 ? 1 : 0 }; S.uploads.push(up); }
     up.depositCount++; up.depositTotal += cents(r[2]);
-    S.payments.push({ id: uid("p"), number: depositId(a, date, up.depositCount), bankAccountId: a.id, uploadId: up.id, date, payer: r[0], amount: cents(r[2]), reference: r[3], bankRef: "", currency: "SGD" });
+    S.deposits.push({ id: uid("p"), number: depositId(a, date, up.depositCount), bankAccountId: a.id, uploadId: up.id, date, payer: r[0], amount: cents(r[2]), reference: r[3], bankRef: "", currency: "SGD" });
   });
   // uploads are made the morning after the statement day
   for (const u of S.uploads) { const d = new Date(u.statementDate + "T00:00:00"); d.setDate(d.getDate() + 1); u.uploadedAt = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) + u.uploadedAt.slice(10); }

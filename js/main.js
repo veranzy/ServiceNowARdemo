@@ -76,7 +76,7 @@ function uiAction(name) {
 
 function wsSearch(q) {
   q = q.trim().toLowerCase(); if (!q) return;
-  for (const t of ["requests", "invoices", "payments", "contracts"]) {
+  for (const t of ["requests", "invoices", "deposits", "contracts"]) {
     const hit = S[t].find(r => String(r.number || "").toLowerCase() === q) || S[t].find(r => String(r.number || "").toLowerCase().includes(q));
     if (hit) return openTab(t, hit.id);
   }

@@ -44,8 +44,10 @@ invoices. Automation after AR form submission is still to be defined by the owne
 
 customer → contracts → AR requests → invoices ← allocations ← deposits (Bank statements) ← BSU uploads ← bank accounts
 
-In code the deposits table key is still `payments` (`S.payments`, `TABLES.payments`); its ServiceNow
-table is `x_ar_bank_statement` and the UI calls them deposits.
+**Money received is only ever a BSU deposit (D7).** There is no payments table or "payment received"
+concept: deposits come from BSU uploads, live in `x_ar_bank_statement` (code key `deposits`,
+`S.deposits`, `TABLES.deposits`) and are matched to invoices on the Cash application page. Say
+"BSU deposit" in the UI and docs, never "payment".
 
 - **`js/schema.js` is the single source** for tables, columns, types, choices, roles and the record
   producer. Forms, list columns, Build notes and `SERVICENOW_MAPPING.md` all read it.
@@ -54,7 +56,7 @@ table is `x_ar_bank_statement` and the UI calls them deposits.
   calculated from accepted allocations. Only **issued** invoices can receive payments.
 - AR request `state`: new / in_progress / awaiting_info / invoiced / rejected. `activity` holds journal
   entries: `comment` (visible on portal), `work_note` (AR only), `system`.
-- Matches (`S.matches[depositId]`) hold the deposit's allocations; `status: "accepted"` applies them.
+- Matches (`S.matches[<deposit id>]`) hold the deposit's allocations; `status: "accepted"` applies them.
   Only manual matching creates them (invoice finder → Apply); *Remove match* clears them.
 - Bank accounts have bank (MB/OB/US mock aliases), department and account type. Each bank's CSV
   layout is in `BANKS` in `js/schema.js`.

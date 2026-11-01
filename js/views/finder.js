@@ -35,8 +35,8 @@ export function candRows(p, m) {
 export function previewHtml(p, m) {
   const pk = S.pick[p.id];
   const plan = allocationPlan(p, m, pk.sel);
-  if (!plan.rows.length) return `<div class="pv-empty"><div class="k">Payment to apply</div><div class="amt">${fmt(plan.toApply)}</div>
-    <p class="hint">Tick one or more invoices to see their full details and exactly how this payment would be applied. Nothing changes until you press Apply.</p></div>`;
+  if (!plan.rows.length) return `<div class="pv-empty"><div class="k">BSU deposit to match</div><div class="amt">${fmt(plan.toApply)}</div>
+    <p class="hint">Tick one or more invoices to see their full details and exactly how this deposit would be matched. Nothing changes until you press Apply.</p></div>`;
   const cards = plan.rows.map(r => {
     const i = r.i;
     return `<div class="pv-inv">
@@ -49,28 +49,28 @@ export function previewHtml(p, m) {
         ${r.st.applied ? `<dt>Already applied</dt><dd class="num">−${fmt(r.st.applied)}</dd>` : ""}
         ${r.st.reserved ? `<dt>Held by other proposals</dt><dd class="num">−${fmt(r.st.reserved)}</dd>` : ""}
         <dt>Open now</dt><dd class="num">${fmt(r.st.open)}</dd>
-        <dt><b>Apply from this payment</b></dt><dd class="num"><b>${fmt(r.alloc)}</b></dd>
+        <dt><b>Match from this deposit</b></dt><dd class="num"><b>${fmt(r.alloc)}</b></dd>
         <dt>Balance after</dt><dd class="num" style="color:${r.after > 0 ? "var(--warn)" : "var(--ok)"}">${fmt(r.after)}</dd>
       </dl>
       ${r.st.holders.length ? `<p class="warn">Also proposed for ${esc(r.st.holders.join(", "))}. Review that proposal so the invoice isn't paid twice.</p>` : ""}
-      ${r.alloc === 0 ? `<p class="warn">Nothing left from this payment to apply here. Untick it or reorder your selection.</p>` : ""}
+      ${r.alloc === 0 ? `<p class="warn">Nothing left from this deposit to match here. Untick it or reorder your selection.</p>` : ""}
     </div>`; }).join("");
   const shortRow = plan.rows.find(r => r.after > 0 && r.alloc > 0);
   let verdict = "";
-  if (plan.unapplied > 0) verdict = `<p class="verdict v-warn">${fmt(plan.unapplied)} of this payment stays unapplied and sits on account as unallocated cash.</p>`;
+  if (plan.unapplied > 0) verdict = `<p class="verdict v-warn">${fmt(plan.unapplied)} of this deposit stays unmatched in the Bank statements table.</p>`;
   else if (shortRow) { const pct = shortRow.after / shortRow.st.open * 100;
     verdict = `<p class="verdict v-warn">${esc(shortRow.i.number)} is short by ${fmt(shortRow.after)} (${pct.toFixed(pct < 10 ? 1 : 0)}%). ${pct <= 3 ? "That looks like an early-payment discount or bank charge." : "That looks like a partial payment or a deduction."} The balance stays open on the invoice.</p>`; }
-  else verdict = `<p class="verdict v-ok">The payment is fully applied and every selected invoice is settled.</p>`;
+  else verdict = `<p class="verdict v-ok">The deposit is fully matched and every selected invoice is settled.</p>`;
   return `<div class="pv-sum">
-      <div><div class="k">Payment</div><div class="num">${fmt(plan.toApply)}</div></div>
-      <div><div class="k">Applied</div><div class="num">${fmt(plan.total)}</div></div>
-      <div><div class="k">Unapplied</div><div class="num" style="color:${plan.unapplied > 0 ? "var(--bad)" : "inherit"}">${fmt(plan.unapplied)}</div></div>
+      <div><div class="k">Deposit</div><div class="num">${fmt(plan.toApply)}</div></div>
+      <div><div class="k">Matched</div><div class="num">${fmt(plan.total)}</div></div>
+      <div><div class="k">Unmatched</div><div class="num" style="color:${plan.unapplied > 0 ? "var(--bad)" : "inherit"}">${fmt(plan.unapplied)}</div></div>
     </div>${verdict}
     ${plan.rows.length > 1 ? `<p class="hint">Applied in the order you ticked them.</p>` : ""}
     <div class="pv-cards">${cards}</div>
     <label class="hint" for="pknote-${p.id}">Note for the audit trail (optional)</label>
     <input class="pv-note" id="pknote-${p.id}" data-picknote="${p.id}" value="${esc(pk.note || "")}" placeholder="e.g. Confirmed by customer email 22 Oct">
-    <div class="actions"><button class="btn primary small" data-apply="${p.id}"${plan.total ? "" : " disabled"}>Apply ${fmt(plan.total)} to ${plan.rows.filter(r => r.alloc > 0).length} invoice${plan.rows.filter(r => r.alloc > 0).length === 1 ? "" : "s"}</button>
+    <div class="actions"><button class="btn primary small" data-apply="${p.id}"${plan.total ? "" : " disabled"}>Match ${fmt(plan.total)} to ${plan.rows.filter(r => r.alloc > 0).length} invoice${plan.rows.filter(r => r.alloc > 0).length === 1 ? "" : "s"}</button>
       <button class="btn small" data-pickclear="${p.id}">Clear selection</button></div>`;
 }
 
@@ -86,7 +86,7 @@ export function pickerPanel(p, m) {
 }
 
 export function refreshPicker(pid, which) {
-  const p = S.payments.find(x => x.id === pid), m = S.matches[pid];
+  const p = S.deposits.find(x => x.id === pid), m = S.matches[pid];
   if (!p || !S.pick[pid]) return;
   if (which !== "preview") { const el = document.getElementById("pk-list-" + pid); if (el) el.innerHTML = candRows(p, m); }
   if (which !== "list") { const el = document.getElementById("pk-prev-" + pid); if (el) el.innerHTML = previewHtml(p, m); }

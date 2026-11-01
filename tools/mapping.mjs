@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 import { BANKS, RECORD_PRODUCER, ROLES, SCOPE, TABLES } from "../js/schema.js";
 
 const refName = r => r === "users" ? "sys_user" : TABLES[r].table;
-const order = ["customers", "contracts", "requests", "invoices", "bankAccounts", "uploads", "payments", "allocations"];
+const order = ["customers", "contracts", "requests", "invoices", "bankAccounts", "uploads", "deposits", "allocations"];
 let md = `# ServiceNow build mapping
 
 Generated from \`js/schema.js\` by \`node tools/mapping.mjs\`. Edit the schema, not this file's table sections.
@@ -47,8 +47,8 @@ md += `## Portal (project team)
 ## Workspace (AR team)
 
 - Configurable workspace **Receivables Workspace** (UI Builder), role \`${ROLES.ar.role}\`.
-- **Landing page**: single-score cards (new requests, assigned to me, awaiting info, draft invoices, overdue amount, unapplied cash), aging bar chart, new requests list, overdue invoices list.
-- **List menu**: AR requests (Open, New unassigned, Assigned to me, Awaiting info, All); Invoices (Drafts, Issued unpaid, Overdue, All); Payments (Unapplied, All); Master data (Customers, Contracts).
+- **Landing page**: single-score cards (new requests, assigned to me, awaiting info, draft invoices, overdue amount, BSU deposits to match, statements uploaded for yesterday), aging bar chart, new requests list, overdue invoices list.
+- **List menu**: AR requests (Open, New unassigned, Assigned to me, Awaiting info, All); Invoices (Drafts, Issued unpaid, Overdue, All); Bank statements (Statement uploads, BSU deposits to match, All BSU deposits, Bank accounts); Master data (Customers, Contracts).
 - **Record pages** with header highlighted values, form sections, related lists, activity stream on AR requests.
 - **BSU (bank statement upload)** custom page: daily checklist of bank accounts for the statement date, upload form (bank account, statement date, CSV), preview of deposits with Deposit IDs, *Save to bank statements*, recent uploads. See \`docs/modules/BSU.md\`.
 - **Cash application** custom page: deposits from the Bank statements table with match state; **manual matching only** through the invoice finder with allocation preview (modal or side panel).
@@ -65,7 +65,7 @@ md += `## Portal (project team)
 | Invoice | Cancel invoice | Only when no allocations; request back to In progress |
 | Deposit | Match to invoice / Find invoice → Apply | Inserts \`${TABLES.allocations.table}\` records (manual); exception = short pay / over pay / multi-invoice |
 | Deposit | Remove match | Removes the deposit's allocations |
-| BSU page | Save to bank statements | Inserts \`${TABLES.uploads.table}\` + one \`${TABLES.payments.table}\` row per deposit; withdrawals skipped |
+| BSU page | Save to bank statements | Inserts \`${TABLES.uploads.table}\` + one \`${TABLES.deposits.table}\` row per deposit; withdrawals skipped |
 | Bank account | Upload statement | Opens the BSU page for that account |
 
 ### Matching (manual only)

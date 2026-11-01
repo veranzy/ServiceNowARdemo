@@ -5,14 +5,14 @@ import { S } from "./state.js";
 import { digitRuns } from "./util.js";
 import { render } from "./views/app.js";
 
-// Only issued invoices can receive payments (drafts and cancelled invoices are excluded).
+// Only issued invoices can be matched to BSU deposits (drafts and cancelled invoices are excluded).
 const issued = () => S.invoices.filter(i => i.state === "issued");
 
 export function act(pid, what, extra) {
   const m = S.matches[pid];
   if (what === "remove" && m) { S.matches[pid] = { status: "unmatched", allocations: [], reason: "Allocations removed. Match again with Find invoice." }; }
   if (what === "manual") {
-    const p = S.payments.find(x => x.id === pid); if (!p) return;
+    const p = S.deposits.find(x => x.id === pid); if (!p) return;
     const plan = allocationPlan(p, m, extra.ids); if (!plan.total) return;
     const prev = m && m.status === "accepted" ? m.allocations : [];
     const all = [...prev, ...plan.rows.filter(r => r.alloc > 0).map(r => ({ invoiceId: r.i.id, amount: r.alloc }))];

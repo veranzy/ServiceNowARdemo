@@ -28,13 +28,13 @@ export function invChip(i) {
   if (m.pay === "Part paid") return `<span class="chip c-accent">Part paid</span>`;
   return `<span class="chip c-warn">Issued · unpaid</span>`;
 }
-export function payMoney(p) {
+export function depositMoney(p) {
   const m = S.matches[p.id];
   const applied = m && m.status === "accepted" ? m.allocations.reduce((s, a) => s + a.amount, 0) : 0;
   const state = applied <= 0 ? "Unmatched" : applied >= p.amount ? "Matched" : "Part matched";
   return { applied, unapplied: p.amount - applied, state };
 }
-export const payChip = p => { const s = payMoney(p).state; return `<span class="chip ${s === "Matched" ? "c-ok" : s === "Part matched" ? "c-accent" : "c-warn"}">${s}</span>`; };
+export const depositChip = p => { const s = depositMoney(p).state; return `<span class="chip ${s === "Matched" ? "c-ok" : s === "Part matched" ? "c-accent" : "c-warn"}">${s}</span>`; };
 
 export function daysLabel(iso) {
   if (!iso) return "—";

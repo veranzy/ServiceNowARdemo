@@ -8,7 +8,7 @@ import { addDays, cents, isoToday, uid } from "./util.js";
 export const userById = id => S.users.find(u => u.id === id);
 export const me = () => S.users.find(u => u.id === (S.ui.persona === "ar" ? "u_ar1" : "u_pm1"));
 export const reqById = id => S.requests.find(r => r.id === id);
-export const payById = id => S.payments.find(p => p.id === id);
+export const depositById = id => S.deposits.find(p => p.id === id);
 
 export function recById(table, id) {
   return (S[table] || []).find(r => r.id === id);
@@ -111,10 +111,10 @@ export function issueInvoice(id) {
   return null;
 }
 
-/** UI action: Cancel invoice (only without applied payments). */
+/** UI action: Cancel invoice (only when no BSU deposit is matched to it). */
 export function cancelInvoice(id) {
   const i = S.invoices.find(x => x.id === id); if (!i) return "Record not found.";
-  if ((invoiceUse().applied[i.id] || 0) > 0) return "This invoice has payments applied. Remove the allocations first.";
+  if ((invoiceUse().applied[i.id] || 0) > 0) return "A BSU deposit is matched to this invoice. Remove the match first.";
   i.state = "cancelled";
   for (const m of Object.values(S.matches)) if (m && m.status === "proposed" && m.allocations.some(a => a.invoiceId === i.id)) { m.status = "unmatched"; m.allocations = []; m.reason = `Proposal removed: ${i.number} was cancelled.`; }
   const r = reqById(i.requestId);

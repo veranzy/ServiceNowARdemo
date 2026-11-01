@@ -2,7 +2,7 @@
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { cancelInvoice, createRequest, issueInvoice, journal, me, portalComment, recById, requestAction, saveRecord, validate } from "./records.js";
+import { cancelInvoice, createRequest, issueInvoice, journal, linkCustomer, me, portalComment, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES } from "./schema.js";
 import { $, S } from "./state.js";
@@ -10,7 +10,7 @@ import { cents, uid } from "./util.js";
 import { render, setStatus, toast } from "./views/app.js";
 import { initDevNotes } from "./views/devnotes.js";
 import { refreshPicker } from "./views/finder.js";
-import { contractBox, formAlert, formSide } from "./views/portal.js";
+import { contractBox, formAlert, formSide, recurringHint, similarHint } from "./views/portal.js";
 import { listRows } from "./views/workspace.js";
 
 const W = () => S.ui.ws, P = () => S.ui.portal;
@@ -60,6 +60,16 @@ function uiAction(name) {
     toast(c.kind === "comment" ? "Comment posted. The requester can see it on the portal." : "Work note posted."); return render();
   }
   if (!saveActive(tab, { quiet: true })) return render();
+  if (tab.table === "requests" && name === "link") {
+    const err = linkCustomer(tab.id, tab.linkTo || null); tab.linkTo = null;
+    if (err) { tab.msg = { kind: "err", text: err }; return render(); }
+    toast("Linked to the customer: billing contact and documents filed on the customer record."); return render();
+  }
+  if (tab.table === "requests" && name === "schedule") {
+    const res = setupSchedule(tab.id);
+    if (typeof res === "string") { tab.msg = { kind: "err", text: res }; return render(); }
+    toast(`Billing schedule ${res.opened.number} set up. The requester has been told no further forms are needed.`); return openTab("schedules", res.opened.id);
+  }
   if (tab.table === "requests") {
     const text = W().composer[tab.id]?.kind === "comment" ? W().composer[tab.id].text : "";
     const res = requestAction(tab.id, name, text);
@@ -88,6 +98,8 @@ function wsSearch(q) {
 // ---------- form value capture ----------
 function coerce(table, key, el) {
   const f = TABLES[table].fields.find(x => x.key === key); if (!f) return el.value;
+  if (el.type === "checkbox") return el.checked;
+  if (el.type === "file") return el.files?.[0]?.name || "";
   if (f.type === "Currency") return el.value === "" ? 0 : cents(el.value);
   if (f.type === "Integer" || f.type === "Decimal") return el.value === "" ? 0 : Number(el.value);
   if (key === "aliases") return el.value.split(",").map(s => s.trim()).filter(Boolean);
@@ -152,6 +164,7 @@ document.addEventListener("click", e => {
   if (d.pnav) { P().page = d.pnav; P().errors = {}; render(); return window.scrollTo(0, 0); }
   if (d.ticket) { P().page = "ticket"; P().id = d.ticket; render(); return window.scrollTo(0, 0); }
   if (d.preply) { const err = portalComment(d.preply, $("ptReply")?.value); if (err) return toast(err); toast("Comment sent to Accounts Receivable."); return render(); }
+  if (d.undoc) { P().draft[d.undoc] = ""; return render(); }
   if (d.unattach !== undefined) { P().draft.attachments.splice(+d.unattach, 1); return render(); }
   // workspace navigation
   if (d.rail) {
@@ -170,6 +183,7 @@ document.addEventListener("click", e => {
   if (d.bsuAcct) { Object.assign(S.bsu, { acctId: d.bsuAcct, text: "", fileName: "", parsed: null, error: "" }); return showMain({ kind: "bsu" }); }
   if (d.bsu) return bsuAction(d.bsu);
   // cash application
+  if (d.raise) { const [sid, date] = d.raise.split("|"); const res = raiseInvoice(sid, date); if (typeof res === "string") return toast(res); toast(`Draft invoice ${res.opened.number} raised for ${date}.`); return openTab("invoices", res.opened.id); }
   if (d.matchdep) { S.pick[d.matchdep] = { open: true, q: "", sel: [], note: "" }; S.filter = "open"; showMain({ kind: "cash" }); return document.querySelector(`[data-pickopen="${d.matchdep}"]`)?.scrollIntoView({ block: "start" }); }
   if (t.id === "exportBtn") return exportCSV();
   if (t.id === "dismissBtn") { setStatus(); return render(); }
@@ -190,6 +204,7 @@ document.addEventListener("change", e => {
   const el = e.target;
   if (el.id === "notesToggle") { S.ui.notes = el.checked; return render(); }
   if (el.id === "devToggle") { S.ui.dev = el.checked; return render(); }
+  if (el.dataset.linkto) { const tab = W().tabs.find(x => x.key === el.dataset.linkto); if (tab) tab.linkTo = el.value || null; return; }
   if (el.id === "bsuAcct") { Object.assign(S.bsu, { acctId: el.value, text: "", fileName: "", parsed: null, error: "" }); return render(); }
   if (el.id === "bsuDate") { S.bsu.date = el.value; parseCurrent(); return render(); }
   if (el.id === "bsuFile") { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { S.bsu.text = String(r.result); S.bsu.fileName = f.name; parseCurrent(); render(); }; r.readAsText(f); el.value = ""; return; }
@@ -203,9 +218,14 @@ document.addEventListener("change", e => {
     const d = P().draft; d[el.name] = coerce("requests", el.name, el);
     if (el.name === "customerId" && d.contractId && S.contracts.find(k => k.id === d.contractId)?.customerId !== d.customerId) d.contractId = null;
     if (el.name === "contractId" && d.contractId) { const k = S.contracts.find(x => x.id === d.contractId); if (k && !d.billingType) d.billingType = BILLING_MAP[k.billing] || "Other"; if (k && !d.customerId) d.customerId = k.customerId; }
-    if (el.tagName === "SELECT") { const now = validate("requests", d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k]; return render(); }
+    if (el.name === "newCustomer" && d.newCustomer) { d.customerId = null; d.contractId = null; }
+    if (el.name === "contractLocation" && !["repository", "physical"].includes(d.contractLocation)) d.contractLocationRef = "";
+    if (el.tagName === "SELECT" || ["checkbox", "radio", "file"].includes(el.type)) { const now = validateARi(d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k]; return render(); }
     portalFieldUpdated(el);
-    if (el.name === "amount") { const box = document.querySelector(".pt-info"); if (box) box.outerHTML = contractBox(d); }
+    if (el.name === "amount") { const box = document.querySelector(".pt-info.ctr-box"); if (box) box.outerHTML = contractBox(d); }
+    const swap = (id, html) => { const n = $(id); if (n) n.outerHTML = html; };
+    if (el.name === "newCustName") swap("pfSimilar", similarHint(d));
+    if (["amount", "firstBillDate", "lastBillDate"].includes(el.name)) swap("pfRecHint", recurringHint(d));
     return;
   }
   // workspace record form: refilter dependent references
@@ -238,9 +258,13 @@ document.addEventListener("submit", e => {
     return toast(`None of your requests match "${q}".`);
   }
   if (f.id === "arForm") {
-    const d = P().draft, errors = validate("requests", d);
-    if (Object.keys(errors).length) { P().errors = errors; render(); return document.querySelector("#arForm [aria-invalid]")?.focus(); }
-    const r = createRequest({ ...d }); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;
+    const d = P().draft, errors = validateARi(d);
+    if (Object.keys(errors).length) { P().errors = errors; render(); return (document.querySelector("#arForm [aria-invalid], #arForm .has-err input, #arForm .has-err .btn"))?.focus(); }
+    const vals = { ...d };
+    if (vals.requestType === "recurring") { vals.billingType = "Monthly fee"; vals.invoiceDate = ""; vals.periodStart = ""; vals.periodEnd = ""; }
+    else { vals.frequency = ""; vals.firstBillDate = ""; vals.lastBillDate = ""; }
+    if (vals.newCustomer) vals.customerId = null; else { vals.newCustName = ""; vals.newCustUen = ""; vals.newCustAddress = ""; }
+    const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;
     render(); return window.scrollTo(0, 0);
   }
 });

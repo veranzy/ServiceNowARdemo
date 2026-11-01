@@ -70,14 +70,20 @@ function readValue(table, f, rec) {
   if (f.type === "Choice") return esc((f.choices.find(c => c[0] === v) || [, v || "—"])[1]);
   if (f.type === "Currency") return v ? `<span class="mono">SGD ${fmt(v)}</span>` : "—";
   if (f.key === "aliases") return (v || []).length ? v.map(a => `<span class="ref">${esc(a)}</span>`).join(" ") : "—";
+  if (f.type === "True/False") return v ? "Yes" : "No";
+  if (f.type === "Attachment") return v ? `${icon("clip", 14)} ${esc(v)}` : "—";
   return esc(v === 0 ? "0" : v || "—");
 }
 
 /** One form field from the schema. ctx: {prefix, readonly, errors, vals}. */
 export function fieldHtml(table, f, rec, ctx = {}) {
   const id = `${ctx.prefix || "fld"}-${f.key}`;
-  const ro = ctx.readonly || f.readonly;
+  const ro = ctx.readonly || f.readonly || f.type === "Attachment";
   const err = ctx.errors?.[f.key];
+  if (ctx.label || ctx.mandatory !== undefined || ctx.help !== undefined) f = { ...f, label: ctx.label ?? f.label, mandatory: ctx.mandatory ?? f.mandatory, help: ctx.help === undefined ? f.help : ctx.help };
+  if (f.type === "True/False" && !ro) {
+    return `<div class="ffield fcheckwrap${f.wide ? " wide" : ""}"${sn(`${CODE[table]}.${f.name}`)}><label class="fcheck" for="${id}"><input type="checkbox" id="${id}" name="${f.key}"${rec[f.key] ? " checked" : ""}> <span>${esc(f.label)}</span></label>${f.help ? `<span class="fhelp">${esc(f.help)}</span>` : ""}</div>`;
+  }
   const label = `<span class="flabel">${f.mandatory && !ro ? `<i class="req" aria-hidden="true">*</i>` : ""}${esc(f.label)}</span>`;
   let ctl;
   if (ro) ctl = `<div class="fro" id="${id}">${readValue(table, f, rec)}</div>`;
@@ -113,6 +119,7 @@ export function meterRow(label, a, b, color) {
 }
 
 export const custName = id => custById(id)?.name || "—";
+export const reqCustName = r => r.customerId ? custName(r.customerId) : r.newCustName ? `${r.newCustName} (new)` : "—";
 export const ctrNo = id => ctrById(id)?.number || "—";
 
 const P = {

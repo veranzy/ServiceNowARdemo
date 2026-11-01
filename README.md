@@ -5,8 +5,9 @@ Live demo: https://veranzy.github.io/ServiceNowARdemo/
 A clickable prototype for clarifying requirements for an accounts receivable app to be built on
 ServiceNow (custom scoped app). It shows both experiences side by side:
 
-- **Project team · Portal**: submit the AR form (record producer) to ask Accounts Receivable for an
-  invoice, follow it under My requests, and reply when AR asks for more information.
+- **Project team · Portal**: a catalogue of 16 AR forms (AR-i … AR-xvi). AR-i *New AR request* covers
+  1st, ad-hoc and recurring billing, a new or existing customer, the department's bill-to person and
+  customer documents (only those AR doesn't hold yet). Follow requests under My requests.
 - **AR team · Workspace**: work AR request cases, create and issue invoices, upload the daily bank
   statements (BSU), match deposits to invoices manually, and maintain customers, contracts and bank
   accounts.

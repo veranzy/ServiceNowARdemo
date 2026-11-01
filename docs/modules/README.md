@@ -21,7 +21,7 @@ Cross-module decisions go in [`../DECISIONS.md`](../DECISIONS.md).
 
 | Code | Module | Persona | Status |
 |---|---|---|---|
-| ARF | AR form and requests (portal record producer → AR request case) | Project team, AR team | In prototype |
+| [ARF](ARF.md) | AR forms catalogue (AR-i … AR-xvi) and AR-i New AR request; customer setup, documents, billing contacts, recurring schedules | Project team, AR team | In prototype |
 | INV | Invoicing (draft → issued → cancelled) | AR team | In prototype |
 | CSH | Cash application (manual matching of deposits to invoices) | AR team | In prototype |
 | MDM | Master data: customers, contracts | AR team | In prototype |

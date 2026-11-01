@@ -1,9 +1,9 @@
 // Record lifecycle: AR request cases, invoices, journal entries, numbering, generic save.
 // Each function mirrors a ServiceNow UI action or business rule (named in the comments).
 import { ctrById, custById, invoiceUse } from "./ledger.js";
-import { TABLES } from "./schema.js";
+import { DOC_TYPES, FREQUENCIES, TABLES } from "./schema.js";
 import { S } from "./state.js";
-import { addDays, cents, isoToday, uid } from "./util.js";
+import { addDays, cents, isoToday, today, uid } from "./util.js";
 
 export const userById = id => S.users.find(u => u.id === id);
 export const me = () => S.users.find(u => u.id === (S.ui.persona === "ar" ? "u_ar1" : "u_pm1"));
@@ -36,6 +36,134 @@ export function nextNumber(table) {
 
 export const REQ_STATE = Object.fromEntries(TABLES.requests.fields.find(f => f.key === "state").choices);
 export const REQ_OPEN = ["new", "in_progress", "awaiting_info"];
+export const REQ_TYPE = { first: "1st AR request", adhoc: "Ad-hoc AR", recurring: "Recurring AR" };
+export const DOC_LABEL = Object.fromEntries(DOC_TYPES);
+const DOC_KEY = { contract: "docContract", acra: "docAcra", billing_form: "docBillingForm" };
+
+// ---------- AR-i: customer documents, billing contacts ----------
+export const contactFor = (customerId, department) => S.contacts.find(c => c.customerId === customerId && c.department === department);
+
+/** Which customer documents are already on file. contract/PO is per contract when one is chosen; billing form per department. */
+export function docsOnFile(customerId, contractId, department) {
+  const out = {};
+  for (const [t] of DOC_TYPES) {
+    out[t] = customerId ? S.documents.find(d => d.customerId === customerId && d.docType === t &&
+      (t !== "contract" || !contractId || !d.contractId || d.contractId === contractId) && (t !== "billing_form" || d.department === department)) || null : null;
+  }
+  return out;
+}
+
+/** AR-i record producer validation (UI policies + mandatory variables). Returns {key: message}. */
+export function validateARi(d) {
+  const e = {}, need = (k, msg) => { const v = d[k]; if (v === undefined || v === null || v === "" || v === false) e[k] = msg; };
+  need("requestType", "Choose the request type.");
+  need("department", "Choose your department.");
+  if (d.newCustomer) need("newCustName", "Enter the new customer's name.");
+  else need("customerId", "Choose the customer, or tick New customer.");
+  const contact = !d.newCustomer && d.customerId ? contactFor(d.customerId, d.department) : null;
+  if (d.newCustomer || !contact || d.updateBillTo) { need("billToName", "Enter who to bill in this department."); need("billToEmail", "Enter the bill-to email."); }
+  if (d.billToEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.billToEmail)) e.billToEmail = "Enter a valid email address.";
+  need("title", d.requestType === "recurring" ? "Describe what is billed each period." : "Describe what should be invoiced.");
+  if (!(d.amount > 0)) e.amount = "Enter an amount greater than zero.";
+  if (d.requestType === "recurring") { need("frequency", "Choose how often to bill."); need("firstBillDate", "Enter the first billing date.");
+    if (d.lastBillDate && d.firstBillDate && d.lastBillDate < d.firstBillDate) e.lastBillDate = "Must be on or after the first billing date."; }
+  need("contractLocation", "Tell AR where the signed contract is kept.");
+  if (["repository", "physical"].includes(d.contractLocation)) need("contractLocationRef", "Give the link or file location.");
+  if (d.contractLocation === "attached" && !d.docContract) e.docContract = "Attach the signed contract / PO, or choose another location.";
+  const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
+  for (const [t, label] of DOC_TYPES) if (!onFile[t] && !d[DOC_KEY[t]] && !(t === "contract" && d.contractLocation && d.contractLocation !== "attached")) e[DOC_KEY[t]] = `Attach the ${label.toLowerCase()} (not on file yet).`;
+  if (d.periodStart && d.periodEnd && d.periodEnd < d.periodStart) e.periodEnd = "Must be on or after the start of the period.";
+  return e;
+}
+
+/** Setup checklist for an AR-i on the workspace record. */
+export function setupStatus(r) {
+  const linked = !!r.customerId && !r.newCustomer;
+  const contact = linked ? contactFor(r.customerId, r.department) : null;
+  const docsGiven = Object.entries(DOC_KEY).filter(([, k]) => r[k]).map(([t]) => t);
+  const filed = docsGiven.filter(t => S.documents.some(d => d.requestId === r.id && d.docType === t));
+  const ctr = r.contractId ? S.contracts.find(k => k.id === r.contractId) : null;
+  return { linked, contact, docsGiven, filed, docsDone: filed.length === docsGiven.length,
+    location: !r.contractLocation || !ctr ? null : !!ctr.contractLocation, schedule: r.scheduleId ? S.schedules.find(x => x.id === r.scheduleId) : null };
+}
+
+/** UI action "Link to customer": create or link the customer, upsert the department's billing contact,
+ *  file the documents on the customer, record the contract location. existingId links a new-customer AR-i to an existing customer instead. */
+export function linkCustomer(id, existingId) {
+  const r = reqById(id); if (!r) return "Record not found.";
+  const notes = [];
+  if (r.newCustomer) {
+    let c = existingId ? custById(existingId) : null;
+    if (!c) { c = { id: uid("c"), name: r.newCustName, uen: r.newCustUen || "", address: r.newCustAddress || "", parent: "", aliases: [], terms: 30, creditLimit: 0, notes: `Created from ${r.number}.` }; S.customers.push(c); notes.push(`created customer ${c.name}`); }
+    else notes.push(`linked to existing customer ${c.name}`);
+    r.customerId = c.id; r.newCustomer = false;
+  } else notes.push(`customer ${custById(r.customerId)?.name} confirmed`);
+  if (r.billToName) {
+    const ex = contactFor(r.customerId, r.department), vals = { name: r.billToName, email: r.billToEmail || "", phone: r.billToPhone || "", address: r.billToAddress || "", requestId: r.id };
+    if (ex) { Object.assign(ex, vals); notes.push(`updated ${r.department} billing contact`); }
+    else { S.contacts.push({ id: uid("t"), customerId: r.customerId, department: r.department, ...vals }); notes.push(`added ${r.department} billing contact`); }
+  }
+  for (const [t, k] of Object.entries(DOC_KEY)) {
+    if (!r[k] || S.documents.some(d => d.requestId === r.id && d.docType === t)) continue;
+    S.documents.push({ id: uid("d"), number: nextNumber("documents"), customerId: r.customerId, docType: t, fileName: r[k], contractId: t === "contract" ? r.contractId || null : null,
+      department: t === "billing_form" ? r.department : "", requestId: r.id, received: isoToday() });
+    notes.push(`filed ${DOC_LABEL[t].toLowerCase()}`);
+  }
+  const ctr = r.contractId ? S.contracts.find(k => k.id === r.contractId) : null;
+  if (ctr && r.contractLocation) { ctr.contractLocation = r.contractLocation; ctr.contractLocationRef = r.contractLocationRef || (r.contractLocation === "attached" ? `Customer document from ${r.number}` : ""); notes.push(`recorded contract location on ${ctr.number}`); }
+  if (r.state === "new") { r.state = "in_progress"; if (!r.assignedTo) r.assignedTo = me().id; }
+  journal(r, "work_note", `Link to customer: ${notes.join("; ")}.`);
+  return null;
+}
+
+// ---------- recurring billing ----------
+const FREQ = Object.fromEntries(FREQUENCIES.map(f => [f[0], f]));
+export const freqLabel = f => FREQ[f]?.[1] || f || "—";
+const addMonths = (iso, n) => { const d = new Date(iso + "T00:00:00"), day = d.getDate(); d.setMonth(d.getMonth() + n); if (d.getDate() !== day) d.setDate(0); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+
+/** Billing periods of a schedule: date, invoice (if raised), status Invoiced / Due / Upcoming. */
+export function schedulePeriods(sch, horizonMonths = 3) {
+  const step = FREQ[sch.frequency]?.[2] || 1, out = [];
+  const ctrEnd = sch.contractId ? S.contracts.find(k => k.id === sch.contractId)?.end : "";
+  const last = sch.lastDate || ctrEnd || addMonths(isoToday(), 12);
+  const horizon = addMonths(isoToday(), horizonMonths);
+  for (let n = 0, d = sch.firstDate; d && d <= last && n < 60; n++, d = addMonths(sch.firstDate, step * n)) {
+    if (n === 0) d = sch.firstDate;
+    const inv = S.invoices.find(i => i.scheduleId === sch.id && i.periodDate === d && i.state !== "cancelled");
+    const status = inv ? "Invoiced" : d <= isoToday() ? "Due" : "Upcoming";
+    if (status === "Upcoming" && d > horizon) { out.push({ date: d, inv: null, status, more: true }); break; }
+    out.push({ date: d, inv, status });
+  }
+  return out;
+}
+export const periodsDue = sch => schedulePeriods(sch).filter(p => p.status === "Due");
+export function nextBilling(sch) { const p = schedulePeriods(sch).find(x => !x.inv); return p ? p.date : null; }
+
+/** UI action "Set up billing schedule" (Recurring AR-i). */
+export function setupSchedule(id) {
+  const r = reqById(id); if (!r) return "Record not found.";
+  if (r.requestType !== "recurring") return "Only Recurring AR requests get a billing schedule.";
+  if (!r.customerId || r.newCustomer) return "Link the request to a customer first.";
+  if (r.scheduleId) return "A billing schedule already exists.";
+  const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: r.contractId || null, department: r.department, desc: r.title,
+    frequency: r.frequency, amount: r.amount, firstDate: r.firstBillDate, lastDate: r.lastBillDate || "", requestId: r.id };
+  S.schedules.push(sch); r.scheduleId = sch.id; r.state = "scheduled"; if (!r.assignedTo) r.assignedTo = me().id;
+  journal(r, "comment", `Recurring billing set up as ${sch.number}: ${freqLabel(sch.frequency).toLowerCase()} SGD ${(sch.amount / 100).toFixed(2)} from ${sch.firstDate}${sch.lastDate ? ` to ${sch.lastDate}` : ""}. AR will raise each invoice; no further AR forms are needed for this billing.`);
+  return { opened: sch };
+}
+
+/** UI action "Raise invoice" on a billing period: draft invoice for that period. */
+export function raiseInvoice(scheduleId, date) {
+  const sch = S.schedules.find(x => x.id === scheduleId); if (!sch) return "Schedule not found.";
+  if (S.invoices.some(i => i.scheduleId === sch.id && i.periodDate === date && i.state !== "cancelled")) return "This period already has an invoice.";
+  const k = ctrById(sch.contractId), c = custById(sch.customerId);
+  const label = new Date(date + "T00:00:00").toLocaleDateString("en-SG", { month: "short", year: "numeric" });
+  const invDate = date > isoToday() ? date : isoToday();
+  const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: sch.customerId, contractId: sch.contractId, requestId: sch.requestId || null, scheduleId: sch.id, periodDate: date,
+    customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount: sch.amount, date: invDate, due: addDays(invDate, k?.terms || c?.terms || 30), currency: "SGD" };
+  S.invoices.push(inv);
+  return { opened: inv };
+}
 
 /** Journal entry. kind: "comment" (visible to requester), "work_note" (AR only), "system". */
 export function journal(req, kind, text, by) {
@@ -49,7 +177,7 @@ export function createRequest(vals) {
     opened: isoToday(), updated: isoToday(), activity: [], attachments: vals.attachments || [], ...vals };
   delete req.attachments_input;
   S.requests.push(req);
-  journal(req, "system", "Submitted from the AR form on the portal.", req.requestedBy);
+  journal(req, "system", `Submitted from ${req.form || "AR-i"} (${REQ_TYPE[req.requestType] || "AR form"}) on the portal.`, req.requestedBy);
   return req;
 }
 
@@ -80,6 +208,8 @@ export function requestAction(id, action, text) {
     r.state = "rejected"; journal(r, "comment", t); journal(r, "system", "State changed to Rejected."); S.ui.ws.composer[id] = { kind: "comment", text: "" };
   } else if (action === "invoice") {               // UI action: Create invoice
     if (r.invoiceId) return "An invoice already exists for this request.";
+    if (!r.customerId || r.newCustomer) return "Link the request to a customer first (Link to customer).";
+    if (r.requestType === "recurring") return "Recurring requests are billed from a billing schedule. Use Set up billing schedule.";
     const k = ctrById(r.contractId), c = custById(r.customerId);
     const date = r.invoiceDate && r.invoiceDate > isoToday() ? r.invoiceDate : isoToday();
     const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: r.contractId || null, requestId: r.id,
@@ -138,6 +268,7 @@ export function saveRecord(table, id, raw) {
   const existing = id && id !== "new" ? recById(table, id) : null;
   const merged = { ...(existing || {}), ...vals };
   const errors = validate(table, merged);
+  if (table === "contacts" && S.contacts.some(c => c.id !== merged.id && c.customerId === merged.customerId && c.department === merged.department)) errors.department = `This customer already has a ${merged.department} billing contact. Edit that one instead.`;
   if (table === "contracts" && S.contracts.some(k => k.id !== merged.id && k.number && k.number.toLowerCase() === String(merged.number || "").toLowerCase())) errors.number = `Contract ${merged.number} already exists.`;
   if (Object.keys(errors).length) return { errors };
   if (existing) {

@@ -357,6 +357,7 @@ tr.sel td{background:var(--accent-soft)}
 .pt-form h1{font-size:24px;font-weight:700}
 .pt-lead{margin:0;color:var(--muted);max-width:68ch}
 .pt-side .sticky{position:sticky;top:16px;display:flex;flex-direction:column;gap:10px}
+.pt-side .sticky .ft-code{align-self:flex-start}
 .pt-info{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:12px 14px;display:grid;gap:8px}
 .pt-info dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 16px;margin:0}
 .pt-info dt{font-size:12px;color:var(--muted)} .pt-info dd{margin:0}
@@ -369,6 +370,44 @@ tr.sel td{background:var(--accent-soft)}
 .kvlist{display:grid;gap:10px;margin:12px 0}
 .kvlist dt{font-size:12px;color:var(--muted)} .kvlist dd{margin:2px 0 0}
 
+/* AR-i customer setup (workspace) */
+.setup .checklist{list-style:none;margin:0;padding:8px 14px 12px;display:grid;gap:8px}
+.checklist li{display:flex;gap:10px;align-items:flex-start}
+.checklist .tick{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--sunk);color:var(--muted)}
+.checklist li.ok .tick{background:var(--ok-soft);color:var(--ok)}
+.checklist li.todo .tick{background:var(--warn-soft);color:var(--warn)}
+.checklist li>div{min-width:0}
+.setup .linkto{margin:0 14px 14px}
+
+/* AR forms catalogue + AR-i */
+.pt-h1{font-size:24px;font-weight:700}
+.pt-forms{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-top:14px}
+.pt-form-tile{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:14px;min-height:118px;color:var(--fg)}
+.pt-form-tile.on{cursor:pointer;border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
+.pt-form-tile.on:hover{background:color-mix(in srgb,var(--brand) 6%,var(--surface))}
+.pt-form-tile.off{background:var(--sunk);color:var(--muted);border-style:dashed}
+.pt-form-tile span:last-child{font-size:12.5px;color:var(--muted)}
+.ft-code{font:700 11.5px/1.2 var(--f-mono);letter-spacing:.04em;color:var(--brand-fg);background:var(--brand);border-radius:4px;padding:2px 6px;display:inline-block}
+.pt-form-tile.off .ft-code{background:var(--muted);color:var(--surface)}
+.psec{border:1px solid var(--line);border-radius:10px;padding:12px 14px 14px;margin:0;display:grid;gap:12px;min-width:0}
+.psec legend{font-weight:700;font-size:14px;padding:0 6px}
+.tcards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tcards.has-err .tcard{border-color:var(--bad)}
+.tcard{display:flex;flex-direction:column;gap:4px;border:1px solid var(--line);border-radius:9px;padding:12px;cursor:pointer;background:var(--surface);position:relative}
+.tcard input{position:absolute;top:12px;right:12px;accent-color:var(--brand)}
+.tcard b{padding-right:20px}
+.tcard span{font-size:12.5px;color:var(--muted)}
+.tcard.on{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand);background:color-mix(in srgb,var(--brand) 6%,var(--surface))}
+.pt-hint{margin:0;font-size:13px;color:var(--muted);background:var(--bg);border-radius:7px;padding:8px 10px}
+.docs{display:grid;gap:8px}
+.docrow{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 14px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.docrow>div:first-child{min-width:0;display:grid;gap:4px}
+.docrow.has-err{border-color:var(--bad)}
+.docctl{display:flex;align-items:center;gap:6px}
+.fcheckwrap{justify-content:flex-end}
+.fcheck{display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;padding:7px 0}
+.fcheck input{width:16px;height:16px;accent-color:var(--brand)}
+
 /* ---------- build note ID tags ---------- */
 /* Every element with data-snid gets a small purple ID tag drawn inside it (never clipped by parents).
    Containers: tag in the top-right corner. Buttons and column headers: tag inline before the text.
@@ -379,6 +418,7 @@ body.sn-notes [data-snid]::before{content:attr(data-snid);font:600 10px/1.35 var
   border-radius:3px;padding:0 4px;white-space:nowrap;pointer-events:none}
 body.sn-notes :is(section,div,form,aside,article,dl,details,fieldset):not(.ws-listmenu)[data-snid],body.sn-notes .pt-head[data-snid]{position:relative}
 body.sn-notes :is(section,div,form,aside,article,dl,details,fieldset,header,nav)[data-snid]::before{position:absolute;top:-8px;left:10px;z-index:31}
+body.sn-notes fieldset[data-snid]::before{left:auto;right:10px}
 /* containers that clip their own overflow keep the tag inside */
 body.sn-notes :is(.summary,.picker,.ws-tabs)[data-snid]::before{top:3px;left:auto;right:3px}
 body.sn-notes :is(button,th,a)[data-snid]::before{display:inline-block;margin-right:6px;vertical-align:1px}
@@ -413,7 +453,7 @@ body.sn-dev [data-snid]::before{display:none!important}
   .ws-rail{width:48px}
   .ws-rail button{width:36px;height:36px}
   .ws-listmenu{left:48px;width:min(248px,calc(100vw - 60px))}
-  .fgrid,.rel.meters,.bsu-form{grid-template-columns:minmax(0,1fr)}
+  .fgrid,.rel.meters,.bsu-form,.tcards{grid-template-columns:minmax(0,1fr)}
   .pay{grid-template-columns:minmax(0,1fr)}
   .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
   .stat{border-left:0!important;border-top:1px solid var(--line)}

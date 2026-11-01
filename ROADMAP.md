@@ -8,11 +8,16 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 <!-- Add ideas here, one line each. Detail can follow as indented notes. -->
 - Automation after AR form submission (owner to describe).
+- AR-ii … AR-xvi: names and content (owner to describe, one at a time).
 
 ## Next
 
 ## Done
 
+- 2026-11-02 **ARF / AR-i**: portal catalogue of 16 AR forms (AR-ii … AR-xvi placeholders); AR-i New AR request
+  (1st / ad-hoc / recurring, new or existing customer, department bill-to, contract location, documents on-file
+  check). Workspace: customer setup checklist + *Link to customer*, billing contacts per department (11
+  departments), customer documents, billing schedules with *Raise invoice*.
 - 2026-11-01 **BSU** bank statement upload: bank account master (department, account type), daily CSV
   upload per account with preview, Deposit IDs, Bank statements table, three mock bank layouts.
   **Auto-matching removed** app-wide (D5): deposits are matched manually. Module specs in `docs/modules/`.

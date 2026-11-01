@@ -49,12 +49,17 @@ rebuilt later from this codebase. Do not add Claude/LLM calls here unless the ow
 
 | Persona | Role | UI | Does |
 |---|---|---|---|
-| Company project team | `x_ar.project_team` | **Portal only** (Service Portal / Employee Center look) | Submits the **AR form** (record producer), follows **My requests**, replies on the ticket page |
+| Company project team | `x_ar.project_team` | **Portal only** (Service Portal / Employee Center look) | Picks from **16 AR forms (AR-i … AR-xvi)**; AR-i *New AR request* (1st / ad-hoc / recurring) is the only defined one. Follows **My requests**, replies on the ticket page |
 | Accounts receivable team | `x_ar.ar_team` | **Workspace only** (configurable workspace look) | Works AR request **cases**, creates and issues invoices, uploads bank statements (**BSU**), matches deposits to invoices **manually**, maintains customers, contracts and bank accounts |
 
-Core flow: project team submits AR form → `x_ar_request` case (New) in the workspace → AR assigns,
+Core flow: project team submits **AR-i** (type 1st / ad-hoc / recurring, customer or *New customer*,
+department + bill-to person, contract location, documents only if not on file) → `x_ar_request` case
+(New) in the workspace → AR **Link to customer** (creates/links the customer, upserts the department's
+billing contact, files documents on the customer, records contract location) → AR assigns,
 may *Request info* (portal reply returns it to In progress) or *Reject* → *Create invoice* (draft) →
-*Issue invoice* → request becomes Invoiced and the requester sees the invoice number. Each morning AR
+*Issue invoice* → request becomes Invoiced and the requester sees the invoice number. A **Recurring** AR-i
+is submitted once: AR *Set up billing schedule* (request → Billing scheduled), then **Raise invoice** per
+due period (never automatic, D12). Each morning AR
 uploads yesterday's CSV statement per bank account (**BSU**) → deposits saved to the **Bank statements**
 table with a Deposit ID → AR matches deposits to issued invoices **manually** on the Cash application page.
 **There is no auto-matching anywhere (D5); don't add it.** The app is the **system of record** for
@@ -63,6 +68,9 @@ invoices. Automation after AR form submission is still to be defined by the owne
 ## Domain model (all custom tables, see `js/schema.js`)
 
 customer → contracts → AR requests → invoices ← allocations ← deposits (Bank statements) ← BSU uploads ← bank accounts
+customer → billing contacts (one per department, D11) · customer documents (given once, D10) · billing schedules → invoices (per period)
+
+**Departments:** 11 operational departments in `DEPARTMENTS` (`js/schema.js`); bank accounts may also be Finance.
 
 **Money received is only ever a BSU deposit (D7).** There is no payments table or "payment received"
 concept: deposits come from BSU uploads, live in `x_ar_bank_statement` (code key `deposits`,
@@ -90,7 +98,9 @@ js/main.js              delegated event handling (click/change/input/submit) and
 js/state.js             S: data tables + UI state (persona, workspace tabs, portal page, drafts)
 js/schema.js            ServiceNow tables/fields/roles/record producer (no DOM)
 js/records.js           lifecycle: createRequest, requestAction (assign/info/reject/invoice), issueInvoice,
-                        cancelInvoice, portalComment, saveRecord, validate, numbering, journal
+                        cancelInvoice, portalComment, saveRecord, validate, numbering, journal;
+                        AR-i: validateARi, docsOnFile, contactFor, setupStatus, linkCustomer;
+                        recurring: schedulePeriods, periodsDue, nextBilling, setupSchedule, raiseInvoice
 js/ledger.js            ledger reads: invoiceUse (applied/reserved), rollup, lookups
 js/matching.js          manual allocation (act: manual/remove), allocationPlan, finder ranking (signals)
 js/bsu.js               BSU: parse bank CSV by template, Deposit IDs, saveUpload, sample CSV per bank
@@ -98,7 +108,7 @@ js/io.js                CSV parser, matches CSV export
 js/sample-data.js       users, customers, contracts, invoices, AR requests, payments (dates shift to today)
 js/views/app.js         render(): demo bar + active persona; toast; setStatus
 js/views/workspace.js   workspace shell, landing page, list pages (LISTS), record pages (LAYOUT, UI actions, activity)
-js/views/portal.js      portal home, AR form, confirmation, My requests, ticket page
+js/views/portal.js      portal home, AR forms catalogue (AR-i … AR-xvi), AR-i form, confirmation, My requests, ticket page
 js/views/cash.js        cash application page (manual matching of deposits)
 js/views/bsu.js         BSU page: statement-day checklist, upload + preview, recent uploads
 js/views/finder.js      invoice finder (ranked candidates + allocation preview)
@@ -130,7 +140,8 @@ docs/modules/           one spec per module (see "How we work"); docs/DECISIONS.
 ## Checking changes
 
 Serve with `python3 -m http.server` (modules don't load from `file://`). Click through: portal AR form
-submit → workspace new request → assign → create invoice → issue → portal shows invoice; BSU upload
+AR-i (new customer 1st request, existing-customer recurring) → workspace Link to customer → create
+invoice / set up billing schedule → Raise invoice → portal shows invoice / schedule notice; BSU upload
 (sample file and a real CSV file, wrong-bank error); cash application Find invoice → Apply, Remove match;
 ID tags visible and unclipped; 400px wide in dark mode.
 No console errors.

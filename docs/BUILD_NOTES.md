@@ -34,12 +34,15 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `WS-07` | Data visualisation: bar chart of x_ar_invoice.amount_due grouped by days past due_date |
 | `WS-08` | Landing page list: new AR requests |
 | `WS-09` | Landing page list: overdue invoices |
+| `SCH-PER` | Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming |
 
 ## AR request record
 
 | ID | ServiceNow |
 |---|---|
 | `REQ-ACT` | Activity stream: comments (visible to requester) + work_notes (AR only) + field changes |
+| `REQ-SETUP` | Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, department billing contact, documents filed, contract location, billing schedule |
+| `REQ-LINKTO` | Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check) |
 | `REQ-ATT` | Attachments: sys_attachment on x_ar_request (added on the portal form) |
 
 ## Cash application
@@ -69,9 +72,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `PT-01` | Service Portal header (sp_header_footer), audience role x_ar.project_team |
 | `PT-02` | Portal homepage: search + quick links widgets |
-| `PT-03` | Quick link to catalog item: record producer "AR form" |
+| `PT-03` | Quick link to catalog item: record producer "AR-i New AR request" |
 | `PT-04` | Quick link to My Requests |
-| `PT-05` | Record producer "AR form" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; |
+| `PT-05` | Record producer "AR-i New AR request" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; |
 | `PT-06` | Variable requested_by → opened_by (default: current user, read-only) |
 | `PT-07` | Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include |
 | `PT-08` | Variable attachments → sys_attachment on the created x_ar_request |
@@ -80,6 +83,17 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-11` | Ticket page: conversation widget (comments only; work notes hidden) |
 | `PT-12` | Invoice reference shown to requester (number, issue and due date; payment status hidden) |
 | `PT-13` | Ticket fields widget: read-only summary of the request |
+| `PT-14` | Service catalog category "AR forms": 16 record producers AR-i … AR-xvi (D9) |
+| `PT-15` | Catalog item AR-i New AR request (active record producer) |
+| `PT-16` | Catalog item placeholder AR-ii … AR-xvi (inactive until defined) |
+| `PT-17` | Variable set Request type: 1st AR request / Ad-hoc AR / Recurring AR (UI policies show sections by type) |
+| `PT-18` | Variable set Customer: existing customer reference, or New customer with name, UEN, address (UI policy on new_customer) |
+| `PT-19` | Variable set Department & bill-to: shows the department's billing contact (x_ar_billing_contact) or asks for one (D11) |
+| `PT-20` | Variable set Contract: contract reference, contract location and link/file reference |
+| `PT-21` | Variable set Billing (1st / ad-hoc): billing type, amount, dates, PO |
+| `PT-22` | Variable set Recurring billing: frequency, amount per period, first/last billing date (D12) |
+| `PT-23` | Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10) |
+| `PT-24` | Ticket notice: billing schedule set up for a Recurring AR-i |
 
 ## AR request
 
@@ -97,18 +111,39 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.number` | x_ar_request.number · String · read-only |
 | `REQ.state` | x_ar_request.state · Choice · read-only |
 | `REQ.opened_by` | x_ar_request.opened_by · Reference → sys_user · read-only |
-| `REQ.customer` | x_ar_request.customer · Reference → x_ar_customer · mandatory |
+| `REQ.ar_form` | x_ar_request.ar_form · Choice · read-only |
+| `REQ.request_type` | x_ar_request.request_type · Choice · mandatory |
+| `REQ.department` | x_ar_request.department · Choice · mandatory |
+| `REQ.customer` | x_ar_request.customer · Reference → x_ar_customer · Mandatory unless New customer is ticked |
+| `REQ.new_customer` | x_ar_request.new_customer · True/False |
+| `REQ.new_customer_name` | x_ar_request.new_customer_name · String · Mandatory when New customer |
+| `REQ.new_customer_uen` | x_ar_request.new_customer_uen · String |
+| `REQ.new_customer_address` | x_ar_request.new_customer_address · String (1000) |
+| `REQ.update_bill_to` | x_ar_request.update_bill_to · True/False |
+| `REQ.bill_to_name` | x_ar_request.bill_to_name · String · Mandatory when the department has no billing contact for this customer |
+| `REQ.bill_to_email` | x_ar_request.bill_to_email · String |
+| `REQ.bill_to_phone` | x_ar_request.bill_to_phone · String |
+| `REQ.bill_to_address` | x_ar_request.bill_to_address · String (1000) |
 | `REQ.contract` | x_ar_request.contract · Reference → x_ar_contract |
-| `REQ.billing_type` | x_ar_request.billing_type · Choice · mandatory |
+| `REQ.contract_location` | x_ar_request.contract_location · Choice · mandatory |
+| `REQ.contract_location_ref` | x_ar_request.contract_location_ref · String · Mandatory for repository link or physical file |
+| `REQ.billing_type` | x_ar_request.billing_type · Choice |
 | `REQ.short_description` | x_ar_request.short_description · String · mandatory |
-| `REQ.amount` | x_ar_request.amount · Currency · mandatory |
+| `REQ.amount` | x_ar_request.amount · Currency · mandatory · For Recurring AR: amount per billing period |
 | `REQ.requested_invoice_date` | x_ar_request.requested_invoice_date · Date |
 | `REQ.period_start` | x_ar_request.period_start · Date |
 | `REQ.period_end` | x_ar_request.period_end · Date |
 | `REQ.po_number` | x_ar_request.po_number · String |
+| `REQ.frequency` | x_ar_request.frequency · Choice · Recurring AR only |
+| `REQ.first_billing_date` | x_ar_request.first_billing_date · Date · Recurring AR only |
+| `REQ.last_billing_date` | x_ar_request.last_billing_date · Date · Recurring AR; blank = until the contract ends |
+| `REQ.doc_contract_po` | x_ar_request.doc_contract_po · Attachment · Only when not already on file for the customer |
+| `REQ.doc_acra` | x_ar_request.doc_acra · Attachment · Only when not already on file |
+| `REQ.doc_billing_form` | x_ar_request.doc_billing_form · Attachment · Only when not already on file for this department |
 | `REQ.description` | x_ar_request.description · String (4000) |
 | `REQ.assigned_to` | x_ar_request.assigned_to · Reference → sys_user |
 | `REQ.invoice` | x_ar_request.invoice · Reference → x_ar_invoice · read-only |
+| `REQ.billing_schedule` | x_ar_request.billing_schedule · Reference → x_ar_billing_schedule · read-only |
 | `REQ.opened_at` | x_ar_request.opened_at · Date · read-only |
 
 ## Invoice
@@ -129,6 +164,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `INV.customer` | x_ar_invoice.customer · Reference → x_ar_customer · mandatory |
 | `INV.contract` | x_ar_invoice.contract · Reference → x_ar_contract |
 | `INV.ar_request` | x_ar_invoice.ar_request · Reference → x_ar_request · read-only |
+| `INV.billing_schedule` | x_ar_invoice.billing_schedule · Reference → x_ar_billing_schedule · read-only |
+| `INV.billing_period` | x_ar_invoice.billing_period · Date · read-only |
 | `INV.short_description` | x_ar_invoice.short_description · String · mandatory |
 | `INV.amount` | x_ar_invoice.amount · Currency · mandatory |
 | `INV.invoice_date` | x_ar_invoice.invoice_date · Date |
@@ -224,7 +261,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `CUS.name` | x_ar_customer.name · String · mandatory |
+| `CUS.uen` | x_ar_customer.uen · String |
 | `CUS.parent_group` | x_ar_customer.parent_group · String |
+| `CUS.registered_address` | x_ar_customer.registered_address · String (1000) |
 | `CUS.payment_terms` | x_ar_customer.payment_terms · Integer |
 | `CUS.credit_limit` | x_ar_customer.credit_limit · Currency |
 | `CUS.bank_names` | x_ar_customer.bank_names · String (1000) · Comma-separated. Used to rank invoices in the invoice finder. |
@@ -253,7 +292,76 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON.payment_terms` | x_ar_contract.payment_terms · Integer |
 | `CON.discount_percent` | x_ar_contract.discount_percent · Decimal |
 | `CON.discount_days` | x_ar_contract.discount_days · Integer |
+| `CON.contract_location` | x_ar_contract.contract_location · Choice |
+| `CON.contract_location_ref` | x_ar_contract.contract_location_ref · String |
 | `CON.notes` | x_ar_contract.notes · String (4000) |
+
+## Billing contact
+
+| ID | ServiceNow |
+|---|---|
+| `LST-BCT` | List: x_ar_billing_contact · list view layout + list menu condition |
+| `RP-BCT` | Record page (UI Builder) · x_ar_billing_contact |
+| `HDR-BCT` | Record header: highlighted values of x_ar_billing_contact |
+| `FRM-BCT` | Form view: x_ar_billing_contact (Default view) |
+
+## Billing contact fields
+
+| ID | ServiceNow |
+|---|---|
+| `BCT.customer` | x_ar_billing_contact.customer · Reference → x_ar_customer · mandatory |
+| `BCT.department` | x_ar_billing_contact.department · Choice · mandatory |
+| `BCT.contact_name` | x_ar_billing_contact.contact_name · String · mandatory |
+| `BCT.email` | x_ar_billing_contact.email · String · mandatory |
+| `BCT.phone` | x_ar_billing_contact.phone · String |
+| `BCT.billing_address` | x_ar_billing_contact.billing_address · String (1000) |
+| `BCT.source_request` | x_ar_billing_contact.source_request · Reference → x_ar_request · read-only |
+
+## Customer document
+
+| ID | ServiceNow |
+|---|---|
+| `LST-DOC` | List: x_ar_customer_document · list view layout + list menu condition |
+| `RP-DOC` | Record page (UI Builder) · x_ar_customer_document |
+| `HDR-DOC` | Record header: highlighted values of x_ar_customer_document |
+| `FRM-DOC` | Form view: x_ar_customer_document (Default view) |
+
+## Customer document fields
+
+| ID | ServiceNow |
+|---|---|
+| `DOC.number` | x_ar_customer_document.number · String · read-only |
+| `DOC.customer` | x_ar_customer_document.customer · Reference → x_ar_customer · read-only |
+| `DOC.document_type` | x_ar_customer_document.document_type · Choice · read-only |
+| `DOC.file_name` | x_ar_customer_document.file_name · String · read-only |
+| `DOC.contract` | x_ar_customer_document.contract · Reference → x_ar_contract · read-only · For signed contract / PO |
+| `DOC.department` | x_ar_customer_document.department · Choice · read-only · For billing contact & address forms |
+| `DOC.source_request` | x_ar_customer_document.source_request · Reference → x_ar_request · read-only |
+| `DOC.received_on` | x_ar_customer_document.received_on · Date · read-only |
+
+## Billing schedule
+
+| ID | ServiceNow |
+|---|---|
+| `LST-SCH` | List: x_ar_billing_schedule · list view layout + list menu condition |
+| `RP-SCH` | Record page (UI Builder) · x_ar_billing_schedule |
+| `HDR-SCH` | Record header: highlighted values of x_ar_billing_schedule |
+| `FRM-SCH` | Form view: x_ar_billing_schedule (Default view) |
+
+## Billing schedule fields
+
+| ID | ServiceNow |
+|---|---|
+| `SCH.number` | x_ar_billing_schedule.number · String · read-only |
+| `SCH.customer` | x_ar_billing_schedule.customer · Reference → x_ar_customer · mandatory |
+| `SCH.contract` | x_ar_billing_schedule.contract · Reference → x_ar_contract |
+| `SCH.department` | x_ar_billing_schedule.department · Choice · mandatory |
+| `SCH.short_description` | x_ar_billing_schedule.short_description · String · mandatory |
+| `SCH.frequency` | x_ar_billing_schedule.frequency · Choice · mandatory |
+| `SCH.amount` | x_ar_billing_schedule.amount · Currency · mandatory |
+| `SCH.first_billing_date` | x_ar_billing_schedule.first_billing_date · Date · mandatory |
+| `SCH.last_billing_date` | x_ar_billing_schedule.last_billing_date · Date · Blank = until the contract ends |
+| `SCH.source_request` | x_ar_billing_schedule.source_request · Reference → x_ar_request · read-only |
 
 ## Calculated columns
 
@@ -267,12 +375,18 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CUS.overdue` | Calculated: amount_due on issued invoices past due_date |
 | `CON.status` | Calculated: Active / Not started / Ended from start and end dates |
 | `BSU.department` | Dot-walk: bank_account.department |
+| `SCH.next_billing_date` | Calculated: first period on or after today without an invoice |
+| `SCH.periods_due` | Calculated: periods up to today without an invoice |
 | `BNK.last_statement` | Calculated: latest x_ar_bsu.statement_date for the account |
 
 ## Related lists
 
 | ID | ServiceNow |
 |---|---|
+| `RL-CUS-BCT` | Related list: x_ar_billing_contact where customer = this customer |
+| `RL-CUS-DOC` | Related list: x_ar_customer_document where customer = this customer |
+| `RL-CUS-SCH` | Related list: x_ar_billing_schedule where customer = this customer |
+| `RL-SCH-INV` | Related list: x_ar_invoice where billing_schedule = this billing schedule |
 | `RL-CUS-CON` | Related list: x_ar_contract where customer = this customer |
 | `RL-CUS-INV` | Related list: x_ar_invoice where customer = this customer |
 | `RL-CUS-REQ` | Related list: x_ar_request where customer = this customer |
@@ -292,6 +406,14 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-REQ-invoice` | UI action: Create invoice → inserts draft x_ar_invoice from request fields, links ar_request |
 | `UA-REQ-info` | UI action: Request info → state = Awaiting info; requires an additional comment (visible on portal) |
 | `UA-REQ-reject` | UI action: Reject → state = Rejected; requires an additional comment |
+| `UA-REQ-link` | UI action: Link to customer → creates or links x_ar_customer, upserts x_ar_billing_contact for the department, files documents to x_ar_customer_document, records contract location (D10, D11) |
+| `UA-REQ-schedule` | UI action: Set up billing schedule (Recurring AR-i) → inserts x_ar_billing_schedule; state = Billing scheduled; comment to requester (D12) |
+| `UA-SCH-raise` | UI action: Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12) |
+| `UA-SCH-save` | UI action: Save (update) |
+| `UA-BCT-save` | UI action: Save (update) |
+| `UA-BCT-new` | UI action: New (list action) |
+| `UA-BCT-insert` | UI action: Submit (insert); unique per customer + department |
+| `UA-CUS-newcontact` | UI action: Add billing contact → new billing contact form with customer prefilled |
 | `UA-REQ-post` | UI action: Post work note / additional comment to the activity stream |
 | `UA-REQ-save` | UI action: Save (update) |
 | `UA-INV-issue` | UI action: Issue invoice → state = Issued; BR sets AR request to Invoiced and posts a comment to the requester |

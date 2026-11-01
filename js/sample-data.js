@@ -16,10 +16,10 @@ function shiftDate(iso) {
 
 export function loadSample() {
   const users = [
-    ["u_ar1", "Daniel Lim", "ar", "AR specialist"],
-    ["u_ar2", "Siti Rahman", "ar", "AR specialist"],
-    ["u_pm1", "Priya Nair", "project", "Project manager"],
-    ["u_pm2", "Marcus Wong", "project", "Project manager"]
+    ["u_ar1", "Daniel Lim", "ar", "AR specialist", "Finance"],
+    ["u_ar2", "Siti Rahman", "ar", "AR specialist", "Finance"],
+    ["u_pm1", "Priya Nair", "project", "Project manager", "Digital"],
+    ["u_pm2", "Marcus Wong", "project", "Project manager", "Logistics"]
   ];
   const cus = [
     ["harb","Harbourline Logistics Pte Ltd","",["HARBOURLINE LOGISTICS PTE"],30,60000,""],
@@ -76,16 +76,17 @@ export function loadSample() {
     ["PACIFIC CREST MARINE","2026-10-23",9150,"INV-10054 PART 1 OF 2"]
   ];
   const cid = {}, kid = {};
-  S.customers = cus.map(r => { const c = { id: uid("c"), name: r[1], parent: r[2], aliases: r[3], terms: r[4], creditLimit: cents(r[5]), notes: r[6] }; cid[r[0]] = c; return c; });
+  const uens = { harb: "199804512G", meri: "200511234K", kest: "Malaysia SSM 1123456-X", tanj: "201002233N", orch: "201505566M", nova: "201809988D", bws: "200733445R", bwo: "200733446H", lume: "53312345W", paci: "201211122E" };
+  S.customers = cus.map(r => { const c = { id: uid("c"), name: r[1], uen: uens[r[0]] || "", address: "", parent: r[2], aliases: r[3], terms: r[4], creditLimit: cents(r[5]), notes: r[6] }; cid[r[0]] = c; return c; });
   S.contracts = ctr.map(r => { const k = { id: uid("k"), customerId: cid[r[0]].id, number: r[1], title: r[2], start: shiftDate(r[3]), end: shiftDate(r[4]), value: cents(r[5]), billing: r[6], terms: r[7], discPct: r[8], discDays: r[9], notes: r[10] }; kid[r[1]] = k; return k; });
   S.invoices = inv.map(r => ({ id: uid("i"), customerId: cid[r[0]].id, contractId: r[1] ? kid[r[1]].id : null, customer: cid[r[0]].name, number: r[2], date: shiftDate(r[3]), due: shiftDate(r[4]), amount: cents(r[5]), desc: r[6], currency: "SGD", state: "issued", requestId: null }));
-  S.users = users.map(r => ({ id: r[0], name: r[1], team: r[2], title: r[3] }));
+  S.users = users.map(r => ({ id: r[0], name: r[1], team: r[2], title: r[3], department: r[4] }));
   // Company bank accounts (BSU): [key, bank, number, name, department, type]
   const accts = [
     ["mbRev", "MB", "072-104521-6", "AR collections", "Finance", "revenue"],
-    ["mbDep", "MB", "072-118830-1", "Project deposits – Engineering", "Projects – Engineering", "deposit"],
+    ["mbDep", "MB", "072-118830-1", "Project deposits – Engineering", "Engineering", "deposit"],
     ["obRev", "OB", "601-337204-001", "Revenue SGD", "Finance", "revenue"],
-    ["usDep", "US", "451-302-118-7", "Retention and deposits – Marine", "Projects – Marine", "deposit"],
+    ["usDep", "US", "451-302-118-7", "Retention and deposits – Marine", "Marine", "deposit"],
     ["usOps", "US", "451-302-990-2", "Operating", "Finance", "operating"]
   ];
   const aid = {};
@@ -117,24 +118,77 @@ export function loadSample() {
       [["2026-09-29","u_pm2","system","Submitted from the AR form on the portal."],["2026-09-30","u_ar2","work_note","Instalments agreed per contract notes; issuing a single invoice."],["2026-10-01","u_ar2","comment","Invoice INV-10054 was issued."]]],
     ["r3","u_pm1","nova","NB-2026-05","Milestone","Milestone 4: dashboards and handover",15000,"2026-10-20","in_progress","u_ar1","","","","NB-PO-2210","Handover workshop held on 19 Oct; acceptance email attached.",
       [["2026-10-20","u_pm1","system","Submitted from the AR form on the portal."],["2026-10-21","u_ar1","system","Assigned to Daniel Lim."],["2026-10-21","u_ar1","work_note","Checking acceptance email against milestone criteria before invoicing."]]],
-    ["r4","u_pm2","harb","HL-2026-01","Monthly fee","Warehouse services, Oct 2026",12480,"2026-10-23","new","","","2026-10-01","2026-10-31","","Standard monthly fee, no changes.",
+    ["r4","u_pm2","harb","HL-2026-01","Monthly fee","Warehouse management services, monthly fee",12480,"2026-10-23","new","","","","","","Monthly fee for the rest of the contract. Please bill on the 28th of each month.",
       [["2026-10-23","u_pm2","system","Submitted from the AR form on the portal."]]],
-    ["r5","u_pm1","tanj","TR-2026-02","Monthly fee","POS support retainer, Oct 2026",4400,"2026-10-22","new","","","2026-10-01","2026-10-31","","",
+    ["r5","u_pm1","tanj","TR-2026-02","Other","Replacement POS terminals (2 units)",1800,"2026-10-22","new","","","","","TR-PO-5521","Two terminals replaced at the Jurong store after water damage.",
       [["2026-10-22","u_pm1","system","Submitted from the AR form on the portal."]]],
     ["r6","u_pm1","orch","OC-2026-01","Monthly fee","Clinic scheduling licences, Oct 2026",1980,"2026-10-18","awaiting_info","u_ar2","","2026-10-01","2026-10-31","","",
       [["2026-10-18","u_pm1","system","Submitted from the AR form on the portal."],["2026-10-19","u_ar2","system","Assigned to Siti Rahman."],["2026-10-19","u_ar2","comment","Should the SLA credit note CN-221 (SGD 200) be deducted on this invoice, or was it already taken on the September payment?"]]],
     ["r7","u_pm2","meri","","Other","Install 12 additional temperature sensors",3600,"2026-10-10","rejected","u_ar1","","","","","Customer asked for extra sensors in the new cold room.",
       [["2026-10-10","u_pm2","system","Submitted from the AR form on the portal."],["2026-10-12","u_ar1","comment","This work isn't covered by contract MF-2025-07. Please raise a change order with the customer first, then submit a new AR form referencing it."],["2026-10-12","u_ar1","system","State changed to Rejected."]]]
   ];
+  // AR-i details per request: [type, department, contract location, extra fields]
+  const ari = {
+    r1: ["adhoc", "Engineering", "on_file"], r2: ["adhoc", "Marine", "on_file"], r3: ["adhoc", "Digital", "repository", { contractLocationRef: "https://docs.example/contracts/NB-2026-05" }],
+    r4: ["recurring", "Logistics", "on_file", { frequency: "monthly", firstBillDate: "2026-10-28", lastBillDate: "" }],
+    r5: ["adhoc", "Digital", "on_file"], r6: ["adhoc", "Healthcare", "on_file"], r7: ["adhoc", "Logistics", "physical", { contractLocationRef: "Finance registry, cabinet 3" }]
+  };
   S.requests = req.map(r => {
     const inv = r[10] ? invByNo(r[10]) : null;
     const rec = { id: r[0], number: "ARQ" + String(1000 + +r[0].slice(1)).padStart(7, "0"), requestedBy: r[1], customerId: cid[r[2]].id, contractId: r[3] ? kid[r[3]].id : null,
       billingType: r[4], title: r[5], amount: cents(r[6]), opened: shiftDate(r[7]), updated: shiftDate(r[15][r[15].length - 1][0]), state: r[8], assignedTo: r[9] || null,
       invoiceId: inv ? inv.id : null, periodStart: shiftDate(r[11]), periodEnd: shiftDate(r[12]), poNumber: r[13], details: r[14], invoiceDate: "", attachments: r[0] === "r3" ? ["Acceptance email - Novabay.pdf"] : [],
       activity: r[15].map(a => ({ at: shiftDate(a[0]) + "T09:00:00", by: a[1], kind: a[2], text: a[3] })) };
+    const [type, dept, loc, extra] = ari[r[0]];
+    Object.assign(rec, { form: "AR-i", requestType: type, department: dept, newCustomer: false, contractLocation: loc, contractLocationRef: "", scheduleId: null }, extra || {});
+    if (rec.firstBillDate) rec.firstBillDate = shiftDate(rec.firstBillDate);
+    rec.activity.forEach(a => { if (a.text === "Submitted from the AR form on the portal.") a.text = `Submitted from AR-i (${{ first: "1st AR request", adhoc: "Ad-hoc AR", recurring: "Recurring AR" }[type]}) on the portal.`; });
     if (inv) inv.requestId = rec.id;
     return rec;
   });
+  // A new customer's first AR-i, waiting for AR to link it to the customer master
+  S.requests.push({ id: "r8", number: "ARQ0001008", form: "AR-i", requestType: "first", department: "Digital", requestedBy: "u_pm1", customerId: null, contractId: null,
+    newCustomer: true, newCustName: "Zephyr Data Centres Pte Ltd", newCustUen: "201912345K", newCustAddress: "8 Tampines Industrial Ave 5, #04-01, Singapore 528763",
+    billToName: "Alicia Koh", billToEmail: "finance@zephyrdc.example", billToPhone: "+65 6123 4567", billToAddress: "Accounts Payable, 8 Tampines Industrial Ave 5, Singapore 528763",
+    contractLocation: "attached", contractLocationRef: "", billingType: "Milestone", title: "Design phase: data hall cooling assessment", amount: cents(24000), poNumber: "ZDC-PO-0042",
+    docContract: "Zephyr - signed services agreement.pdf", docAcra: "Zephyr - ACRA business profile.pdf", docBillingForm: "Zephyr - billing contact form (Digital).pdf",
+    details: "First project with Zephyr. Signed agreement attached.", invoiceDate: "", periodStart: "", periodEnd: "", state: "new", assignedTo: null, invoiceId: null, scheduleId: null,
+    opened: shiftDate("2026-10-24"), updated: shiftDate("2026-10-24"), attachments: [],
+    activity: [{ at: shiftDate("2026-10-24") + "T08:40:00", by: "u_pm1", kind: "system", text: "Submitted from AR-i (1st AR request) on the portal." }] });
+
+  // Billing contacts per customer per department (D11)
+  const ct = [
+    ["harb", "Logistics", "Grace Teo", "ap@harbourline.example", "+65 6311 2040", "Harbourline Logistics, Accounts Payable, 21 Penjuru Road, Singapore 609142"],
+    ["harb", "Advisory", "Ravi Shankar", "ravi.s@harbourline.example", "+65 6311 2077", "Harbourline Logistics, Strategy Office, 21 Penjuru Road, Singapore 609142"],
+    ["kest", "Engineering", "Nur Aisyah", "ap@kestrel-eng.example", "+60 3 7722 1100", "Kestrel Engineering Sdn Bhd, Finance, Petaling Jaya, Malaysia"],
+    ["tanj", "Digital", "Kelvin Ong", "accounts@tanjongretail.example", "+65 6255 8899", "Tanjong Retail Group, Finance, 3 Jurong Gateway Road, Singapore 608532"],
+    ["orch", "Healthcare", "Dr Mei Lin Chua", "admin@orchidclinics.example", "+65 6733 1200", "Orchid Clinics, 10 Sinaran Drive, Singapore 307506"],
+    ["nova", "Digital", "Samuel Tan", "finance@novabay.example", "+65 6100 2200", "Novabay Software, 1 Fusionopolis Way, Singapore 138632"],
+    ["paci", "Marine", "Hafiz Rahman", "accounts@pacificcrest.example", "+65 6265 3300", "Pacific Crest Marine, 50 Tuas South Ave 1, Singapore 637315"],
+    ["meri", "Logistics", "Joanne Lee", "ap@meridianfoods.example", "+65 6862 4400", "Meridian Foods, 9 Senoko Way, Singapore 758049"],
+    ["bws", "Facilities", "Hotel Finance (Sentosa)", "finance.sentosa@brightwater.example", "+65 6275 0001", "Brightwater Hospitality Holdings, Treasury, 1 Harbourfront Walk, Singapore 098585"],
+    ["bwo", "Facilities", "Hotel Finance (Orchard)", "finance.orchard@brightwater.example", "+65 6275 0002", "Brightwater Hospitality Holdings, Treasury, 1 Harbourfront Walk, Singapore 098585"],
+    ["lume", "Advisory", "Lionel Tan", "lionel@lumenprint.example", "+65 9123 4567", "Lumen Print Studio, 51 Ubi Ave 1, Singapore 408933"]
+  ];
+  S.contacts = ct.map(r => ({ id: uid("t"), customerId: cid[r[0]].id, department: r[1], name: r[2], email: r[3], phone: r[4], address: r[5], requestId: null }));
+  // Customer documents on file (D10): [customer, type, file, contract, department, received]
+  const dc = [
+    ["harb", "acra", "Harbourline - ACRA profile.pdf", "", "", "2026-03-28"], ["harb", "contract", "HL-2026-01 signed.pdf", "HL-2026-01", "", "2026-03-28"], ["harb", "billing_form", "Harbourline - billing form (Logistics).pdf", "", "Logistics", "2026-03-28"],
+    ["kest", "acra", "Kestrel - SSM registration.pdf", "", "", "2026-02-20"], ["kest", "contract", "KE-2026-03 signed.pdf", "KE-2026-03", "", "2026-02-20"], ["kest", "billing_form", "Kestrel - billing form (Engineering).pdf", "", "Engineering", "2026-02-20"],
+    ["tanj", "acra", "Tanjong - ACRA profile.pdf", "", "", "2026-01-25"], ["tanj", "contract", "TR-2026-02 signed.pdf", "TR-2026-02", "", "2026-01-25"], ["tanj", "billing_form", "Tanjong - billing form (Digital).pdf", "", "Digital", "2026-01-25"],
+    ["nova", "acra", "Novabay - ACRA profile.pdf", "", "", "2026-04-22"], ["nova", "contract", "NB-2026-05 signed.pdf", "NB-2026-05", "", "2026-04-22"], ["nova", "billing_form", "Novabay - billing form (Digital).pdf", "", "Digital", "2026-04-22"],
+    ["paci", "acra", "Pacific Crest - ACRA profile.pdf", "", "", "2026-05-20"], ["paci", "contract", "PC-2026-02 signed.pdf", "PC-2026-02", "", "2026-05-20"], ["paci", "billing_form", "Pacific Crest - billing form (Marine).pdf", "", "Marine", "2026-05-20"],
+    ["orch", "acra", "Orchid Clinics - ACRA profile.pdf", "", "", "2025-12-15"], ["orch", "contract", "OC-2026-01 signed.pdf", "OC-2026-01", "", "2025-12-15"],
+    ["meri", "acra", "Meridian Foods - ACRA profile.pdf", "", "", "2025-06-20"], ["meri", "contract", "MF-2025-07 signed.pdf", "MF-2025-07", "", "2025-06-20"]
+  ];
+  let dn = 1000;
+  S.documents = dc.map(r => ({ id: uid("d"), number: "DOC" + String(++dn).padStart(7, "0"), customerId: cid[r[0]].id, docType: r[1], fileName: r[2], contractId: r[3] ? kid[r[3]].id : null, department: r[4], requestId: null, received: shiftDate(r[5]) }));
+  for (const k of Object.values(kid)) if (S.documents.some(d => d.contractId === k.id)) { k.contractLocation = "on_file"; k.contractLocationRef = "Customer documents"; }
+  // A running billing schedule: Tanjong POS retainer, monthly on the 12th; Aug and Sep already invoiced
+  const tsch = { id: "s1", number: "SCH0001001", customerId: cid.tanj.id, contractId: kid["TR-2026-02"].id, department: "Digital", desc: "POS support retainer", frequency: "monthly", amount: cents(4400),
+    firstDate: shiftDate("2026-08-12"), lastDate: kid["TR-2026-02"].end, requestId: null };
+  S.schedules = [tsch];
+  for (const [no, d] of [["INV-10045", "2026-08-12"], ["INV-10046", "2026-09-12"]]) { const i = invByNo(no); i.scheduleId = tsch.id; i.periodDate = shiftDate(d); }
   S.ui.ws = { main: { kind: "home" }, tabs: [], active: "main", listMenu: false, q: "", composer: {} };
   S.ui.portal = { page: "home", id: null, draft: null, errors: {} };
   S.status = null;

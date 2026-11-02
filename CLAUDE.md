@@ -8,6 +8,54 @@ rules, flows. When adding a feature, add its ServiceNow equivalent too (schema +
 Static site, no backend, no build step, no AI calls. Hosted on GitHub Pages:
 https://veranzy.github.io/ServiceNowARdemo/ (deploys on every push to `main` via `.github/workflows/pages.yml`).
 
+## Project instructions (team-maintained)
+
+This section is the shared brief for anyone working on the project with Claude: repo sessions read
+this file automatically, and the Claude project "ServiceNow AR" points here too. **Edit it here** when
+a rule changes, commit with the prefix `DOCS:`, and add a line to *Instruction changes* at the end of
+this section. Keep it short; module detail belongs in `docs/modules/`, not here.
+
+**Goal and audience.** A clickable prototype plus a requirements pack for client **sign-off**, then
+hand-over to a ServiceNow developer who must be able to build from the docs alone (spec +
+`SERVICENOW_MAPPING.md` + `docs/BUILD_NOTES.md`), without the prototype.
+
+**Source of truth.** This repo. Docs in the Claude project (`requirements/*.md`) are exported copies
+for reference; if they differ from the repo, the repo wins. After a change that touches the docs,
+re-export the changed files to the Claude project (or tell the owner they are stale).
+
+**Standing decisions** (don't revisit unless the owner asks; full list in `docs/DECISIONS.md`):
+- All tables are custom tables in the scoped app; no CSM, `core_company` or `ast_contract` (D1).
+- The app is the system of record for invoices (D2).
+- Project team uses the portal only; AR team uses the workspace only (D3).
+- **No auto-matching, ever** (D5). Money received is only ever a BSU deposit (D7).
+- Billing is contract level: customer › contract (or no-contract shell) › billing lines › invoices (D15);
+  bill-to sits on the contract (D16).
+
+If a request conflicts with a recorded decision, point out the conflict and ask. Never override a
+decision silently; a changed decision is recorded as a new or amended entry with its date.
+
+**Quality bar for requirements.**
+- Every screen element maps to a ServiceNow artefact (table, field, UI action, business rule, ACL,
+  widget, flow) and carries a registered Build notes ID.
+- A module spec is buildable without the prototype: tables and columns, choices, mandatory rules,
+  UI actions and their effects, calculated fields, ACLs, notifications, open questions.
+- Every open question has an owner and is listed in the module spec; resolved ones become decisions.
+- When docs contradict each other (spec vs mapping vs build notes vs code), flag it and fix the source
+  (`js/schema.js`, `js/notes.js` or the spec), never the generated sections.
+
+**Module status for sign-off.** A module is *Agreed* only when the client has walked through it on the
+live demo and its open questions are answered or explicitly deferred. Keep the status column in
+`docs/modules/README.md` current; that table is the sign-off checklist.
+
+**Style.** Plain English, short sentences. Sample or anonymised data only (the demo is public).
+Singapore context: SGD, local bank CSV formats, UEN / ACRA.
+
+**Instruction changes**
+
+| Date | Change | By |
+|---|---|---|
+| 2026-11-02 | Section added: goal, source of truth, standing decisions, quality bar, sign-off status, style. | Owner |
+
 ## How we work: modules, one at a time
 
 Features are added progressively as **modules** with a short code (ARF, INV, CSH, MDM, BSU, …).

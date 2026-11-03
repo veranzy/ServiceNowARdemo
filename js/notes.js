@@ -19,6 +19,12 @@ export const NOTES = {
   "WS-07": `Data visualisation: bar chart of ${TABLES.invoices.table}.amount_due grouped by days past due_date`,
   "WS-08": "Landing page list: new AR requests",
   "WS-09": "Landing page list: overdue invoices",
+  "WS-11": "Record header UI action bar (Horizon Record page template): primary UI actions as buttons, the rest in the overflow menu. Visible vs overflow is set per UI action in the workspace action configuration",
+  "WS-12": "Record ribbon (Horizon Record page template): collapsible row of up to 12 widgets with key metrics; configured per table in UI Builder (data resources over the record and its related tables)",
+  "WS-13": "Record tabs in the resizable pane (Horizon Record page template): Details (form) first, then related items, then one tab per related list; extra tabs move to the More menu",
+  "WS-14": "Contextual side bar (Horizon pattern): vertical icon tabs on the right of the record tab, open by default, collapsible and resizable; holds Customer setup, Activity stream and Attachments for AR requests",
+  "WS-15": "Form record presence: avatars of users viewing the record (out-of-box on the Horizon Record page template)",
+  "WS-16": "List page template (Horizon): list menu on the left, list on the right; the menu selection drives the list. Menu can be hidden",
   // AR request record page extras
   "REQ-ACT": "Activity stream: comments (visible to requester) + work_notes (AR only) + field changes",
   "REQ-SETUP": "Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, contract location, billing lines done",

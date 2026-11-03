@@ -190,9 +190,10 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 ## Workspace (AR team)
 
 - Configurable workspace **Receivables Workspace** (UI Builder), role `x_ar.ar_team`.
-- **Landing page**: single-score cards (new requests, assigned to me, awaiting info, draft invoices, overdue amount, BSU deposits to match, statements uploaded for yesterday), aging bar chart, new requests list, overdue invoices list.
-- **List menu**: AR requests (Open, New unassigned, Assigned to me, Awaiting info, All); Invoices (Drafts, Issued unpaid, Overdue, All); Bank statements (Statement uploads, BSU deposits to match, All BSU deposits, Bank accounts); Master data (Customers, Contracts).
-- **Record pages** with header highlighted values, form sections, related lists, activity stream on AR requests.
+- Layout follows the **Horizon Design System** workspace templates (see `docs/modules/UIX.md`): unified navigation header, app navigation on the left, workspace tabs (primary tab + closable record tabs).
+- **Landing page**: greeting header and a grid of single-score cards (new requests, assigned to me, awaiting info, customer setup pending, billing periods due, draft invoices, overdue amount, BSU deposits to match, statements uploaded for yesterday), aging bar chart, new requests list, overdue invoices list.
+- **List page** (Horizon list page template): **list menu** on the left, list on the right. Menu: AR requests (Open, New unassigned, Customer setup pending, Assigned to me, Awaiting info, All); Recurring billing (Billing periods due, Active schedules, All); Invoices (Drafts, Issued unpaid, Overdue, All); Bank statements (Statement uploads, BSU deposits to match, All BSU deposits, Bank accounts); Master data (Customers, Contracts, No-contract shells, Billing contacts, Customer documents).
+- **Record pages** (Horizon Record page template): header (record name, description, label-value pairs, form record presence, **UI action bar** with overflow menu) › **ribbon** of metric widgets (collapsible) › **resizable pane** with record tabs (Details first, then related items, then one tab per related list; extra tabs in a More menu) and the **contextual side bar** (vertical icon tabs). AR request side bar: Customer setup, Activity stream, Attachments.
 - **BSU (bank statement upload)** custom page: daily checklist of bank accounts for the statement date, upload form (bank account, statement date, CSV), preview of deposits with Deposit IDs, *Save to bank statements*, recent uploads. See `docs/modules/BSU.md`.
 - **Cash application** custom page: deposits from the Bank statements table with match state; **manual matching only** through the invoice finder with allocation preview (modal or side panel).
 
@@ -201,11 +202,14 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 | Table | Action | Effect |
 |---|---|---|
 | AR request | Assign to me | `assigned_to` = current user; New → In progress |
-| AR request | Create invoice | Insert draft `x_ar_invoice` from request fields (customer, contract, description, amount, invoice date, due = date + terms); link `ar_request`; work note |
-| AR request | Request info | Requires an additional comment; state → Awaiting info |
-| AR request | Reject | Requires an additional comment; state → Rejected |
-| Invoice | Issue invoice | Draft → Issued; BR sets the AR request to Invoiced and posts a requester-visible comment |
-| Invoice | Cancel invoice | Only when no allocations; request back to In progress |
+| AR request | Link to customer | Creates or links `x_ar_customer`; links / creates the contract or no-contract shell and sets it on every billing line; writes the bill-to to the contract; files documents; records contract location (D10, D15, D16) |
+| AR request | Request info (overflow menu) | Requires an additional comment; state → Awaiting info |
+| AR request | Reject (overflow menu) | Requires an additional comment; state → Rejected |
+| Billing line | Create invoice | One-off line: insert draft `x_ar_invoice` (customer, line's contract, description, amount, invoice date, due = date + terms); links `request_line` |
+| Billing line | Set up billing schedule | Recurring line: insert `x_ar_billing_schedule` over the line's date range; comment to requester (D12) |
+| Billing schedule | Raise invoice | Draft invoice for one billing period; never automatic (D12) |
+| Invoice | Issue invoice | Draft → Issued; posts a requester-visible comment; BR sets the AR request to Billed when every line is invoiced or scheduled |
+| Invoice | Cancel invoice (overflow menu) | Only when no allocations; the line becomes open again and the request goes back to In progress |
 | Deposit | Match to invoice / Find invoice → Apply | Inserts `x_ar_allocation` records (manual); exception = short pay / over pay / multi-invoice |
 | Deposit | Remove match | Removes the deposit's allocations |
 | BSU page | Save to bank statements | Inserts `x_ar_bsu` + one `x_ar_bank_statement` row per deposit; withdrawals skipped |

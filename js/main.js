@@ -22,7 +22,6 @@ function openTab(table, id) {
   const key = `${table}:${id}`;
   if (!W().tabs.some(t => t.key === key)) W().tabs.push({ key, table, id });
   W().active = key;
-  if (window.innerWidth < 900) W().listMenu = false;
   render(); window.scrollTo(0, 0);
 }
 function newTab(table, prefill) {
@@ -36,7 +35,7 @@ function closeTab(key) {
   if (w.active === key) w.active = w.tabs[ix - 1]?.key || w.tabs[ix]?.key || "main";
   render();
 }
-function showMain(main) { W().main = main; W().active = "main"; W().q = ""; if (window.innerWidth < 900) W().listMenu = false; render(); window.scrollTo(0, 0); }
+function showMain(main) { W().main = main; W().active = "main"; W().q = ""; if (main.kind === "list" && window.innerWidth < 760) W().lmOpen = false; render(); window.scrollTo(0, 0); }
 
 /** Save pending form values on the active record tab. Returns true when there was nothing to save or it saved. */
 function saveActive(tab, { quiet } = {}) {
@@ -189,9 +188,16 @@ document.addEventListener("click", e => {
   if (d.unattach !== undefined) { P().draft.attachments.splice(+d.unattach, 1); return render(); }
   // workspace navigation
   if (d.rail) {
-    if (d.rail === "list") { W().listMenu = !W().listMenu; if (W().main.kind !== "list") W().main = { kind: "list", table: "requests", filter: "open" }; W().active = "main"; return render(); }
-    if (d.rail === "closelists") { W().listMenu = false; return render(); }
-    W().listMenu = false; return showMain({ kind: d.rail });
+    if (d.rail === "list") { if (W().main.kind === "list") { W().active = "main"; return render(); } return showMain({ kind: "list", table: "requests", filter: "open" }); }
+    return showMain({ kind: d.rail });
+  }
+  // Horizon list page: list menu beside the list
+  if (d.lmtoggle !== undefined) { const open = W().lmOpen ?? (window.innerWidth >= 760); W().lmOpen = !open; return render(); }
+  // Horizon record page: record tabs, ribbon, contextual side bar
+  if (d.rtab) { const tab = activeTab(); if (tab) { tab.sub = d.rtab; render(); document.querySelector(`[data-rtab="${CSS.escape(d.rtab)}"]`)?.focus({ preventScroll: true }); } return; }
+  if (d.ribbon !== undefined) { const tab = activeTab(); if (tab) tab.ribbonClosed = !tab.ribbonClosed; return render(); }
+  if (d.stab) { const tab = activeTab(); if (tab) { const sp = W().side, same = tab.side === d.stab || (!tab.side && t.getAttribute("aria-selected") === "true"); if (sp.open && same) sp.open = false; else { sp.open = true; tab.side = d.stab; } } return render(); }
+  if (d.stoggle !== undefined) { W().side.open = !W().side.open; return render();
   }
   if (d.list) { const [table, filter] = d.list.split(":"); return showMain({ kind: "list", table, filter }); }
   if (d.open) { const [table, id] = d.open.split(":"); return openTab(table, id); }
@@ -220,6 +226,19 @@ document.addEventListener("click", e => {
   if (d.apply) return act(d.apply, "manual", { ids: S.pick[d.apply]?.sel || [], note: S.pick[d.apply]?.note });
   if (d.pickclear) { S.pick[d.pickclear].sel = []; return refreshPicker(d.pickclear); }
 });
+
+// Horizon resizable pane: drag the handle between record tabs and the contextual side bar
+let drag = null;
+document.addEventListener("pointerdown", e => {
+  const h = e.target.closest("[data-resize]"); if (!h) return;
+  const pane = h.closest(".rpane"); drag = { pane, x: e.clientX, w: W().side.w }; h.setPointerCapture?.(e.pointerId); e.preventDefault();
+});
+document.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const max = Math.max(300, drag.pane.clientWidth - 360), w = Math.max(300, Math.min(max, drag.w + (drag.x - e.clientX)));
+  W().side.w = Math.round(w); drag.pane.style.setProperty("--side-w", `${W().side.w}px`);
+});
+document.addEventListener("pointerup", () => { drag = null; });
 
 document.addEventListener("keydown", e => {
   if (e.key !== "Enter") return;

@@ -232,7 +232,7 @@ export function loadSample() {
     firstDate: shiftDate("2026-08-12"), lastDate: kid["TR-2026-02"].end, requestId: null };
   S.schedules = [tsch];
   for (const [no, d] of [["INV-10045", "2026-08-12"], ["INV-10046", "2026-09-12"]]) { const i = invByNo(no); i.scheduleId = tsch.id; i.periodDate = shiftDate(d); }
-  S.ui.ws = { main: { kind: "home" }, tabs: [], active: "main", listMenu: false, q: "", composer: {} };
+  S.ui.ws = { main: { kind: "home" }, tabs: [], active: "main", lmOpen: null, side: { open: true, w: 380 }, q: "", composer: {} };
   S.ui.portal = { page: "home", id: null, draft: null, errors: {} };
   S.status = null;
   render();

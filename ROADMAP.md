@@ -14,6 +14,9 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 ## Done
 
+- 2026-11-03 **UIX**: workspace aligned to the Horizon Design System: list page template (list menu + list), Record
+  page template (action bar with overflow, ribbon, record tabs, contextual side bar with Customer setup / Activity /
+  Attachments), Cabin + Lato, Horizon radius and spacing (D17).
 - 2026-11-02 **ARF / PT-05 contract level**: contract chosen before billing lines (existing / new / no contract
   required); no-contract shell per customer + department; bill-to held on the contract; billing lines carry the
   contract; customer billing hierarchy and contract related lists (D15, D16).

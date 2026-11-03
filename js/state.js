@@ -14,7 +14,7 @@ export const S = {
     devOpen: new Set(),     // expanded note cards (by ID)
     devDismissed: new Set(), // dismissed note cards (by ID)
     toast: null,
-    ws: { main: { kind: "home" }, tabs: [], active: "main", listMenu: false, q: "", composer: {} },
+    ws: { main: { kind: "home" }, tabs: [], active: "main", lmOpen: null, side: { open: true, w: 380 }, q: "", composer: {} },
     portal: { page: "home", id: null, draft: null, errors: {} }
   }
 };

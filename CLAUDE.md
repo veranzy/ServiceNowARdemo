@@ -188,6 +188,10 @@ docs/modules/           one spec per module (see "How we work"); docs/DECISIONS.
   ID registered in `js/notes.js` (see "Change requests by build-note ID"). Fields get `<CODE>.<column>`
   IDs automatically through `fieldHtml`.
 - **Workspace vs portal:** AR features go in the workspace only; project-team features in the portal only.
+- **Workspace layout follows Horizon (D17, `docs/modules/UIX.md`):** record pages are header › ribbon ›
+  record tabs (`related()` returns one tab per related list) + contextual side bar (`sidePanels()`);
+  UI actions return `{html, ovf}` (overflow menu); metrics go in `ribbon()`, identity in `headerFields()`.
+  Workspace tokens are scoped to `body[data-persona="ar"]` in `css/styles.css`.
 - Styling uses the tokens in `css/styles.css`; every colour must work in light and dark. Layout must
   work at 400px wide with no horizontal page scroll.
 - Sample data is fictional (Singapore, SGD). Keep it fictional.

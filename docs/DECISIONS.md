@@ -21,3 +21,4 @@ module spec under `docs/modules/`.
 | D14 | 2026-11-02 | The customer is **searched first**; a new customer is added only when not found. A "first request" is simply a request for a new customer. | Owner (ARF, PT-05) |
 | D15 | 2026-11-02 | **Billing is contract level**: customer › contract › billing lines › invoices. Billing with no contract is filed under the customer's **no-contract shell** (a contract record of type shell, one per customer + department), so the hierarchy always holds. | Owner (ARF, PT-05) |
 | D16 | 2026-11-02 | The **bill-to person is held on the contract** (or shell). The department billing contact is only the default used to prefill it. | Owner (ARF, PT-05) |
+| D17 | 2026-11-03 | The AR workspace follows the **Horizon Design System** workspace templates (tabbed app shell, list page template, Record page template with ribbon and contextual side bar). The portal keeps its own look. | Owner (UIX) |

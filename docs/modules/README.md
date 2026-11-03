@@ -26,3 +26,4 @@ Cross-module decisions go in [`../DECISIONS.md`](../DECISIONS.md).
 | CSH | Cash application (manual matching of deposits to invoices) | AR team | In prototype |
 | MDM | Master data: customers, contracts | AR team | In prototype |
 | [BSU](BSU.md) | Bank statement upload | AR team | In prototype |
+| [UIX](UIX.md) | Workspace look and layout aligned to the Horizon Design System (app shell, list page, record page) | AR team | In prototype |

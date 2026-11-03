@@ -1,5 +1,5 @@
 // Top-level render: the demo control bar (not part of the ServiceNow product) and the active persona's UI.
-import { me } from "../records.js";
+import { auditTick, me } from "../records.js";
 import { ROLES } from "../schema.js";
 import { $, S } from "../state.js";
 import { esc } from "../util.js";
@@ -36,6 +36,7 @@ function demoBar() {
 }
 
 export function render() {
+  auditTick();
   const root = $("app");
   // keep window scroll stable across re-renders
   const y = window.scrollY, focusId = document.activeElement?.id;

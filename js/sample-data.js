@@ -2,6 +2,7 @@
 import { S } from "./state.js";
 import { DAY, cents, today, uid } from "./util.js";
 import { depositId } from "./bsu.js";
+import { resetAudit } from "./records.js";
 import { render } from "./views/app.js";
 
 // Sample dates are authored as if "today" were SAMPLE_AS_OF, then shifted so the demo
@@ -232,6 +233,18 @@ export function loadSample() {
     firstDate: shiftDate("2026-08-12"), lastDate: kid["TR-2026-02"].end, requestId: null };
   S.schedules = [tsch];
   for (const [no, d] of [["INV-10045", "2026-08-12"], ["INV-10046", "2026-09-12"]]) { const i = invByNo(no); i.scheduleId = tsch.id; i.periodDate = shiftDate(d); }
+  // Record history (sys_audit): a "Created" entry per sample record that has a known creation date
+  S.history = [];
+  const created = (table, rec, at, by) => S.history.push({ table, id: rec.id, at: at + "T09:00:00", by, kind: "created" });
+  for (const r of S.requests) created("requests", r, r.opened, r.requestedBy);
+  for (const l of S.lines) { const r = S.requests.find(x => x.id === l.requestId); if (r) created("lines", l, r.opened, r.requestedBy); }
+  for (const i of S.invoices) if (i.date) created("invoices", i, i.date, "u_ar1");
+  for (const u of S.uploads) created("uploads", u, u.uploadedAt.slice(0, 10), u.uploadedBy);
+  for (const p of S.deposits) { const u = S.uploads.find(x => x.id === p.uploadId); if (u) created("deposits", p, u.uploadedAt.slice(0, 10), u.uploadedBy); }
+  for (const d of S.documents) created("documents", d, d.received, "u_ar1");
+  for (const x of S.schedules) if (x.firstDate) created("schedules", x, x.firstDate, "u_ar1");
+  S.history.sort((a, b) => a.at.localeCompare(b.at));
+  resetAudit();
   S.ui.ws = { main: { kind: "home" }, tabs: [], active: "main", lmOpen: null, side: { open: true, w: 380 }, q: "", composer: {} };
   S.ui.portal = { page: "home", id: null, draft: null, errors: {} };
   S.status = null;

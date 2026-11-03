@@ -22,6 +22,8 @@ Horizon Design System workspace guidance at https://horizon.servicenow.com/works
 | 6 | Contextual side bar | Vertical icon tabs, open by default, collapsible, resizable by dragging its left edge. AR request: **Customer setup**, **Activity** (stream + composer), **Attachments**. Opens on Customer setup while setup is pending, otherwise Activity. Other tables have no side bar for now. | 2026-11-03 |
 | 7 | UI action bar | Main actions as buttons; secondary and destructive ones (Request info, Reject, Cancel invoice, Add billing contact) in the overflow menu (⋯), as in the template's defaults. | 2026-11-03 |
 | 8 | Header vs ribbon | Header label-value pairs hold identity (state, customer, contract, department, people, dates). Money and progress move to the ribbon (request value, lines done, setup done; amount due; open AR / overdue; billed vs contract value; periods due). | 2026-11-03 |
+| 10 | Theme | Use the **ServiceNow default workspace theme**; no custom or branded theme. The prototype's colours approximate it. (Open question 1, answered by the owner.) | 2026-11-03 |
+| 11 | Record history | A **Record history** tab on **every** record page, last in the tab order: when, who, field, old value, new value, newest first, plus a *Record created* row. Needs Audit turned on for every `x_ar_` table. (Open question 3, answered by the owner.) | 2026-11-03 |
 | 9 | Foundations | Fonts **Cabin** (headers, titles) and **Lato** (body). Corner radius 2 px (badges) / 6 px (buttons, inputs) / 8 px (containers). Spacing scale 2, 4, 8, 12, 16, 24, 40 px: card padding 16, gaps between cards 8, between form fields 12, between form columns 24. Type sizes header 24 / section 20 / sub 16. | 2026-11-03 |
 
 ## User stories
@@ -50,23 +52,25 @@ Horizon Design System workspace guidance at https://horizon.servicenow.com/works
 | Record page | Out-of-box **Record** page template (not Record Vertical). Header + highlighted values (`HDR-*`), form record presence (`WS-15`), UI action bar via workspace action configuration with *overflow* set per action (`WS-11`), ribbon widgets per table (`WS-12`), tabs (`WS-13`), contextual side bar (`WS-14`). |
 | Ribbon widgets | Per table, from record and related-table data resources: see the ribbon list in decision 8. Up to 12 widgets per row. |
 | Side bar (AR request) | Customer setup = custom UI Builder component or a guided checklist (`REQ-SETUP`); Activity = activity stream component (`REQ-ACT`); Attachments = attachments panel (`REQ-ATT`). |
-| Theme | Default Next Experience (Polaris / Horizon) theme. The prototype's colours are approximations; the instance theme decides the real ones. |
+| Theme | **Default workspace theme** (decision 10): no custom theme record; the workspace uses the instance default (Next Experience / Horizon). The prototype's colours are approximations. |
+| Record history | Out-of-box Record history tab on the Record page template (`WS-17`), reading `sys_audit` / `sys_history_set`. **Dictionary: set Audit = true on every `x_ar_` table** (or list them in `glide.ui.audit_deleted_tables` / audit properties as the instance requires). Shows created, field changes with old and new values, who and when. |
 
 ## Out of scope / later
 
 - Portal restyle (decision 1).
-- Playbooks, Record Vertical template, Record history tab, presence of other users.
+- Playbooks, Record Vertical template, presence of other users.
 - Exact colour tokens: the Horizon colour pages couldn't be read from here; colours follow the default
   theme by eye (navy header, dark primary buttons, teal links).
 
 ## Open questions
 
-1. Should the build use the default theme, or a company-branded workspace theme? (Owner)
-2. Which side bar tools does AR want on invoices and customers (e.g. invoice finder, attachments)? (Owner)
-3. Does AR want Record history as a tab on every record? (Owner)
+1. ~~Default theme or a branded one?~~ Answered: default workspace theme (decision 10).
+2. Which side bar tools does AR want on invoices, customers and other records? (Owner; decided later, tracked in [GitHub issue #1](https://github.com/veranzy/ServiceNowARdemo/issues/1).)
+3. ~~Record history tab on every record?~~ Answered: yes (decision 11).
 
 ## Change log
 
 | Date | Change |
 |---|---|
 | 2026-11-03 | Module created: workspace aligned to Horizon app shell, list page template and Record page template; Cabin / Lato, radius and spacing scale. New IDs `WS-11` (UI action bar), `WS-12` (ribbon), `WS-13` (record tabs), `WS-14` (contextual side bar), `WS-15` (presence), `WS-16` (list page template). `WS-04` (list menu) now sits inside the list page. `REQ-SETUP`, `REQ-ACT`, `REQ-ATT` moved into the side bar. No IDs retired. |
+| 2026-11-03 | Owner answers: default workspace theme (decision 10); Record history tab on every record (decision 11, new ID `WS-17`; the prototype logs every data change like `sys_audit`); side panel tools for other records left open in GitHub issue #1. |

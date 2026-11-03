@@ -1,7 +1,7 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, ctrLabel, displayOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
+import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
 import { CODE } from "../notes.js";
 import { ROLES, TABLES } from "../schema.js";
 import { S } from "../state.js";
@@ -542,7 +542,7 @@ function recordPage(tab) {
     : table === "uploads" ? `${acctLabel(acctById(rec.bankAccountId))} · statement ${rec.statementDate}` : table === "bankAccounts" ? rec.name
     : table === "schedules" ? rec.desc : table === "lines" ? rec.desc : table === "contacts" ? `${custName(rec.customerId)} · ${rec.department}` : table === "documents" ? `${custName(rec.customerId)} · ${DOC_LABEL[rec.docType]}` : rec.parent ? `Part of ${rec.parent}` : "";
   // Horizon record page: header (title, presence, UI action bar, label-value pairs) › ribbon › resizable pane (record tabs | contextual side bar)
-  const tabs = [{ key: "details", label: "Details" }, ...(isNew ? [] : related(table, rec))];
+  const tabs = [{ key: "details", label: "Details" }, ...(isNew ? [] : [...related(table, rec), historyTab(table, rec)])];
   const cur = tabs.find(x => x.key === tab.sub) || tabs[0];
   const form = `<form class="rform" data-rform="${esc(tab.key)}" novalidate${sn(`FRM-${CODE[table]}`)}>${sections}</form>`;
   const MAXT = window.innerWidth < 760 ? 2 : 5, shownT = tabs.slice(0, MAXT), moreT = tabs.slice(MAXT), curMore = moreT.includes(cur);
@@ -572,6 +572,22 @@ function recordPage(tab) {
       </aside>` : ""}
     </div>
   </div>`;
+}
+
+/** Record history tab (sys_audit / history set): one row per field change, newest first. */
+function historyTab(table, rec) {
+  const hs = historyOf(table, rec.id), def = TABLES[table];
+  const val = (f, v) => { if (v === null || v === "" || v === undefined || (Array.isArray(v) && !v.length)) return `<span class="muted">(empty)</span>`;
+    if (!f) return esc(String(v));
+    if (f.type === "Reference") return esc(f.ref === "users" ? userById(v)?.name || v : displayOf(f.ref, recById(f.ref, v)) || v);
+    if (f.type === "Choice") return esc((f.choices.find(c => c[0] === v) || [, v])[1]);
+    if (f.type === "Currency") return `<span class="mono">SGD ${fmt(v)}</span>`;
+    if (f.type === "True/False") return v ? "Yes" : "No";
+    return esc(Array.isArray(v) ? v.join(", ") : String(v)); };
+  const rows = hs.map(h => { const f = def.fields.find(x => x.key === h.field);
+    return `<tr><td class="mono small">${esc(h.at.slice(0, 16).replace("T", " "))}</td><td>${esc(userById(h.by)?.name || "System")}</td>${h.kind === "created" ? `<td colspan="3"><b>Record created</b></td>` : `<td>${esc(f?.label || h.field)}</td><td class="wrap">${val(f, h.old)}</td><td class="wrap">${val(f, h.new)}</td>`}</tr>`; }).join("");
+  return sec("WS-17", "Record history", hs.length, `<section class="rel"${sn("WS-17")}><header><h3>Record history</h3><span class="muted small">Field changes from the audit log, newest first</span></header>
+    ${hs.length ? `<div class="tablewrap"><table><thead><tr><th>When</th><th>Who</th><th>Field</th><th>Old value</th><th>New value</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="empty small">No changes recorded for this record yet.</p>`}</section>`);
 }
 
 /** Contextual side bar tools (vertical icon tabs) per record. */

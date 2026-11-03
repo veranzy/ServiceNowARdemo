@@ -405,3 +405,30 @@ export function saveRecord(table, id, raw) {
   S[table].push(rec);
   return { rec };
 }
+
+// ---------- record history (sys_audit) ----------
+// The build audits every x_ar table (dictionary "Audit" on). The prototype emulates it by diffing the data
+// tables on each render: inserts become "Created", changed schema fields become one entry each.
+const AUDITED = Object.keys(TABLES);
+let auditBase = null;
+const snap = r => Object.fromEntries(Object.entries(r).filter(([k]) => k !== "activity").map(([k, v]) => [k, JSON.stringify(v ?? null)]));
+function snapshot() { const out = {}; for (const t of AUDITED) { out[t] = {}; for (const r of S[t] || []) out[t][r.id] = snap(r); } return out; }
+const nowStamp = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 19); };
+/** Called by render(): record what changed since the last render. resetAudit() after loading sample data. */
+export function auditTick() {
+  const cur = snapshot();
+  if (auditBase) {
+    const at = nowStamp(), by = me()?.id;
+    for (const t of AUDITED) for (const [id, after] of Object.entries(cur[t])) {
+      const before = auditBase[t][id];
+      if (!before) { S.history.push({ table: t, id, at, by, kind: "created" }); continue; }
+      for (const f of TABLES[t].fields) {
+        const a = before[f.key] ?? "null", b = after[f.key] ?? "null";
+        if (a !== b) S.history.push({ table: t, id, at, by, kind: "update", field: f.key, old: JSON.parse(a), new: JSON.parse(b) });
+      }
+    }
+  }
+  auditBase = cur;
+}
+export function resetAudit() { auditBase = null; }
+export const historyOf = (table, id) => S.history.filter(h => h.table === table && h.id === id).slice().reverse();

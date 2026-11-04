@@ -279,6 +279,7 @@ const LAYOUT = {
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
   customers: [["Customer", ["name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]]],
   contracts: [["Contract", ["number", "contractType", "customerId", "department", "title", "billing", "value", "start", "end", "terms", "discPct", "discDays", "contractLocation", "contractLocationRef", "notes"]],
+    ["Late payment interest (LPI)", ["lpiApplicable", "lpiMinRate", "lpiRate"]],
     ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
   contacts: [["Billing contact", ["customerId", "department", "name", "email", "phone", "address", "requestId"]]],
   documents: [["Customer document", ["number", "customerId", "docType", "fileName", "contractId", "department", "requestId", "received"]]],

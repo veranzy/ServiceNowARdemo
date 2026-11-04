@@ -48,6 +48,9 @@ Custom contract table (not ast_contract). Middle of the billing hierarchy custom
 | `payment_terms` | Payment terms (days) | Integer |  |
 | `discount_percent` | Early-settlement discount % | Decimal |  |
 | `discount_days` | Discount if paid within (days) | Integer |  |
+| `lpi_applicable` | LPI applicable | True/False | Late payment interest is charged on overdue invoices under this contract |
+| `lpi_min_rate` | Minimum LPI rate (%) | Decimal | Mandatory when LPI applicable. % per annum; must not exceed the LPI rate |
+| `lpi_rate` | LPI rate (%) | Decimal | Mandatory when LPI applicable. % per annum |
 | `contract_location` | Where the signed contract is kept | Choice | Choices: Attached to this form (`attached`), Already with AR (`on_file`), Document repository link (`repository`), Physical file (`physical`) |
 | `contract_location_ref` | Link or file location | String |  |
 | `bill_to_name` | Bill-to person | String |  |
@@ -66,7 +69,7 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `state` | State | Choice | Choices: New (`new`), In progress (`in_progress`), Awaiting info (`awaiting_info`), Billed (`invoiced`), Rejected (`rejected`). Read-only on form |
 | `opened_by` | Requested by | Reference | → `sys_user`. Read-only on form |
 | `ar_form` | AR form | Choice | Choices: AR-i New AR request (`AR-i`), AR-ii To be defined (`AR-ii`), AR-iii To be defined (`AR-iii`), AR-iv To be defined (`AR-iv`), AR-v To be defined (`AR-v`), AR-vi To be defined (`AR-vi`), AR-vii To be defined (`AR-vii`), AR-viii To be defined (`AR-viii`), AR-ix To be defined (`AR-ix`), AR-x To be defined (`AR-x`), AR-xi To be defined (`AR-xi`), AR-xii To be defined (`AR-xii`), AR-xiii To be defined (`AR-xiii`), AR-xiv To be defined (`AR-xiv`), AR-xv To be defined (`AR-xv`), AR-xvi To be defined (`AR-xvi`). Read-only on form |
-| `department` | Requesting department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory |
+| `department` | Requesting department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory. Tooltip: "Auto-populated from the requester's department. Change it only if you are requesting for another department.". Default: Requester's department (sys_user.department via the variable's default value) |
 | `customer` | Customer | Reference | → `x_ar_customer`. Mandatory unless New customer is ticked |
 | `new_customer` | New customer | True/False |  |
 | `new_customer_name` | New customer name | String | Mandatory when New customer |

@@ -27,7 +27,7 @@ for (const k of order) {
   for (const f of t.fields) {
     const notes = [f.ref ? `→ \`${refName(f.ref)}\`${f.refFilter ? ` (users with ${ROLES[f.refFilter].role})` : ""}${f.dependsOn ? ", filtered by customer" : ""}` : "",
       f.choices ? "Choices: " + f.choices.map(c => c[0] === c[1] ? c[1] : `${c[1]} (\`${c[0]}\`)`).join(", ") : "",
-      f.mandatory ? "Mandatory" : "", f.readonly ? "Read-only on form" : "", f.help || ""].filter(Boolean).join(". ");
+      f.mandatory ? "Mandatory" : "", f.readonly ? "Read-only on form" : "", f.help || "", f.tooltip ? `Tooltip: "${f.tooltip}"` : "", f.default ? `Default: ${f.default}` : ""].filter(Boolean).join(". ");
     md += `| \`${f.name}\` | ${f.label} | ${f.type} | ${notes} |\n`;
   }
   for (const c of t.calculated || []) md += `| \`${c.name}\` | ${c.label} | ${c.type} | Calculated: ${c.how} |\n`;

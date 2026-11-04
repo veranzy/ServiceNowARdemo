@@ -24,6 +24,6 @@ Cross-module decisions go in [`../DECISIONS.md`](../DECISIONS.md).
 | [ARF](ARF.md) | AR forms catalogue (AR-i … AR-xvi) and AR-i New AR request; customer setup, documents, billing contacts, recurring schedules | Project team, AR team | In prototype |
 | INV | Invoicing (draft → issued → cancelled) | AR team | In prototype |
 | CSH | Cash application (manual matching of deposits to invoices) | AR team | In prototype |
-| MDM | Master data: customers, contracts | AR team | In prototype |
+| [MDM](MDM.md) | Master data: customers, contracts | AR team | In prototype |
 | [BSU](BSU.md) | Bank statement upload | AR team | In prototype |
 | [UIX](UIX.md) | Workspace look and layout aligned to the Horizon Design System (app shell, list page, record page) | AR team | In prototype |

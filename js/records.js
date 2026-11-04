@@ -317,6 +317,11 @@ export function validate(table, vals) {
     if (v === undefined || v === null || v === "" || (f.type === "Currency" && !(v > 0))) err[f.key] = f.type === "Currency" ? "Enter an amount greater than zero." : `${f.label} is required.`;
   }
   if (table === "lines") Object.assign(err, lineErrors(vals));
+  if (table === "contracts" && vals.lpiApplicable) {
+    if (!(vals.lpiRate > 0)) err.lpiRate = "Enter the LPI rate.";
+    if (!(vals.lpiMinRate > 0)) err.lpiMinRate = "Enter the minimum LPI rate.";
+    else if (vals.lpiRate > 0 && vals.lpiMinRate > vals.lpiRate) err.lpiMinRate = "Must not exceed the LPI rate.";
+  }
   return err;
 }
 

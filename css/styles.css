@@ -277,6 +277,9 @@ td.wrap{min-width:180px}
 .ffield.has-err input,.ffield.has-err select,.ffield.has-err textarea{border-color:var(--bad)}
 .fro{padding:7px 0;min-height:34px;overflow-wrap:anywhere}
 .fhelp{font-size:12px;color:var(--muted)}
+.ftip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:4px;border-radius:50%;border:1px solid var(--muted);color:var(--muted);font:italic 700 10px/1 Georgia,serif;cursor:help;position:relative;vertical-align:1px}
+.ftip:hover,.ftip:focus{border-color:var(--accent);color:var(--accent);outline:none}
+.ftip:hover::after,.ftip:focus::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);width:max-content;max-width:min(260px,70vw);padding:6px 9px;border-radius:6px;background:var(--fg);color:var(--surface);font:400 12px/1.4 system-ui,sans-serif;font-style:normal;z-index:50;white-space:normal;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .ferr{font-size:12px;color:var(--bad)}
 .money-in{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface)}
 .money-in span{padding:7px 9px;background:var(--sunk);color:var(--muted);font-size:12.5px;display:grid;place-items:center}

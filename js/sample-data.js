@@ -81,7 +81,8 @@ export function loadSample() {
   const cid = {}, kid = {};
   const uens = { harb: "199804512G", meri: "200511234K", kest: "Malaysia SSM 1123456-X", tanj: "201002233N", orch: "201505566M", nova: "201809988D", bws: "200733445R", bwo: "200733446H", lume: "53312345W", paci: "201211122E" };
   S.customers = cus.map(r => { const c = { id: uid("c"), name: r[1], uen: uens[r[0]] || "", address: "", parent: r[2], aliases: r[3], terms: r[4], creditLimit: cents(r[5]), notes: r[6] }; cid[r[0]] = c; return c; });
-  S.contracts = ctr.map(r => { const k = { id: uid("k"), customerId: cid[r[0]].id, number: r[1], title: r[2], start: shiftDate(r[3]), end: shiftDate(r[4]), value: cents(r[5]), billing: r[6], terms: r[7], discPct: r[8], discDays: r[9], notes: r[10] }; kid[r[1]] = k; return k; });
+  S.contracts = ctr.map(r => { const k = { id: uid("k"), customerId: cid[r[0]].id, number: r[1], title: r[2], start: shiftDate(r[3]), end: shiftDate(r[4]), value: cents(r[5]), billing: r[6], terms: r[7], discPct: r[8], discDays: r[9], lpiApplicable: false, lpiMinRate: 0, lpiRate: 0, notes: r[10] }; kid[r[1]] = k; return k; });
+  Object.assign(S.contracts[0], { lpiApplicable: true, lpiMinRate: 5, lpiRate: 8 });
   S.invoices = inv.map(r => ({ id: uid("i"), customerId: cid[r[0]].id, contractId: r[1] ? kid[r[1]].id : null, customer: cid[r[0]].name, number: r[2], date: shiftDate(r[3]), due: shiftDate(r[4]), amount: cents(r[5]), desc: r[6], currency: "SGD", state: "issued", requestId: null }));
   S.users = users.map(r => ({ id: r[0], name: r[1], team: r[2], title: r[3], department: r[4] }));
   // Company bank accounts (BSU): [key, bank, number, name, department, type]

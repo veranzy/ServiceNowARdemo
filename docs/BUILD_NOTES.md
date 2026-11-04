@@ -302,6 +302,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON.payment_terms` | x_ar_contract.payment_terms · Integer |
 | `CON.discount_percent` | x_ar_contract.discount_percent · Decimal |
 | `CON.discount_days` | x_ar_contract.discount_days · Integer |
+| `CON.lpi_applicable` | x_ar_contract.lpi_applicable · True/False · Late payment interest is charged on overdue invoices under this contract |
+| `CON.lpi_min_rate` | x_ar_contract.lpi_min_rate · Decimal · Mandatory when LPI applicable. % per annum; must not exceed the LPI rate |
+| `CON.lpi_rate` | x_ar_contract.lpi_rate · Decimal · Mandatory when LPI applicable. % per annum |
 | `CON.contract_location` | x_ar_contract.contract_location · Choice |
 | `CON.contract_location_ref` | x_ar_contract.contract_location_ref · String |
 | `CON.bill_to_name` | x_ar_contract.bill_to_name · String |

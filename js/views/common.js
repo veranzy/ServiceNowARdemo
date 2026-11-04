@@ -84,7 +84,8 @@ export function fieldHtml(table, f, rec, ctx = {}) {
   if (f.type === "True/False" && !ro) {
     return `<div class="ffield fcheckwrap${f.wide ? " wide" : ""}"${sn(`${CODE[table]}.${f.name}`)}><label class="fcheck" for="${id}"><input type="checkbox" id="${id}" name="${ctx.name || f.key}"${rec[f.key] ? " checked" : ""}> <span>${esc(f.label)}</span></label>${f.help ? `<span class="fhelp">${esc(f.help)}</span>` : ""}</div>`;
   }
-  const label = `<span class="flabel">${f.mandatory && !ro ? `<i class="req" aria-hidden="true">*</i>` : ""}${esc(f.label)}</span>`;
+  const tip = f.tooltip && !ro ? ` <span class="ftip" tabindex="0" role="img" aria-label="${esc(f.tooltip)}" data-tip="${esc(f.tooltip)}">i</span>` : "";
+  const label = `<span class="flabel">${f.mandatory && !ro ? `<i class="req" aria-hidden="true">*</i>` : ""}${esc(f.label)}${tip}</span>`;
   let ctl;
   if (ro) ctl = `<div class="fro" id="${id}">${readValue(table, f, rec)}</div>`;
   else {

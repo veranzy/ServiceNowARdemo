@@ -1,6 +1,6 @@
 // Generates SERVICENOW_MAPPING.md from js/schema.js. Run: node tools/mapping.mjs
 import { writeFileSync } from "node:fs";
-import { BANKS, RECORD_PRODUCER, ROLES, SCOPE, TABLES } from "../js/schema.js";
+import { BANKS, RECORD_PRODUCER, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
 
 const refName = r => r === "users" ? "sys_user" : TABLES[r].table;
 const order = ["customers", "contracts", "requests", "invoices", "bankAccounts", "uploads", "deposits", "allocations"];
@@ -27,7 +27,7 @@ for (const k of order) {
   for (const f of t.fields) {
     const notes = [f.ref ? `→ \`${refName(f.ref)}\`${f.refFilter ? ` (users with ${ROLES[f.refFilter].role})` : ""}${f.dependsOn ? ", filtered by customer" : ""}` : "",
       f.choices ? "Choices: " + f.choices.map(c => c[0] === c[1] ? c[1] : `${c[1]} (\`${c[0]}\`)`).join(", ") : "",
-      f.mandatory ? "Mandatory" : "", f.readonly ? "Read-only on form" : "", f.help || "", f.tooltip ? `Tooltip: "${f.tooltip}"` : "", f.default ? `Default: ${f.default}` : ""].filter(Boolean).join(". ");
+      f.showIf ? showIfText(k, f) + " (UI policy)" : "", f.mandatory ? "Mandatory" : "", f.readonly ? "Read-only on form" : "", f.help || "", f.tooltip ? `Tooltip: "${f.tooltip}"` : "", f.default ? `Default: ${f.default}` : ""].filter(Boolean).join(". ");
     md += `| \`${f.name}\` | ${f.label} | ${f.type} | ${notes} |\n`;
   }
   for (const c of t.calculated || []) md += `| \`${c.name}\` | ${c.label} | ${c.type} | Calculated: ${c.how} |\n`;

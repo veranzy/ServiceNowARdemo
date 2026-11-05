@@ -3,7 +3,7 @@
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
 import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
 import { CODE } from "../notes.js";
-import { ROLES, TABLES } from "../schema.js";
+import { ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
 import { DAY, esc, fmt, nameSim, today } from "../util.js";
 import { acctById, acctLabel, yesterday } from "../bsu.js";
@@ -269,6 +269,7 @@ const LAYOUT = {
   requests: [["AR form", ["form", "department", "title", "amount", "poNumber"]], ["Customer", ["customerId"], not("newCustomer")], ["New customer (to verify)", ["newCustName", "newCustUen", "newCustAddress"], has("newCustomer")],
     ["Contract", ["contractOption", "contractId", "contractLocation", "contractLocationRef"]],
     ["New contract (to create)", ["newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue"], r => r.contractOption === "new"],
+    ["Finance coding", ["costCenter", "accountCode", "billingTypeCode", "vag", "subBu", "typeOfBilling"]],
     ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], has("billToName")],
     ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => r.docContract || r.docAcra || r.docBillingForm],
     ["Case", ["state", "requestedBy", "assignedTo", "opened", "details"]]],
@@ -537,7 +538,7 @@ function recordPage(tab) {
   const vals = tab.vals || null;
   const shown = vals ? { ...rec, ...vals } : rec;
   const ro = RO[table] || [];
-  const sections = LAYOUT[table].filter(([, , when]) => !when || isNew || when(shown)).map(([title, keys]) => `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit || ro.includes(f.key), errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
+  const sections = LAYOUT[table].filter(([, , when]) => !when || isNew || when(shown)).map(([title, keys]) => `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).filter(f => fieldVisible(table, f, shown)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit || ro.includes(f.key), errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
   const title = isNew ? `New ${def.label.toLowerCase()}` : displayOf(table, rec);
   const sub = table === "requests" ? rec.title : table === "invoices" ? rec.desc : table === "contracts" ? rec.title : table === "deposits" ? `${rec.payer} · ${acctLabel(acctById(rec.bankAccountId))}`
     : table === "uploads" ? `${acctLabel(acctById(rec.bankAccountId))} · statement ${rec.statementDate}` : table === "bankAccounts" ? rec.name

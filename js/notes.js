@@ -68,6 +68,7 @@ export const NOTES = {
   "PT-25": "Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer)",
   "PT-26": "Variable set What to bill: request summary, PO, and multi-row variable set Billing lines (x_ar_request_line); totals by catalog client script",
   "PT-27": "Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden",
+  "PT-29": "Variable set Finance coding (request level, all optional): cost_center, account_code, billing_type_code (M / SB / PV); UI policies: V@G only when billing type = SB; Sub-BU when V@G = Yes; Type of billing when V@G = No. Hidden variables are cleared",
   "PT-23": "Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10)",
 };
 

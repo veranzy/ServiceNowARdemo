@@ -4,7 +4,7 @@ import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
 import { cancelInvoice, createRequest, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, needLocation, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
-import { TABLES } from "./schema.js";
+import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
 import { cents, uid } from "./util.js";
 import { render, setStatus, toast } from "./views/app.js";
@@ -272,6 +272,7 @@ document.addEventListener("change", e => {
     if (el.name === "contractId" && d.contractId) { const k = S.contracts.find(x => x.id === d.contractId); if (k && !d.customerId) d.customerId = k.customerId; }
     if (el.name === "contractLocation" && !["repository", "physical"].includes(d.contractLocation)) d.contractLocationRef = "";
     if (el.name === "contractId" || el.name === "department") contractChanged(d);
+    clearHidden("requests", d);
     if (el.tagName === "SELECT" || ["checkbox", "radio", "file"].includes(el.type)) { const now = validateARi(d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k]; return render(); }
     return portalFieldUpdated(el);
   }
@@ -281,6 +282,13 @@ document.addEventListener("change", e => {
     const tab = W().tabs.find(x => x.key === rf.dataset.rform); if (!tab) return;
     (tab.vals ||= {})[el.name] = coerce(tab.table, el.name, el);
     if (el.name === "customerId") { const cur = tab.vals.contractId ?? recById(tab.table, tab.id)?.contractId; if (cur && S.contracts.find(k => k.id === cur)?.customerId !== tab.vals.customerId) tab.vals.contractId = null; render(); }
+    // UI policy: a parent of showIf fields changed → blank the now-hidden children and redraw
+    if (TABLES[tab.table].fields.some(f => f.showIf?.key === el.name)) {
+      const merged = { ...(tab.id.startsWith("new") ? {} : recById(tab.table, tab.id)), ...tab.vals };
+      for (const k of clearHidden(tab.table, merged)) tab.vals[k] = "";
+      for (const f of TABLES[tab.table].fields) if (f.showIf && !fieldVisible(tab.table, f, merged) && recById(tab.table, tab.id)?.[f.key]) tab.vals[f.key] = "";
+      render();
+    }
   }
 });
 

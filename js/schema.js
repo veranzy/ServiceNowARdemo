@@ -29,6 +29,10 @@ export const FREQUENCIES = [["monthly", "Monthly", 1], ["quarterly", "Quarterly"
 export const DOC_TYPES = [["contract", "Signed contract / PO"], ["acra", "Company registration (ACRA / UEN)"], ["billing_form", "Billing contact & address form"]];
 export const CONTRACT_OPTIONS = [["existing", "Existing contract"], ["new", "New contract"], ["none", "No contract required"]];
 export const CONTRACT_TYPES = [["contract", "Contract"], ["shell", "No-contract shell"]];
+export const BILLING_TYPE_CODES = [["M", "M"], ["SB", "SB"], ["PV", "PV"]];
+const YES_NO = [["yes", "Yes"], ["no", "No"]];
+const SUB_BUS = ["1", "2", "3", "4", "5"].map(x => [x, x]);
+const BILLING_KINDS = ["A", "B", "C", "D", "E"].map(x => [x, x]);
 const CONTRACT_LOCATIONS = [["attached", "Attached to this form"], ["on_file", "Already with AR"], ["repository", "Document repository link"], ["physical", "Physical file"]];
 
 export const TABLES = {
@@ -63,6 +67,12 @@ export const TABLES = {
       { key: "title", name: "short_description", label: "Request summary", type: "String", mandatory: true, wide: true, help: "e.g. Data hall cooling project, phase 1" },
       { key: "amount", name: "amount", label: "Request value", type: "Currency", readonly: true, help: "Calculated: one-off lines + recurring amount × number of periods" },
       { key: "poNumber", name: "po_number", label: "Customer PO number", type: "String" },
+      { key: "costCenter", name: "cost_center", label: "Cost center", type: "String", help: "Optional, free text" },
+      { key: "accountCode", name: "account_code", label: "Account code", type: "String", help: "Optional, free text" },
+      { key: "billingTypeCode", name: "billing_type_code", label: "Billing type", type: "Choice", choices: BILLING_TYPE_CODES, help: "Optional. M, SB or PV (full names to be confirmed)" },
+      { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "billingTypeCode", eq: "SB" }, help: "Optional" },
+      { key: "subBu", name: "sub_bu", label: "Sub-BU", type: "Choice", choices: SUB_BUS, showIf: { key: "vag", eq: "yes" }, help: "Optional" },
+      { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, showIf: { key: "vag", eq: "no" }, help: "Optional" },
       { key: "docContract", name: "doc_contract_po", label: "Signed contract / PO", type: "Attachment", help: "Only when not already on file for the customer" },
       { key: "docAcra", name: "doc_acra", label: "Company registration (ACRA / UEN)", type: "Attachment", help: "Only when not already on file" },
       { key: "docBillingForm", name: "doc_billing_form", label: "Billing contact & address form", type: "Attachment", help: "Only when not already on file for this department" },
@@ -274,6 +284,25 @@ export const BANKS = {
 
 export const fieldOf = (tableKey, key) => TABLES[tableKey].fields.find(f => f.key === key);
 
+/** UI policy: a field with showIf is visible only when its parent field is visible and equals the value. */
+export function fieldVisible(tableKey, f, vals) {
+  if (!f?.showIf) return true;
+  const p = fieldOf(tableKey, f.showIf.key);
+  return fieldVisible(tableKey, p, vals) && vals[f.showIf.key] === f.showIf.eq;
+}
+/** Blank the values of fields hidden by a UI policy (run when a parent changes and before saving). Returns the keys cleared. */
+export function clearHidden(tableKey, vals) {
+  const out = [];
+  for (const f of TABLES[tableKey].fields) if (f.showIf && !fieldVisible(tableKey, f, vals) && vals[f.key]) { vals[f.key] = ""; out.push(f.key); }
+  return out;
+}
+/** "Shown when Billing type = SB" text for docs. */
+export function showIfText(tableKey, f) {
+  if (!f.showIf) return "";
+  const p = fieldOf(tableKey, f.showIf.key), lab = (p.choices?.find(c => c[0] === f.showIf.eq) || [, f.showIf.eq])[1];
+  return `Shown when ${p.label} = ${lab}`;
+}
+
 /** Build-note text for a field, e.g. "x_ar_invoice.due_date · Date". */
 export function fieldNote(tableKey, key) {
   const t = TABLES[tableKey], f = fieldOf(tableKey, key);
@@ -288,7 +317,8 @@ export const RECORD_PRODUCER = {
   table: "requests",
   variables: ["customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "department",
     "contractOption", "contractId", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "contractLocation", "contractLocationRef",
-    "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "poNumber", "docContract", "docAcra", "docBillingForm", "details"],
+    "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "poNumber",
+    "costCenter", "accountCode", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "lines",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;"
 };

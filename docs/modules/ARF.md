@@ -34,6 +34,7 @@ master (or creates/updates it) and files the documents on the customer, so the p
 | 12 | No contract required | The lines are filed under the customer's **no-contract shell**: a contract record with `contract_type = shell`, one per customer + department, created by *Link to customer* when it doesn't exist yet. So every billing line and invoice has a contract and the hierarchy holds in ServiceNow. (D15) | 2026-11-02 |
 | 13 | Bill-to on the contract | The bill-to person sits **under the contract** (or shell), not the department. AR-i shows the contract's bill-to, or asks for one prefilled from the department's usual contact; *Change the bill-to person on this contract* updates it. Department billing contacts remain as the default used for prefill. (D16) | 2026-11-02 |
 | 14 | Relationships on the customer | The customer record shows **AR requests** (customer ↔ AR case), **Contracts** (incl. shells) and a **Billing hierarchy** of contract › lines › invoices / schedules. The contract record lists its billing lines, schedules, invoices and AR requests. | 2026-11-02 |
+| 15 | Finance coding on AR-i | Request level, **all optional**, codes only for now. **Cost center** (free text), **Account code** (free text), **Billing type** (M / SB / PV). If SB: **V@G** (Yes / No). If V@G = Yes: **Sub-BU** (1–5); if No: **Type of billing** (A–E). Hidden fields are cleared when the answer above them changes. Shown on the workspace Details tab (section *Finance coding*, editable by AR) and on the portal ticket. | 2026-11-06 |
 
 Assumption to confirm: "where their contracts are" means the storage location of the signed contract
 (decision 5).
@@ -73,6 +74,8 @@ Assumption to confirm: "where their contracts are" means the storage location of
      One-off: description, amount, preferred invoice date. Recurring: description, amount per period,
      frequency (Monthly default), from and to dates; the line shows the number of invoices and total.
      A summary shows one-off total, recurring per period and total request value.
+   - **Finance coding** (decision 15, optional): cost center, account code, billing type; V@G only for SB;
+     then Sub-BU (V@G Yes) or Type of billing (V@G No).
    - **Documents**: checklist of the three customer documents showing *On file* or *Needed*; upload
      only what's needed. The signed contract is only needed for a new contract kept as an attachment.
 3. My requests / ticket page shows the lines and, per line, the invoice or billing schedule.
@@ -128,6 +131,10 @@ Assumption to confirm: "where their contracts are" means the storage location of
 7. Should AR be able to move a shell's billing lines onto a real contract later (e.g. when a contract is signed)?
 5. Should a recurring line be able to change amount part-way (e.g. price step-up), or is that a second line with its own date range?
 4. Who maintains the list of 11 departments (fixed choice list vs. a department table)?
+8. Full names of billing types **M**, **SB** and **PV**, and what **V@G** stands for. (Owner)
+9. Should cost center and account code be validated against a list (e.g. a cost center table or the
+   finance system), or stay free text? (Owner)
+10. Do the finance coding values need to flow onto the invoice (e.g. for GL posting)? (Owner)
 
 ## Change log
 
@@ -137,3 +144,4 @@ Assumption to confirm: "where their contracts are" means the storage location of
 | 2026-11-02 | **PT-05**: request type removed; customer search-first with *Add as new customer* (decision 9); billing lines one-off / recurring with date range and Monthly default (decisions 8, 10). Retired IDs: `PT-17` (request type), `PT-21` and `PT-22` (billing / recurring variable sets → `PT-26`), `PT-18` (→ `PT-25` customer search), `REQ.request_type`, `REQ.billing_type`, `REQ.requested_invoice_date`, `REQ.period_start`, `REQ.period_end`, `REQ.frequency`, `REQ.first_billing_date`, `REQ.last_billing_date` (→ `RQL.*` line fields), `UA-REQ-invoice`, `UA-REQ-schedule` (→ `UA-RQL-invoice`, `UA-RQL-schedule`). |
 | 2026-11-02 | **PT-05** (contract level): bill-to moved under the contract; contract chosen before billing lines as *Existing contract* / *New contract* / *No contract required*; no-contract shell per customer + department; billing lines carry the contract; customer billing hierarchy and contract related lists (decisions 11–14, D15, D16). New IDs: `PT-28`, `CUS-TREE`, `RL-CON-RQL`, `RL-CON-SCH`, `CON.line_count`, `REQ.contract_option`, `REQ.new_contract_*`, `CON.contract_type`, `CON.department`, `CON.bill_to_*`, `RQL.contract`. `PT-19` (bill-to) now sits inside `PT-20` (Contract and bill-to). No IDs retired. |
 | 2026-11-04 | **REQ.department**: tooltip (ⓘ next to the label) on AR-i: *Auto-populated from the requester's department. Change it only if you are requesting for another department.* ServiceNow: variable **Tooltip** on the record producer variable; default value from the requester's department. Field stays editable. No new IDs. |
+| 2026-11-06 | **AR-i finance coding** (decision 15): new request fields `REQ.cost_center`, `REQ.account_code`, `REQ.billing_type_code`, `REQ.vag`, `REQ.sub_bu`, `REQ.type_of_billing`; portal section `PT-29`; workspace Details section *Finance coding*. UI policies use a new schema `showIf` (also listed in the mapping doc). The column is `billing_type_code`, not `billing_type`, because `REQ.billing_type` was retired in PT-05 and IDs are never reused. |

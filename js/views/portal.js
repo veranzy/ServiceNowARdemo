@@ -2,7 +2,7 @@
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
 import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, ctrLabel, docsOnFile, freqLabel, isShell, lineErrors, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, needLocation, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
-import { AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, LINE_TYPES, ROLES, TABLES } from "../schema.js";
+import { AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, LINE_TYPES, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
 import { custName, ctrNo, fieldHtml, icon, initials, reqChip, reqCustName, sn } from "./common.js";
@@ -76,6 +76,9 @@ function catalogPage() {
 }
 
 const reqField = k => TABLES.requests.fields.find(f => f.key === k);
+/** Finance coding variables (request level, all optional). */
+export const FIN_KEYS = ["costCenter", "accountCode", "billingTypeCode", "vag", "subBu", "typeOfBilling"];
+const finText = r => FIN_KEYS.filter(k => r[k] && fieldVisible("requests", reqField(k), r)).map(k => { const fl = reqField(k); return `${fl.label}: ${(fl.choices?.find(c => c[0] === r[k]) || [, r[k]])[1]}`; }).join(" · ");
 
 function docRow(t, d, onFile) {
   const key = { contract: "docContract", acra: "docAcra", billing_form: "docBillingForm" }[t];
@@ -203,7 +206,12 @@ function formPage() {
           ${linesTotals(d)}
         </fieldset>
 
-        <fieldset class="psec"${sn("PT-23")}><legend>${haveCust ? "4" : "3"}. Customer documents</legend>
+        <fieldset class="psec"${sn("PT-29")}><legend>${haveCust ? "4" : "3"}. Finance coding</legend>
+          <p class="pt-hint">Optional. Fill in what you know; AR can complete it.</p>
+          <div class="fgrid">${FIN_KEYS.filter(k => fieldVisible("requests", reqField(k), d)).map(k => f(k, { help: null })).join("")}</div>
+        </fieldset>
+
+        <fieldset class="psec"${sn("PT-23")}><legend>${haveCust ? "5" : "4"}. Customer documents</legend>
           <p class="pt-hint">${d.newCustomer ? "New customer: AR needs all three documents." : d.customerId ? "Documents AR already holds for this customer are marked On file." : "Find the customer to see which documents AR already holds."}</p>
           <div class="docs">${DOC_TYPES.map(([t]) => docRow(t, d, onFile)).join("")}</div>
           <div class="ffield wide"${sn("PT-08")}><span class="flabel">Other supporting documents</span>
@@ -283,7 +291,7 @@ function ticketPage() {
       <aside class="pt-card"${sn("PT-13")}>
         <h2>Details</h2>
         <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Customer", esc(reqCustName(r)))}${kv("Department", esc(r.department || "—"))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : ctrSummary(r)))}
-          ${kv("Billing", esc(linesLabel(r)))}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}
+          ${kv("Billing", esc(linesLabel(r)))}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}
 ${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>
         ${r.details ? `<p class="small">${esc(r.details)}</p>` : ""}
         ${(() => { const docs = [["docContract", "Contract / PO"], ["docAcra", "ACRA"], ["docBillingForm", "Billing form"]].filter(([k]) => r[k]).map(([k, l]) => `${l}: ${r[k]}`).concat(r.attachments || []);

@@ -9,6 +9,7 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 <!-- Add ideas here, one line each. Detail can follow as indented notes. -->
 - Automation after AR form submission (owner to describe).
 - AR-ii … AR-xvi: names and content (owner to describe, one at a time).
+- AR request → invoice field mapping (incl. finance coding: cost center, account code, billing type) (owner, later).
 
 ## Next
 

@@ -134,7 +134,7 @@ Assumption to confirm: "where their contracts are" means the storage location of
 8. Full names of billing types **M**, **SB** and **PV**, and what **V@G** stands for. (Owner)
 9. Should cost center and account code be validated against a list (e.g. a cost center table or the
    finance system), or stay free text? (Owner)
-10. Do the finance coding values need to flow onto the invoice (e.g. for GL posting)? (Owner)
+10. Do the finance coding values need to flow onto the invoice (e.g. for GL posting)? (Owner) **Deferred (2026-11-06):** to be decided with the AR request → invoice field mapping, later.
 
 ## Change log
 
@@ -145,3 +145,4 @@ Assumption to confirm: "where their contracts are" means the storage location of
 | 2026-11-02 | **PT-05** (contract level): bill-to moved under the contract; contract chosen before billing lines as *Existing contract* / *New contract* / *No contract required*; no-contract shell per customer + department; billing lines carry the contract; customer billing hierarchy and contract related lists (decisions 11–14, D15, D16). New IDs: `PT-28`, `CUS-TREE`, `RL-CON-RQL`, `RL-CON-SCH`, `CON.line_count`, `REQ.contract_option`, `REQ.new_contract_*`, `CON.contract_type`, `CON.department`, `CON.bill_to_*`, `RQL.contract`. `PT-19` (bill-to) now sits inside `PT-20` (Contract and bill-to). No IDs retired. |
 | 2026-11-04 | **REQ.department**: tooltip (ⓘ next to the label) on AR-i: *Auto-populated from the requester's department. Change it only if you are requesting for another department.* ServiceNow: variable **Tooltip** on the record producer variable; default value from the requester's department. Field stays editable. No new IDs. |
 | 2026-11-06 | **AR-i finance coding** (decision 15): new request fields `REQ.cost_center`, `REQ.account_code`, `REQ.billing_type_code`, `REQ.vag`, `REQ.sub_bu`, `REQ.type_of_billing`; portal section `PT-29`; workspace Details section *Finance coding*. UI policies use a new schema `showIf` (also listed in the mapping doc). The column is `billing_type_code`, not `billing_type`, because `REQ.billing_type` was retired in PT-05 and IDs are never reused. |
+| 2026-11-06 | Open question 10 (finance coding on the invoice) deferred by the owner: AR request → invoice field mapping will be done later. |

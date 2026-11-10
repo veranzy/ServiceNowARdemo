@@ -98,6 +98,7 @@ export function validateARix(d) {
   if (d.newCustomer || d.customerId) {
     need("contractOption", "Choose the contract, or say it isn't listed yet.");
     if (d.contractOption === "existing") need("contractId", "Choose the contract.");
+    if (d.contractOption === "existing" && d.contractId && d.giroType) { const b = giroBlock(d); if (b) e.contractId = b; }
     if (d.contractOption === "new") need("newCtrRef", "Enter the contract / tenancy agreement / reference number.");
   }
   need("applicantName", "Enter the applicant name or entity.");
@@ -121,9 +122,17 @@ export function validateARix(d) {
   return e;
 }
 export const giroLabel = r => [GIRO_TYPE[r.giroType] || "GIRO", r.giroPurpose === "others" ? r.giroPurposeOther || "Others" : GIRO_PURPOSE[r.giroPurpose]].filter(Boolean).join(" · ");
-const giroMatch = (g, r) => g.contractId === r.contractId && g.status === "active" && g.purpose === r.giroPurpose && (r.giroPurpose !== "carpark" || String(g.carplate || "").replace(/\s/g, "").toUpperCase() === String(r.carplate || "").replace(/\s/g, "").toUpperCase());
-/** Active GIRO authorisations a Remove GIRO case would end. */
-export const giroToRemove = r => S.giros.filter(g => giroMatch(g, r));
+/** The AR-ix case whose GIRO is active on a contract (D21: at most one per contract), or null. */
+export const activeGiroCase = k => k && k.giroStatus === "active" && k.giroCaseId ? reqById(k.giroCaseId) : null;
+/** AR-ix cases filed on a contract, newest first (the contract's GIRO history). */
+export const giroCases = k => S.requests.filter(r => r.form === "AR-ix" && r.contractId === k.id).sort((a, b) => String(b.updated || b.opened).localeCompare(String(a.updated || a.opened)) || b.number.localeCompare(a.number));
+/** Why Activate / Remove GIRO can't run on this case's contract yet ("" when it can). */
+export function giroBlock(r, k = ctrById(r.contractId)) {
+  if (!k) return "";
+  const cur = activeGiroCase(k);
+  if (r.giroType === "remove") return cur ? "" : `GIRO is not active on ${k.number}, so there is nothing to remove.`;
+  return cur && cur.id !== r.id ? `GIRO is already active on ${k.number} (${cur.number}: ${giroLabel(cur)}). Only one GIRO can be active per contract; remove it with a Remove GIRO case first.` : "";
+}
 /** UI action: Link contract (AR-ix). For a contract not on file, AR processes the AR-i that creates it first, then links it here. */
 export function linkContract(reqId, contractId) {
   const r = reqById(reqId), k = ctrById(contractId);
@@ -137,20 +146,16 @@ export function linkContract(reqId, contractId) {
 export function applyGiro(reqId) {
   const r = reqById(reqId); if (!r) return "Record not found.";
   if (!r.contractId) return "Link the contract first. If it is a new contract, process its AR-i first.";
-  const today = isoToday(), k = ctrById(r.contractId);
+  const today = isoToday(), k = ctrById(r.contractId), block = giroBlock(r, k);
+  if (block) return block;
   if (r.giroType === "remove") {
-    const hits = giroToRemove(r);
-    if (!hits.length) return `No active ${GIRO_PURPOSE[r.giroPurpose]?.toLowerCase() || ""} GIRO on ${k.number}${r.giroPurpose === "carpark" ? ` for ${r.carplate}` : ""} to remove.`;
-    for (const g of hits) Object.assign(g, { status: "removed", removedOn: today, removeRequestId: r.id });
-    r.giroId = hits[0].id;
-    journal(r, "comment", `GIRO removed on contract ${k.number} (${hits.map(g => g.number).join(", ")}).`);
+    const cur = activeGiroCase(k);
+    Object.assign(k, { giroStatus: "none", giroCaseId: null });
+    journal(r, "comment", `GIRO removed on contract ${k.number}; it was active from ${cur.number}.`);
+    journal(cur, "system", `GIRO ended on ${k.number} by ${r.number}.`);
   } else {
-    const g = { id: uid("g"), number: nextNumber("giros"), status: "active", customerId: k.customerId, contractId: k.id, purpose: r.giroPurpose, purposeOther: r.giroPurposeOther || "",
-      applicantName: r.applicantName, applicantEmail: r.applicantEmail, applicantMobile: r.applicantMobile || "", invoiceRef: r.giroInvoiceRef || "", amount: r.giroAmount || 0,
-      startDate: r.giroStart || "", endDate: r.giroEnd || "", location: r.giroLocation || "", carplate: r.carplate || "", parkStart: r.parkStart || "", parkEnd: r.parkEnd || "",
-      activatedOn: today, removedOn: "", requestId: r.id, removeRequestId: null };
-    S.giros.push(g); r.giroId = g.id;
-    journal(r, "comment", `GIRO activated on contract ${k.number} (${g.number}).`);
+    Object.assign(k, { giroStatus: "active", giroCaseId: r.id });
+    journal(r, "comment", `GIRO is now active on contract ${k.number}.`);
   }
   r.state = "completed"; r.updated = today;
   journal(r, "system", "State changed to Completed.");

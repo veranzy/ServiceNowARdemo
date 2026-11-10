@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 import { BANKS, RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
 
 const refName = r => r === "users" ? "sys_user" : TABLES[r].table;
-const order = ["customers", "contracts", "giros", "requests", "invoices", "bankAccounts", "uploads", "deposits", "allocations"];
+const order = ["customers", "contracts", "requests", "invoices", "bankAccounts", "uploads", "deposits", "allocations"];
 let md = `# ServiceNow build mapping
 
 Generated from \`js/schema.js\` by \`node tools/mapping.mjs\`. Edit the schema, not this file's table sections.
@@ -71,8 +71,8 @@ md += `## Portal (project team)
 | Billing line | Set up billing schedule | Recurring line: insert \`${TABLES.schedules.table}\` over the line's date range; comment to requester (D12) |
 | Billing schedule | Raise invoice | Draft invoice for one billing period; never automatic (D12) |
 | AR request (AR-ix) | Link contract | Shown while \`contract\` is empty: sets contract and customer from the chosen contract. For a contract not on file, AR processes its AR-i first (GIR module) |
-| AR request (AR-ix) | Activate GIRO | Type Add: inserts an Active \`${TABLES.giros.table}\` on the contract with the case's GIRO details; case → Completed |
-| AR request (AR-ix) | Remove GIRO | Type Remove: sets matching Active GIRO authorisations on the contract (same purpose; same car plate for carpark) to Removed; case → Completed |
+| AR request (AR-ix) | Activate GIRO | Type Add: contract \`giro_status\` = Active and \`giro_case\` = this case; case → Completed. Blocked if the contract already has GIRO active (one per contract, D21) |
+| AR request (AR-ix) | Remove GIRO | Type Remove: contract \`giro_status\` = Not active, \`giro_case\` cleared; case → Completed. Blocked if GIRO is not active |
 | Invoice | Issue invoice | Draft → Issued; posts a requester-visible comment; BR sets the AR request to Billed when every line is invoiced or scheduled |
 | Invoice | Cancel invoice (overflow menu) | Only when no allocations; the line becomes open again and the request goes back to In progress |
 | Deposit | Match to invoice / Find invoice → Apply | Inserts \`${TABLES.allocations.table}\` records (manual); exception = short pay / over pay / multi-invoice |

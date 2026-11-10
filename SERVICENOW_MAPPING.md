@@ -32,7 +32,7 @@ Custom customer master (not core_company / customer_account). Documents and per-
 
 ### Contract — `x_ar_contract`
 
-Custom contract table (not ast_contract). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.
+Custom contract table (not ast_contract). GIRO is a contract status set from the approved AR-ix case (D21). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
@@ -53,39 +53,13 @@ Custom contract table (not ast_contract). Middle of the billing hierarchy custom
 | `lpi_rate` | LPI rate (%) | Decimal | Mandatory when LPI applicable. % per annum |
 | `contract_location` | Where the signed contract is kept | Choice | Choices: Attached to this form (`attached`), Already with AR (`on_file`), Document repository link (`repository`), Physical file (`physical`) |
 | `contract_location_ref` | Link or file location | String |  |
+| `giro_status` | GIRO status | Choice | Choices: Active (`active`), Not active (`none`). Read-only on form. Set by Activate GIRO / Remove GIRO on an AR-ix case. At most one active GIRO per contract (D21) |
+| `giro_case` | Active GIRO case | Reference | → `x_ar_request`. Read-only on form. The approved AR-ix case whose GIRO is active; empty when GIRO is not active |
 | `bill_to_name` | Bill-to person | String |  |
 | `bill_to_email` | Bill-to email | String |  |
 | `bill_to_phone` | Bill-to phone | String |  |
 | `bill_to_address` | Billing address | String (1000) |  |
 | `notes` | Notes | String (4000) |  |
-
-### GIRO authorisation — `x_ar_giro_authorisation`
-
-GIRO (direct debit) authorisations per contract (D20). Created as Active by Activate GIRO on an AR-ix case; set to Removed by Remove GIRO. Keeps the history of add / remove requests. Number prefix: `GIR`.
-
-| Column | Label | Type | Notes |
-|---|---|---|---|
-| `number` | Number | String | Read-only on form |
-| `status` | Status | Choice | Choices: Active (`active`), Removed (`removed`). Read-only on form |
-| `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
-| `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer. Mandatory |
-| `purpose` | Purpose | Choice | Choices: Rental (`rental`), Carpark (`carpark`), Others (`others`). Mandatory |
-| `purpose_other` | Other purpose | String | Shown when Purpose = Others (UI policy) |
-| `applicant_name` | Applicant name / entity | String | Mandatory |
-| `applicant_email` | Applicant email | String |  |
-| `applicant_mobile` | Applicant mobile | String |  |
-| `invoice_ref` | Invoice reference number | String |  |
-| `amount` | Amount | Currency | Mandatory |
-| `start_date` | Effective start date | Date | Shown when Purpose = Rental (UI policy) |
-| `end_date` | Effective end date | Date | Shown when Purpose = Rental (UI policy) |
-| `location` | Location | String | Shown when Purpose = Rental (UI policy) |
-| `carplate` | Car plate | String | Shown when Purpose = Carpark (UI policy) |
-| `parking_start` | Parking start date | Date | Shown when Purpose = Carpark (UI policy) |
-| `parking_end` | Parking end date | Date | Shown when Purpose = Carpark (UI policy) |
-| `activated_on` | Activated on | Date | Read-only on form |
-| `removed_on` | Removed on | Date | Read-only on form |
-| `add_request` | Added by AR-ix case | Reference | → `x_ar_request`. Read-only on form |
-| `remove_request` | Removed by AR-ix case | Reference | → `x_ar_request`. Read-only on form |
 
 ### AR request — `x_ar_request` (extends `task`)
 
@@ -143,7 +117,6 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `giro_parking_start` | Parking start date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory for Add GIRO |
 | `giro_parking_end` | Parking end date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Optional; on or after the start date |
 | `giro_amount` | Amount | Currency | AR-ix, all purposes. Mandatory for Add GIRO |
-| `giro_authorisation` | GIRO authorisation | Reference | → `x_ar_giro_authorisation`. Read-only on form. Set by Activate GIRO / Remove GIRO |
 | `doc_contract_po` | Signed contract / PO | Attachment | Only when not already on file for the customer |
 | `doc_acra` | Company registration (ACRA / UEN) | Attachment | Only when not already on file |
 | `doc_billing_form` | Billing contact & address form | Attachment | Only when not already on file for this department |
@@ -269,8 +242,8 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 | Billing line | Set up billing schedule | Recurring line: insert `x_ar_billing_schedule` over the line's date range; comment to requester (D12) |
 | Billing schedule | Raise invoice | Draft invoice for one billing period; never automatic (D12) |
 | AR request (AR-ix) | Link contract | Shown while `contract` is empty: sets contract and customer from the chosen contract. For a contract not on file, AR processes its AR-i first (GIR module) |
-| AR request (AR-ix) | Activate GIRO | Type Add: inserts an Active `x_ar_giro_authorisation` on the contract with the case's GIRO details; case → Completed |
-| AR request (AR-ix) | Remove GIRO | Type Remove: sets matching Active GIRO authorisations on the contract (same purpose; same car plate for carpark) to Removed; case → Completed |
+| AR request (AR-ix) | Activate GIRO | Type Add: contract `giro_status` = Active and `giro_case` = this case; case → Completed. Blocked if the contract already has GIRO active (one per contract, D21) |
+| AR request (AR-ix) | Remove GIRO | Type Remove: contract `giro_status` = Not active, `giro_case` cleared; case → Completed. Blocked if GIRO is not active |
 | Invoice | Issue invoice | Draft → Issued; posts a requester-visible comment; BR sets the AR request to Billed when every line is invoiced or scheduled |
 | Invoice | Cancel invoice (overflow menu) | Only when no allocations; the line becomes open again and the request goes back to In progress |
 | Deposit | Match to invoice / Find invoice → Apply | Inserts `x_ar_allocation` records (manual); exception = short pay / over pay / multi-invoice |

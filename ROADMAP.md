@@ -15,6 +15,8 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 ## Done
 
+- 2026-11-11 **GIR**: GIRO table removed; contract › AR-ix design with GIRO status + active case, one active GIRO per
+  contract (D21); GIRO history tab on the contract; demo contract TR-TA-2025-14.
 - 2026-11-10 **GIR / AR-ix**: GIRO authorisation form (contract first, applicant prefilled from the bill-to, rental /
   carpark / others, add or remove); workspace Link contract, Activate GIRO, Remove GIRO; GIRO authorisation table
   per contract. **ARF**: General information section (requester, SSO email, department, CC list) on every AR form (D19, D20).

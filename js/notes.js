@@ -4,7 +4,7 @@
 import { RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES } from "./schema.js";
 
 /** Short code per table, used as the prefix of field IDs (e.g. INV.due_date) and record-page IDs. */
-export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", giros: "GIR" };
+export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL" };
 const T = Object.fromEntries(Object.entries(CODE).map(([k, c]) => [c, k]));
 
 /** Screen elements that aren't a field, list, record page, related list or UI action. */
@@ -30,7 +30,9 @@ export const NOTES = {
   "REQ-ACT": "Activity stream: comments (visible to requester) + work_notes (AR only) + field changes",
   "REQ-SETUP": "Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, contract location, billing lines done",
   "CUS-TREE": "Billing hierarchy on the customer record (D15): customer › contract / no-contract shell (x_ar_contract) › billing lines (x_ar_request_line.contract) › invoices / billing schedule. UI Builder component over related lists, or a hierarchical list",
-  "REQ-GIRO": "GIRO setup panel (AR-ix case, contextual side bar): contract linked? then Activate GIRO / Remove GIRO and which x_ar_giro_authorisation records it creates or ends",
+  "REQ-GIRO": "GIRO setup panel (AR-ix case, contextual side bar): contract linked? the contract's GIRO status and active case; then Activate GIRO / Remove GIRO, or why it is blocked (one active GIRO per contract, D21)",
+  "REQ-GIROHIST": "Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix)",
+  "CON-GIRO": "Tab GIRO history on the contract: related list x_ar_request where contract = this contract and ar_form = AR-ix; GIRO column: Active (= contract.giro_case), Ended, Removed GIRO, Open, Rejected",
   "REQ-LINKCTR": "Contract to link (AR-ix): reference to x_ar_contract, matching contract number listed first. Used by Link contract; for a contract not on file AR processes its AR-i first",
   "REQ-LINKTO": "Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check)",
   "SCH-PER": "Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming",
@@ -59,7 +61,7 @@ export const NOTES = {
   "PT-31": `Record producer "${RECORD_PRODUCER_ARIX.name}" on ${TABLES.requests.table}. Producer script: ${RECORD_PRODUCER_ARIX.script}`,
   "PT-32": "AR-ix variable set Contract and applicant: customer search, existing contract (reference qualifier: customer's contracts, not shells) or 'not listed' with a reference number; applicant name / email / mobile prefilled from the contract's bill-to (catalog client script onChange contract); invoice reference number",
   "PT-33": "AR-ix variable set GIRO details: purpose (Rental / Carpark / Others), other purpose, type (Add / Remove GIRO); UI policies: rental → location, effective start/end; carpark → car plate, parking start/end; amount (mandatory for Add); supporting documents (attachments)",
-  "PT-34": "Info message on AR-ix: active GIRO authorisations on the chosen contract (GlideAjax read of x_ar_giro_authorisation)",
+  "PT-34": "Info message on AR-ix: the chosen contract's GIRO status and active case (GlideAjax read of x_ar_contract.giro_status / giro_case). Add GIRO on a contract with GIRO active is blocked (onSubmit / validation)",
   "PT-35": "Ticket page block for AR-ix: GIRO request summary and its outcome (contract to be linked / with AR / active / removed)",
   "PT-07": "Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include",
   "PT-08": `Variable attachments → sys_attachment on the created ${TABLES.requests.table}`,
@@ -86,12 +88,11 @@ export const UI_ACTIONS = {
   "UA-REQ-info": "Request info → state = Awaiting info; requires an additional comment (visible on portal)",
   "UA-REQ-reject": "Reject → state = Rejected; requires an additional comment",
   "UA-REQ-linkctr": "Link contract (AR-ix, shown while contract is empty) → sets contract and customer from the chosen x_ar_contract; New → In progress",
-  "UA-REQ-giroadd": "Activate GIRO (AR-ix, type Add) → inserts x_ar_giro_authorisation (status Active) on the case's contract with the case's GIRO details; case → Completed with a requester-visible comment",
-  "UA-REQ-giroremove": "Remove GIRO (AR-ix, type Remove) → sets matching active x_ar_giro_authorisation records on the contract (same purpose; same car plate for carpark) to Removed; case → Completed",
+  "UA-REQ-giroadd": "Activate GIRO (AR-ix, type Add) → contract.giro_status = Active, contract.giro_case = this case; case → Completed with a requester-visible comment. Blocked when the contract already has GIRO active (D21)",
+  "UA-REQ-giroremove": "Remove GIRO (AR-ix, type Remove) → contract.giro_status = Not active, contract.giro_case cleared; system note on the case that was active; case → Completed. Blocked when GIRO is not active",
   "UA-REQ-link": "Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document; records contract location (D10, D15, D16)",
   "UA-SCH-raise": "Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12)",
   "UA-SCH-save": "Save (update)",
-  "UA-GIR-save": "Save (update)",
   "UA-BCT-save": "Save (update)", "UA-BCT-new": "New (list action)", "UA-BCT-insert": "Submit (insert); unique per customer + department",
   "UA-CUS-newcontact": "Add billing contact → new billing contact form with customer prefilled",
   "UA-RQL-invoice": "Create invoice (one-off line) → inserts draft x_ar_invoice for the line (request_line set)",
@@ -123,7 +124,6 @@ export const RELATED = {
   "RL-REQ-RQL": "ar_request",
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
-  "RL-CON-GIR": "contract", "RL-REQ-GIR": "contract (the case's contract)",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",
   "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit",
   "RL-BSU-DEP": "bsu", "RL-BNK-BSU": "bank_account", "RL-BNK-DEP": "bank_account"

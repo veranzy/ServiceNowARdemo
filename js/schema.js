@@ -26,7 +26,7 @@ export const AR_FORMS = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix",
 }));
 export const GIRO_PURPOSES = [["rental", "Rental"], ["carpark", "Carpark"], ["others", "Others"]];
 export const GIRO_TYPES = [["add", "Add GIRO"], ["remove", "Remove GIRO"]];
-const GIRO_STATUS = [["active", "Active"], ["removed", "Removed"]];
+const GIRO_STATUS = [["active", "Active"], ["none", "Not active"]];
 
 export const LINE_TYPES = [["one_off", "One-off"], ["recurring", "Recurring"]];
 export const FREQUENCIES = [["monthly", "Monthly", 1], ["quarterly", "Quarterly", 3], ["half_yearly", "Half-yearly", 6], ["annually", "Annually", 12]];
@@ -95,7 +95,6 @@ export const TABLES = {
       { key: "parkStart", name: "giro_parking_start", label: "Parking start date", type: "Date", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Mandatory for Add GIRO" },
       { key: "parkEnd", name: "giro_parking_end", label: "Parking end date", type: "Date", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Optional; on or after the start date" },
       { key: "giroAmount", name: "giro_amount", label: "Amount", type: "Currency", help: "AR-ix, all purposes. Mandatory for Add GIRO" },
-      { key: "giroId", name: "giro_authorisation", label: "GIRO authorisation", type: "Reference", ref: "giros", readonly: true, help: "Set by Activate GIRO / Remove GIRO" },
       { key: "docContract", name: "doc_contract_po", label: "Signed contract / PO", type: "Attachment", help: "Only when not already on file for the customer" },
       { key: "docAcra", name: "doc_acra", label: "Company registration (ACRA / UEN)", type: "Attachment", help: "Only when not already on file" },
       { key: "docBillingForm", name: "doc_billing_form", label: "Billing contact & address form", type: "Attachment", help: "Only when not already on file for this department" },
@@ -230,33 +229,6 @@ export const TABLES = {
       { key: "received", name: "received_on", label: "Received", type: "Date", readonly: true }
     ]
   },
-  giros: {
-    table: `${SCOPE}_giro_authorisation`, label: "GIRO authorisation", plural: "GIRO authorisations", display: "number", prefix: "GIR",
-    note: "GIRO (direct debit) authorisations per contract (D20). Created as Active by Activate GIRO on an AR-ix case; set to Removed by Remove GIRO. Keeps the history of add / remove requests.",
-    fields: [
-      { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "GIR0001000" },
-      { key: "status", name: "status", label: "Status", type: "Choice", choices: GIRO_STATUS, readonly: true },
-      { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
-      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", dependsOn: "customerId", mandatory: true },
-      { key: "purpose", name: "purpose", label: "Purpose", type: "Choice", choices: GIRO_PURPOSES, mandatory: true },
-      { key: "purposeOther", name: "purpose_other", label: "Other purpose", type: "String", wide: true, showIf: { key: "purpose", eq: "others" } },
-      { key: "applicantName", name: "applicant_name", label: "Applicant name / entity", type: "String", mandatory: true },
-      { key: "applicantEmail", name: "applicant_email", label: "Applicant email", type: "String" },
-      { key: "applicantMobile", name: "applicant_mobile", label: "Applicant mobile", type: "String" },
-      { key: "invoiceRef", name: "invoice_ref", label: "Invoice reference number", type: "String" },
-      { key: "amount", name: "amount", label: "Amount", type: "Currency", mandatory: true },
-      { key: "startDate", name: "start_date", label: "Effective start date", type: "Date", showIf: { key: "purpose", eq: "rental" } },
-      { key: "endDate", name: "end_date", label: "Effective end date", type: "Date", showIf: { key: "purpose", eq: "rental" } },
-      { key: "location", name: "location", label: "Location", type: "String", wide: true, showIf: { key: "purpose", eq: "rental" } },
-      { key: "carplate", name: "carplate", label: "Car plate", type: "String", showIf: { key: "purpose", eq: "carpark" } },
-      { key: "parkStart", name: "parking_start", label: "Parking start date", type: "Date", showIf: { key: "purpose", eq: "carpark" } },
-      { key: "parkEnd", name: "parking_end", label: "Parking end date", type: "Date", showIf: { key: "purpose", eq: "carpark" } },
-      { key: "activatedOn", name: "activated_on", label: "Activated on", type: "Date", readonly: true },
-      { key: "removedOn", name: "removed_on", label: "Removed on", type: "Date", readonly: true },
-      { key: "requestId", name: "add_request", label: "Added by AR-ix case", type: "Reference", ref: "requests", readonly: true },
-      { key: "removeRequestId", name: "remove_request", label: "Removed by AR-ix case", type: "Reference", ref: "requests", readonly: true }
-    ]
-  },
   schedules: {
     table: `${SCOPE}_billing_schedule`, label: "Billing schedule", plural: "Billing schedules", display: "number", prefix: "SCH",
     note: "Recurring billing set up once from a recurring billing line (D12, D13): from–to date range and frequency. Periods are listed; AR raises each invoice manually.",
@@ -291,7 +263,7 @@ export const TABLES = {
   },
   contracts: {
     table: `${SCOPE}_contract`, label: "Contract", plural: "Contracts", display: "number",
-    note: "Custom contract table (not ast_contract). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.",
+    note: "Custom contract table (not ast_contract). GIRO is a contract status set from the approved AR-ix case (D21). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.",
     fields: [
       { key: "number", name: "number", label: "Contract number", type: "String", mandatory: true },
       { key: "contractType", name: "contract_type", label: "Type", type: "Choice", choices: CONTRACT_TYPES, mandatory: true },
@@ -310,6 +282,8 @@ export const TABLES = {
       { key: "lpiRate", name: "lpi_rate", label: "LPI rate (%)", type: "Decimal", help: "Mandatory when LPI applicable. % per annum" },
       { key: "contractLocation", name: "contract_location", label: "Where the signed contract is kept", type: "Choice", choices: CONTRACT_LOCATIONS },
       { key: "contractLocationRef", name: "contract_location_ref", label: "Link or file location", type: "String", wide: true },
+      { key: "giroStatus", name: "giro_status", label: "GIRO status", type: "Choice", choices: GIRO_STATUS, readonly: true, help: "Set by Activate GIRO / Remove GIRO on an AR-ix case. At most one active GIRO per contract (D21)" },
+      { key: "giroCaseId", name: "giro_case", label: "Active GIRO case", type: "Reference", ref: "requests", readonly: true, help: "The approved AR-ix case whose GIRO is active; empty when GIRO is not active" },
       { key: "billToName", name: "bill_to_name", label: "Bill-to person", type: "String" },
       { key: "billToEmail", name: "bill_to_email", label: "Bill-to email", type: "String" },
       { key: "billToPhone", name: "bill_to_phone", label: "Bill-to phone", type: "String" },

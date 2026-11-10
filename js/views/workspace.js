@@ -1,7 +1,7 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, giroLabel, giroToRemove, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
+import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroBlock, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
 import { CODE } from "../notes.js";
 import { ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
@@ -25,6 +25,7 @@ export const LISTS = {
       awaiting: ["Awaiting info", r => r.state === "awaiting_info"],
       setup: ["Customer setup pending", r => REQ_OPEN.includes(r.state) && r.form !== "AR-ix" && (!!r.newCustomer || !setupStatus(r).docsDone)],
       giro: ["AR-ix GIRO requests (open)", r => r.form === "AR-ix" && REQ_OPEN.includes(r.state)],
+      giroall: ["All AR-ix GIRO cases", r => r.form === "AR-ix"],
       all: ["All", () => true]
     },
     cols: [["Number", r => refLink("requests", r.id, r.number), "", "number"], ["Form", r => `${esc(r.form || "AR-i")}<span class="desc">${esc(linesLabel(r))}</span>`, "", "form"], ["Request", r => esc(r.title), "wrap", "title"], ["Customer", r => `${esc(reqCustName(r))}${r.newCustomer ? ` <span class="chip c-warn">New</span>` : ""}`, "", "customerId"], ["Department", r => esc(r.department || "—"), "", "department"],
@@ -73,14 +74,6 @@ export const LISTS = {
     text: a => [BANKS[a.bank].name, a.number, a.name, a.department].join(" "),
     newable: true
   },
-  giros: {
-    filters: { active: ["Active GIRO", g => g.status === "active"], all: ["All GIRO authorisations", () => true] },
-    cols: [["Number", g => refLink("giros", g.id, g.number), "", "number"], ["Status", g => `<span class="chip ${g.status === "active" ? "c-ok" : "c-neutral"}">${g.status === "active" ? "Active" : "Removed"}</span>`, "", "status"],
-      ["Contract", g => refLink("contracts", g.contractId), "", "contractId"], ["Customer", g => esc(custName(g.customerId)), "", "customerId"], ["Purpose", g => `${esc(GIRO_PURPOSE[g.purpose] || "")}<span class="desc">${esc(g.carplate || g.location || g.purposeOther || "")}</span>`, "", "purpose"],
-      ["Applicant", g => esc(g.applicantName), "", "applicantName"], ["Amount", g => fmt(g.amount), "num", "amount"], ["Activated", g => esc(g.activatedOn || "—"), "", "activatedOn"]],
-    sort: (a, b) => (a.status === "active" ? 0 : 1) - (b.status === "active" ? 0 : 1) || a.number.localeCompare(b.number),
-    text: g => [g.number, custName(g.customerId), ctrNo(g.contractId), g.applicantName, g.carplate, g.location].join(" ")
-  },
   schedules: {
     filters: {
       due: ["Billing periods due", x => periodsDue(x).length > 0],
@@ -117,7 +110,7 @@ export const LISTS = {
     newable: true
   },
   contracts: {
-    filters: { all: ["Contracts", () => true], active: ["Active", k => !isShell(k) && ctrStatus(k)[0] === "Active"], shell: ["No-contract shells", k => isShell(k)] },
+    filters: { all: ["Contracts", () => true], active: ["Active", k => !isShell(k) && ctrStatus(k)[0] === "Active"], shell: ["No-contract shells", k => isShell(k)], giro: ["Contracts with GIRO active", k => k.giroStatus === "active"] },
     cols: [["Number", k => refLink("contracts", k.id, k.number), "", "number"], ["Type", k => ctrTypeChip(k), "", "contractType"], ["Title", k => esc(k.title), "wrap", "title"], ["Customer", k => esc(custName(k.customerId)), "", "customerId"], ["Department", k => esc(k.department || "—"), "", "department"],
       ["Bill-to", k => esc(k.billToName || "—"), "", "billToName"], ["Value", k => isShell(k) ? "—" : fmt(k.value || 0), "num", "value"], ["Lines", k => String(S.lines.filter(l => l.contractId === k.id).length), "num", "=CON.line_count"], ["Status", k => ctrStatusChip(k), "", "=CON.status"]],
     sort: (a, b) => custName(a.customerId).localeCompare(custName(b.customerId)) || (isShell(a) - isShell(b)) || a.number.localeCompare(b.number),
@@ -125,6 +118,11 @@ export const LISTS = {
     newable: true
   }
 };
+const giroChip = k => { const c = activeGiroCase(k); return c ? `<span class="chip c-ok">GIRO active</span> ${refLink("requests", c.id, c.number)}` : `<span class="chip c-neutral">Not active</span>`; };
+const giroCaseChip = r => { const k = r.contractId ? ctrById(r.contractId) : null, cur = activeGiroCase(k);
+  if (r.state === "rejected") return `<span class="chip c-bad">Rejected</span>`;
+  if (r.state !== "completed") return r.contractId ? `<span class="chip c-neutral">Open</span>` : `<span class="chip c-warn">Contract to link</span>`;
+  return r.giroType === "remove" ? `<span class="chip c-neutral">Removed GIRO</span>` : cur?.id === r.id ? `<span class="chip c-ok">Active</span>` : `<span class="chip c-neutral">Ended</span>`; };
 const ctrTypeChip = k => isShell(k) ? `<span class="chip c-warn">No contract</span>` : `<span class="chip c-neutral">Contract</span>`;
 const ctrStatusChip = k => { const s = isShell(k) ? ["Open", "c-ok"] : ctrStatus(k); return `<span class="chip ${s[1]}">${s[0]}</span>`; };
 const issuedOf = custId => S.invoices.filter(i => i.customerId === custId && i.state === "issued");
@@ -134,7 +132,7 @@ const MENU = [
   ["Recurring billing", [["schedules", "due"], ["schedules", "active"], ["schedules", "all"]]],
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
   ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"]]],
-  ["GIRO", [["requests", "giro"], ["giros", "active"], ["giros", "all"]]],
+  ["GIRO", [["requests", "giro"], ["requests", "giroall"], ["contracts", "giro"]]],
   ["Master data", [["customers", "all"], ["contracts", "all"], ["contracts", "shell"], ["contacts", "all"], ["documents", "all"]]]
 ];
 
@@ -289,7 +287,7 @@ const LAYOUT = {
     // AR-ix (GIR module)
     ["Customer not at AR yet", ["newCustName"], r => isIx(r) && r.newCustomer],
     ["Contract and applicant", ["customerId", "contractId", "newCtrRef", "applicantName", "applicantEmail", "applicantMobile", "giroInvoiceRef"], isIx],
-    ["GIRO details", ["giroPurpose", "giroPurposeOther", "giroType", "giroLocation", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroAmount", "giroId"], isIx],
+    ["GIRO details", ["giroPurpose", "giroPurposeOther", "giroType", "giroLocation", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroAmount"], isIx],
     ["Case", ["state", "requestedBy", "assignedTo", "opened", "details"]]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
@@ -299,17 +297,14 @@ const LAYOUT = {
   customers: [["Customer", ["name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]]],
   contracts: [["Contract", ["number", "contractType", "customerId", "department", "title", "billing", "value", "start", "end", "terms", "discPct", "discDays", "contractLocation", "contractLocationRef", "notes"]],
     ["Late payment interest (LPI)", ["lpiApplicable", "lpiMinRate", "lpiRate"]],
+    ["GIRO", ["giroStatus", "giroCaseId"], k => !isShell(k)],
     ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
   contacts: [["Billing contact", ["customerId", "department", "name", "email", "phone", "address", "requestId"]]],
   documents: [["Customer document", ["number", "customerId", "docType", "fileName", "contractId", "department", "requestId", "received"]]],
   schedules: [["Billing schedule", ["number", "customerId", "contractId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "requestId"]]],
-  giros: [["GIRO authorisation", ["number", "status", "customerId", "contractId", "purpose", "purposeOther", "amount", "invoiceRef"]], ["Applicant", ["applicantName", "applicantEmail", "applicantMobile"]],
-    ["Rental", ["location", "startDate", "endDate"], g => g.purpose === "rental"], ["Carpark", ["carplate", "parkStart", "parkEnd"], g => g.purpose === "carpark"],
-    ["History", ["activatedOn", "requestId", "removedOn", "removeRequestId"]]]
 };
 /** Fields AR can't edit on the workspace form (set by the portal or by UI actions). */
-const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "giroType"], lines: ["lineType"],
-  giros: ["customerId", "contractId", "purpose", "activatedOn", "removedOn"] };
+const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "giroType"], lines: ["lineType"] };
 
 function editable(table, rec) {
   if (table === "requests") return REQ_OPEN.includes(rec.state);
@@ -335,10 +330,8 @@ function headerFields(table, rec) {
   if (table === "bankAccounts") { const ups = S.uploads.filter(u => u.bankAccountId === rec.id); return [hf("Bank", esc(BANKS[rec.bank]?.name || "—")), hf("Department", esc(rec.department || "—")), hf("Type", esc(acctType(rec))), hf("Uploads", String(ups.length)), hf("Last statement", esc(ups.map(u => u.statementDate).sort().pop() || "—"))]; }
   if (table === "customers") return [hf("UEN", esc(rec.uen || "—")), hf("Parent group", esc(rec.parent || "—")), hf("Payment terms", `Net ${esc(rec.terms)}`), hf("Credit limit", rec.creditLimit ? `<span class="mono">${fmt(rec.creditLimit)}</span>` : "Not set")];
   if (table === "contracts") { const r = rollup(S.invoices.filter(i => i.contractId === rec.id && i.state === "issued"));
-    return [hf("Type", ctrTypeChip(rec)), hf("Status", ctrStatusChip(rec)), hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department || "—")), hf("Bill-to", esc(rec.billToName || "Not set"))]; }
+    return [hf("Type", ctrTypeChip(rec)), hf("Status", ctrStatusChip(rec)), hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department || "—")), hf("Bill-to", esc(rec.billToName || "Not set")), ...(isShell(rec) ? [] : [hf("GIRO", giroChip(rec))])]; }
   if (table === "schedules") return [hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)), hf("Frequency", esc(freqLabel(rec.frequency))), hf("Department", esc(rec.department))];
-  if (table === "giros") return [hf("Status", `<span class="chip ${rec.status === "active" ? "c-ok" : "c-neutral"}">${rec.status === "active" ? "Active" : "Removed"}</span>`), hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)),
-    hf("Purpose", esc(GIRO_PURPOSE[rec.purpose] || "")), hf("Amount", `<span class="mono">SGD ${fmt(rec.amount)}</span>`)];
   if (table === "lines") return [hf("Type", esc(LINE_TYPE[rec.lineType])), hf("Status", lineChip(rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : "Set by Link to customer")];
   if (table === "contacts") return [hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department)), hf("Email", esc(rec.email || "—"))];
   if (table === "documents") return [hf("Customer", refLink("customers", rec.customerId)), hf("Type", esc(DOC_LABEL[rec.docType])), hf("Received", esc(rec.received)), hf("From request", refLink("requests", rec.requestId))];
@@ -351,9 +344,9 @@ function ribbon(table, rec, tab) {
   const bar = (a, b, color = "var(--accent)") => { const p = b > 0 ? Math.max(0, Math.min(100, a / b * 100)) : 0; return `<div class="meter"><i style="width:${p}%;background:${color}"></i></div>`; };
   let ws = [];
   if (table === "requests" && isIx(rec)) {
-    const act = rec.contractId ? S.giros.filter(g => g.contractId === rec.contractId && g.status === "active").length : 0;
+    const k = rec.contractId ? ctrById(rec.contractId) : null, cur = activeGiroCase(k);
     ws = [w("GIRO", esc(giroLabel(rec)), esc(rec.carplate || rec.giroLocation || rec.giroPurposeOther || "")), w("Amount", rec.giroAmount ? `SGD ${fmt(rec.giroAmount)}` : "—"),
-      w("Contract", rec.contractId ? esc(ctrNo(rec.contractId)) : `<span class="bad">Not linked</span>`, rec.contractId ? `${act} active GIRO on the contract` : `Reference given: ${esc(rec.newCtrRef || "—")}`)];
+      w("Contract", k ? esc(k.number) : `<span class="bad">Not linked</span>`, k ? (cur ? `GIRO active from ${esc(cur.number)}${cur.id === rec.id ? " (this case)" : ""}` : "GIRO not active") : `Reference given: ${esc(rec.newCtrRef || "—")}`)];
   } else if (table === "requests") {
     const ls = reqLines(rec), done = ls.filter(l => ["invoiced", "scheduled"].includes(lineStatus(l))).length;
     const st = setupStatus(rec), checks = [st.linked, st.contractDone, st.billToOk, st.docsDone], ok = checks.filter(Boolean).length;
@@ -369,7 +362,7 @@ function ribbon(table, rec, tab) {
       w("Open AR requests", String(S.requests.filter(r => r.customerId === rec.id && REQ_OPEN.includes(r.state)).length))];
   } else if (table === "contracts") { const r = rollup(S.invoices.filter(i => i.contractId === rec.id && i.state === "issued"));
     ws = [...(isShell(rec) ? [] : [w("Billed of contract value", `SGD ${fmt(r.billed)}`, `of SGD ${fmt(rec.value || 0)}`, bar(r.billed, rec.value || 0))]), w("Collected of billed", `SGD ${fmt(r.collected)}`, "", bar(r.collected, r.billed, "var(--ok)")),
-      w("Billing lines", String(S.lines.filter(l => l.contractId === rec.id).length)), ...(() => { const ag = S.giros.filter(g => g.contractId === rec.id && g.status === "active"); return ag.length ? [w("Active GIRO", String(ag.length), `SGD ${fmt(ag.reduce((x, g) => x + g.amount, 0))} · ${esc(ag.map(g => GIRO_PURPOSE[g.purpose] + (g.carplate ? ` ${g.carplate}` : "")).join(", "))}`)] : []; })()];
+      w("Billing lines", String(S.lines.filter(l => l.contractId === rec.id).length)), ...(isShell(rec) ? [] : (() => { const c = activeGiroCase(rec); return [w("GIRO", c ? `<span class="ok-t">Active</span>` : "Not active", c ? `${esc(c.number)} · ${esc(giroLabel(c))}${c.giroAmount ? ` · SGD ${fmt(c.giroAmount)}` : ""}` : "No approved AR-ix case active")]; })())];
   } else if (table === "schedules") { const per = periodDates(rec.frequency, rec.firstDate, rec.lastDate), inv = S.invoices.filter(i => i.scheduleId === rec.id && i.state !== "cancelled").length, due = periodsDue(rec).length;
     ws = [w("Amount per period", `SGD ${fmt(rec.amount)}`), w("Next billing", esc(nextBilling(rec) || "Ended")), w("Periods due", due ? `<span class="chip c-warn">${due} due</span>` : `<span class="chip c-ok">Up to date</span>`),
       w("Invoiced", `${inv} of ${per.length}`, "", bar(inv, per.length, "var(--ok)"))];
@@ -477,16 +470,18 @@ function activity(rec) {
     </section>`;
 }
 
-const giroCols = [["Number", g => refLink("giros", g.id, g.number)], ["Status", g => `<span class="chip ${g.status === "active" ? "c-ok" : "c-neutral"}">${g.status === "active" ? "Active" : "Removed"}</span>`], ["Purpose", g => `${esc(GIRO_PURPOSE[g.purpose] || "")}<span class="desc">${esc(g.carplate || g.location || g.purposeOther || "")}</span>`],
-  ["Applicant", g => esc(g.applicantName)], ["Amount", g => fmt(g.amount), "num"], ["Activated", g => esc(g.activatedOn || "—")], ["Removed", g => esc(g.removedOn || "—")]];
+/** GIRO history: the AR-ix cases filed on a contract (D21). */
+const giroHistory = (k, id) => sec(id, "GIRO history", giroCases(k).length, `<section class="rel"${sn(id)}><header><h3>GIRO history <span class="count">${giroCases(k).length}</span></h3><span class="muted small">AR-ix cases on ${esc(k.number)}; at most one GIRO active at a time</span></header>
+  ${giroCases(k).length ? `<div class="tablewrap"><table><thead><tr><th>AR-ix case</th><th>Type</th><th>Purpose</th><th class="num">Amount</th><th>Requested by</th><th>Updated</th><th>GIRO</th></tr></thead><tbody>
+  ${giroCases(k).map(r => `<tr><td>${refLink("requests", r.id, r.number)}</td><td>${esc(r.giroType === "remove" ? "Remove" : "Add")}</td><td>${esc(GIRO_PURPOSE[r.giroPurpose] || "")}<span class="desc">${esc(r.carplate || r.giroLocation || r.giroPurposeOther || "")}</span></td><td class="num">${r.giroAmount ? fmt(r.giroAmount) : "—"}</td><td>${esc(userById(r.requestedBy)?.name || "")}</td><td>${esc(r.updated || r.opened)}</td><td>${giroCaseChip(r)}</td></tr>`).join("")}
+  </tbody></table></div>` : `<p class="empty small">No AR-ix cases on this contract yet.</p>`}</section>`);
 const rt = (title, table, rows, cols, opts) => ({ key: opts.id, label: title, n: rows.length, html: relatedTable(title, table, rows, cols, opts) });
 const sec = (key, label, n, html) => ({ key, label, n, html });
 
 /** Record tabs after Details: related items and one tab per related list (Horizon record page). */
 function related(table, rec) {
   if (table === "requests" && isIx(rec)) {
-    const gs = rec.contractId ? S.giros.filter(g => g.contractId === rec.contractId) : [];
-    return [rt("GIRO on the contract", "giros", gs, giroCols, { id: "RL-REQ-GIR" })];
+    return rec.contractId ? [giroHistory(ctrById(rec.contractId), "REQ-GIROHIST")] : [];
   }
   if (table === "requests") {
     const r = rec, ok = REQ_OPEN.includes(r.state) && r.customerId && !r.newCustomer && !!r.contractId;
@@ -524,7 +519,7 @@ function related(table, rec) {
     const r = rollup(is.filter(i => i.state === "issued"));
     return [rt("Billing lines", "lines", S.lines.filter(l => l.contractId === rec.id), [["Line", l => refLink("lines", l.id, l.number)], ["AR request", l => refLink("requests", l.requestId)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"], ["Value", l => fmt(lineValue(l)), "num"],
         ["Billed as", l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId); return `${lineChip(l)}${inv ? ` ${refLink("invoices", inv.id, inv.number)}` : ""}${sch ? ` ${refLink("schedules", sch.id, sch.number)}` : ""}`; }]], { id: "RL-CON-RQL" }),
-      rt("GIRO authorisations", "giros", S.giros.filter(g => g.contractId === rec.id), giroCols, { id: "RL-CON-GIR" }),
+      ...(isShell(rec) ? [] : [giroHistory(rec, "CON-GIRO")]),
       rt("Billing schedules", "schedules", S.schedules.filter(x => x.contractId === rec.id), [["Number", x => refLink("schedules", x.id, x.number)], ["What is billed", x => esc(x.desc), "wrap"], ["Frequency", x => esc(freqLabel(x.frequency))], ["Next billing", x => esc(nextBilling(x) || "Ended")]], { id: "RL-CON-SCH" }),
       rt("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CON-INV" }),
       rt("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Amount", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CON-REQ" })];
@@ -649,13 +644,13 @@ function giroPanel(r, tab) {
   const item = (ok, label, detail) => `<li class="${ok === true ? "ok" : ok === false ? "todo" : "na"}"><span class="tick" aria-hidden="true">${ok === true ? "✓" : ok === false ? "!" : "–"}</span><div><b>${label}</b>${detail ? `<span class="desc">${detail}</span>` : ""}</div></li>`;
   const ref = String(r.newCtrRef || "").trim().toLowerCase();
   const cands = S.contracts.filter(c => !isShell(c)).sort((a, b) => (b.number.toLowerCase() === ref) - (a.number.toLowerCase() === ref) || (b.customerId === r.customerId) - (a.customerId === r.customerId) || a.number.localeCompare(b.number));
-  const rem = r.giroType === "remove" && k ? giroToRemove(r) : [];
-  const done = r.state === "completed", g = r.giroId ? S.giros.find(x => x.id === r.giroId) : null;
+  const done = r.state === "completed", cur = activeGiroCase(k), block = k && !done ? giroBlock(r, k) : "";
   return `<section class="setup"${sn("REQ-GIRO")}>
     <header><h2>GIRO setup</h2></header>
     <ul class="checklist">
       ${item(!!k, k ? `Contract: ${esc(k.number)}` : `Contract not linked: ${esc(r.newCtrRef || "no reference")}`, k ? `${esc(custName(k.customerId))} · ${esc(k.title)}` : "Process the AR-i that sets up this contract first, then link it below.")}
-      ${item(done ? true : k ? false : null, r.giroType === "remove" ? "Remove GIRO" : "Activate GIRO", done ? `${esc(g?.number || "")} ${r.giroType === "remove" ? "removed" : "active"}` : !k ? "Available once the contract is linked" : r.giroType === "remove" ? (rem.length ? `Will end ${rem.map(x => esc(x.number)).join(", ")}` : `<span class="bad">No matching active GIRO on ${esc(k.number)}</span>`) : `Creates an active GIRO authorisation on ${esc(k.number)}: ${esc(giroLabel(r))}${r.giroAmount ? `, SGD ${fmt(r.giroAmount)}` : ""}`)}
+      ${k ? item(cur ? true : null, `GIRO on ${esc(k.number)}: ${cur ? "Active" : "Not active"}`, cur ? `From ${refLink("requests", cur.id, cur.number)}${cur.id === r.id ? " (this case)" : ""} · ${esc(giroLabel(cur))}` : "No AR-ix case is active on this contract") : ""}
+      ${item(done ? true : k && !block ? false : null, r.giroType === "remove" ? "Remove GIRO" : "Activate GIRO", done ? (r.giroType === "remove" ? "GIRO removed from the contract" : cur?.id === r.id ? "This case is the contract's active GIRO" : "Activated; since ended by a later case") : !k ? "Available once the contract is linked" : block ? `<span class="bad">${esc(block)}</span>` : r.giroType === "remove" ? `Sets ${esc(k.number)} to GIRO not active (ends ${esc(cur.number)})` : `Sets ${esc(k.number)} to GIRO active with this case: ${esc(giroLabel(r))}${r.giroAmount ? `, SGD ${fmt(r.giroAmount)}` : ""}`)}
     </ul>
     ${open && !k ? `<label class="ffield linkto"${sn("REQ-LINKCTR")}><span class="flabel">Contract to link</span>
       <select id="linkCtr-${r.id}" data-linkctr="${esc(tab.key)}"><option value="">-- Choose the contract --</option>${cands.map(c => `<option value="${c.id}"${tab.linkCtr === c.id ? " selected" : ""}>${esc(c.number)} · ${esc(custName(c.customerId))}${c.number.toLowerCase() === ref ? " (matches the reference)" : ""}</option>`).join("")}</select>

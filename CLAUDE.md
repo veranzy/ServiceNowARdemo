@@ -121,7 +121,7 @@ invoices. Automation after AR form submission is still to be defined by the owne
 
 customer → contracts (incl. no-contract shells, `contract_type = shell`, D15) → billing lines → invoices ← allocations ← deposits (Bank statements) ← BSU uploads ← bank accounts
 AR request → billing lines (`x_ar_request_line`, code key `lines`, each with `contract`) → invoice (one-off) or billing schedule (recurring)
-contract → GIRO authorisations (`x_ar_giro_authorisation`, code key `giros`, from AR-ix cases, D20) · contract → bill-to person (D16) · customer → billing contacts (department default for prefill, D11) · customer documents (given once, D10) · billing schedules → invoices (per period)
+contract → GIRO status + active AR-ix case (`giro_status`, `giro_case`; max one active GIRO per contract, D21) · contract → bill-to person (D16) · customer → billing contacts (department default for prefill, D11) · customer documents (given once, D10) · billing schedules → invoices (per period)
 
 **Departments:** 11 operational departments in `DEPARTMENTS` (`js/schema.js`); bank accounts may also be Finance.
 

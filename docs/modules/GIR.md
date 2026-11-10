@@ -63,6 +63,16 @@ Fields are free text unless stated. `*` = mandatory.
 | Portal | My requests and the ticket page show cases the user raised **or is CC'd on** (watch list); CC'd cases are tagged *CC*. Ticket page block `PT-35`. |
 | ACL | CC'd users (watch list) read the case and its comments; only the requester and AR edit. |
 
+## Demo data
+
+- **TR-TA-2025-14** (Tanjong Retail Group, Facilities, retail unit tenancy): the worked example of a contract with active GIRO.
+  - GIR0001002 **Active** rental, #01-23, 3 Jurong Gateway Road, SGD 4,800 (from ARQ0001011).
+  - GIR0001003 **Removed** carpark SGL 1188 C (added by ARQ0001012, removed by ARQ0001013 when the vehicle changed).
+  - GIR0001004 **Active** carpark SJK 7720 R, SGD 150 (from ARQ0001014).
+  - Contract ribbon shows *Active GIRO 2*; each GIRO record and case has its Record history.
+- **GIR0001001**: active rental GIRO on HL-2026-01 (Harbourline), for a Remove GIRO demo.
+- **ARQ0001009** (ready to activate) and **ARQ0001010** (contract not on file; Link contract first) are open AR-ix cases.
+
 ## Out of scope / later
 
 - Notifications to the applicant or CC list.
@@ -82,3 +92,4 @@ Fields are free text unless stated. `*` = mandatory.
 | Date | Change |
 |---|---|
 | 2026-11-10 | Module created: AR-ix form, GIRO authorisation table, Link contract / Activate GIRO / Remove GIRO, case state Completed, CC visibility on the portal. New IDs `PT-30`–`PT-35`, `REQ-GIRO`, `REQ-LINKCTR`, `UA-REQ-linkctr`, `UA-REQ-giroadd`, `UA-REQ-giroremove`, `UA-GIR-save`, `RL-CON-GIR`, `RL-REQ-GIR`, `GIR.*`, `LST/RP/HDR/FRM-GIR`, new `REQ.*` fields above. |
+| 2026-11-10 | Demo data: contract TR-TA-2025-14 with two active GIRO authorisations and one removed, from completed cases ARQ0001011–ARQ0001014; *Active GIRO* widget on the contract ribbon. New portal submissions now start at ARQ0001015. |

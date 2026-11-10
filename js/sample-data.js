@@ -42,6 +42,7 @@ export function loadSample() {
     ["meri","MF-2025-07","Cold-chain monitoring subscription","2025-07-01","2027-06-30",34902,"Milestone",30,0,0,"Billed quarterly in arrears."],
     ["kest","KE-2026-03","Plant retrofit design","2026-03-01","2027-02-28",120000,"Milestone",30,1,30,""],
     ["tanj","TR-2026-02","POS support retainer","2026-02-01","2027-01-31",52800,"Monthly",30,0,0,""],
+    ["tanj","TR-TA-2025-14","Retail unit tenancy, #01-23 Jurong Gateway","2025-12-01","2027-11-30",115200,"Monthly",30,0,0,"Rent and season parking collected by GIRO (see GIRO authorisations)."],
     ["orch","OC-2026-01","Clinic scheduling licences","2026-01-01","2026-12-31",23760,"Monthly",30,0,0,"SLA credits are issued as credit notes."],
     ["nova","NB-2026-05","Data platform implementation","2026-05-01","2026-12-31",60000,"Milestone",30,0,0,""],
     ["bws","BW-S-2026","Guest Wi-Fi managed service","2026-01-01","2026-12-31",74880,"Monthly",30,0,0,""],
@@ -199,7 +200,7 @@ export function loadSample() {
   S.contacts = ct.map(r => ({ id: uid("t"), customerId: cid[r[0]].id, department: r[1], name: r[2], email: r[3], phone: r[4], address: r[5], requestId: null }));
   // Contracts: owning department and bill-to person (D16). HL-2026-02 has no bill-to yet (the requester is asked for one).
   const ctrDept = { "HL-2026-01": "Logistics", "HL-2026-02": "Logistics", "MF-2025-07": "Logistics", "KE-2026-03": "Engineering", "TR-2026-02": "Digital", "OC-2026-01": "Healthcare",
-    "NB-2026-05": "Digital", "BW-S-2026": "Facilities", "BW-O-2026": "Facilities", "LP-PO-0193": "Advisory", "PC-2026-02": "Marine" };
+    "NB-2026-05": "Digital", "BW-S-2026": "Facilities", "BW-O-2026": "Facilities", "LP-PO-0193": "Advisory", "PC-2026-02": "Marine", "TR-TA-2025-14": "Facilities" };
   for (const k of S.contracts) {
     k.contractType = "contract"; k.department = ctrDept[k.number] || "";
     const c = S.contacts.find(x => x.customerId === k.customerId && x.department === k.department);
@@ -257,6 +258,39 @@ export function loadSample() {
     giroPurpose: "rental", giroType: "add", giroStart: shiftDate("2026-12-01"), giroEnd: shiftDate("2028-11-30"), giroLocation: "Cold store bay 3, 9 Senoko Way", giroAmount: cents(5600), amount: cents(5600),
     title: "Add GIRO · Rental · Cold store bay 3, 9 Senoko Way", opened: shiftDate("2026-10-22"), updated: shiftDate("2026-10-22"), attachments: ["Meridian - tenancy agreement TA-2026-118.pdf", "Meridian - GIRO form.pdf"],
     activity: [{ at: shiftDate("2026-10-22") + "T15:20:00", by: "u_pm2", kind: "system", text: "Submitted from AR-ix on the portal: Add GIRO · Rental for contract TA-2026-118 (not on file yet; AR links it after processing its AR-i)." }] }));
+  // GIRO demo use case: Tanjong Retail's unit tenancy TR-TA-2025-14 with an active rental GIRO, an active carpark GIRO,
+  // and an earlier carpark GIRO that was removed when the vehicle changed. Each came from a completed AR-ix case.
+  const ta = kOf("TR-TA-2025-14");
+  Object.assign(ta, { billToName: "Grace Lim", billToEmail: "facilities.ap@tanjongretail.example", billToPhone: "+65 6255 8800", billToAddress: "Tanjong Retail Group, Finance, 3 Jurong Gateway Road, Singapore 608532",
+    contractLocation: "repository", contractLocationRef: "https://docs.example/contracts/TR-TA-2025-14" });
+  const tApp = { applicantName: "Tanjong Retail Group", applicantEmail: ta.billToEmail, applicantMobile: "+65 9188 2201" };
+  const done = (o, days) => { const at = d => shiftDate(d) + "T"; return ix({ requestedBy: "u_pm1", requesterName: pm1.name, requesterEmail: pm1.email, ccList: "", department: "Facilities",
+    customerId: ta.customerId, contractId: ta.id, contractOption: "existing", newCtrRef: "", ...tApp, state: "completed", assignedTo: "u_ar1", ...o,
+    activity: [{ at: at(o.opened0) + "09:10:00", by: "u_pm1", kind: "system", text: `Submitted from AR-ix on the portal: ${o.title.split(" · ").slice(0, 2).join(" · ")} on contract TR-TA-2025-14.` },
+      { at: at(o.opened0) + "11:30:00", by: "u_ar1", kind: "system", text: "Assigned to Daniel Lim." },
+      { at: at(o.closed0) + "15:00:00", by: "u_ar1", kind: "comment", text: o.outcome },
+      { at: at(o.closed0) + "15:00:01", by: "u_ar1", kind: "system", text: "State changed to Completed." }],
+    opened: shiftDate(o.opened0), updated: shiftDate(o.closed0) }); };
+  const gT = (o) => ({ status: "active", customerId: ta.customerId, contractId: ta.id, purposeOther: "", ...tApp, invoiceRef: "", startDate: "", endDate: "", location: "", carplate: "", parkStart: "", parkEnd: "", removedOn: "", removeRequestId: null, ...o });
+  S.requests.push(
+    done({ id: "r11", number: "ARQ0001011", giroPurpose: "rental", giroType: "add", giroLocation: "#01-23, 3 Jurong Gateway Road", giroStart: shiftDate("2025-12-01"), giroEnd: shiftDate("2027-11-30"),
+      giroAmount: cents(4800), amount: cents(4800), giroId: "g2", title: "Add GIRO · Rental · #01-23, 3 Jurong Gateway Road", attachments: ["Tanjong - GIRO form (rent) signed.pdf"],
+      opened0: "2025-11-18", closed0: "2025-11-24", outcome: "GIRO activated on contract TR-TA-2025-14 (GIR0001002)." }),
+    done({ id: "r12", number: "ARQ0001012", giroPurpose: "carpark", giroType: "add", carplate: "SGL 1188 C", parkStart: shiftDate("2025-12-01"), parkEnd: "",
+      giroAmount: cents(150), amount: cents(150), giroId: "g3", title: "Add GIRO · Carpark · SGL 1188 C", attachments: ["Tanjong - GIRO form (season parking) signed.pdf"],
+      opened0: "2025-11-20", closed0: "2025-11-28", outcome: "GIRO activated on contract TR-TA-2025-14 (GIR0001003)." }),
+    done({ id: "r13", number: "ARQ0001013", giroPurpose: "carpark", giroType: "remove", carplate: "SGL 1188 C", parkStart: "", parkEnd: shiftDate("2026-07-31"),
+      giroAmount: 0, amount: 0, giroId: "g3", title: "Remove GIRO · Carpark · SGL 1188 C", details: "Store manager's vehicle replaced; new car plate on ARQ0001014.",
+      opened0: "2026-07-20", closed0: "2026-07-31", outcome: "GIRO removed on contract TR-TA-2025-14 (GIR0001003)." }),
+    done({ id: "r14", number: "ARQ0001014", giroPurpose: "carpark", giroType: "add", carplate: "SJK 7720 R", parkStart: shiftDate("2026-08-01"), parkEnd: shiftDate("2027-11-30"),
+      giroAmount: cents(150), amount: cents(150), giroId: "g4", title: "Add GIRO · Carpark · SJK 7720 R", attachments: ["Tanjong - GIRO form (season parking, new vehicle).pdf"],
+      opened0: "2026-07-20", closed0: "2026-07-31", outcome: "GIRO activated on contract TR-TA-2025-14 (GIR0001004)." }));
+  for (const r of S.requests) { delete r.opened0; delete r.closed0; delete r.outcome; }
+  S.giros.push(
+    gT({ id: "g2", number: "GIR0001002", purpose: "rental", location: "#01-23, 3 Jurong Gateway Road", startDate: shiftDate("2025-12-01"), endDate: shiftDate("2027-11-30"), amount: cents(4800), activatedOn: shiftDate("2025-11-24"), requestId: "r11" }),
+    gT({ id: "g3", number: "GIR0001003", status: "removed", purpose: "carpark", carplate: "SGL 1188 C", parkStart: shiftDate("2025-12-01"), parkEnd: shiftDate("2026-07-31"), amount: cents(150),
+      activatedOn: shiftDate("2025-11-28"), requestId: "r12", removedOn: shiftDate("2026-07-31"), removeRequestId: "r13" }),
+    gT({ id: "g4", number: "GIR0001004", purpose: "carpark", carplate: "SJK 7720 R", parkStart: shiftDate("2026-08-01"), parkEnd: shiftDate("2027-11-30"), amount: cents(150), activatedOn: shiftDate("2026-07-31"), requestId: "r14" }));
   // Record history (sys_audit): a "Created" entry per sample record that has a known creation date
   S.history = [];
   const created = (table, rec, at, by) => S.history.push({ table, id: rec.id, at: at + "T09:00:00", by, kind: "created" });
@@ -268,6 +302,14 @@ export function loadSample() {
   for (const d of S.documents) created("documents", d, d.received, "u_ar1");
   for (const x of S.schedules) if (x.firstDate) created("schedules", x, x.firstDate, "u_ar1");
   for (const g of S.giros) created("giros", g, g.activatedOn, "u_ar1");
+  // GIRO use case: state changes on the completed AR-ix cases and the removal of GIR0001003
+  const upd = (table, id, at, field, o, n) => S.history.push({ table, id, at, by: "u_ar1", kind: "update", field, old: o, new: n });
+  for (const r of S.requests.filter(x => ["r11", "r12", "r13", "r14"].includes(x.id))) {
+    upd("requests", r.id, r.opened + "T11:30:00", "assignedTo", null, "u_ar1"); upd("requests", r.id, r.opened + "T11:30:01", "state", "new", "in_progress");
+    upd("requests", r.id, r.updated + "T15:00:00", "giroId", null, r.giroId); upd("requests", r.id, r.updated + "T15:00:01", "state", "in_progress", "completed");
+  }
+  const g3 = S.giros.find(g => g.id === "g3");
+  upd("giros", "g3", g3.removedOn + "T15:00:00", "status", "active", "removed"); upd("giros", "g3", g3.removedOn + "T15:00:00", "removedOn", "", g3.removedOn); upd("giros", "g3", g3.removedOn + "T15:00:00", "removeRequestId", null, "r13");
   S.history.sort((a, b) => a.at.localeCompare(b.at));
   resetAudit();
   S.ui.ws = { main: { kind: "home" }, tabs: [], active: "main", lmOpen: null, side: { open: true, w: 380 }, q: "", composer: {} };

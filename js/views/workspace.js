@@ -369,7 +369,7 @@ function ribbon(table, rec, tab) {
       w("Open AR requests", String(S.requests.filter(r => r.customerId === rec.id && REQ_OPEN.includes(r.state)).length))];
   } else if (table === "contracts") { const r = rollup(S.invoices.filter(i => i.contractId === rec.id && i.state === "issued"));
     ws = [...(isShell(rec) ? [] : [w("Billed of contract value", `SGD ${fmt(r.billed)}`, `of SGD ${fmt(rec.value || 0)}`, bar(r.billed, rec.value || 0))]), w("Collected of billed", `SGD ${fmt(r.collected)}`, "", bar(r.collected, r.billed, "var(--ok)")),
-      w("Billing lines", String(S.lines.filter(l => l.contractId === rec.id).length))];
+      w("Billing lines", String(S.lines.filter(l => l.contractId === rec.id).length)), ...(() => { const ag = S.giros.filter(g => g.contractId === rec.id && g.status === "active"); return ag.length ? [w("Active GIRO", String(ag.length), `SGD ${fmt(ag.reduce((x, g) => x + g.amount, 0))} · ${esc(ag.map(g => GIRO_PURPOSE[g.purpose] + (g.carplate ? ` ${g.carplate}` : "")).join(", "))}`)] : []; })()];
   } else if (table === "schedules") { const per = periodDates(rec.frequency, rec.firstDate, rec.lastDate), inv = S.invoices.filter(i => i.scheduleId === rec.id && i.state !== "cancelled").length, due = periodsDue(rec).length;
     ws = [w("Amount per period", `SGD ${fmt(rec.amount)}`), w("Next billing", esc(nextBilling(rec) || "Ended")), w("Periods due", due ? `<span class="chip c-warn">${due} due</span>` : `<span class="chip c-ok">Up to date</span>`),
       w("Invoiced", `${inv} of ${per.length}`, "", bar(inv, per.length, "var(--ok)"))];

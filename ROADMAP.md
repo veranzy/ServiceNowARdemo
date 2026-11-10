@@ -15,6 +15,9 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 ## Done
 
+- 2026-11-10 **GIR / AR-ix**: GIRO authorisation form (contract first, applicant prefilled from the bill-to, rental /
+  carpark / others, add or remove); workspace Link contract, Activate GIRO, Remove GIRO; GIRO authorisation table
+  per contract. **ARF**: General information section (requester, SSO email, department, CC list) on every AR form (D19, D20).
 - 2026-11-03 **UIX**: workspace aligned to the Horizon Design System: list page template (list menu + list), Record
   page template (action bar with overflow, ribbon, record tabs, contextual side bar with Customer setup / Activity /
   Attachments), Cabin + Lato, Horizon radius and spacing (D17).

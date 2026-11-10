@@ -97,7 +97,7 @@ rebuilt later from this codebase. Do not add Claude/LLM calls here unless the ow
 
 | Persona | Role | UI | Does |
 |---|---|---|---|
-| Company project team | `x_ar.project_team` | **Portal only** (Service Portal / Employee Center look) | Picks from **16 AR forms (AR-i … AR-xvi)**; AR-i *New AR request* (customer search, billing lines) is the only defined one. Follows **My requests**, replies on the ticket page |
+| Company project team | `x_ar.project_team` | **Portal only** (Service Portal / Employee Center look) | Picks from **16 AR forms (AR-i … AR-xvi)**; defined so far: AR-i *New AR request* (customer search, billing lines) and AR-ix *GIRO authorisation* (GIR module). Every form starts with **General information** (D19). Follows **My requests** (own cases and cases they are CC'd on), replies on the ticket page |
 | Accounts receivable team | `x_ar.ar_team` | **Workspace only** (configurable workspace look) | Works AR request **cases**, creates and issues invoices, uploads bank statements (**BSU**), matches deposits to invoices **manually**, maintains customers, contracts and bank accounts |
 
 Core flow: project team submits **AR-i**: searches the customer and adds it as new only if not found
@@ -121,7 +121,7 @@ invoices. Automation after AR form submission is still to be defined by the owne
 
 customer → contracts (incl. no-contract shells, `contract_type = shell`, D15) → billing lines → invoices ← allocations ← deposits (Bank statements) ← BSU uploads ← bank accounts
 AR request → billing lines (`x_ar_request_line`, code key `lines`, each with `contract`) → invoice (one-off) or billing schedule (recurring)
-contract → bill-to person (D16) · customer → billing contacts (department default for prefill, D11) · customer documents (given once, D10) · billing schedules → invoices (per period)
+contract → GIRO authorisations (`x_ar_giro_authorisation`, code key `giros`, from AR-ix cases, D20) · contract → bill-to person (D16) · customer → billing contacts (department default for prefill, D11) · customer documents (given once, D10) · billing schedules → invoices (per period)
 
 **Departments:** 11 operational departments in `DEPARTMENTS` (`js/schema.js`); bank accounts may also be Finance.
 

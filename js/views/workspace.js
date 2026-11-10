@@ -1,7 +1,7 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
+import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, giroLabel, giroToRemove, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
 import { CODE } from "../notes.js";
 import { ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
@@ -23,7 +23,8 @@ export const LISTS = {
       new: ["New, unassigned", r => r.state === "new" && !r.assignedTo],
       mine: ["Assigned to me", r => mine(r) && REQ_OPEN.includes(r.state)],
       awaiting: ["Awaiting info", r => r.state === "awaiting_info"],
-      setup: ["Customer setup pending", r => REQ_OPEN.includes(r.state) && (!!r.newCustomer || !setupStatus(r).docsDone)],
+      setup: ["Customer setup pending", r => REQ_OPEN.includes(r.state) && r.form !== "AR-ix" && (!!r.newCustomer || !setupStatus(r).docsDone)],
+      giro: ["AR-ix GIRO requests (open)", r => r.form === "AR-ix" && REQ_OPEN.includes(r.state)],
       all: ["All", () => true]
     },
     cols: [["Number", r => refLink("requests", r.id, r.number), "", "number"], ["Form", r => `${esc(r.form || "AR-i")}<span class="desc">${esc(linesLabel(r))}</span>`, "", "form"], ["Request", r => esc(r.title), "wrap", "title"], ["Customer", r => `${esc(reqCustName(r))}${r.newCustomer ? ` <span class="chip c-warn">New</span>` : ""}`, "", "customerId"], ["Department", r => esc(r.department || "—"), "", "department"],
@@ -71,6 +72,14 @@ export const LISTS = {
     sort: (a, b) => a.bank.localeCompare(b.bank) || a.number.localeCompare(b.number),
     text: a => [BANKS[a.bank].name, a.number, a.name, a.department].join(" "),
     newable: true
+  },
+  giros: {
+    filters: { active: ["Active GIRO", g => g.status === "active"], all: ["All GIRO authorisations", () => true] },
+    cols: [["Number", g => refLink("giros", g.id, g.number), "", "number"], ["Status", g => `<span class="chip ${g.status === "active" ? "c-ok" : "c-neutral"}">${g.status === "active" ? "Active" : "Removed"}</span>`, "", "status"],
+      ["Contract", g => refLink("contracts", g.contractId), "", "contractId"], ["Customer", g => esc(custName(g.customerId)), "", "customerId"], ["Purpose", g => `${esc(GIRO_PURPOSE[g.purpose] || "")}<span class="desc">${esc(g.carplate || g.location || g.purposeOther || "")}</span>`, "", "purpose"],
+      ["Applicant", g => esc(g.applicantName), "", "applicantName"], ["Amount", g => fmt(g.amount), "num", "amount"], ["Activated", g => esc(g.activatedOn || "—"), "", "activatedOn"]],
+    sort: (a, b) => (a.status === "active" ? 0 : 1) - (b.status === "active" ? 0 : 1) || a.number.localeCompare(b.number),
+    text: g => [g.number, custName(g.customerId), ctrNo(g.contractId), g.applicantName, g.carplate, g.location].join(" ")
   },
   schedules: {
     filters: {
@@ -125,6 +134,7 @@ const MENU = [
   ["Recurring billing", [["schedules", "due"], ["schedules", "active"], ["schedules", "all"]]],
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
   ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"]]],
+  ["GIRO", [["requests", "giro"], ["giros", "active"], ["giros", "all"]]],
   ["Master data", [["customers", "all"], ["contracts", "all"], ["contracts", "shell"], ["contacts", "all"], ["documents", "all"]]]
 ];
 
@@ -264,14 +274,22 @@ function listView(table, filter, menuOpen) {
 }
 
 // ---------- record pages ----------
-const has = k => r => !!r[k], not = k => r => !r[k];
+const has = k => r => !!r[k], not = k => r => !r[k], isIx = r => r.form === "AR-ix";
 const LAYOUT = {
-  requests: [["AR form", ["form", "department", "title", "amount", "poNumber"]], ["Customer", ["customerId"], not("newCustomer")], ["New customer (to verify)", ["newCustName", "newCustUen", "newCustAddress"], has("newCustomer")],
-    ["Contract", ["contractOption", "contractId", "contractLocation", "contractLocationRef"]],
-    ["New contract (to create)", ["newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue"], r => r.contractOption === "new"],
-    ["Finance coding", ["costCenter", "accountCode", "billingTypeCode", "vag", "subBu", "typeOfBilling"]],
-    ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], has("billToName")],
-    ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => r.docContract || r.docAcra || r.docBillingForm],
+  requests: [["AR form", ["form", "title", "amount"]],
+    ["General information", ["requesterName", "requesterEmail", "department", "ccList"]],
+    // AR-i
+    ["Customer", ["customerId"], r => !isIx(r) && !r.newCustomer], ["New customer (to verify)", ["newCustName", "newCustUen", "newCustAddress"], r => !isIx(r) && r.newCustomer],
+    ["Contract", ["contractOption", "contractId", "contractLocation", "contractLocationRef"], r => !isIx(r)],
+    ["New contract (to create)", ["newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue"], r => !isIx(r) && r.contractOption === "new"],
+    ["Customer PO", ["poNumber"], r => !isIx(r)],
+    ["Finance coding", ["costCenter", "accountCode", "billingTypeCode", "vag", "subBu", "typeOfBilling"], r => !isIx(r)],
+    ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], r => !isIx(r) && r.billToName],
+    ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => !isIx(r) && (r.docContract || r.docAcra || r.docBillingForm)],
+    // AR-ix (GIR module)
+    ["Customer not at AR yet", ["newCustName"], r => isIx(r) && r.newCustomer],
+    ["Contract and applicant", ["customerId", "contractId", "newCtrRef", "applicantName", "applicantEmail", "applicantMobile", "giroInvoiceRef"], isIx],
+    ["GIRO details", ["giroPurpose", "giroPurposeOther", "giroType", "giroLocation", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroAmount", "giroId"], isIx],
     ["Case", ["state", "requestedBy", "assignedTo", "opened", "details"]]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
@@ -284,10 +302,14 @@ const LAYOUT = {
     ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
   contacts: [["Billing contact", ["customerId", "department", "name", "email", "phone", "address", "requestId"]]],
   documents: [["Customer document", ["number", "customerId", "docType", "fileName", "contractId", "department", "requestId", "received"]]],
-  schedules: [["Billing schedule", ["number", "customerId", "contractId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "requestId"]]]
+  schedules: [["Billing schedule", ["number", "customerId", "contractId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "requestId"]]],
+  giros: [["GIRO authorisation", ["number", "status", "customerId", "contractId", "purpose", "purposeOther", "amount", "invoiceRef"]], ["Applicant", ["applicantName", "applicantEmail", "applicantMobile"]],
+    ["Rental", ["location", "startDate", "endDate"], g => g.purpose === "rental"], ["Carpark", ["carplate", "parkStart", "parkEnd"], g => g.purpose === "carpark"],
+    ["History", ["activatedOn", "requestId", "removedOn", "removeRequestId"]]]
 };
 /** Fields AR can't edit on the workspace form (set by the portal or by UI actions). */
-const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue"], lines: ["lineType"] };
+const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "giroType"], lines: ["lineType"],
+  giros: ["customerId", "contractId", "purpose", "activatedOn", "removedOn"] };
 
 function editable(table, rec) {
   if (table === "requests") return REQ_OPEN.includes(rec.state);
@@ -305,7 +327,7 @@ const btn = (html, ovf = false) => ({ html, ovf });
 function headerFields(table, rec) {
   const hf = (k, v) => `<div class="hf"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
   if (table === "requests") return [hf("State", reqChip(rec)), hf("Form", `${esc(rec.form || "AR-i")} · ${esc(linesLabel(rec))}`), hf("Customer", rec.customerId ? refLink("customers", rec.customerId) : `${esc(rec.newCustName || "—")} <span class="chip c-warn">New</span>`),
-    hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : rec.contractOption === "new" ? `${esc(rec.newCtrRef || "—")} <span class="chip c-warn">New</span>` : rec.contractOption === "none" ? `<span class="chip c-warn">No contract</span>` : "—"), hf("Department", esc(rec.department || "—")),
+    hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : rec.contractOption === "new" ? `${esc(rec.newCtrRef || "—")} <span class="chip c-warn">${isIx(rec) ? "Not linked" : "New"}</span>` : rec.contractOption === "none" ? `<span class="chip c-warn">No contract</span>` : "—"), hf("Department", esc(rec.department || "—")),
     hf("Assigned to", esc(userById(rec.assignedTo)?.name || "Unassigned")), hf("Requested by", esc(userById(rec.requestedBy)?.name || "—")), hf("Opened", esc(rec.opened))];
   if (table === "invoices") return [hf("Status", invChip(rec)), hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)), hf("AR request", refLink("requests", rec.requestId)), hf("Invoice date", esc(rec.date || "—"))];
   if (table === "deposits") { const a = acctById(rec.bankAccountId); return [hf("Match", depositChip(rec)), hf("Value date", esc(rec.date)), hf("Bank account", refLink("bankAccounts", rec.bankAccountId)), hf("Department", esc(a?.department || "—")), hf("Account type", esc(a ? acctType(a) : "—"))]; }
@@ -315,6 +337,8 @@ function headerFields(table, rec) {
   if (table === "contracts") { const r = rollup(S.invoices.filter(i => i.contractId === rec.id && i.state === "issued"));
     return [hf("Type", ctrTypeChip(rec)), hf("Status", ctrStatusChip(rec)), hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department || "—")), hf("Bill-to", esc(rec.billToName || "Not set"))]; }
   if (table === "schedules") return [hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)), hf("Frequency", esc(freqLabel(rec.frequency))), hf("Department", esc(rec.department))];
+  if (table === "giros") return [hf("Status", `<span class="chip ${rec.status === "active" ? "c-ok" : "c-neutral"}">${rec.status === "active" ? "Active" : "Removed"}</span>`), hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)),
+    hf("Purpose", esc(GIRO_PURPOSE[rec.purpose] || "")), hf("Amount", `<span class="mono">SGD ${fmt(rec.amount)}</span>`)];
   if (table === "lines") return [hf("Type", esc(LINE_TYPE[rec.lineType])), hf("Status", lineChip(rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : "Set by Link to customer")];
   if (table === "contacts") return [hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department)), hf("Email", esc(rec.email || "—"))];
   if (table === "documents") return [hf("Customer", refLink("customers", rec.customerId)), hf("Type", esc(DOC_LABEL[rec.docType])), hf("Received", esc(rec.received)), hf("From request", refLink("requests", rec.requestId))];
@@ -326,7 +350,11 @@ function ribbon(table, rec, tab) {
   const w = (k, v, n, extra = "") => `<div class="rw"><span class="rw-k">${esc(k)}</span><span class="rw-v">${v}</span>${n ? `<span class="rw-n">${n}</span>` : ""}${extra}</div>`;
   const bar = (a, b, color = "var(--accent)") => { const p = b > 0 ? Math.max(0, Math.min(100, a / b * 100)) : 0; return `<div class="meter"><i style="width:${p}%;background:${color}"></i></div>`; };
   let ws = [];
-  if (table === "requests") {
+  if (table === "requests" && isIx(rec)) {
+    const act = rec.contractId ? S.giros.filter(g => g.contractId === rec.contractId && g.status === "active").length : 0;
+    ws = [w("GIRO", esc(giroLabel(rec)), esc(rec.carplate || rec.giroLocation || rec.giroPurposeOther || "")), w("Amount", rec.giroAmount ? `SGD ${fmt(rec.giroAmount)}` : "—"),
+      w("Contract", rec.contractId ? esc(ctrNo(rec.contractId)) : `<span class="bad">Not linked</span>`, rec.contractId ? `${act} active GIRO on the contract` : `Reference given: ${esc(rec.newCtrRef || "—")}`)];
+  } else if (table === "requests") {
     const ls = reqLines(rec), done = ls.filter(l => ["invoiced", "scheduled"].includes(lineStatus(l))).length;
     const st = setupStatus(rec), checks = [st.linked, st.contractDone, st.billToOk, st.docsDone], ok = checks.filter(Boolean).length;
     ws = [w("Request value", `SGD ${fmt(rec.amount)}`, esc(linesLabel(rec))), w("Billing lines done", `${done} of ${ls.length}`, done === ls.length && ls.length ? "Every line invoiced or scheduled" : "Invoice or schedule each line", bar(done, ls.length, "var(--ok)")),
@@ -361,7 +389,10 @@ function actionsFor(table, rec, isNew, canEdit) {
     if (REQ_OPEN.includes(rec.state)) {
       const st = setupStatus(rec);
       if (!mine(rec)) a.push(action(table, "Assign to me", "assign"));
-      if (setupPending(rec, st)) a.push(action(table, rec.newCustomer ? "Create customer & link" : "Link to customer", "link", { primary: true }));
+      if (isIx(rec)) {
+        if (!rec.contractId) a.push(action(table, "Link contract", "linkctr", { primary: true }));
+        else a.push(rec.giroType === "remove" ? action(table, "Remove GIRO", "giroremove", { primary: true }) : action(table, "Activate GIRO", "giroadd", { primary: true }));
+      } else if (setupPending(rec, st)) a.push(action(table, rec.newCustomer ? "Create customer & link" : "Link to customer", "link", { primary: true }));
       /* billing is done per line in the Billing lines list once the request is linked to a customer */
       a.push(action(table, "Request info", "info", { ovf: true }));
       a.push(action(table, "Reject", "reject", { danger: true, ovf: true }));
@@ -395,6 +426,7 @@ const lineChip = l => { const [lab, c] = LINE_CHIP[lineStatus(l)]; return `<span
 
 /** Link to customer is needed while the customer, bill-to, documents or contract location aren't on the customer master yet. */
 function setupPending(r, st = setupStatus(r)) {
+  if (r.form === "AR-ix") return !r.contractId;
   if (!st.linked || !st.contractDone) return true;
   if (r.billToName && !st.billToOk) return true;
   if (!st.docsDone) return true;
@@ -445,11 +477,17 @@ function activity(rec) {
     </section>`;
 }
 
+const giroCols = [["Number", g => refLink("giros", g.id, g.number)], ["Status", g => `<span class="chip ${g.status === "active" ? "c-ok" : "c-neutral"}">${g.status === "active" ? "Active" : "Removed"}</span>`], ["Purpose", g => `${esc(GIRO_PURPOSE[g.purpose] || "")}<span class="desc">${esc(g.carplate || g.location || g.purposeOther || "")}</span>`],
+  ["Applicant", g => esc(g.applicantName)], ["Amount", g => fmt(g.amount), "num"], ["Activated", g => esc(g.activatedOn || "—")], ["Removed", g => esc(g.removedOn || "—")]];
 const rt = (title, table, rows, cols, opts) => ({ key: opts.id, label: title, n: rows.length, html: relatedTable(title, table, rows, cols, opts) });
 const sec = (key, label, n, html) => ({ key, label, n, html });
 
 /** Record tabs after Details: related items and one tab per related list (Horizon record page). */
 function related(table, rec) {
+  if (table === "requests" && isIx(rec)) {
+    const gs = rec.contractId ? S.giros.filter(g => g.contractId === rec.contractId) : [];
+    return [rt("GIRO on the contract", "giros", gs, giroCols, { id: "RL-REQ-GIR" })];
+  }
   if (table === "requests") {
     const r = rec, ok = REQ_OPEN.includes(r.state) && r.customerId && !r.newCustomer && !!r.contractId;
     return [rt("Billing lines", "lines", reqLines(r), [
@@ -486,6 +524,7 @@ function related(table, rec) {
     const r = rollup(is.filter(i => i.state === "issued"));
     return [rt("Billing lines", "lines", S.lines.filter(l => l.contractId === rec.id), [["Line", l => refLink("lines", l.id, l.number)], ["AR request", l => refLink("requests", l.requestId)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"], ["Value", l => fmt(lineValue(l)), "num"],
         ["Billed as", l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId); return `${lineChip(l)}${inv ? ` ${refLink("invoices", inv.id, inv.number)}` : ""}${sch ? ` ${refLink("schedules", sch.id, sch.number)}` : ""}`; }]], { id: "RL-CON-RQL" }),
+      rt("GIRO authorisations", "giros", S.giros.filter(g => g.contractId === rec.id), giroCols, { id: "RL-CON-GIR" }),
       rt("Billing schedules", "schedules", S.schedules.filter(x => x.contractId === rec.id), [["Number", x => refLink("schedules", x.id, x.number)], ["What is billed", x => esc(x.desc), "wrap"], ["Frequency", x => esc(freqLabel(x.frequency))], ["Next billing", x => esc(nextBilling(x) || "Ended")]], { id: "RL-CON-SCH" }),
       rt("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CON-INV" }),
       rt("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Amount", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CON-REQ" })];
@@ -596,10 +635,31 @@ function historyTab(table, rec) {
 function sidePanels(table, rec, tab) {
   if (table !== "requests") return [];
   const out = [];
-  if (rec.form) out.push({ key: "setup", label: "Customer setup", icon: "check", html: setupPanel(rec, tab), badge: setupPending(rec) ? "!" : "" });
+  if (isIx(rec)) out.push({ key: "setup", label: "GIRO setup", icon: "check", html: giroPanel(rec, tab), badge: REQ_OPEN.includes(rec.state) && !rec.contractId ? "!" : "" });
+  else if (rec.form) out.push({ key: "setup", label: "Customer setup", icon: "check", html: setupPanel(rec, tab), badge: setupPending(rec) ? "!" : "" });
   out.push({ key: "activity", label: "Activity", icon: "chat", html: activity(rec) });
   out.push({ key: "attachments", label: "Attachments", icon: "clip", html: attachments(rec) });
   return out;
 }
-const sideDefault = (table, rec) => table === "requests" && rec.form && REQ_OPEN.includes(rec.state) && setupPending(rec) ? "setup" : "activity";
+const sideDefault = (table, rec) => table === "requests" && rec.form && REQ_OPEN.includes(rec.state) && (isIx(rec) || setupPending(rec)) ? "setup" : "activity";
+
+/** AR-ix side panel: link the contract (after its AR-i is processed if it is new), then activate or remove the GIRO. */
+function giroPanel(r, tab) {
+  const open = REQ_OPEN.includes(r.state), k = r.contractId ? ctrById(r.contractId) : null;
+  const item = (ok, label, detail) => `<li class="${ok === true ? "ok" : ok === false ? "todo" : "na"}"><span class="tick" aria-hidden="true">${ok === true ? "✓" : ok === false ? "!" : "–"}</span><div><b>${label}</b>${detail ? `<span class="desc">${detail}</span>` : ""}</div></li>`;
+  const ref = String(r.newCtrRef || "").trim().toLowerCase();
+  const cands = S.contracts.filter(c => !isShell(c)).sort((a, b) => (b.number.toLowerCase() === ref) - (a.number.toLowerCase() === ref) || (b.customerId === r.customerId) - (a.customerId === r.customerId) || a.number.localeCompare(b.number));
+  const rem = r.giroType === "remove" && k ? giroToRemove(r) : [];
+  const done = r.state === "completed", g = r.giroId ? S.giros.find(x => x.id === r.giroId) : null;
+  return `<section class="setup"${sn("REQ-GIRO")}>
+    <header><h2>GIRO setup</h2></header>
+    <ul class="checklist">
+      ${item(!!k, k ? `Contract: ${esc(k.number)}` : `Contract not linked: ${esc(r.newCtrRef || "no reference")}`, k ? `${esc(custName(k.customerId))} · ${esc(k.title)}` : "Process the AR-i that sets up this contract first, then link it below.")}
+      ${item(done ? true : k ? false : null, r.giroType === "remove" ? "Remove GIRO" : "Activate GIRO", done ? `${esc(g?.number || "")} ${r.giroType === "remove" ? "removed" : "active"}` : !k ? "Available once the contract is linked" : r.giroType === "remove" ? (rem.length ? `Will end ${rem.map(x => esc(x.number)).join(", ")}` : `<span class="bad">No matching active GIRO on ${esc(k.number)}</span>`) : `Creates an active GIRO authorisation on ${esc(k.number)}: ${esc(giroLabel(r))}${r.giroAmount ? `, SGD ${fmt(r.giroAmount)}` : ""}`)}
+    </ul>
+    ${open && !k ? `<label class="ffield linkto"${sn("REQ-LINKCTR")}><span class="flabel">Contract to link</span>
+      <select id="linkCtr-${r.id}" data-linkctr="${esc(tab.key)}"><option value="">-- Choose the contract --</option>${cands.map(c => `<option value="${c.id}"${tab.linkCtr === c.id ? " selected" : ""}>${esc(c.number)} · ${esc(custName(c.customerId))}${c.number.toLowerCase() === ref ? " (matches the reference)" : ""}</option>`).join("")}</select>
+      <span class="fhelp">Then use Link contract in the header.</span></label>` : ""}
+  </section>`;
+}
 

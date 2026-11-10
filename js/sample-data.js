@@ -84,7 +84,7 @@ export function loadSample() {
   S.contracts = ctr.map(r => { const k = { id: uid("k"), customerId: cid[r[0]].id, number: r[1], title: r[2], start: shiftDate(r[3]), end: shiftDate(r[4]), value: cents(r[5]), billing: r[6], terms: r[7], discPct: r[8], discDays: r[9], lpiApplicable: false, lpiMinRate: 0, lpiRate: 0, notes: r[10] }; kid[r[1]] = k; return k; });
   Object.assign(S.contracts[0], { lpiApplicable: true, lpiMinRate: 5, lpiRate: 8 });
   S.invoices = inv.map(r => ({ id: uid("i"), customerId: cid[r[0]].id, contractId: r[1] ? kid[r[1]].id : null, customer: cid[r[0]].name, number: r[2], date: shiftDate(r[3]), due: shiftDate(r[4]), amount: cents(r[5]), desc: r[6], currency: "SGD", state: "issued", requestId: null }));
-  S.users = users.map(r => ({ id: r[0], name: r[1], team: r[2], title: r[3], department: r[4] }));
+  S.users = users.map(r => ({ id: r[0], name: r[1], team: r[2], title: r[3], department: r[4], email: `${r[1].toLowerCase().replace(/\s+/g, ".")}@corp.example` }));
   // Company bank accounts (BSU): [key, bank, number, name, department, type]
   const accts = [
     ["mbRev", "MB", "072-104521-6", "AR collections", "Finance", "revenue"],
@@ -234,6 +234,29 @@ export function loadSample() {
     firstDate: shiftDate("2026-08-12"), lastDate: kid["TR-2026-02"].end, requestId: null };
   S.schedules = [tsch];
   for (const [no, d] of [["INV-10045", "2026-08-12"], ["INV-10046", "2026-09-12"]]) { const i = invByNo(no); i.scheduleId = tsch.id; i.periodDate = shiftDate(d); }
+  // General information (D19) on every sample request
+  for (const r of S.requests) { const u = S.users.find(x => x.id === r.requestedBy); Object.assign(r, { requesterName: u?.name || "", requesterEmail: u?.email || "", ccList: r.ccList || "" }); }
+  // GIRO (GIR module): an active rental GIRO on HL-2026-01, an AR-ix to add carpark GIRO on NB-2026-05,
+  // and an AR-ix from Marcus (Priya on the CC list) for a tenancy agreement AR doesn't have yet
+  const kOf = no => S.contracts.find(k => k.number === no);
+  const hl = kOf("HL-2026-01"), nb = kOf("NB-2026-05");
+  S.giros = [{ id: "g1", number: "GIR0001001", status: "active", customerId: hl.customerId, contractId: hl.id, purpose: "rental", purposeOther: "", applicantName: "Harbourline Logistics Pte Ltd",
+    applicantEmail: hl.billToEmail || "ap@harbourline.example", applicantMobile: "+65 9123 4401", invoiceRef: "", amount: cents(2400), startDate: shiftDate("2026-04-01"), endDate: shiftDate("2027-03-31"),
+    location: "Unit 05-12, 21 Pioneer Road", carplate: "", parkStart: "", parkEnd: "", activatedOn: shiftDate("2026-04-03"), removedOn: "", requestId: null, removeRequestId: null }];
+  const pm1 = S.users.find(u => u.id === "u_pm1"), pm2 = S.users.find(u => u.id === "u_pm2");
+  const ix = (o) => ({ form: "AR-ix", state: "new", assignedTo: null, attachments: [], newCustomer: false, newCustName: "", details: "", giroId: null,
+    giroPurposeOther: "", giroStart: "", giroEnd: "", giroLocation: "", carplate: "", parkStart: "", parkEnd: "", giroInvoiceRef: "", ...o });
+  S.requests.push(ix({ id: "r9", number: "ARQ0001009", requestedBy: "u_pm1", requesterName: pm1.name, requesterEmail: pm1.email, ccList: "", department: "Digital",
+    customerId: nb.customerId, contractId: nb.id, contractOption: "existing", newCtrRef: "", applicantName: nb.billToName || "Novabay Analytics", applicantEmail: nb.billToEmail || "ap@novabay.example", applicantMobile: nb.billToPhone || "",
+    giroPurpose: "carpark", giroType: "add", carplate: "SNB 4821 K", parkStart: shiftDate("2026-11-15"), parkEnd: shiftDate("2027-05-14"), giroAmount: cents(180), amount: cents(180),
+    title: "Add GIRO · Carpark · SNB 4821 K", opened: shiftDate("2026-10-20"), updated: shiftDate("2026-10-20"), attachments: ["Novabay - GIRO form signed.pdf"],
+    activity: [{ at: shiftDate("2026-10-20") + "T10:05:00", by: "u_pm1", kind: "system", text: "Submitted from AR-ix on the portal: Add GIRO · Carpark on contract NB-2026-05." }] }));
+  const mer = S.customers.find(c => c.name.startsWith("Meridian"));
+  S.requests.push(ix({ id: "r10", number: "ARQ0001010", requestedBy: "u_pm2", requesterName: pm2.name, requesterEmail: pm2.email, ccList: pm1.email, department: "Logistics",
+    customerId: mer.id, contractId: null, contractOption: "new", newCtrRef: "TA-2026-118", applicantName: "Meridian Foods Pte Ltd", applicantEmail: "ap@meridianfoods.example", applicantMobile: "+65 6862 4400",
+    giroPurpose: "rental", giroType: "add", giroStart: shiftDate("2026-12-01"), giroEnd: shiftDate("2028-11-30"), giroLocation: "Cold store bay 3, 9 Senoko Way", giroAmount: cents(5600), amount: cents(5600),
+    title: "Add GIRO · Rental · Cold store bay 3, 9 Senoko Way", opened: shiftDate("2026-10-22"), updated: shiftDate("2026-10-22"), attachments: ["Meridian - tenancy agreement TA-2026-118.pdf", "Meridian - GIRO form.pdf"],
+    activity: [{ at: shiftDate("2026-10-22") + "T15:20:00", by: "u_pm2", kind: "system", text: "Submitted from AR-ix on the portal: Add GIRO · Rental for contract TA-2026-118 (not on file yet; AR links it after processing its AR-i)." }] }));
   // Record history (sys_audit): a "Created" entry per sample record that has a known creation date
   S.history = [];
   const created = (table, rec, at, by) => S.history.push({ table, id: rec.id, at: at + "T09:00:00", by, kind: "created" });
@@ -244,6 +267,7 @@ export function loadSample() {
   for (const p of S.deposits) { const u = S.uploads.find(x => x.id === p.uploadId); if (u) created("deposits", p, u.uploadedAt.slice(0, 10), u.uploadedBy); }
   for (const d of S.documents) created("documents", d, d.received, "u_ar1");
   for (const x of S.schedules) if (x.firstDate) created("schedules", x, x.firstDate, "u_ar1");
+  for (const g of S.giros) created("giros", g, g.activatedOn, "u_ar1");
   S.history.sort((a, b) => a.at.localeCompare(b.at));
   resetAudit();
   S.ui.ws = { main: { kind: "home" }, tabs: [], active: "main", lmOpen: null, side: { open: true, w: 380 }, q: "", composer: {} };

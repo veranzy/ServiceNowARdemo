@@ -59,6 +59,34 @@ Custom contract table (not ast_contract). Middle of the billing hierarchy custom
 | `bill_to_address` | Billing address | String (1000) |  |
 | `notes` | Notes | String (4000) |  |
 
+### GIRO authorisation — `x_ar_giro_authorisation`
+
+GIRO (direct debit) authorisations per contract (D20). Created as Active by Activate GIRO on an AR-ix case; set to Removed by Remove GIRO. Keeps the history of add / remove requests. Number prefix: `GIR`.
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `number` | Number | String | Read-only on form |
+| `status` | Status | Choice | Choices: Active (`active`), Removed (`removed`). Read-only on form |
+| `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
+| `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer. Mandatory |
+| `purpose` | Purpose | Choice | Choices: Rental (`rental`), Carpark (`carpark`), Others (`others`). Mandatory |
+| `purpose_other` | Other purpose | String | Shown when Purpose = Others (UI policy) |
+| `applicant_name` | Applicant name / entity | String | Mandatory |
+| `applicant_email` | Applicant email | String |  |
+| `applicant_mobile` | Applicant mobile | String |  |
+| `invoice_ref` | Invoice reference number | String |  |
+| `amount` | Amount | Currency | Mandatory |
+| `start_date` | Effective start date | Date | Shown when Purpose = Rental (UI policy) |
+| `end_date` | Effective end date | Date | Shown when Purpose = Rental (UI policy) |
+| `location` | Location | String | Shown when Purpose = Rental (UI policy) |
+| `carplate` | Car plate | String | Shown when Purpose = Carpark (UI policy) |
+| `parking_start` | Parking start date | Date | Shown when Purpose = Carpark (UI policy) |
+| `parking_end` | Parking end date | Date | Shown when Purpose = Carpark (UI policy) |
+| `activated_on` | Activated on | Date | Read-only on form |
+| `removed_on` | Removed on | Date | Read-only on form |
+| `add_request` | Added by AR-ix case | Reference | → `x_ar_request`. Read-only on form |
+| `remove_request` | Removed by AR-ix case | Reference | → `x_ar_request`. Read-only on form |
+
 ### AR request — `x_ar_request` (extends `task`)
 
 Case raised by the project team through an AR form record producer (AR-i … AR-xvi). Extends Task for assignment, SLAs and the activity stream. Number prefix: `ARQ`.
@@ -66,9 +94,12 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `number` | Number | String | Read-only on form |
-| `state` | State | Choice | Choices: New (`new`), In progress (`in_progress`), Awaiting info (`awaiting_info`), Billed (`invoiced`), Rejected (`rejected`). Read-only on form |
+| `state` | State | Choice | Choices: New (`new`), In progress (`in_progress`), Awaiting info (`awaiting_info`), Billed (`invoiced`), Completed (`completed`), Rejected (`rejected`). Read-only on form |
 | `opened_by` | Requested by | Reference | → `sys_user`. Read-only on form |
-| `ar_form` | AR form | Choice | Choices: AR-i New AR request (`AR-i`), AR-ii To be defined (`AR-ii`), AR-iii To be defined (`AR-iii`), AR-iv To be defined (`AR-iv`), AR-v To be defined (`AR-v`), AR-vi To be defined (`AR-vi`), AR-vii To be defined (`AR-vii`), AR-viii To be defined (`AR-viii`), AR-ix To be defined (`AR-ix`), AR-x To be defined (`AR-x`), AR-xi To be defined (`AR-xi`), AR-xii To be defined (`AR-xii`), AR-xiii To be defined (`AR-xiii`), AR-xiv To be defined (`AR-xiv`), AR-xv To be defined (`AR-xv`), AR-xvi To be defined (`AR-xvi`). Read-only on form |
+| `ar_form` | AR form | Choice | Choices: AR-i New AR request (`AR-i`), AR-ii To be defined (`AR-ii`), AR-iii To be defined (`AR-iii`), AR-iv To be defined (`AR-iv`), AR-v To be defined (`AR-v`), AR-vi To be defined (`AR-vi`), AR-vii To be defined (`AR-vii`), AR-viii To be defined (`AR-viii`), AR-ix GIRO authorisation (`AR-ix`), AR-x To be defined (`AR-x`), AR-xi To be defined (`AR-xi`), AR-xii To be defined (`AR-xii`), AR-xiii To be defined (`AR-xiii`), AR-xiv To be defined (`AR-xiv`), AR-xv To be defined (`AR-xv`), AR-xvi To be defined (`AR-xvi`). Read-only on form |
+| `requester_name` | Requester name | String | General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name. Default: gs.getUser().getFullName() |
+| `requester_email` | Email | String | Read-only on form. General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only. Default: gs.getUser().getEmail() |
+| `cc_list` | CC list | String (1000) | General information (all AR forms). Emails separated by commas; these people can view the case on the portal (Watch list) |
 | `department` | Requesting department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory. Tooltip: "Auto-populated from the requester's department. Change it only if you are requesting for another department.". Default: Requester's department (sys_user.department via the variable's default value) |
 | `customer` | Customer | Reference | → `x_ar_customer`. Mandatory unless New customer is ticked |
 | `new_customer` | New customer | True/False |  |
@@ -98,6 +129,21 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Billing type = SB (UI policy). Optional |
 | `sub_bu` | Sub-BU | Choice | Choices: 1, 2, 3, 4, 5. Shown when V@G = Yes (UI policy). Optional |
 | `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Shown when V@G = No (UI policy). Optional |
+| `giro_applicant_name` | Applicant name / entity | String | AR-ix. Mandatory on the form; prefilled from the contract's bill-to |
+| `giro_applicant_email` | Applicant email | String | AR-ix. Mandatory on the form; prefilled from the contract's bill-to |
+| `giro_applicant_mobile` | Applicant mobile | String | AR-ix. Prefilled from the contract's bill-to phone |
+| `giro_invoice_ref` | Invoice reference number | String | AR-ix. Optional; requirement to be confirmed |
+| `giro_purpose` | Purpose | Choice | Choices: Rental (`rental`), Carpark (`carpark`), Others (`others`). AR-ix. Mandatory on the form |
+| `giro_purpose_other` | Other purpose | String | Shown when Purpose = Others (UI policy). AR-ix. Mandatory when Purpose = Others |
+| `giro_type` | Type | Choice | Choices: Add GIRO (`add`), Remove GIRO (`remove`). AR-ix. Mandatory on the form |
+| `giro_start_date` | Effective start date | Date | Shown when Purpose = Rental (UI policy). AR-ix rental. Mandatory for Add GIRO |
+| `giro_end_date` | Effective end date | Date | Shown when Purpose = Rental (UI policy). AR-ix rental. Optional; on or after the start date |
+| `giro_location` | Location | String | Shown when Purpose = Rental (UI policy). AR-ix rental. Mandatory |
+| `giro_carplate` | Car plate | String | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory; one vehicle per form |
+| `giro_parking_start` | Parking start date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory for Add GIRO |
+| `giro_parking_end` | Parking end date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Optional; on or after the start date |
+| `giro_amount` | Amount | Currency | AR-ix, all purposes. Mandatory for Add GIRO |
+| `giro_authorisation` | GIRO authorisation | Reference | → `x_ar_giro_authorisation`. Read-only on form. Set by Activate GIRO / Remove GIRO |
 | `doc_contract_po` | Signed contract / PO | Attachment | Only when not already on file for the customer |
 | `doc_acra` | Company registration (ACRA / UEN) | Attachment | Only when not already on file |
 | `doc_billing_form` | Billing contact & address form | Attachment | Only when not already on file for this department |
@@ -188,11 +234,16 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 
 ## Portal (project team)
 
-- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `department`, `contract_option`, `contract`, `new_contract_ref`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `contract_location`, `contract_location_ref`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `po_number`, `cost_center`, `account_code`, `billing_type_code`, `vag`, `sub_bu`, `type_of_billing`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
+- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_ref`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `contract_location`, `contract_location_ref`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `po_number`, `cost_center`, `account_code`, `billing_type_code`, `vag`, `sub_bu`, `type_of_billing`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
   - Producer script: `current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;`
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.
-- **My requests**: list widget on `x_ar_request` where `opened_by = me`.
+- **Variable set "General information"** (D19), first section of every AR form: `requester_name` (default: current user's name), `requester_email` (from SSO, read-only), `department`, `cc_list` (emails; the producer script adds them to the case `watch_list` so they can view it on the portal).
+- **Record producer "AR-ix GIRO authorisation"** on `x_ar_request` (GIR module). Variables: `requester_name`, `requester_email`, `department`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `contract_option`, `contract`, `new_contract_ref`, `giro_applicant_name`, `giro_applicant_email`, `giro_applicant_mobile`, `giro_invoice_ref`, `giro_purpose`, `giro_purpose_other`, `giro_type`, `giro_start_date`, `giro_end_date`, `giro_location`, `giro_carplate`, `giro_parking_start`, `giro_parking_end`, `giro_amount`, `description`, plus attachments.
+  - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>;`
+  - Catalog client script on contract change: prefill applicant name / email / mobile from the contract's bill-to; show active GIRO on the contract.
+  - UI policies: Other purpose when Purpose = Others; location and effective start/end for Rental; car plate and parking start/end for Carpark; amount and start date mandatory for Add GIRO.
+- **My requests**: list widget on `x_ar_request` where `opened_by = me` **or the user's email is on the CC list** (`watch_list` contains me); CC'd cases are marked *CC*.
 - **Ticket page**: standard ticket conversation (comments only), field summary, attachments; requester can comment. Business rule: requester comment while *Awaiting info* sets state to *In progress*.
 - ACLs: `x_ar.project_team` create on `x_ar_request` (via producer), read own records; read `x_ar_customer` and `x_ar_contract` for reference selection; read invoice number/date/due of their own request's invoice. No workspace access.
 
@@ -217,6 +268,9 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 | Billing line | Create invoice | One-off line: insert draft `x_ar_invoice` (customer, line's contract, description, amount, invoice date, due = date + terms); links `request_line` |
 | Billing line | Set up billing schedule | Recurring line: insert `x_ar_billing_schedule` over the line's date range; comment to requester (D12) |
 | Billing schedule | Raise invoice | Draft invoice for one billing period; never automatic (D12) |
+| AR request (AR-ix) | Link contract | Shown while `contract` is empty: sets contract and customer from the chosen contract. For a contract not on file, AR processes its AR-i first (GIR module) |
+| AR request (AR-ix) | Activate GIRO | Type Add: inserts an Active `x_ar_giro_authorisation` on the contract with the case's GIRO details; case → Completed |
+| AR request (AR-ix) | Remove GIRO | Type Remove: sets matching Active GIRO authorisations on the contract (same purpose; same car plate for carpark) to Removed; case → Completed |
 | Invoice | Issue invoice | Draft → Issued; posts a requester-visible comment; BR sets the AR request to Billed when every line is invoiced or scheduled |
 | Invoice | Cancel invoice (overflow menu) | Only when no allocations; the line becomes open again and the request goes back to In progress |
 | Deposit | Match to invoice / Find invoice → Apply | Inserts `x_ar_allocation` records (manual); exception = short pay / over pay / multi-invoice |

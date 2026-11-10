@@ -1,7 +1,7 @@
 // Record lifecycle: AR request cases, invoices, journal entries, numbering, generic save.
 // Each function mirrors a ServiceNow UI action or business rule (named in the comments).
 import { ctrById, custById, invoiceUse } from "./ledger.js";
-import { DOC_TYPES, FREQUENCIES, TABLES } from "./schema.js";
+import { DOC_TYPES, FREQUENCIES, GIRO_PURPOSES, GIRO_TYPES, TABLES, clearHidden } from "./schema.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, today, uid } from "./util.js";
 
@@ -76,11 +76,93 @@ export function docsOnFile(customerId, contractId, department) {
   return out;
 }
 
+// ---------- General information (all AR forms, D19) ----------
+const EMAIL_RE = /^[^@\s,;]+@[^@\s,;]+\.[^@\s,;]+$/;
+export const ccEmails = s => String(s || "").split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
+function generalInfoErrors(d, e) {
+  if (!String(d.requesterName || "").trim()) e.requesterName = "Enter the requester's name.";
+  if (!d.department) e.department = "Choose your department.";
+  const bad = ccEmails(d.ccList).filter(x => !EMAIL_RE.test(x));
+  if (bad.length) e.ccList = `Not a valid email: ${bad.join(", ")}. Separate emails with commas.`;
+}
+/** Portal: requests the user raised, or is on the CC list of (CC'd people can view the case). */
+export const canViewReq = (r, u = me()) => r.requestedBy === u.id || ccEmails(r.ccList).map(x => x.toLowerCase()).includes(String(u.email || "").toLowerCase());
+
+// ---------- AR-ix GIRO authorisation (GIR module) ----------
+export const GIRO_PURPOSE = Object.fromEntries(GIRO_PURPOSES), GIRO_TYPE = Object.fromEntries(GIRO_TYPES);
+export function validateARix(d) {
+  const e = {}, need = (k, msg) => { const v = d[k]; if (v === undefined || v === null || v === "" || v === false) e[k] = msg; };
+  generalInfoErrors(d, e);
+  if (d.newCustomer) need("newCustName", "Enter the customer's name.");
+  else need("customerId", "Search for the customer, or add its name if AR doesn't have it.");
+  if (d.newCustomer || d.customerId) {
+    need("contractOption", "Choose the contract, or say it isn't listed yet.");
+    if (d.contractOption === "existing") need("contractId", "Choose the contract.");
+    if (d.contractOption === "new") need("newCtrRef", "Enter the contract / tenancy agreement / reference number.");
+  }
+  need("applicantName", "Enter the applicant name or entity.");
+  need("applicantEmail", "Enter the applicant's email.");
+  if (d.applicantEmail && !EMAIL_RE.test(d.applicantEmail)) e.applicantEmail = "Enter a valid email address.";
+  need("giroPurpose", "Choose the purpose.");
+  if (d.giroPurpose === "others") need("giroPurposeOther", "Describe the purpose.");
+  need("giroType", "Choose Add GIRO or Remove GIRO.");
+  const add = d.giroType === "add";
+  if (add && !(d.giroAmount > 0)) e.giroAmount = "Enter the GIRO amount.";
+  if (d.giroPurpose === "rental") {
+    need("giroLocation", "Enter the location.");
+    if (add) need("giroStart", "Enter the effective start date.");
+    if (d.giroStart && d.giroEnd && d.giroEnd < d.giroStart) e.giroEnd = "Must be on or after the start date.";
+  }
+  if (d.giroPurpose === "carpark") {
+    need("carplate", "Enter the car plate.");
+    if (add) need("parkStart", "Enter the parking start date.");
+    if (d.parkStart && d.parkEnd && d.parkEnd < d.parkStart) e.parkEnd = "Must be on or after the start date.";
+  }
+  return e;
+}
+export const giroLabel = r => [GIRO_TYPE[r.giroType] || "GIRO", r.giroPurpose === "others" ? r.giroPurposeOther || "Others" : GIRO_PURPOSE[r.giroPurpose]].filter(Boolean).join(" · ");
+const giroMatch = (g, r) => g.contractId === r.contractId && g.status === "active" && g.purpose === r.giroPurpose && (r.giroPurpose !== "carpark" || String(g.carplate || "").replace(/\s/g, "").toUpperCase() === String(r.carplate || "").replace(/\s/g, "").toUpperCase());
+/** Active GIRO authorisations a Remove GIRO case would end. */
+export const giroToRemove = r => S.giros.filter(g => giroMatch(g, r));
+/** UI action: Link contract (AR-ix). For a contract not on file, AR processes the AR-i that creates it first, then links it here. */
+export function linkContract(reqId, contractId) {
+  const r = reqById(reqId), k = ctrById(contractId);
+  if (!r || !k) return "Choose the contract to link.";
+  Object.assign(r, { contractId: k.id, customerId: k.customerId, newCustomer: false, updated: isoToday() });
+  journal(r, "system", `Linked to contract ${k.number} (${custById(k.customerId)?.name}).`);
+  if (r.state === "new") r.state = "in_progress";
+  return null;
+}
+/** UI actions: Activate GIRO / Remove GIRO. Writes the GIRO authorisation on the contract and completes the case. */
+export function applyGiro(reqId) {
+  const r = reqById(reqId); if (!r) return "Record not found.";
+  if (!r.contractId) return "Link the contract first. If it is a new contract, process its AR-i first.";
+  const today = isoToday(), k = ctrById(r.contractId);
+  if (r.giroType === "remove") {
+    const hits = giroToRemove(r);
+    if (!hits.length) return `No active ${GIRO_PURPOSE[r.giroPurpose]?.toLowerCase() || ""} GIRO on ${k.number}${r.giroPurpose === "carpark" ? ` for ${r.carplate}` : ""} to remove.`;
+    for (const g of hits) Object.assign(g, { status: "removed", removedOn: today, removeRequestId: r.id });
+    r.giroId = hits[0].id;
+    journal(r, "comment", `GIRO removed on contract ${k.number} (${hits.map(g => g.number).join(", ")}).`);
+  } else {
+    const g = { id: uid("g"), number: nextNumber("giros"), status: "active", customerId: k.customerId, contractId: k.id, purpose: r.giroPurpose, purposeOther: r.giroPurposeOther || "",
+      applicantName: r.applicantName, applicantEmail: r.applicantEmail, applicantMobile: r.applicantMobile || "", invoiceRef: r.giroInvoiceRef || "", amount: r.giroAmount || 0,
+      startDate: r.giroStart || "", endDate: r.giroEnd || "", location: r.giroLocation || "", carplate: r.carplate || "", parkStart: r.parkStart || "", parkEnd: r.parkEnd || "",
+      activatedOn: today, removedOn: "", requestId: r.id, removeRequestId: null };
+    S.giros.push(g); r.giroId = g.id;
+    journal(r, "comment", `GIRO activated on contract ${k.number} (${g.number}).`);
+  }
+  r.state = "completed"; r.updated = today;
+  journal(r, "system", "State changed to Completed.");
+  return null;
+}
+
 /** AR-i record producer validation (UI policies + mandatory variables + billing lines). Returns {key: message}.
  *  Line errors are keyed "line:<index>:<field>"; "lines" when there are no lines. */
 export function validateARi(d) {
+  if (d.form === "AR-ix") return validateARix(d);
   const e = {}, need = (k, msg) => { const v = d[k]; if (v === undefined || v === null || v === "" || v === false) e[k] = msg; };
-  need("department", "Choose your department.");
+  generalInfoErrors(d, e);
   if (d.newCustomer) need("newCustName", "Enter the new customer's name.");
   else need("customerId", "Search for the customer, or add it as a new customer.");
   if (d.newCustomer || d.customerId) {
@@ -139,6 +221,7 @@ export function linesSummary(lines) {
 export const reqLines = r => S.lines.filter(l => l.requestId === r.id);
 /** Short label like "2 one-off · 1 recurring". */
 export function linesLabel(r) {
+  if (r.form === "AR-ix") return giroLabel(r);
   const ls = r.lines || reqLines(r), s = linesSummary(ls);
   return [s.nOne ? `${s.nOne} one-off` : "", s.nRec ? `${s.nRec} recurring` : ""].filter(Boolean).join(" · ") || "No lines";
 }
@@ -296,8 +379,16 @@ export function journal(req, kind, text, by) {
 /** Record producer submit (portal AR form). */
 export function createRequest(vals) {
   const { lines = [], ...rest } = vals;
+  clearHidden("requests", rest);
   const req = { id: uid("r"), number: nextNumber("requests"), state: "new", requestedBy: me().id, assignedTo: null,
-    opened: isoToday(), updated: isoToday(), activity: [], attachments: rest.attachments || [], ...rest };
+    opened: isoToday(), updated: isoToday(), activity: [], attachments: rest.attachments || [], ...rest, requesterEmail: me().email || "" };
+  if (req.form === "AR-ix") {
+    req.amount = req.giroAmount || 0;
+    req.title = `${giroLabel(req)}${req.carplate ? ` · ${req.carplate}` : req.giroLocation ? ` · ${req.giroLocation}` : ""}`;
+    S.requests.push(req);
+    journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : `for contract ${req.newCtrRef} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
+    return req;
+  }
   req.amount = linesSummary(lines).total;
   S.requests.push(req);
   for (const l of lines) S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, contractId: req.contractOption === "existing" ? req.contractId || null : null, lineType: l.lineType, desc: l.desc.trim(), amount: l.amount,

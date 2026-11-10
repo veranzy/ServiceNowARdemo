@@ -26,4 +26,5 @@ Cross-module decisions go in [`../DECISIONS.md`](../DECISIONS.md).
 | CSH | Cash application (manual matching of deposits to invoices) | AR team | In prototype |
 | [MDM](MDM.md) | Master data: customers, contracts | AR team | In prototype |
 | [BSU](BSU.md) | Bank statement upload | AR team | In prototype |
+| [GIR](GIR.md) | AR-ix GIRO authorisation: add / remove GIRO on a contract; GIRO authorisation table | Project team, AR team | In prototype |
 | [UIX](UIX.md) | Workspace look and layout aligned to the Horizon Design System (app shell, list page, record page) | AR team | In prototype |

@@ -11,7 +11,7 @@ export const ROLES = {
     can: "Submit AR forms (record producers AR-i … AR-xvi) and read/comment on their own AR requests. Read customers, contracts, billing contacts and which customer documents are on file. No workspace access." }
 };
 
-const STATE_REQ = [["new", "New"], ["in_progress", "In progress"], ["awaiting_info", "Awaiting info"], ["invoiced", "Billed"], ["rejected", "Rejected"]];
+const STATE_REQ = [["new", "New"], ["in_progress", "In progress"], ["awaiting_info", "Awaiting info"], ["invoiced", "Billed"], ["completed", "Completed"], ["rejected", "Rejected"]];
 
 /** The 11 operational departments (D11). Bank accounts may also belong to Finance. */
 export const DEPARTMENTS = ["Engineering", "Marine", "Digital", "Infrastructure", "Energy", "Facilities", "Logistics", "Healthcare", "Environmental", "Rail", "Advisory"];
@@ -19,10 +19,14 @@ const DEPT_CHOICES = DEPARTMENTS.map(d => [d, d]);
 
 /** Portal AR forms catalogue (D9): AR-i … AR-xvi. Only AR-i is defined so far. */
 export const AR_FORMS = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii", "xiv", "xv", "xvi"].map((r, n) => ({
-  code: `AR-${r}`, name: n === 0 ? "New AR request" : "To be defined",
-  desc: n === 0 ? "Bill a customer: one-off and recurring lines, new or existing customer. Customer documents are given once." : "Form not yet specified.",
-  active: n === 0
+  code: `AR-${r}`, name: n === 0 ? "New AR request" : n === 8 ? "GIRO authorisation" : "To be defined",
+  desc: n === 0 ? "Bill a customer: one-off and recurring lines, new or existing customer. Customer documents are given once."
+    : n === 8 ? "Add or remove GIRO (direct debit) on a contract: rental, carpark or other charges." : "Form not yet specified.",
+  active: n === 0 || n === 8
 }));
+export const GIRO_PURPOSES = [["rental", "Rental"], ["carpark", "Carpark"], ["others", "Others"]];
+export const GIRO_TYPES = [["add", "Add GIRO"], ["remove", "Remove GIRO"]];
+const GIRO_STATUS = [["active", "Active"], ["removed", "Removed"]];
 
 export const LINE_TYPES = [["one_off", "One-off"], ["recurring", "Recurring"]];
 export const FREQUENCIES = [["monthly", "Monthly", 1], ["quarterly", "Quarterly", 3], ["half_yearly", "Half-yearly", 6], ["annually", "Annually", 12]];
@@ -44,6 +48,9 @@ export const TABLES = {
       { key: "state", name: "state", label: "State", type: "Choice", choices: STATE_REQ, readonly: true },
       { key: "requestedBy", name: "opened_by", label: "Requested by", type: "Reference", ref: "users", readonly: true },
       { key: "form", name: "ar_form", label: "AR form", type: "Choice", choices: AR_FORMS.map(f => [f.code, `${f.code} ${f.name}`]), readonly: true },
+      { key: "requesterName", name: "requester_name", label: "Requester name", type: "String", help: "General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name", default: "gs.getUser().getFullName()" },
+      { key: "requesterEmail", name: "requester_email", label: "Email", type: "String", readonly: true, help: "General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only", default: "gs.getUser().getEmail()" },
+      { key: "ccList", name: "cc_list", label: "CC list", type: "String (1000)", wide: true, help: "General information (all AR forms). Emails separated by commas; these people can view the case on the portal (Watch list)" },
       { key: "department", name: "department", label: "Requesting department", type: "Choice", choices: DEPT_CHOICES, mandatory: true, tooltip: "Auto-populated from the requester's department. Change it only if you are requesting for another department.", default: "Requester's department (sys_user.department via the variable's default value)" },
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", help: "Mandatory unless New customer is ticked" },
       { key: "newCustomer", name: "new_customer", label: "New customer", type: "True/False" },
@@ -73,6 +80,22 @@ export const TABLES = {
       { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "billingTypeCode", eq: "SB" }, help: "Optional" },
       { key: "subBu", name: "sub_bu", label: "Sub-BU", type: "Choice", choices: SUB_BUS, showIf: { key: "vag", eq: "yes" }, help: "Optional" },
       { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, showIf: { key: "vag", eq: "no" }, help: "Optional" },
+      // AR-ix GIRO authorisation (record producer variables; mandatory rules enforced on the form, see GIR module)
+      { key: "applicantName", name: "giro_applicant_name", label: "Applicant name / entity", type: "String", help: "AR-ix. Mandatory on the form; prefilled from the contract's bill-to" },
+      { key: "applicantEmail", name: "giro_applicant_email", label: "Applicant email", type: "String", help: "AR-ix. Mandatory on the form; prefilled from the contract's bill-to" },
+      { key: "applicantMobile", name: "giro_applicant_mobile", label: "Applicant mobile", type: "String", help: "AR-ix. Prefilled from the contract's bill-to phone" },
+      { key: "giroInvoiceRef", name: "giro_invoice_ref", label: "Invoice reference number", type: "String", help: "AR-ix. Optional; requirement to be confirmed" },
+      { key: "giroPurpose", name: "giro_purpose", label: "Purpose", type: "Choice", choices: GIRO_PURPOSES, help: "AR-ix. Mandatory on the form" },
+      { key: "giroPurposeOther", name: "giro_purpose_other", label: "Other purpose", type: "String", wide: true, showIf: { key: "giroPurpose", eq: "others" }, help: "AR-ix. Mandatory when Purpose = Others" },
+      { key: "giroType", name: "giro_type", label: "Type", type: "Choice", choices: GIRO_TYPES, help: "AR-ix. Mandatory on the form" },
+      { key: "giroStart", name: "giro_start_date", label: "Effective start date", type: "Date", showIf: { key: "giroPurpose", eq: "rental" }, help: "AR-ix rental. Mandatory for Add GIRO" },
+      { key: "giroEnd", name: "giro_end_date", label: "Effective end date", type: "Date", showIf: { key: "giroPurpose", eq: "rental" }, help: "AR-ix rental. Optional; on or after the start date" },
+      { key: "giroLocation", name: "giro_location", label: "Location", type: "String", wide: true, showIf: { key: "giroPurpose", eq: "rental" }, help: "AR-ix rental. Mandatory" },
+      { key: "carplate", name: "giro_carplate", label: "Car plate", type: "String", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Mandatory; one vehicle per form" },
+      { key: "parkStart", name: "giro_parking_start", label: "Parking start date", type: "Date", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Mandatory for Add GIRO" },
+      { key: "parkEnd", name: "giro_parking_end", label: "Parking end date", type: "Date", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Optional; on or after the start date" },
+      { key: "giroAmount", name: "giro_amount", label: "Amount", type: "Currency", help: "AR-ix, all purposes. Mandatory for Add GIRO" },
+      { key: "giroId", name: "giro_authorisation", label: "GIRO authorisation", type: "Reference", ref: "giros", readonly: true, help: "Set by Activate GIRO / Remove GIRO" },
       { key: "docContract", name: "doc_contract_po", label: "Signed contract / PO", type: "Attachment", help: "Only when not already on file for the customer" },
       { key: "docAcra", name: "doc_acra", label: "Company registration (ACRA / UEN)", type: "Attachment", help: "Only when not already on file" },
       { key: "docBillingForm", name: "doc_billing_form", label: "Billing contact & address form", type: "Attachment", help: "Only when not already on file for this department" },
@@ -207,6 +230,33 @@ export const TABLES = {
       { key: "received", name: "received_on", label: "Received", type: "Date", readonly: true }
     ]
   },
+  giros: {
+    table: `${SCOPE}_giro_authorisation`, label: "GIRO authorisation", plural: "GIRO authorisations", display: "number", prefix: "GIR",
+    note: "GIRO (direct debit) authorisations per contract (D20). Created as Active by Activate GIRO on an AR-ix case; set to Removed by Remove GIRO. Keeps the history of add / remove requests.",
+    fields: [
+      { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "GIR0001000" },
+      { key: "status", name: "status", label: "Status", type: "Choice", choices: GIRO_STATUS, readonly: true },
+      { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
+      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", dependsOn: "customerId", mandatory: true },
+      { key: "purpose", name: "purpose", label: "Purpose", type: "Choice", choices: GIRO_PURPOSES, mandatory: true },
+      { key: "purposeOther", name: "purpose_other", label: "Other purpose", type: "String", wide: true, showIf: { key: "purpose", eq: "others" } },
+      { key: "applicantName", name: "applicant_name", label: "Applicant name / entity", type: "String", mandatory: true },
+      { key: "applicantEmail", name: "applicant_email", label: "Applicant email", type: "String" },
+      { key: "applicantMobile", name: "applicant_mobile", label: "Applicant mobile", type: "String" },
+      { key: "invoiceRef", name: "invoice_ref", label: "Invoice reference number", type: "String" },
+      { key: "amount", name: "amount", label: "Amount", type: "Currency", mandatory: true },
+      { key: "startDate", name: "start_date", label: "Effective start date", type: "Date", showIf: { key: "purpose", eq: "rental" } },
+      { key: "endDate", name: "end_date", label: "Effective end date", type: "Date", showIf: { key: "purpose", eq: "rental" } },
+      { key: "location", name: "location", label: "Location", type: "String", wide: true, showIf: { key: "purpose", eq: "rental" } },
+      { key: "carplate", name: "carplate", label: "Car plate", type: "String", showIf: { key: "purpose", eq: "carpark" } },
+      { key: "parkStart", name: "parking_start", label: "Parking start date", type: "Date", showIf: { key: "purpose", eq: "carpark" } },
+      { key: "parkEnd", name: "parking_end", label: "Parking end date", type: "Date", showIf: { key: "purpose", eq: "carpark" } },
+      { key: "activatedOn", name: "activated_on", label: "Activated on", type: "Date", readonly: true },
+      { key: "removedOn", name: "removed_on", label: "Removed on", type: "Date", readonly: true },
+      { key: "requestId", name: "add_request", label: "Added by AR-ix case", type: "Reference", ref: "requests", readonly: true },
+      { key: "removeRequestId", name: "remove_request", label: "Removed by AR-ix case", type: "Reference", ref: "requests", readonly: true }
+    ]
+  },
   schedules: {
     table: `${SCOPE}_billing_schedule`, label: "Billing schedule", plural: "Billing schedules", display: "number", prefix: "SCH",
     note: "Recurring billing set up once from a recurring billing line (D12, D13): from–to date range and frequency. Periods are listed; AR raises each invoice manually.",
@@ -312,13 +362,24 @@ export function fieldNote(tableKey, key) {
 }
 
 /** Record producer for the portal AR form: variables map onto x_ar_request fields. */
+/** Variable set "General information", shared by every AR form (D19). */
+export const GENERAL_INFO = ["requesterName", "requesterEmail", "department", "ccList"];
 export const RECORD_PRODUCER = {
   name: "AR-i New AR request",
   table: "requests",
-  variables: ["customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "department",
+  variables: [...GENERAL_INFO, "customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress",
     "contractOption", "contractId", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "contractLocation", "contractLocationRef",
     "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "poNumber",
     "costCenter", "accountCode", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "lines",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;"
 };
+/** AR-ix GIRO authorisation (GIR module): same case table, its own variables. */
+export const RECORD_PRODUCER_ARIX = {
+  name: "AR-ix GIRO authorisation",
+  table: "requests",
+  variables: [...GENERAL_INFO, "customerId", "newCustomer", "newCustName", "contractOption", "contractId", "newCtrRef", "applicantName", "applicantEmail", "applicantMobile", "giroInvoiceRef",
+    "giroPurpose", "giroPurposeOther", "giroType", "giroStart", "giroEnd", "giroLocation", "carplate", "parkStart", "parkEnd", "giroAmount", "details"],
+  script: "current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>;"
+};
+export const RECORD_PRODUCERS = [RECORD_PRODUCER, RECORD_PRODUCER_ARIX];

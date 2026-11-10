@@ -49,6 +49,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `REQ-ACT` | Activity stream: comments (visible to requester) + work_notes (AR only) + field changes |
 | `REQ-SETUP` | Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, contract location, billing lines done |
+| `REQ-GIRO` | GIRO setup panel (AR-ix case, contextual side bar): contract linked? then Activate GIRO / Remove GIRO and which x_ar_giro_authorisation records it creates or ends |
+| `REQ-LINKCTR` | Contract to link (AR-ix): reference to x_ar_contract, matching contract number listed first. Used by Link contract; for a contract not on file AR processes its AR-i first |
 | `REQ-LINKTO` | Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check) |
 | `REQ-ATT` | Attachments: sys_attachment on x_ar_request (added on the portal form) |
 
@@ -88,7 +90,13 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-03` | Quick link to catalog item: record producer "AR-i New AR request" |
 | `PT-04` | Quick link to My Requests |
 | `PT-05` | Record producer "AR-i New AR request" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; |
-| `PT-06` | Variable requested_by → opened_by (default: current user, read-only) |
+| `PT-06` | RETIRED 2026-11-10: replaced by the General information variable set (PT-30, REQ.requester_name / REQ.requester_email) |
+| `PT-30` | Variable set General information (D19), first section of every AR form record producer: requester_name (default current user's name), requester_email (from SSO, read-only), department, cc_list (emails; copied to the case watch_list so they can view it on the portal) |
+| `PT-31` | Record producer "AR-ix GIRO authorisation" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; |
+| `PT-32` | AR-ix variable set Contract and applicant: customer search, existing contract (reference qualifier: customer's contracts, not shells) or 'not listed' with a reference number; applicant name / email / mobile prefilled from the contract's bill-to (catalog client script onChange contract); invoice reference number |
+| `PT-33` | AR-ix variable set GIRO details: purpose (Rental / Carpark / Others), other purpose, type (Add / Remove GIRO); UI policies: rental → location, effective start/end; carpark → car plate, parking start/end; amount (mandatory for Add); supporting documents (attachments) |
+| `PT-34` | Info message on AR-ix: active GIRO authorisations on the chosen contract (GlideAjax read of x_ar_giro_authorisation) |
+| `PT-35` | Ticket page block for AR-ix: GIRO request summary and its outcome (contract to be linked / with AR / active / removed) |
 | `PT-07` | Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include |
 | `PT-08` | Variable attachments → sys_attachment on the created x_ar_request |
 | `PT-09` | Submit → inserts x_ar_request (state New, assignment group AR team). Automation to be defined |
@@ -124,6 +132,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.state` | x_ar_request.state · Choice · read-only |
 | `REQ.opened_by` | x_ar_request.opened_by · Reference → sys_user · read-only |
 | `REQ.ar_form` | x_ar_request.ar_form · Choice · read-only |
+| `REQ.requester_name` | x_ar_request.requester_name · String · General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name |
+| `REQ.requester_email` | x_ar_request.requester_email · String · read-only · General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only |
+| `REQ.cc_list` | x_ar_request.cc_list · String (1000) · General information (all AR forms). Emails separated by commas; these people can view the case on the portal (Watch list) |
 | `REQ.department` | x_ar_request.department · Choice · mandatory |
 | `REQ.customer` | x_ar_request.customer · Reference → x_ar_customer · Mandatory unless New customer is ticked |
 | `REQ.new_customer` | x_ar_request.new_customer · True/False |
@@ -153,6 +164,21 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.vag` | x_ar_request.vag · Choice · Optional |
 | `REQ.sub_bu` | x_ar_request.sub_bu · Choice · Optional |
 | `REQ.type_of_billing` | x_ar_request.type_of_billing · Choice · Optional |
+| `REQ.giro_applicant_name` | x_ar_request.giro_applicant_name · String · AR-ix. Mandatory on the form; prefilled from the contract's bill-to |
+| `REQ.giro_applicant_email` | x_ar_request.giro_applicant_email · String · AR-ix. Mandatory on the form; prefilled from the contract's bill-to |
+| `REQ.giro_applicant_mobile` | x_ar_request.giro_applicant_mobile · String · AR-ix. Prefilled from the contract's bill-to phone |
+| `REQ.giro_invoice_ref` | x_ar_request.giro_invoice_ref · String · AR-ix. Optional; requirement to be confirmed |
+| `REQ.giro_purpose` | x_ar_request.giro_purpose · Choice · AR-ix. Mandatory on the form |
+| `REQ.giro_purpose_other` | x_ar_request.giro_purpose_other · String · AR-ix. Mandatory when Purpose = Others |
+| `REQ.giro_type` | x_ar_request.giro_type · Choice · AR-ix. Mandatory on the form |
+| `REQ.giro_start_date` | x_ar_request.giro_start_date · Date · AR-ix rental. Mandatory for Add GIRO |
+| `REQ.giro_end_date` | x_ar_request.giro_end_date · Date · AR-ix rental. Optional; on or after the start date |
+| `REQ.giro_location` | x_ar_request.giro_location · String · AR-ix rental. Mandatory |
+| `REQ.giro_carplate` | x_ar_request.giro_carplate · String · AR-ix carpark. Mandatory; one vehicle per form |
+| `REQ.giro_parking_start` | x_ar_request.giro_parking_start · Date · AR-ix carpark. Mandatory for Add GIRO |
+| `REQ.giro_parking_end` | x_ar_request.giro_parking_end · Date · AR-ix carpark. Optional; on or after the start date |
+| `REQ.giro_amount` | x_ar_request.giro_amount · Currency · AR-ix, all purposes. Mandatory for Add GIRO |
+| `REQ.giro_authorisation` | x_ar_request.giro_authorisation · Reference → x_ar_giro_authorisation · read-only · Set by Activate GIRO / Remove GIRO |
 | `REQ.doc_contract_po` | x_ar_request.doc_contract_po · Attachment · Only when not already on file for the customer |
 | `REQ.doc_acra` | x_ar_request.doc_acra · Attachment · Only when not already on file |
 | `REQ.doc_billing_form` | x_ar_request.doc_billing_form · Attachment · Only when not already on file for this department |
@@ -414,6 +440,41 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RQL.invoice` | x_ar_request_line.invoice · Reference → x_ar_invoice · read-only |
 | `RQL.billing_schedule` | x_ar_request_line.billing_schedule · Reference → x_ar_billing_schedule · read-only |
 
+## GIRO authorisation
+
+| ID | ServiceNow |
+|---|---|
+| `LST-GIR` | List: x_ar_giro_authorisation · list view layout + list menu condition |
+| `RP-GIR` | Record page (UI Builder) · x_ar_giro_authorisation |
+| `HDR-GIR` | Record header: highlighted values of x_ar_giro_authorisation |
+| `FRM-GIR` | Form view: x_ar_giro_authorisation (Default view) |
+
+## GIRO authorisation fields
+
+| ID | ServiceNow |
+|---|---|
+| `GIR.number` | x_ar_giro_authorisation.number · String · read-only |
+| `GIR.status` | x_ar_giro_authorisation.status · Choice · read-only |
+| `GIR.customer` | x_ar_giro_authorisation.customer · Reference → x_ar_customer · mandatory |
+| `GIR.contract` | x_ar_giro_authorisation.contract · Reference → x_ar_contract · mandatory |
+| `GIR.purpose` | x_ar_giro_authorisation.purpose · Choice · mandatory |
+| `GIR.purpose_other` | x_ar_giro_authorisation.purpose_other · String |
+| `GIR.applicant_name` | x_ar_giro_authorisation.applicant_name · String · mandatory |
+| `GIR.applicant_email` | x_ar_giro_authorisation.applicant_email · String |
+| `GIR.applicant_mobile` | x_ar_giro_authorisation.applicant_mobile · String |
+| `GIR.invoice_ref` | x_ar_giro_authorisation.invoice_ref · String |
+| `GIR.amount` | x_ar_giro_authorisation.amount · Currency · mandatory |
+| `GIR.start_date` | x_ar_giro_authorisation.start_date · Date |
+| `GIR.end_date` | x_ar_giro_authorisation.end_date · Date |
+| `GIR.location` | x_ar_giro_authorisation.location · String |
+| `GIR.carplate` | x_ar_giro_authorisation.carplate · String |
+| `GIR.parking_start` | x_ar_giro_authorisation.parking_start · Date |
+| `GIR.parking_end` | x_ar_giro_authorisation.parking_end · Date |
+| `GIR.activated_on` | x_ar_giro_authorisation.activated_on · Date · read-only |
+| `GIR.removed_on` | x_ar_giro_authorisation.removed_on · Date · read-only |
+| `GIR.add_request` | x_ar_giro_authorisation.add_request · Reference → x_ar_request · read-only |
+| `GIR.remove_request` | x_ar_giro_authorisation.remove_request · Reference → x_ar_request · read-only |
+
 ## Calculated columns
 
 | ID | ServiceNow |
@@ -445,6 +506,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RL-CUS-CON` | Related list: x_ar_contract where customer = this customer |
 | `RL-CUS-INV` | Related list: x_ar_invoice where customer = this customer |
 | `RL-CUS-REQ` | Related list: x_ar_request where customer = this customer |
+| `RL-CON-GIR` | Related list: x_ar_giro_authorisation where contract = this contract |
+| `RL-REQ-GIR` | Related list: x_ar_giro_authorisation where contract (the case's contract) = this ar request |
 | `RL-CON-INV` | Related list: x_ar_invoice where contract = this contract |
 | `RL-CON-REQ` | Related list: x_ar_request where contract = this contract |
 | `RL-CON-RQL` | Related list: x_ar_request_line where contract = this contract |
@@ -462,9 +525,13 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-REQ-assign` | UI action: Assign to me → assigned_to = current user, state = In progress |
 | `UA-REQ-info` | UI action: Request info → state = Awaiting info; requires an additional comment (visible on portal) |
 | `UA-REQ-reject` | UI action: Reject → state = Rejected; requires an additional comment |
+| `UA-REQ-linkctr` | UI action: Link contract (AR-ix, shown while contract is empty) → sets contract and customer from the chosen x_ar_contract; New → In progress |
+| `UA-REQ-giroadd` | UI action: Activate GIRO (AR-ix, type Add) → inserts x_ar_giro_authorisation (status Active) on the case's contract with the case's GIRO details; case → Completed with a requester-visible comment |
+| `UA-REQ-giroremove` | UI action: Remove GIRO (AR-ix, type Remove) → sets matching active x_ar_giro_authorisation records on the contract (same purpose; same car plate for carpark) to Removed; case → Completed |
 | `UA-REQ-link` | UI action: Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document; records contract location (D10, D15, D16) |
 | `UA-SCH-raise` | UI action: Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12) |
 | `UA-SCH-save` | UI action: Save (update) |
+| `UA-GIR-save` | UI action: Save (update) |
 | `UA-BCT-save` | UI action: Save (update) |
 | `UA-BCT-new` | UI action: New (list action) |
 | `UA-BCT-insert` | UI action: Submit (insert); unique per customer + department |

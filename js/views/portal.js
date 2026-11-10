@@ -1,14 +1,14 @@
 // Project team experience: Service Portal / Employee Center with the AR forms catalogue (AR-i … AR-xvi),
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, LINE_TYPE, REQ_OPEN, contactFor, ctrLabel, docsOnFile, freqLabel, isShell, lineErrors, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, needLocation, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
+import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, canViewReq, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineErrors, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, needLocation, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
 import { AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, LINE_TYPES, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
 import { custName, ctrNo, fieldHtml, icon, initials, reqChip, reqCustName, sn } from "./common.js";
 
 const P = () => S.ui.portal;
-const myReqs = () => S.requests.filter(r => r.requestedBy === me().id).sort((a, b) => String(b.updated || b.opened).localeCompare(String(a.updated || a.opened)));
+const myReqs = () => S.requests.filter(r => canViewReq(r)).sort((a, b) => String(b.updated || b.opened).localeCompare(String(a.updated || a.opened)));
 
 export function portalView() {
   const p = P(), u = me();
@@ -69,7 +69,7 @@ function catalogPage() {
       <h1 class="pt-h1">AR forms</h1>
       <p class="pt-lead">Choose the form for what you need from Accounts Receivable. Each form creates a case for the AR team.</p>
       <div class="pt-forms">${AR_FORMS.map(f => f.active
-        ? `<button type="button" class="pt-form-tile on" data-pnav="form"${sn("PT-15")}><span class="ft-code">${esc(f.code)}</span><b>${esc(f.name)}</b><span>${esc(f.desc)}</span></button>`
+        ? `<button type="button" class="pt-form-tile on" data-pnav="form" data-form="${f.code}"${sn("PT-15")}><span class="ft-code">${esc(f.code)}</span><b>${esc(f.name)}</b><span>${esc(f.desc)}</span></button>`
         : `<div class="pt-form-tile off" aria-disabled="true"${sn("PT-16")}><span class="ft-code">${esc(f.code)}</span><b>${esc(f.name)}</b><span>${esc(f.desc)}</span></div>`).join("")}</div>
     </section>
   </div>`;
@@ -107,13 +107,13 @@ export function custResults(d) {
   </div>`;
 }
 
-function customerStep(d, e, f) {
+function customerStep(d, e, f, o = {}) {
   if (d.customerId && !d.newCustomer) {
     const c = custById(d.customerId);
     return `<div class="custpick"><div><span class="desc">Customer</span><b>${esc(c?.name)}</b><span class="desc">${esc(c?.uen ? `UEN ${c.uen}` : "")}</span></div><button type="button" class="linkish small" data-custclear>Change</button></div>`;
   }
-  if (d.newCustomer) return `<div class="custpick new"><div><span class="chip c-warn">New customer</span> <span class="desc">AR will verify and create it. This makes it a first request.</span></div><button type="button" class="linkish small" data-custclear>Search existing customers instead</button></div>
-    <div class="fgrid">${f("newCustName", { mandatory: true, help: null })}${f("newCustUen")}${f("newCustAddress")}</div>`;
+  if (d.newCustomer) return `<div class="custpick new"><div><span class="chip c-warn">New customer</span> <span class="desc">${esc(o.newLabel || "AR will verify and create it. This makes it a first request.")}</span></div><button type="button" class="linkish small" data-custclear>Search existing customers instead</button></div>
+    <div class="fgrid">${f("newCustName", { mandatory: true, help: null })}${o.newFields === false ? "" : `${f("newCustUen")}${f("newCustAddress")}`}</div>`;
   return `<label class="ffield wide${e.customerId ? " has-err" : ""}" for="pfCustQ"${sn("REQ.customer")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Find the customer</span>
       <input type="search" id="pfCustQ" value="${esc(d.custQ || "")}" placeholder="Company name or UEN" autocomplete="off"${e.customerId ? ` aria-invalid="true"` : ""}>${e.customerId ? `<span class="ferr">${esc(e.customerId)}</span>` : ""}</label>
     ${custResults(d)}`;
@@ -172,9 +172,24 @@ export function linesTotals(d) {
   return `<dl class="ltotals" id="pfTotals"><div><dt>One-off</dt><dd class="mono">${fmt(t.oneOffTotal)}</dd></div><div><dt>Recurring (all periods)</dt><dd class="mono">${fmt(t.recurringValue)}</dd></div><div><dt>Request value</dt><dd class="mono"><b>SGD ${fmt(t.total)}</b></dd></div></dl>`;
 }
 
+/** Variable set "General information" (D19): first section of every AR form. */
+function generalInfo(d, e, f) {
+  return `<fieldset class="psec"${sn("PT-30")}><legend>1. General information</legend>
+    <div class="fgrid">${f("requesterName", { mandatory: true, help: null })}
+      <div class="ffield"${sn("REQ.requester_email")}><span class="flabel">Email</span><div class="fro">${esc(me().email || "")}</div><span class="fhelp">From your sign-in (SSO); can't be changed.</span></div>
+      ${f("department")}${f("ccList", { help: "Emails separated by commas. These people can view this case on the portal." })}</div>
+  </fieldset>`;
+}
+
 function formPage() {
-  const p = P();
-  if (!p.draft) p.draft = { form: "AR-i", department: me().department || "", newCustomer: false, custQ: "", attachments: [], lines: [{ lineType: "one_off", desc: "", amount: 0, invoiceDate: "", frequency: "monthly", startDate: "", endDate: "" }] };
+  const p = P(), code = p.formCode || "AR-i";
+  if (!p.draft || p.draft.form !== code) {
+    const gen = { form: code, requesterName: me().name, requesterEmail: me().email || "", ccList: "", department: me().department || "", newCustomer: false, custQ: "", attachments: [] };
+    p.draft = code === "AR-ix" ? { ...gen, contractOption: "", giroPurpose: "", giroType: "add" }
+      : { ...gen, lines: [{ lineType: "one_off", desc: "", amount: 0, invoiceDate: "", frequency: "monthly", startDate: "", endDate: "" }] };
+    p.errors = {};
+  }
+  if (code === "AR-ix") return giroFormPage();
   const d = p.draft, e = p.errors || {};
   const f = (k, o = {}) => fieldHtml("requests", reqField(k), d, { prefix: "pf", errors: e, vals: d, ...o });
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
@@ -188,16 +203,17 @@ function formPage() {
         <p class="pt-lead">Ask Accounts Receivable to bill a customer. Billing is contract level: choose the contract (or No contract required), then add one-off and recurring billing lines. A recurring line runs over a date range and only needs to be submitted once.</p>
         <div id="pfAlert">${formAlert(nErr)}</div>
 
-        <fieldset class="psec"${sn("PT-25")}><legend>1. Customer</legend>
-          <div class="fgrid"><label class="ffield"${sn("PT-06")}><span class="flabel">Requested by</span><div class="fro">${esc(me().name)}</div></label>${f("department")}</div>
+        ${generalInfo(d, e, f)}
+
+        <fieldset class="psec"${sn("PT-25")}><legend>2. Customer</legend>
           ${customerStep(d, e, f)}
         </fieldset>
 
-        ${haveCust ? `<fieldset class="psec"${sn("PT-20")}><legend>2. Contract and bill-to</legend>
+        ${haveCust ? `<fieldset class="psec"${sn("PT-20")}><legend>3. Contract and bill-to</legend>
           ${contractStep(d, e, f)}
         </fieldset>` : ""}
 
-        <fieldset class="psec"${sn("PT-26")}><legend>${haveCust ? "3" : "2"}. What to bill</legend>
+        <fieldset class="psec"${sn("PT-26")}><legend>${haveCust ? "4" : "3"}. What to bill</legend>
           ${(() => { const k = targetContract(d); return d.contractOption ? `<p class="pt-hint">Billing lines are filed under ${d.contractOption === "new" ? `new contract ${esc(d.newCtrRef || "")}` : k ? esc(ctrLabel(k)) : d.contractOption === "none" ? "the no-contract shell" : "the chosen contract"}.</p>` : ""; })()}
           <div class="fgrid">${f("title")}${f("poNumber")}</div>
           <div class="lines${e.lines ? " has-err" : ""}" id="pfLines"${sn("RL-REQ-RQL")}>${(d.lines || []).map((l, i) => lineCard(l, i, e)).join("")}</div>
@@ -206,12 +222,12 @@ function formPage() {
           ${linesTotals(d)}
         </fieldset>
 
-        <fieldset class="psec"${sn("PT-29")}><legend>${haveCust ? "4" : "3"}. Finance coding</legend>
+        <fieldset class="psec"${sn("PT-29")}><legend>${haveCust ? "5" : "4"}. Finance coding</legend>
           <p class="pt-hint">Optional. Fill in what you know; AR can complete it.</p>
           <div class="fgrid">${FIN_KEYS.filter(k => fieldVisible("requests", reqField(k), d)).map(k => f(k, { help: null })).join("")}</div>
         </fieldset>
 
-        <fieldset class="psec"${sn("PT-23")}><legend>${haveCust ? "5" : "4"}. Customer documents</legend>
+        <fieldset class="psec"${sn("PT-23")}><legend>${haveCust ? "6" : "5"}. Customer documents</legend>
           <p class="pt-hint">${d.newCustomer ? "New customer: AR needs all three documents." : d.customerId ? "Documents AR already holds for this customer are marked On file." : "Find the customer to see which documents AR already holds."}</p>
           <div class="docs">${DOC_TYPES.map(([t]) => docRow(t, d, onFile)).join("")}</div>
           <div class="ffield wide"${sn("PT-08")}><span class="flabel">Other supporting documents</span>
@@ -226,11 +242,72 @@ function formPage() {
   </div>`;
 }
 
+/** AR-ix GIRO authorisation (GIR module). Contract first (prefills the applicant), then the GIRO details. */
+function giroFormPage() {
+  const p = P(), d = p.draft, e = p.errors || {};
+  const f = (k, o = {}) => fieldHtml("requests", reqField(k), d, { prefix: "pf", errors: e, vals: d, ...o });
+  const nErr = Object.keys(e).length, haveCust = d.newCustomer || d.customerId;
+  const ctrs = d.customerId && !d.newCustomer ? S.contracts.filter(k => k.customerId === d.customerId && !isShell(k)) : [];
+  const opts = [["existing", "Existing contract", `${ctrs.length} on file`], ["new", "Not listed / new", "AR links it later"]].filter(([k]) => k !== "existing" || ctrs.length);
+  const k = d.contractId ? ctrById(d.contractId) : null;
+  const active = k ? S.giros.filter(g => g.contractId === k.id && g.status === "active") : [];
+  const show = key => fieldVisible("requests", reqField(key), d);
+  return `<div class="pt-inner pt-body">
+    <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <button type="button" class="linkish" data-pnav="forms">AR forms</button> › <span>AR-ix</span></nav>
+    <div class="pt-item">
+      <form class="pt-form pt-card" id="arForm" novalidate${sn("PT-31")}>
+        <div><span class="ft-code">AR-ix</span><h1>GIRO authorisation</h1></div>
+        <p class="pt-lead">Add or remove GIRO (direct debit) on a contract for rental, carpark or other charges. Choose the contract first; the applicant details come from it.</p>
+        <div id="pfAlert">${formAlert(nErr)}</div>
+
+        ${generalInfo(d, e, f)}
+
+        <fieldset class="psec"${sn("PT-32")}><legend>2. Contract and applicant</legend>
+          ${customerStep(d, e, f, { newLabel: "AR doesn't have this customer yet. AR will set it up when it processes the contract's AR-i.", newFields: false })}
+          ${haveCust ? `<div class="ffield wide${e.contractOption ? " has-err" : ""}"${sn("REQ.contract_option")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Which contract is the GIRO for?</span>
+            <div class="optcards" role="group" aria-label="Contract">${opts.map(([key, l, sub]) => `<button type="button" class="optcard" data-ctropt="${key}" aria-pressed="${d.contractOption === key}">${esc(l)}<span>${esc(sub)}</span></button>`).join("")}</div>
+            ${e.contractOption ? `<span class="ferr">${esc(e.contractOption)}</span>` : ""}</div>
+          ${d.contractOption === "existing" ? `<div class="fgrid"><label class="ffield wide${e.contractId ? " has-err" : ""}" for="pf-contractId"${sn("REQ.contract")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Contract</span>
+            <select id="pf-contractId" name="contractId"${e.contractId ? ` aria-invalid="true"` : ""}><option value="">-- Choose the contract --</option>${ctrs.map(c => `<option value="${c.id}"${c.id === d.contractId ? " selected" : ""}>${esc(c.number)} · ${esc(c.title)}</option>`).join("")}</select>
+            ${e.contractId ? `<span class="ferr">${esc(e.contractId)}</span>` : ""}</label></div>
+            ${k ? `<div class="pt-info"${sn("PT-34")}><b>GIRO on ${esc(k.number)}</b><p class="small">${active.length ? active.map(g => `${esc(g.number)}: ${esc(GIRO_PURPOSE[g.purpose])}${g.carplate ? ` ${esc(g.carplate)}` : g.location ? ` · ${esc(g.location)}` : ""} · SGD ${fmt(g.amount)} · active since ${esc(g.activatedOn)}`).join("<br>") : "No active GIRO on this contract."}</p></div>` : ""}` : ""}
+          ${d.contractOption === "new" ? `<p class="pt-hint">AR links the GIRO to the contract once the contract is set up (AR processes its AR-i first).</p><div class="fgrid">${f("newCtrRef", { mandatory: true, label: "Contract / tenancy agreement / reference number", help: null })}</div>` : ""}` : ""}
+          ${d.contractOption ? `<h3 class="small">Applicant</h3>${d.applicantPrefilled ? `<p class="pt-hint">Prefilled from the bill-to on ${esc(k?.number || "the contract")}. Change it if the GIRO applicant is different.</p>` : ""}
+          <div class="fgrid">${f("applicantName", { mandatory: true, help: null })}${f("applicantEmail", { mandatory: true, help: null })}${f("applicantMobile", { help: null })}${f("giroInvoiceRef", { help: "Optional for now" })}</div>` : ""}
+        </fieldset>
+
+        <fieldset class="psec"${sn("PT-33")}><legend>3. GIRO details</legend>
+          <div class="fgrid">${f("giroPurpose", { mandatory: true, help: null })}${show("giroPurposeOther") ? f("giroPurposeOther", { mandatory: true, help: null }) : ""}${f("giroType", { mandatory: true, help: null })}</div>
+          ${d.giroPurpose === "rental" ? `<h3 class="small">Rental</h3><div class="fgrid">${f("giroLocation", { mandatory: true, help: null })}${f("giroStart", { mandatory: d.giroType === "add", help: null })}${f("giroEnd", { help: null })}</div>` : ""}
+          ${d.giroPurpose === "carpark" ? `<h3 class="small">Carpark</h3><div class="fgrid">${f("carplate", { mandatory: true, help: "One vehicle per form" })}${f("parkStart", { mandatory: d.giroType === "add", help: null })}${f("parkEnd", { help: null })}</div>` : ""}
+          <div class="fgrid">${f("giroAmount", { mandatory: d.giroType === "add", help: d.giroType === "remove" ? "Optional when removing GIRO" : null })}</div>
+          <div class="ffield wide"${sn("PT-08")}><span class="flabel">Supporting documents</span>
+            <div><label class="btn small" for="pfAttach">${icon("clip", 15)} Add attachment</label><input type="file" id="pfAttach" multiple hidden></div>
+            ${d.attachments?.length ? `<ul class="attlist">${d.attachments.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unattach="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">For example the signed GIRO form or the tenancy agreement.</span>`}
+          </div>
+          <div class="fgrid">${f("details")}</div>
+        </fieldset>
+      </form>
+      <aside class="pt-side" id="pfSide">${formSide(d)}</aside>
+    </div>
+  </div>`;
+}
+
 const ctrSummary = d => d.contractOption === "existing" ? (d.contractId ? `Contract ${ctrById(d.contractId)?.number}` : "Existing contract (choose one)")
   : d.contractOption === "new" ? `New contract ${d.newCtrRef || ""}`.trim() : d.contractOption === "none" ? "No contract required" : d.contractId ? ctrLabel(ctrById(d.contractId)) : "Contract not chosen yet";
 export const formAlert = n => n ? `<div class="pt-alert err" role="alert">Please fix ${n} field${n === 1 ? "" : "s"} below.</div>` : "";
 
 export function formSide(d) {
+  if (d.form === "AR-ix") {
+    const labels = [...new Set(Object.keys(validateARi(d)).map(k => k === "newCtrRef" ? "Contract reference number" : reqField(k)?.label).filter(Boolean))];
+    return `<div class="pt-card sticky">
+      <span class="ft-code">AR-ix</span><h2>Submit request</h2>
+      <p class="small muted">Goes to the Accounts Receivable team as a case. You and the people on the CC list can follow it on My requests.</p>
+      <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "Customer"} (not at AR yet)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(d.contractOption === "existing" ? (d.contractId ? `Contract ${ctrById(d.contractId)?.number}` : "Choose the contract") : d.contractOption === "new" ? `Contract ${d.newCtrRef || "(reference to enter)"} · AR links it` : "Contract not chosen yet")}<br>${esc(d.giroPurpose ? giroLabel(d) : "GIRO details to fill in")}${d.giroAmount ? ` · SGD ${fmt(d.giroAmount)}` : ""}</p>
+      ${labels.length ? `<p class="small"><b>Still needed</b><br>${labels.map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
+      <button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
+    </div>`;
+  }
   const keys = Object.keys(validateARi(d));
   const labels = [...new Set(keys.map(k => k.startsWith("line:") ? `Line ${+k.split(":")[1] + 1} details` : k === "lines" ? "Billing lines" : reqField(k)?.label).filter(Boolean))];
   const t = linesSummary(d.lines || []);
@@ -246,6 +323,13 @@ export function formSide(d) {
 
 function confirmPage() {
   const r = reqById(P().id); if (!r) return homePage();
+  if (r.form === "AR-ix") return `<div class="pt-inner pt-body"><section class="pt-card pt-done" role="status">
+    <h1>Request submitted</h1>
+    <p>Your AR-ix request <b class="mono">${esc(r.number)}</b> (${esc(giroLabel(r))}) for ${esc(reqCustName(r))} has been sent to Accounts Receivable.</p>
+    ${r.contractId ? "" : `<p class="small">Contract <b>${esc(r.newCtrRef)}</b> isn't on file yet. AR sets it up from its AR-i, then links this GIRO request to it.</p>`}
+    ${ccEmails(r.ccList).length ? `<p class="small">CC: ${esc(ccEmails(r.ccList).join(", "))} can view this case.</p>` : ""}
+    <div class="row"><button type="button" class="btn primary" data-ticket="${r.id}">View request</button><button type="button" class="btn" data-pnav="forms">Back to AR forms</button></div>
+  </section></div>`;
   return `<div class="pt-inner pt-body"><section class="pt-card pt-done" role="status">
     <h1>Request submitted</h1>
     <p>Your ${esc(r.form)} request <b class="mono">${esc(r.number)}</b> (${esc(linesLabel(r))}, request value <b>SGD ${fmt(r.amount)}</b>) for ${esc(reqCustName(r))} has been sent to Accounts Receivable.</p>
@@ -262,17 +346,18 @@ function requestsPage() {
     <section class="pt-card"${sn("PT-10")}>
       <header><h1 class="h2">My requests</h1><button type="button" class="btn primary small" data-pnav="forms">AR forms</button></header>
       ${rows.length ? `<div class="tablewrap"><table class="list"><thead><tr><th>Number</th><th>Form</th><th>Request</th><th>Customer</th><th class="num">Amount</th><th>State</th><th>Updated</th></tr></thead><tbody>
-        ${rows.map(r => `<tr data-ticket="${r.id}" tabindex="0"><td><button type="button" class="linkish mono" data-ticket="${r.id}">${esc(r.number)}</button></td><td>${esc(r.form || "AR-i")}<span class="desc">${esc(linesLabel(r))}</span></td><td class="wrap">${esc(r.title)}</td><td>${esc(reqCustName(r))}</td><td class="num">${fmt(r.amount)}</td><td>${reqChip(r)}</td><td>${esc(r.updated || r.opened)}</td></tr>`).join("")}
+        ${rows.map(r => `<tr data-ticket="${r.id}" tabindex="0"><td><button type="button" class="linkish mono" data-ticket="${r.id}">${esc(r.number)}</button>${r.requestedBy !== me().id ? ` <span class="chip c-neutral" title="You are on the CC list">CC</span>` : ""}</td><td>${esc(r.form || "AR-i")}<span class="desc">${esc(linesLabel(r))}</span></td><td class="wrap">${esc(r.title)}</td><td>${esc(reqCustName(r))}</td><td class="num">${fmt(r.amount)}</td><td>${reqChip(r)}</td><td>${esc(r.updated || r.opened)}</td></tr>`).join("")}
       </tbody></table></div>` : `<p class="empty">No requests yet. Use AR-i to ask Accounts Receivable to bill a customer.</p>`}
     </section>
   </div>`;
 }
 
 function ticketPage() {
-  const r = reqById(P().id); if (!r || r.requestedBy !== me().id) return requestsPage();
+  const r = reqById(P().id); if (!r || !canViewReq(r)) return requestsPage();
   const lines = reqLines(r);
   const feed = r.activity.filter(e => e.kind !== "work_note").slice().reverse();
-  const open = r.state !== "rejected" && r.state !== "invoiced";
+  const open = REQ_OPEN.includes(r.state);
+  const giro = r.form === "AR-ix", g = r.giroId ? S.giros.find(x => x.id === r.giroId) : null;
   const kv = (k, v) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
   return `<div class="pt-inner pt-body">
     <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <button type="button" class="linkish" data-pnav="requests">My requests</button> › <span>${esc(r.number)}</span></nav>
@@ -280,9 +365,10 @@ function ticketPage() {
       <section class="pt-card"${sn("PT-11")}>
         <header class="tk-head"><div><span class="mono muted">${esc(r.number)}</span><h1 class="h2">${esc(r.title)}</h1></div>${reqChip(r)}</header>
         ${r.state === "awaiting_info" ? `<div class="pt-alert" role="status"><b>Accounts Receivable needs more information.</b> Reply below. Your reply sends the request back to AR.</div>` : ""}
-        <div class="tklines"${sn("PT-27")}><h2 class="small">Billing lines</h2><ul>${lines.map(l => { const inv = l.invoiceId ? S.invoices.find(i => i.id === l.invoiceId) : null, sch = l.scheduleId ? S.schedules.find(x => x.id === l.scheduleId) : null, st = lineStatus(l);
+        ${giro ? `<div class="tklines"${sn("PT-35")}><h2 class="small">GIRO</h2><ul><li><div><b>${esc(giroLabel(r))}</b><span class="desc">${esc([r.carplate, r.giroLocation, r.giroAmount ? `SGD ${fmt(r.giroAmount)}` : "", r.giroStart || r.parkStart ? `from ${r.giroStart || r.parkStart}` : ""].filter(Boolean).join(" · "))}</span></div>
+          <div class="tkst">${r.state === "completed" ? `<span class="chip c-ok">${r.giroType === "remove" ? "Removed" : "Active"}</span><span class="desc">${esc(g?.number || "")} on ${esc(ctrNo(r.contractId))}</span>` : r.contractId ? `<span class="chip c-neutral">With AR</span>` : `<span class="chip c-warn">Contract to be linked</span><span class="desc">${esc(r.newCtrRef || "")}</span>`}</div></li></ul></div>` : `<div class="tklines"${sn("PT-27")}><h2 class="small">Billing lines</h2><ul>${lines.map(l => { const inv = l.invoiceId ? S.invoices.find(i => i.id === l.invoiceId) : null, sch = l.scheduleId ? S.schedules.find(x => x.id === l.scheduleId) : null, st = lineStatus(l);
           return `<li><div><b>${esc(l.desc)}</b><span class="desc">${l.lineType === "recurring" ? `${esc(freqLabel(l.frequency).toLowerCase())} SGD ${fmt(l.amount)} · ${esc(l.startDate)} to ${esc(l.endDate)}` : `One-off SGD ${fmt(l.amount)}`}</span></div>
-            <div class="tkst">${st === "invoiced" ? `<span class="chip c-ok">Invoiced</span><span class="desc">${esc(inv.number)} · issued ${esc(inv.date)} · due ${esc(inv.due)}</span>` : st === "scheduled" ? `<span class="chip c-ok">Scheduled</span><span class="desc">${esc(sch.number)} · AR raises each invoice</span>` : st === "draft" ? `<span class="chip c-accent">Being invoiced</span>` : `<span class="chip c-neutral">With AR</span>`}</div></li>`; }).join("")}</ul></div>
+            <div class="tkst">${st === "invoiced" ? `<span class="chip c-ok">Invoiced</span><span class="desc">${esc(inv.number)} · issued ${esc(inv.date)} · due ${esc(inv.due)}</span>` : st === "scheduled" ? `<span class="chip c-ok">Scheduled</span><span class="desc">${esc(sch.number)} · AR raises each invoice</span>` : st === "draft" ? `<span class="chip c-accent">Being invoiced</span>` : `<span class="chip c-neutral">With AR</span>`}</div></li>`; }).join("")}</ul></div>`}
         ${r.state === "rejected" ? `<div class="pt-alert err" role="status"><b>This request was rejected.</b> See the reason below. Submit a new AR form if needed.</div>` : ""}
         ${open ? `<div class="composer"><label class="flabel" for="ptReply">Add a comment</label><textarea id="ptReply" rows="3" placeholder="Message to Accounts Receivable"></textarea><div class="row"><span class="hint">Accounts Receivable sees your comment on the case.</span><button type="button" class="btn primary small" data-preply="${r.id}">Send</button></div></div>` : ""}
         <ol class="feed">${feed.map(e => { const u = S.users.find(x => x.id === e.by); const ar = u?.team === "ar";
@@ -290,8 +376,9 @@ function ticketPage() {
       </section>
       <aside class="pt-card"${sn("PT-13")}>
         <h2>Details</h2>
-        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Customer", esc(reqCustName(r)))}${kv("Department", esc(r.department || "—"))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : ctrSummary(r)))}
-          ${kv("Billing", esc(linesLabel(r)))}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}
+        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${kv("Customer", esc(reqCustName(r)))}${kv("Department", esc(r.department || "—"))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
+          ${giro ? `${kv("Applicant", esc([r.applicantName, r.applicantEmail, r.applicantMobile].filter(Boolean).join(" · ")))}${r.giroInvoiceRef ? kv("Invoice reference", esc(r.giroInvoiceRef)) : ""}${kv("GIRO", esc(giroLabel(r)))}${r.giroAmount ? kv("Amount", `<span class="mono">SGD ${fmt(r.giroAmount)}</span>`) : ""}`
+          : `${kv("Billing", esc(linesLabel(r)))}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
 ${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>
         ${r.details ? `<p class="small">${esc(r.details)}</p>` : ""}
         ${(() => { const docs = [["docContract", "Contract / PO"], ["docAcra", "ACRA"], ["docBillingForm", "Billing form"]].filter(([k]) => r[k]).map(([k, l]) => `${l}: ${r[k]}`).concat(r.attachments || []);

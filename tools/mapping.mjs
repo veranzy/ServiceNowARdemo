@@ -1,9 +1,9 @@
 // Generates SERVICENOW_MAPPING.md from js/schema.js. Run: node tools/mapping.mjs
 import { writeFileSync } from "node:fs";
-import { BANKS, RECORD_PRODUCER, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
+import { BANKS, RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
 
 const refName = r => r === "users" ? "sys_user" : TABLES[r].table;
-const order = ["customers", "contracts", "requests", "invoices", "bankAccounts", "uploads", "deposits", "allocations"];
+const order = ["customers", "contracts", "giros", "requests", "invoices", "bankAccounts", "uploads", "deposits", "allocations"];
 let md = `# ServiceNow build mapping
 
 Generated from \`js/schema.js\` by \`node tools/mapping.mjs\`. Edit the schema, not this file's table sections.
@@ -40,7 +40,12 @@ md += `## Portal (project team)
   - Producer script: \`${RECORD_PRODUCER.script}\`
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.
-- **My requests**: list widget on \`${TABLES.requests.table}\` where \`opened_by = me\`.
+- **Variable set "General information"** (D19), first section of every AR form: \`requester_name\` (default: current user's name), \`requester_email\` (from SSO, read-only), \`department\`, \`cc_list\` (emails; the producer script adds them to the case \`watch_list\` so they can view it on the portal).
+- **Record producer "${RECORD_PRODUCER_ARIX.name}"** on \`${TABLES.requests.table}\` (GIR module). Variables: ${RECORD_PRODUCER_ARIX.variables.map(v => `\`${TABLES.requests.fields.find(f => f.key === v).name}\``).join(", ")}, plus attachments.
+  - Producer script: \`${RECORD_PRODUCER_ARIX.script}\`
+  - Catalog client script on contract change: prefill applicant name / email / mobile from the contract's bill-to; show active GIRO on the contract.
+  - UI policies: Other purpose when Purpose = Others; location and effective start/end for Rental; car plate and parking start/end for Carpark; amount and start date mandatory for Add GIRO.
+- **My requests**: list widget on \`${TABLES.requests.table}\` where \`opened_by = me\` **or the user's email is on the CC list** (\`watch_list\` contains me); CC'd cases are marked *CC*.
 - **Ticket page**: standard ticket conversation (comments only), field summary, attachments; requester can comment. Business rule: requester comment while *Awaiting info* sets state to *In progress*.
 - ACLs: \`${ROLES.project.role}\` create on \`${TABLES.requests.table}\` (via producer), read own records; read \`${TABLES.customers.table}\` and \`${TABLES.contracts.table}\` for reference selection; read invoice number/date/due of their own request's invoice. No workspace access.
 
@@ -65,6 +70,9 @@ md += `## Portal (project team)
 | Billing line | Create invoice | One-off line: insert draft \`${TABLES.invoices.table}\` (customer, line's contract, description, amount, invoice date, due = date + terms); links \`request_line\` |
 | Billing line | Set up billing schedule | Recurring line: insert \`${TABLES.schedules.table}\` over the line's date range; comment to requester (D12) |
 | Billing schedule | Raise invoice | Draft invoice for one billing period; never automatic (D12) |
+| AR request (AR-ix) | Link contract | Shown while \`contract\` is empty: sets contract and customer from the chosen contract. For a contract not on file, AR processes its AR-i first (GIR module) |
+| AR request (AR-ix) | Activate GIRO | Type Add: inserts an Active \`${TABLES.giros.table}\` on the contract with the case's GIRO details; case → Completed |
+| AR request (AR-ix) | Remove GIRO | Type Remove: sets matching Active GIRO authorisations on the contract (same purpose; same car plate for carpark) to Removed; case → Completed |
 | Invoice | Issue invoice | Draft → Issued; posts a requester-visible comment; BR sets the AR request to Billed when every line is invoiced or scheduled |
 | Invoice | Cancel invoice (overflow menu) | Only when no allocations; the line becomes open again and the request goes back to In progress |
 | Deposit | Match to invoice / Find invoice → Apply | Inserts \`${TABLES.allocations.table}\` records (manual); exception = short pay / over pay / multi-invoice |

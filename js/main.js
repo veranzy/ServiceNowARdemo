@@ -2,7 +2,7 @@
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { cancelInvoice, createRequest, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, needLocation, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { applyGiro, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, needLocation, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -59,6 +59,16 @@ function uiAction(name) {
     toast(c.kind === "comment" ? "Comment posted. The requester can see it on the portal." : "Work note posted."); return render();
   }
   if (!saveActive(tab, { quiet: true })) return render();
+  if (tab.table === "requests" && name === "linkctr") {
+    const err = linkContract(tab.id, tab.linkCtr || null); tab.linkCtr = null;
+    if (err) { tab.msg = { kind: "err", text: err }; return render(); }
+    toast("GIRO request linked to the contract."); return render();
+  }
+  if (tab.table === "requests" && (name === "giroadd" || name === "giroremove")) {
+    const err = applyGiro(tab.id);
+    if (err) { tab.msg = { kind: "err", text: err }; return render(); }
+    toast(name === "giroadd" ? "GIRO activated on the contract. Case completed." : "GIRO removed from the contract. Case completed."); return render();
+  }
   if (tab.table === "requests" && name === "link") {
     const err = linkCustomer(tab.id, tab.linkTo || null); tab.linkTo = null;
     if (err) { tab.msg = { kind: "err", text: err }; return render(); }
@@ -80,7 +90,7 @@ function uiAction(name) {
 
 function wsSearch(q) {
   q = q.trim().toLowerCase(); if (!q) return;
-  for (const t of ["requests", "invoices", "deposits", "contracts", "schedules", "lines", "uploads", "documents"]) {
+  for (const t of ["requests", "invoices", "deposits", "contracts", "schedules", "lines", "uploads", "documents", "giros"]) {
     const hit = S[t].find(r => String(r.number || "").toLowerCase() === q) || S[t].find(r => String(r.number || "").toLowerCase().includes(q));
     if (hit) return openTab(t, hit.id);
   }
@@ -113,6 +123,14 @@ function portalFieldUpdated(el) {
 
 /** AR-i contract step changed: drop a prefilled bill-to (it belonged to the previous choice) and prefill again. */
 function contractChanged(d) {
+  if (d.form === "AR-ix") {
+    // AR-ix: the applicant is prefilled from the contract's bill-to (cleared again when the contract changes)
+    if (d.applicantPrefilled) { Object.assign(d, { applicantName: "", applicantEmail: "", applicantMobile: "" }); delete d.applicantPrefilled; }
+    const k = d.contractOption === "existing" && d.contractId ? S.contracts.find(x => x.id === d.contractId) : null;
+    if (k?.billToName && !d.applicantName && !d.applicantEmail) Object.assign(d, { applicantName: k.billToName, applicantEmail: k.billToEmail || "", applicantMobile: k.billToPhone || "", applicantPrefilled: true });
+    const now = validateARi(d); for (const key of Object.keys(P().errors)) if (!now[key]) delete P().errors[key];
+    return;
+  }
   if (d.billToPrefilled) { Object.assign(d, { billToName: "", billToEmail: "", billToPhone: "", billToAddress: "" }); delete d.billToPrefilled; }
   d.updateBillTo = false; prefillBillTo(d);
   const now = validateARi(d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k];
@@ -169,7 +187,7 @@ document.addEventListener("click", e => {
   if (t.id === "devRestore") { S.ui.devDismissed.clear(); return render(); }
   if (t.id === "resetDemo") { loadSample(); toast("Demo data reset."); return render(); }
   // portal
-  if (d.pnav) { P().page = d.pnav; P().errors = {}; render(); return window.scrollTo(0, 0); }
+  if (d.pnav) { if (d.pnav === "form") P().formCode = d.form || "AR-i"; P().page = d.pnav; if (d.pnav !== "form") P().errors = {}; render(); return window.scrollTo(0, 0); }
   if (d.ticket) { P().page = "ticket"; P().id = d.ticket; render(); return window.scrollTo(0, 0); }
   if (d.preply) { const err = portalComment(d.preply, $("ptReply")?.value); if (err) return toast(err); toast("Comment sent to Accounts Receivable."); return render(); }
   if (d.undoc) { P().draft[d.undoc] = ""; return render(); }
@@ -250,6 +268,7 @@ document.addEventListener("change", e => {
   const el = e.target;
   if (el.id === "notesToggle") { S.ui.notes = el.checked; return render(); }
   if (el.id === "devToggle") { S.ui.dev = el.checked; return render(); }
+  if (el.dataset.linkctr) { const tab = W().tabs.find(x => x.key === el.dataset.linkctr); if (tab) tab.linkCtr = el.value || null; return; }
   if (el.dataset.linkto) { const tab = W().tabs.find(x => x.key === el.dataset.linkto); if (tab) tab.linkTo = el.value || null; return; }
   if (el.id === "bsuAcct") { Object.assign(S.bsu, { acctId: el.value, text: "", fileName: "", parsed: null, error: "" }); return render(); }
   if (el.id === "bsuDate") { S.bsu.date = el.value; parseCurrent(); return render(); }
@@ -317,6 +336,13 @@ document.addEventListener("submit", e => {
   if (f.id === "arForm") {
     const d = P().draft, errors = validateARi(d);
     if (Object.keys(errors).length) { P().errors = errors; render(); return (document.querySelector("#arForm [aria-invalid], #arForm .has-err input, #arForm .has-err .btn"))?.focus(); }
+    if (d.form === "AR-ix") {
+      const { custQ, applicantPrefilled, ...vals } = d;
+      if (vals.contractOption !== "new") vals.newCtrRef = ""; if (vals.contractOption !== "existing") vals.contractId = null;
+      if (vals.newCustomer) vals.customerId = null; else vals.newCustName = "";
+      const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;
+      render(); return window.scrollTo(0, 0);
+    }
     const { custQ, billToPrefilled, ...vals } = d;
     if (!needBillTo(vals)) Object.assign(vals, { billToName: "", billToEmail: "", billToPhone: "", billToAddress: "", updateBillTo: false });
     if (vals.contractOption !== "new") Object.assign(vals, { newCtrRef: "", newCtrTitle: "", newCtrStart: "", newCtrEnd: "", newCtrValue: 0 });

@@ -299,7 +299,7 @@ function formPage() {
 }
 
 /** AR-ix Type help text, owner's wording exactly (AR-ix decision 14). */
-const GIRO_TYPE_HELP = "remove-ask payee to contact their bank to terminate, new-please information payee to make payment until giro is up, officer will contact applicant to complete giro application form and to mail the bank endorsed completed form back";
+const GIRO_TYPE_HELP = "remove-ask payee to contact their bank to terminate, new-please inform payee to make payment until giro is up, officer will contact applicant to complete giro application form and to mail the bank endorsed completed form back";
 /** AR-ix GIRO authorisation (AR-ix module). Select Customer, then Select Contract (prefills the applicant), then the GIRO details. */
 function giroFormPage() {
   const p = P(), d = p.draft, e = p.errors || {};

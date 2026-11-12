@@ -264,9 +264,9 @@ function formPage() {
           ${customerStep(d, e, f, { details: true })}
         </fieldset>
 
-        ${haveCust ? `<fieldset class="psec"${sn("PT-20")}><legend>${n()}. Contract and bill-to</legend>
-          ${contractStep(d, e, f)}
-        </fieldset>` : ""}
+        <fieldset class="psec"${sn("PT-20")}><legend>${n()}. Contract and bill-to</legend>
+          ${haveCust ? contractStep(d, e, f) : `<p class="pt-hint">Select a customer above to see the contract options.</p>`}
+        </fieldset>
 
         <fieldset class="psec"${sn("PT-37")}><legend>${n()}. Invoice details</legend>
           ${(() => { const bm = billingMode(d), k = targetContract(d); return d.contractOption ? `<p class="pt-hint">Billed under ${d.contractOption === "new" ? `new contract ${esc(d.newCtrNumber || "")}` : k ? esc(ctrLabel(k)) : d.contractOption === "none" ? "the no-contract shell" : "the chosen contract"}: ${bm.recurring ? "<b>recurring contract</b>, so the amount below is billed every month until the contract ends" : "<b>one invoice</b>"}.</p>` : ""; })()}

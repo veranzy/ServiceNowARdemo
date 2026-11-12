@@ -45,7 +45,8 @@ AR-i never changes master data by itself (D22, see [AR-00 → Context](../AR-00/
 - **Customer** (decisions 9, 24–25): search AR's customers by name or UEN. A found customer's details are
   read-only (name, UEN, address, agency type, V@G, V@G sub-BU, POC name and email); *Add as new customer*
   lets the requester type them.
-- **Contract and bill-to** (decisions 11–13, 27–30): *Existing contract* (all details read-only, then its
+- **Contract and bill-to** (decisions 11–13, 27–30, 40; always shown, with the hint *Select a customer above to
+  see the contract options.* until a customer is selected): *Existing contract* (all details read-only, then its
   billing position), *New contract* (the decision 27 fields, contract type first) or *No contract required*
   (files under the department's no-contract shell; bill-to asked only if the shell has none). Ends with the
   **GIRO** subsection (existing DDA, read-only; greyed for new / no contract).

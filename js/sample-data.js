@@ -1,4 +1,5 @@
 // Demo dataset: customers, contracts, invoices and payments loaded on start.
+import { loadCases } from "./cases.js";
 import { S } from "./state.js";
 import { DAY, cents, today, uid } from "./util.js";
 import { depositId } from "./bsu.js";
@@ -353,4 +354,6 @@ export function loadSample() {
   S.ui.portal = { page: "home", id: null, draft: null, errors: {} };
   S.status = null;
   render();
+  // AR form cases come from data/AR_form.csv (UIX decision 13); redraw once they are in
+  loadCases().then(n => { if (n) render(); });
 }

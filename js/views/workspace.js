@@ -128,7 +128,7 @@ const ctrStatusChip = k => { const s = isShell(k) ? ["Open", "c-ok"] : ctrStatus
 const issuedOf = custId => S.invoices.filter(i => i.customerId === custId && i.state === "issued");
 
 const MENU = [
-  ["AR requests", [["requests", "open"], ["requests", "new"], ["requests", "setup"], ["requests", "mine"], ["requests", "awaiting"], ["requests", "all"]]],
+  ["AR requests", [["requests", "open"]]],   // UIX decision 13: open cases only for now; more lists later
   ["Recurring billing", [["schedules", "due"], ["schedules", "active"], ["schedules", "all"]]],
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
   ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"]]],

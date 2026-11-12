@@ -42,6 +42,12 @@ Horizon Design System workspace guidance at https://horizon.servicenow.com/works
 | Theme | **Default workspace theme** (decision 10): no custom theme record; the workspace uses the instance default (Next Experience / Horizon). The prototype's colours are approximations. |
 | Record history | Out-of-box Record history tab on the Record page template (`WS-17`), reading `sys_audit` / `sys_history_set`. **Dictionary: set Audit = true on every `x_ar_` table** (or list them in `glide.ui.audit_deleted_tables` / audit properties as the instance requires). Shows created, field changes with old and new values, who and when. |
 
+## Case data (decision 13)
+
+- `data/AR_form.csv` holds the demo cases: one row per case, AR-i and AR-ix together, headers = `x_ar_request` field names (79 columns: every case field except the calculated `amount` and `giro_on_contract`, plus `attachments`). Choice columns hold values (`add`, `rental`, `existing`); reference columns hold display values (customer name, contract number, user name); dates are `YYYY-MM-DD`; amounts in SGD.
+- To add or change a demo case, edit the CSV (Excel works) and push; the live demo reads it on load and on Reset demo. Cases raised on the portal during a demo are kept in memory only.
+- Build: the same layout works as an import set for `x_ar_request` (transform map on field names, references by display value) if the client wants to load test cases.
+
 ## Out of scope / later
 
 - Portal restyle (decision 1).

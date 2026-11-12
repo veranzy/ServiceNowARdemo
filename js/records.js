@@ -445,12 +445,14 @@ export function journal(req, kind, text, by) {
   req.updated = isoToday();
 }
 
-/** Record producer submit (portal AR form). */
-export function createRequest(vals) {
+/** Record producer submit (portal AR form). `o` overrides the case header when a case is loaded from data/AR_form.csv (UIX decision 13). */
+export function createRequest(vals, o = {}) {
   const { lines, items = [], ...rest } = vals;
   clearHidden("requests", rest);
-  const req = { id: uid("r"), number: nextNumber("requests"), state: "new", requestedBy: me().id, assignedTo: null,
-    opened: isoToday(), updated: isoToday(), activity: [], attachments: rest.attachments || [], ...rest, requesterEmail: me().email || "" };
+  const by = o.requestedBy || me().id;
+  const req = { id: uid("r"), number: o.number || nextNumber("requests"), state: "new", requestedBy: by, assignedTo: null,
+    opened: o.opened || isoToday(), updated: o.opened || isoToday(), activity: [], attachments: rest.attachments || [], ...rest,
+    requesterEmail: o.requestedBy ? rest.requesterEmail || "" : me().email || "" };
   if (req.form === "AR-ix") {
     req.amount = 0;                                  // AR-ix amount is free text with no linkages (AR-ix decision 13)
     if (req.contractOption === "none") req.contractId = giroTarget(req)?.id || null;

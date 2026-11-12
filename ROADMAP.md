@@ -17,6 +17,7 @@ shipped. Requirement questions still open for the client live in each module's
 
 ## Done
 
+- 2026-11-12 **UIX**: demo cases read from `data/AR_form.csv` (8 rows, every AR-i / AR-ix path) on one reusable case page; list menu *AR requests* shows only *Open requests* (decision 13).
 - 2026-11-12 **UIX**: case page Details rebuilt as a form view per AR form (AR-i, AR-ix), portal sections and order, every field shown; all sample cases removed (decision 12). AR-ix portal form locked; AR-ix questions 1, 7, 8 deferred.
 - 2026-11-12 **AR-ix**: sections 5. Attachments and 6. Others (Form number for every choice), modelled on AR-i (decision 16).
 - 2026-11-12 **AR-ix**: GIRO details revamp: Type set by the contract (Remove only when GIRO is active; nothing more for Remove), new Add GIRO fields (Remarks, Tenancy agreement, Contract reference number, second Remarks, Form number) (decisions 14–15).

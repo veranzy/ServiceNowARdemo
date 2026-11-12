@@ -63,8 +63,8 @@ Fields are free text unless stated. `*` = mandatory.
 
 ## Demo data
 
-- **No sample AR-ix cases** (removed 2026-11-12, UIX decision 12). Every contract starts with GIRO *Not active*. Raise an AR-ix on the portal (Project team › AR forms › AR-ix) to create one; numbering starts at ARQ0001001, shared with AR-i.
-- Workspace case page: Details tab is the AR-ix form view (`REQ-FV-ARIX`), sections as on the portal.
+- AR-ix cases come from `data/AR_form.csv` (UIX decision 13): ARQ0001004 Add rental on TR-TA-2025-14, ARQ0001005 Add carpark on a new contract, ARQ0001006 Add others with no contract, ARQ0001007 completed Add rental on **HL-2026-01** (GIRO active from it, set as AR would by hand), ARQ0001008 Remove GIRO on HL-2026-01.
+- Workspace case page: Details tab is the AR-ix form view (`REQ-FV-ARIX`), sections as on the portal. New portal cases continue the numbering (ARQ0001009 onwards).
 
 ## Out of scope / later
 

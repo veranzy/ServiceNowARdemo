@@ -98,6 +98,8 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `short_description` | Request summary | String | Mandatory. e.g. Data hall cooling project, phase 1 |
 | `amount` | Request value | Currency | Read-only on form. Calculated: one-off lines + recurring amount × number of periods |
 | `po_number` | Customer PO number | String |  |
+| `customer_poc_name` | Customer POC name | String | AR-i. Optional: the customer's point of contact for this request |
+| `customer_poc_email` | Customer POC email | String | AR-i. Optional; must be a valid email |
 | `cost_center` | Cost center | String | Optional, free text. To be filled by GA. Tooltip: "To be filled by GA" |
 | `account_code` | Account code | String | Optional, free text |
 | `agent_name` | Name of agent to be billed | String | Optional, free text |
@@ -212,7 +214,7 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 
 ## Portal (project team)
 
-- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_ref`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `contract_location`, `contract_location_ref`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `po_number`, `invoice_breakdown`, `cost_center`, `account_code`, `agent_name`, `billing_type_code`, `vag`, `sub_bu`, `type_of_billing`, `bulk_supporting_docs`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
+- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_ref`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `contract_location`, `contract_location_ref`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `po_number`, `customer_poc_name`, `customer_poc_email`, `invoice_breakdown`, `cost_center`, `account_code`, `agent_name`, `billing_type_code`, `vag`, `sub_bu`, `type_of_billing`, `bulk_supporting_docs`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
   - Producer script: `current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;`
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.

@@ -57,6 +57,7 @@ export const NOTES = {
   "PT-04": "Quick link to My Requests",
   "PT-05": `Record producer "${RECORD_PRODUCER.name}" on ${TABLES.requests.table}. Producer script: ${RECORD_PRODUCER.script}`,
   "PT-06": "RETIRED 2026-11-10: replaced by the General information variable set (PT-30, REQ.requester_name / REQ.requester_email)",
+  "PT-38": "AR-i Customer section, block Customer point of contact: customer_poc_name, customer_poc_email (optional; email validated onSubmit)",
   "PT-36": "AR-i variable set GIRO (D22): read-only Yes / No (variable giro_on_contract) set by a catalog client script from the chosen contract's giro_status (GlideAjax); No for a new contract or no-contract shell. Tooltip: raise an AR-ix if the contract needs GIRO",
   "PT-37": "AR-i variable set Invoice breakdown: invoice_breakdown (multi-line text, optional)",
   "PT-30": "Variable set General information (D19), first section of every AR form record producer: requester_name (default current user's name), requester_email (from SSO, read-only), department, cc_list (emails; copied to the case watch_list so they can view it on the portal)",
@@ -80,7 +81,7 @@ export const NOTES = {
   "PT-25": "Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer)",
   "PT-26": "Variable set What to bill: request summary, PO, and multi-row variable set Billing lines (x_ar_request_line); totals by catalog client script",
   "PT-27": "Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden",
-  "PT-29": "Variable set Finance coding (request level, all optional): cost_center, account_code, billing_type_code (M / SB / PV); UI policies: V@G only when billing type = SB; Sub-BU when V@G = Yes; Type of billing when V@G = No. Hidden variables are cleared",
+  "PT-29": "Finance coding block inside the AR-i Customer section (container in the Customer variable set; request level, all optional): cost_center, account_code, billing_type_code (M / SB / PV); UI policies: V@G only when billing type = SB; Sub-BU when V@G = Yes; Type of billing when V@G = No. Hidden variables are cleared",
   "PT-23": "Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10)",
 };
 

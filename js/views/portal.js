@@ -221,6 +221,15 @@ function formPage() {
 
         <fieldset class="psec"${sn("PT-25")}><legend>2. Customer</legend>
           ${customerStep(d, e, f)}
+          <div${sn("PT-38")}><h3 class="small">Customer point of contact</h3>
+            <div class="fgrid">${f("pocName", { help: "Optional" })}${f("pocEmail", { help: "Optional" })}</div></div>
+          <div${sn("PT-29")}><h3 class="small">Finance coding</h3>
+            <p class="pt-hint">Optional. Fill in what you know; AR can complete it.</p>
+            <div class="fgrid">${FIN_KEYS.filter(k => k !== "docBulk" && fieldVisible("requests", reqField(k), d)).map(k => f(k, { help: k === "subBu" ? "Free text" : null })).join("")}</div>
+            ${fieldVisible("requests", reqField("docBulk"), d) ? `<div class="ffield wide"${sn("REQ.bulk_supporting_docs")}><span class="flabel">Supporting documents (bulk upload)</span>
+              <div><label class="btn small" for="pfBulk">${icon("clip", 15)} Upload files</label><input type="file" id="pfBulk" multiple hidden></div>
+              ${d.docBulk?.length ? `<ul class="attlist">${d.docBulk.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unbulk="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Type of billing ${esc(d.typeOfBilling)}: you can upload several supporting files at once.</span>`}</div>` : ""}
+          </div>
         </fieldset>
 
         ${haveCust ? `<fieldset class="psec"${sn("PT-20")}><legend>${n()}. Contract and bill-to</legend>
@@ -240,14 +249,6 @@ function formPage() {
 
         <fieldset class="psec"${sn("PT-37")}><legend>${n()}. Invoice breakdown</legend>
           <div class="fgrid">${f("invoiceBreakdown", { help: "Optional. How the invoice should be broken down, e.g. by phase, site or cost item." })}</div>
-        </fieldset>
-
-        <fieldset class="psec"${sn("PT-29")}><legend>${n()}. Finance coding</legend>
-          <p class="pt-hint">Optional. Fill in what you know; AR can complete it.</p>
-          <div class="fgrid">${FIN_KEYS.filter(k => k !== "docBulk" && fieldVisible("requests", reqField(k), d)).map(k => f(k, { help: k === "subBu" ? "Free text" : null })).join("")}</div>
-          ${fieldVisible("requests", reqField("docBulk"), d) ? `<div class="ffield wide"${sn("REQ.bulk_supporting_docs")}><span class="flabel">Supporting documents (bulk upload)</span>
-            <div><label class="btn small" for="pfBulk">${icon("clip", 15)} Upload files</label><input type="file" id="pfBulk" multiple hidden></div>
-            ${d.docBulk?.length ? `<ul class="attlist">${d.docBulk.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unbulk="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Type of billing ${esc(d.typeOfBilling)}: you can upload several supporting files at once.</span>`}</div>` : ""}
         </fieldset>
 
         <fieldset class="psec"${sn("PT-23")}><legend>${n()}. Customer documents</legend>
@@ -399,7 +400,7 @@ function ticketPage() {
       </section>
       <aside class="pt-card"${sn("PT-13")}>
         <h2>Details</h2>
-        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${kv("Customer", esc(reqCustName(r)))}${kv("Department", esc([r.department || "—", reqField("deptSubBu").choices.find(c => c[0] === r.deptSubBu)?.[1]].filter(Boolean).join(" · ")))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
+        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${kv("Customer", esc(reqCustName(r)))}${r.pocName || r.pocEmail ? kv("Customer POC", esc([r.pocName, r.pocEmail].filter(Boolean).join(" · "))) : ""}${kv("Department", esc([r.department || "—", reqField("deptSubBu").choices.find(c => c[0] === r.deptSubBu)?.[1]].filter(Boolean).join(" · ")))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
           ${giro ? `${kv("Applicant", esc([r.applicantName, r.applicantEmail, r.applicantMobile].filter(Boolean).join(" · ")))}${r.giroInvoiceRef ? kv("Invoice reference", esc(r.giroInvoiceRef)) : ""}${kv("GIRO", esc(giroLabel(r)))}${r.giroAmount ? kv("Amount", `<span class="mono">SGD ${fmt(r.giroAmount)}</span>`) : ""}`
           : `${kv("Billing", esc(linesLabel(r)))}${r.giroOnContract ? kv("GIRO on contract", r.giroOnContract === "yes" ? "Yes" : "No") : ""}${r.invoiceBreakdown ? kv("Invoice breakdown", esc(r.invoiceBreakdown)) : ""}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
 ${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>

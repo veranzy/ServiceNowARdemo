@@ -278,6 +278,7 @@ const LAYOUT = {
     ["General information", ["requesterName", "requesterEmail", "department", "deptSubBu", "ccList"]],
     // AR-i
     ["Customer", ["customerId"], r => !isIx(r) && !r.newCustomer], ["New customer (to verify)", ["newCustName", "newCustUen", "newCustAddress"], r => !isIx(r) && r.newCustomer],
+    ["Customer point of contact", ["pocName", "pocEmail"], r => !isIx(r)],
     ["Contract", ["contractOption", "contractId", "contractLocation", "contractLocationRef"], r => !isIx(r)],
     ["New contract (to create)", ["newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue"], r => !isIx(r) && r.contractOption === "new"],
     ["Customer PO", ["poNumber"], r => !isIx(r)],

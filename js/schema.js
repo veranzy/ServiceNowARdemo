@@ -82,6 +82,8 @@ export const TABLES = {
       { key: "title", name: "short_description", label: "Request summary", type: "String", mandatory: true, wide: true, help: "e.g. Data hall cooling project, phase 1" },
       { key: "amount", name: "amount", label: "Request value", type: "Currency", readonly: true, help: "Calculated: one-off lines + recurring amount × number of periods" },
       { key: "poNumber", name: "po_number", label: "Customer PO number", type: "String" },
+      { key: "pocName", name: "customer_poc_name", label: "Customer POC name", type: "String", help: "AR-i. Optional: the customer's point of contact for this request" },
+      { key: "pocEmail", name: "customer_poc_email", label: "Customer POC email", type: "String", help: "AR-i. Optional; must be a valid email" },
       { key: "costCenter", name: "cost_center", label: "Cost center", type: "String", help: "Optional, free text. To be filled by GA", tooltip: "To be filled by GA" },
       { key: "accountCode", name: "account_code", label: "Account code", type: "String", help: "Optional, free text" },
       { key: "agentName", name: "agent_name", label: "Name of agent to be billed", type: "String", help: "Optional, free text" },
@@ -362,7 +364,7 @@ export const RECORD_PRODUCER = {
   variables: [...GENERAL_INFO, "customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress",
     "contractOption", "contractId", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "contractLocation", "contractLocationRef",
     "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "poNumber",
-    "invoiceBreakdown", "costCenter", "accountCode", "agentName", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
+    "pocName", "pocEmail", "invoiceBreakdown", "costCenter", "accountCode", "agentName", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "lines",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;"
 };

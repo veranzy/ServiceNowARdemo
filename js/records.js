@@ -188,6 +188,7 @@ export function validateARi(d) {
       if (d.contractLocation === "attached" && !d.docContract && !(d.contractOption === "existing" && docsOnFile(d.customerId, d.contractId, d.department).contract)) e.docContract = "Attach the signed contract / PO, or choose another location.";
     }
   }
+  if (d.pocEmail && !EMAIL_RE.test(d.pocEmail)) e.pocEmail = "Enter a valid email address.";
   need("title", "Give the request a short summary.");
   const lines = d.lines || [];
   if (!lines.length) e.lines = "Add at least one billing line.";

@@ -93,6 +93,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-04` | Quick link to My Requests |
 | `PT-05` | Record producer "AR-i New AR request" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; |
 | `PT-06` | RETIRED 2026-11-10: replaced by the General information variable set (PT-30, REQ.requester_name / REQ.requester_email) |
+| `PT-38` | AR-i Customer section, block Customer point of contact: customer_poc_name, customer_poc_email (optional; email validated onSubmit) |
 | `PT-36` | AR-i variable set GIRO (D22): read-only Yes / No (variable giro_on_contract) set by a catalog client script from the chosen contract's giro_status (GlideAjax); No for a new contract or no-contract shell. Tooltip: raise an AR-ix if the contract needs GIRO |
 | `PT-37` | AR-i variable set Invoice breakdown: invoice_breakdown (multi-line text, optional) |
 | `PT-30` | Variable set General information (D19), first section of every AR form record producer: requester_name (default current user's name), requester_email (from SSO, read-only), department, cc_list (emails; copied to the case watch_list so they can view it on the portal) |
@@ -116,7 +117,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-25` | Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer) |
 | `PT-26` | Variable set What to bill: request summary, PO, and multi-row variable set Billing lines (x_ar_request_line); totals by catalog client script |
 | `PT-27` | Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden |
-| `PT-29` | Variable set Finance coding (request level, all optional): cost_center, account_code, billing_type_code (M / SB / PV); UI policies: V@G only when billing type = SB; Sub-BU when V@G = Yes; Type of billing when V@G = No. Hidden variables are cleared |
+| `PT-29` | Finance coding block inside the AR-i Customer section (container in the Customer variable set; request level, all optional): cost_center, account_code, billing_type_code (M / SB / PV); UI policies: V@G only when billing type = SB; Sub-BU when V@G = Yes; Type of billing when V@G = No. Hidden variables are cleared |
 | `PT-23` | Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10) |
 
 ## AR request
@@ -163,6 +164,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.short_description` | x_ar_request.short_description · String · mandatory · e.g. Data hall cooling project, phase 1 |
 | `REQ.amount` | x_ar_request.amount · Currency · read-only · Calculated: one-off lines + recurring amount × number of periods |
 | `REQ.po_number` | x_ar_request.po_number · String |
+| `REQ.customer_poc_name` | x_ar_request.customer_poc_name · String · AR-i. Optional: the customer's point of contact for this request |
+| `REQ.customer_poc_email` | x_ar_request.customer_poc_email · String · AR-i. Optional; must be a valid email |
 | `REQ.cost_center` | x_ar_request.cost_center · String · Optional, free text. To be filled by GA |
 | `REQ.account_code` | x_ar_request.account_code · String · Optional, free text |
 | `REQ.agent_name` | x_ar_request.agent_name · String · Optional, free text |

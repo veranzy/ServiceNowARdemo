@@ -14,7 +14,7 @@ ServiceNow (custom scoped app). It shows both experiences side by side:
   accounts.
 
 Demo bar toggles:
-- **Show IDs** (on): a small purple ID tag on every element that maps to a ServiceNow build item. Use the
+- **Show IDs** (off by default): a small purple ID tag on every element that maps to a ServiceNow build item. Use the
   ID in change requests: `<ID> - <change>`.
 - **ServiceNow notes** (off): developer view; a note card on every element with its ServiceNow table,
   field, UI action or widget. Click a card to expand the full note, × to dismiss, *Restore* to bring

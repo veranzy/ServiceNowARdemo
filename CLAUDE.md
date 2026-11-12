@@ -72,7 +72,7 @@ For every new module or change:
 
 ## Change requests by build-note ID
 
-Two independent toggles in the demo bar: **Show IDs** (on by default) draws a small purple ID tag on
+Two independent toggles in the demo bar: **Show IDs** (off by default; tick it to find IDs) draws a small purple ID tag on
 every mapped element, for the owner's change requests; **ServiceNow notes** (off by default) is the
 developer view: interactive note cards `[ID] <ServiceNow table/field/UI action/widget>` drawn on a
 separate layer (`js/views/devnotes.js`, `#snLayer`) so nothing clips them; click a card to expand,

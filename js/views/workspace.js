@@ -1,7 +1,7 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroBlock, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
+import { DOC_LABEL, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroBlock, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
 import { CODE } from "../notes.js";
 import { ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
@@ -275,13 +275,15 @@ function listView(table, filter, menuOpen) {
 const has = k => r => !!r[k], not = k => r => !r[k], isIx = r => r.form === "AR-ix";
 const LAYOUT = {
   requests: [["AR form", ["form", "title", "amount"]],
-    ["General information", ["requesterName", "requesterEmail", "department", "ccList"]],
+    ["General information", ["requesterName", "requesterEmail", "department", "deptSubBu", "ccList"]],
     // AR-i
     ["Customer", ["customerId"], r => !isIx(r) && !r.newCustomer], ["New customer (to verify)", ["newCustName", "newCustUen", "newCustAddress"], r => !isIx(r) && r.newCustomer],
     ["Contract", ["contractOption", "contractId", "contractLocation", "contractLocationRef"], r => !isIx(r)],
     ["New contract (to create)", ["newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue"], r => !isIx(r) && r.contractOption === "new"],
     ["Customer PO", ["poNumber"], r => !isIx(r)],
-    ["Finance coding", ["costCenter", "accountCode", "billingTypeCode", "vag", "subBu", "typeOfBilling"], r => !isIx(r)],
+    ["GIRO (from the contract at submit)", ["giroOnContract"], r => !isIx(r) && !!r.giroOnContract],
+    ["Invoice breakdown", ["invoiceBreakdown"], r => !isIx(r)],
+    ["Finance coding", ["costCenter", "accountCode", "agentName", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docBulk"], r => !isIx(r)],
     ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], r => !isIx(r) && r.billToName],
     ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => !isIx(r) && (r.docContract || r.docAcra || r.docBillingForm)],
     // AR-ix (GIR module)
@@ -289,7 +291,8 @@ const LAYOUT = {
     ["Contract and applicant", ["customerId", "contractId", "newCtrRef", "applicantName", "applicantEmail", "applicantMobile", "giroInvoiceRef"], isIx],
     ["GIRO details", ["giroPurpose", "giroPurposeOther", "giroType", "giroLocation", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroAmount"], isIx],
     ["Case", ["state", "requestedBy", "assignedTo", "opened", "details"]]],
-  lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]]],
+  lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
+    ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
   deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "bankRef", "payer", "reference"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
@@ -301,7 +304,7 @@ const LAYOUT = {
     ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
   contacts: [["Billing contact", ["customerId", "department", "name", "email", "phone", "address", "requestId"]]],
   documents: [["Customer document", ["number", "customerId", "docType", "fileName", "contractId", "department", "requestId", "received"]]],
-  schedules: [["Billing schedule", ["number", "customerId", "contractId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "requestId"]]],
+  schedules: [["Billing schedule", ["number", "customerId", "contractId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "firstAmount", "lastAmount", "requestId"]]],
 };
 /** Fields AR can't edit on the workspace form (set by the portal or by UI actions). */
 const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "giroType"], lines: ["lineType"] };
@@ -499,7 +502,7 @@ function related(table, rec) {
     return [sec("SCH-PER", "Billing periods", per.filter(p => !p.more).length, `<section class="rel"${sn("SCH-PER")}><header><h3>Billing periods <span class="count">${per.filter(p => !p.more).length}</span></h3><span class="muted small">Raise each invoice when its period is due (no automatic invoicing)</span></header>
       <div class="tablewrap"><table><thead><tr><th>Period</th><th>Status</th><th>Invoice</th><th class="num">Amount</th><th></th></tr></thead><tbody>
       ${per.map(p => p.more ? `<tr><td colspan="5" class="muted small">${p.remaining} more ${esc(freqLabel(rec.frequency).toLowerCase())} period${p.remaining === 1 ? "" : "s"} until ${esc(rec.lastDate)}.</td></tr>`
-        : `<tr><td>${esc(p.date)}</td><td><span class="chip ${p.status === "Invoiced" ? "c-ok" : p.status === "Due" ? "c-warn" : "c-neutral"}">${p.status}</span></td><td>${p.inv ? `${refLink("invoices", p.inv.id, p.inv.number)} ${invChip(p.inv)}` : "—"}</td><td class="num">${fmt(rec.amount)}</td>
+        : `<tr><td>${esc(p.date)}</td><td><span class="chip ${p.status === "Invoiced" ? "c-ok" : p.status === "Due" ? "c-warn" : "c-neutral"}">${p.status}</span></td><td>${p.inv ? `${refLink("invoices", p.inv.id, p.inv.number)} ${invChip(p.inv)}` : "—"}</td><td class="num">${fmt(p.inv ? p.inv.amount : (() => { const ds = periodDates(rec.frequency, rec.firstDate, rec.lastDate); return periodAmounts(rec, ds)[ds.indexOf(p.date)] ?? rec.amount; })())}</td>
           <td>${p.inv ? "" : `<button type="button" class="btn small${p.status === "Due" ? " primary" : ""}" data-raise="${rec.id}|${p.date}"${sn("UA-SCH-raise")}>Raise invoice</button>`}</td></tr>`).join("")}
       </tbody></table></div></section>`),
       rt("Invoices", "invoices", S.invoices.filter(i => i.scheduleId === rec.id).sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Status", i => invChip(i)]], { id: "RL-SCH-INV" })];

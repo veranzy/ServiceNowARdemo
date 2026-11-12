@@ -71,7 +71,7 @@ function readValue(table, f, rec) {
   if (f.type === "Currency") return v ? `<span class="mono">SGD ${fmt(v)}</span>` : "—";
   if (f.key === "aliases") return (v || []).length ? v.map(a => `<span class="ref">${esc(a)}</span>`).join(" ") : "—";
   if (f.type === "True/False") return v ? "Yes" : "No";
-  if (f.type === "Attachment") return v ? `${icon("clip", 14)} ${esc(v)}` : "—";
+  if (f.type === "Attachment") return Array.isArray(v) ? (v.length ? v.map(x => `${icon("clip", 14)} ${esc(x)}`).join("<br>") : "—") : v ? `${icon("clip", 14)} ${esc(v)}` : "—";
   return esc(v === 0 ? "0" : v || "—");
 }
 
@@ -92,7 +92,7 @@ export function fieldHtml(table, f, rec, ctx = {}) {
     const v = rec[f.key];
     const common = `id="${id}" name="${ctx.name || f.key}"${f.mandatory ? ` aria-required="true"` : ""}${err ? ` aria-invalid="true"` : ""}`;
     if (f.type === "Reference") ctl = `<select ${common}><option value="">-- None --</option>${refOptions(f, rec, ctx.vals).map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
-    else if (f.type === "Choice") ctl = `<select ${common}>${f.mandatory ? "" : `<option value="">-- None --</option>`}${f.choices.map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+    else if (f.type === "Choice") ctl = `<select ${common}>${f.mandatory ? "" : `<option value="">-- None --</option>`}${(f.choiceDependsOn ? f.choices.filter(c => c[2] === (ctx.vals || rec)[f.choiceDependsOn]) : f.choices).map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     else if (f.type.startsWith("String (")) ctl = `<textarea ${common} rows="3">${esc(f.key === "aliases" ? (v || []).join(", ") : v || "")}</textarea>`;
     else if (f.type === "Currency") ctl = `<div class="money-in"><span>SGD</span><input ${common} type="number" step="0.01" min="0" inputmode="decimal" value="${v ? (v / 100).toFixed(2) : ""}"></div>`;
     else if (f.type === "Date") ctl = `<input ${common} type="date" value="${esc(v || "")}">`;

@@ -57,6 +57,8 @@ export const NOTES = {
   "PT-04": "Quick link to My Requests",
   "PT-05": `Record producer "${RECORD_PRODUCER.name}" on ${TABLES.requests.table}. Producer script: ${RECORD_PRODUCER.script}`,
   "PT-06": "RETIRED 2026-11-10: replaced by the General information variable set (PT-30, REQ.requester_name / REQ.requester_email)",
+  "PT-36": "AR-i variable set GIRO (D22): read-only Yes / No (variable giro_on_contract) set by a catalog client script from the chosen contract's giro_status (GlideAjax); No for a new contract or no-contract shell. Tooltip: raise an AR-ix if the contract needs GIRO",
+  "PT-37": "AR-i variable set Invoice breakdown: invoice_breakdown (multi-line text, optional)",
   "PT-30": "Variable set General information (D19), first section of every AR form record producer: requester_name (default current user's name), requester_email (from SSO, read-only), department, cc_list (emails; copied to the case watch_list so they can view it on the portal)",
   "PT-31": `Record producer "${RECORD_PRODUCER_ARIX.name}" on ${TABLES.requests.table}. Producer script: ${RECORD_PRODUCER_ARIX.script}`,
   "PT-32": "AR-ix variable set Contract and applicant: customer search, existing contract (reference qualifier: customer's contracts, not shells) or 'not listed' with a reference number; applicant name / email / mobile prefilled from the contract's bill-to (catalog client script onChange contract); invoice reference number",

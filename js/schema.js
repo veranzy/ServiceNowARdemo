@@ -16,6 +16,14 @@ const STATE_REQ = [["new", "New"], ["in_progress", "In progress"], ["awaiting_in
 /** The 11 operational departments (D11). Bank accounts may also belong to Finance. */
 export const DEPARTMENTS = ["Engineering", "Marine", "Digital", "Infrastructure", "Energy", "Facilities", "Logistics", "Healthcare", "Environmental", "Rail", "Advisory"];
 const DEPT_CHOICES = DEPARTMENTS.map(d => [d, d]);
+/** Sub-BUs per department (mock data until the client supplies the real list). [value, label, department]. */
+const SUB_BU_NAMES = {
+  Engineering: ["Civil & Structural", "M&E Services", "Geotechnical"], Marine: ["Port Works", "Offshore", "Dredging"], Digital: ["Data & AI", "Platforms", "Cyber"],
+  Infrastructure: ["Roads", "Water", "Urban Systems"], Energy: ["Power Grid", "Solar", "Gas"], Facilities: ["Property Management", "Carparks", "Retail Leasing"],
+  Logistics: ["Warehousing", "Cold Chain", "Freight"], Healthcare: ["Hospitals", "Clinics", "Med Tech"], Environmental: ["Waste", "Air & Noise", "Ecology"],
+  Rail: ["Signalling", "Rolling Stock", "Track Works"], Advisory: ["Strategy", "Transactions", "Risk"]
+};
+export const DEPT_SUB_BUS = DEPARTMENTS.flatMap(d => SUB_BU_NAMES[d].map((n, i) => [`${d.slice(0, 3).toUpperCase()}-${i + 1}`, n, d]));
 
 /** Portal AR forms catalogue (D9): AR-i … AR-xvi. Only AR-i is defined so far. */
 export const AR_FORMS = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii", "xiv", "xv", "xvi"].map((r, n) => ({
@@ -35,7 +43,6 @@ export const CONTRACT_OPTIONS = [["existing", "Existing contract"], ["new", "New
 export const CONTRACT_TYPES = [["contract", "Contract"], ["shell", "No-contract shell"]];
 export const BILLING_TYPE_CODES = [["M", "M"], ["SB", "SB"], ["PV", "PV"]];
 const YES_NO = [["yes", "Yes"], ["no", "No"]];
-const SUB_BUS = ["1", "2", "3", "4", "5"].map(x => [x, x]);
 const BILLING_KINDS = ["A", "B", "C", "D", "E"].map(x => [x, x]);
 const CONTRACT_LOCATIONS = [["attached", "Attached to this form"], ["on_file", "Already with AR"], ["repository", "Document repository link"], ["physical", "Physical file"]];
 
@@ -50,6 +57,7 @@ export const TABLES = {
       { key: "form", name: "ar_form", label: "AR form", type: "Choice", choices: AR_FORMS.map(f => [f.code, `${f.code} ${f.name}`]), readonly: true },
       { key: "requesterName", name: "requester_name", label: "Requester name", type: "String", help: "General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name", default: "gs.getUser().getFullName()" },
       { key: "requesterEmail", name: "requester_email", label: "Email", type: "String", readonly: true, help: "General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only", default: "gs.getUser().getEmail()" },
+      { key: "deptSubBu", name: "department_sub_bu", label: "Sub-BU", type: "Choice", choices: DEPT_SUB_BUS, choiceDependsOn: "department", help: "General information (all AR forms). Sub-BUs of the chosen department (mock list)" },
       { key: "ccList", name: "cc_list", label: "CC list", type: "String (1000)", wide: true, help: "General information (all AR forms). Emails separated by commas; these people can view the case on the portal (Watch list)" },
       { key: "department", name: "department", label: "Requesting department", type: "Choice", choices: DEPT_CHOICES, mandatory: true, tooltip: "Auto-populated from the requester's department. Change it only if you are requesting for another department.", default: "Requester's department (sys_user.department via the variable's default value)" },
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", help: "Mandatory unless New customer is ticked" },
@@ -74,12 +82,16 @@ export const TABLES = {
       { key: "title", name: "short_description", label: "Request summary", type: "String", mandatory: true, wide: true, help: "e.g. Data hall cooling project, phase 1" },
       { key: "amount", name: "amount", label: "Request value", type: "Currency", readonly: true, help: "Calculated: one-off lines + recurring amount × number of periods" },
       { key: "poNumber", name: "po_number", label: "Customer PO number", type: "String" },
-      { key: "costCenter", name: "cost_center", label: "Cost center", type: "String", help: "Optional, free text" },
+      { key: "costCenter", name: "cost_center", label: "Cost center", type: "String", help: "Optional, free text. To be filled by GA", tooltip: "To be filled by GA" },
       { key: "accountCode", name: "account_code", label: "Account code", type: "String", help: "Optional, free text" },
+      { key: "agentName", name: "agent_name", label: "Name of agent to be billed", type: "String", help: "Optional, free text" },
       { key: "billingTypeCode", name: "billing_type_code", label: "Billing type", type: "Choice", choices: BILLING_TYPE_CODES, help: "Optional. M, SB or PV (full names to be confirmed)" },
-      { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "billingTypeCode", eq: "SB" }, help: "Optional" },
-      { key: "subBu", name: "sub_bu", label: "Sub-BU", type: "Choice", choices: SUB_BUS, showIf: { key: "vag", eq: "yes" }, help: "Optional" },
-      { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, showIf: { key: "vag", eq: "no" }, help: "Optional" },
+      { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "billingTypeCode", in: ["SB", "PV"] }, help: "Optional" },
+      { key: "subBu", name: "sub_bu", label: "Sub-BU (V@G)", type: "String", showIf: { key: "vag", eq: "yes" }, help: "Optional, free text" },
+      { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, showIf: { key: "billingTypeCode", in: ["M", "SB", "PV"] }, help: "Optional" },
+      { key: "docBulk", name: "bulk_supporting_docs", label: "Supporting documents (bulk upload)", type: "Attachment", multiple: true, showIf: { key: "typeOfBilling", in: ["C", "D", "E"] }, help: "Optional; several files at once" },
+      { key: "invoiceBreakdown", name: "invoice_breakdown", label: "Invoice breakdown", type: "String (4000)", wide: true, help: "Optional, free text: how the invoice should be broken down" },
+      { key: "giroOnContract", name: "giro_on_contract", label: "GIRO on this contract", type: "Choice", choices: YES_NO, readonly: true, help: "Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21)", tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." },
       // AR-ix GIRO authorisation (record producer variables; mandatory rules enforced on the form, see GIR module)
       { key: "applicantName", name: "giro_applicant_name", label: "Applicant name / entity", type: "String", help: "AR-ix. Mandatory on the form; prefilled from the contract's bill-to" },
       { key: "applicantEmail", name: "giro_applicant_email", label: "Applicant email", type: "String", help: "AR-ix. Mandatory on the form; prefilled from the contract's bill-to" },
@@ -196,11 +208,15 @@ export const TABLES = {
       { key: "frequency", name: "frequency", label: "Frequency", type: "Choice", choices: FREQUENCIES.map(f => [f[0], f[1]]), help: "Recurring only; Monthly by default (decision 10)" },
       { key: "startDate", name: "start_date", label: "From", type: "Date", help: "Recurring only: first billing date" },
       { key: "endDate", name: "end_date", label: "To", type: "Date", help: "Recurring only: last billing date" },
+      { key: "remarks", name: "remarks", label: "Remarks", type: "String", wide: true, help: "Recurring only, optional" },
+      { key: "prorate", name: "prorate", label: "Prorate first and last month", type: "True/False", help: "Recurring only" },
+      { key: "firstAmount", name: "first_period_amount", label: "First month amount", type: "Currency", showIf: { key: "prorate", eq: true }, help: "Mandatory when prorated" },
+      { key: "lastAmount", name: "last_period_amount", label: "Last month amount", type: "Currency", showIf: { key: "prorate", eq: true }, help: "Mandatory when prorated" },
       { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices", readonly: true },
       { key: "scheduleId", name: "billing_schedule", label: "Billing schedule", type: "Reference", ref: "schedules", readonly: true }
     ],
     calculated: [{ name: "periods", label: "Number of invoices", type: "Integer", how: "recurring: periods between start and end at the frequency" },
-      { name: "line_value", label: "Line value", type: "Currency", how: "one-off: amount; recurring: amount × periods" }]
+      { name: "line_value", label: "Line value", type: "Currency", how: "one-off: amount; recurring: amount × periods, or when prorated: first month amount + amount × (periods − 2) + last month amount" }]
   },
   contacts: {
     table: `${SCOPE}_billing_contact`, label: "Billing contact", plural: "Billing contacts", display: "name",
@@ -242,6 +258,8 @@ export const TABLES = {
       { key: "amount", name: "amount", label: "Amount per period", type: "Currency", mandatory: true },
       { key: "firstDate", name: "first_billing_date", label: "First billing date", type: "Date", mandatory: true },
       { key: "lastDate", name: "last_billing_date", label: "Last billing date", type: "Date", mandatory: true },
+      { key: "firstAmount", name: "first_period_amount", label: "First period amount (prorated)", type: "Currency", help: "Empty = amount per period" },
+      { key: "lastAmount", name: "last_period_amount", label: "Last period amount (prorated)", type: "Currency", help: "Empty = amount per period" },
       { key: "requestId", name: "source_request", label: "From AR request", type: "Reference", ref: "requests", readonly: true },
       { key: "lineId", name: "source_line", label: "From billing line", type: "Reference", ref: "lines", readonly: true }
     ],
@@ -311,8 +329,8 @@ export const fieldOf = (tableKey, key) => TABLES[tableKey].fields.find(f => f.ke
 /** UI policy: a field with showIf is visible only when its parent field is visible and equals the value. */
 export function fieldVisible(tableKey, f, vals) {
   if (!f?.showIf) return true;
-  const p = fieldOf(tableKey, f.showIf.key);
-  return fieldVisible(tableKey, p, vals) && vals[f.showIf.key] === f.showIf.eq;
+  const p = fieldOf(tableKey, f.showIf.key), v = vals[f.showIf.key];
+  return fieldVisible(tableKey, p, vals) && (f.showIf.in ? f.showIf.in.includes(v) : v === f.showIf.eq);
 }
 /** Blank the values of fields hidden by a UI policy (run when a parent changes and before saving). Returns the keys cleared. */
 export function clearHidden(tableKey, vals) {
@@ -323,8 +341,8 @@ export function clearHidden(tableKey, vals) {
 /** "Shown when Billing type = SB" text for docs. */
 export function showIfText(tableKey, f) {
   if (!f.showIf) return "";
-  const p = fieldOf(tableKey, f.showIf.key), lab = (p.choices?.find(c => c[0] === f.showIf.eq) || [, f.showIf.eq])[1];
-  return `Shown when ${p.label} = ${lab}`;
+  const p = fieldOf(tableKey, f.showIf.key), lab = x => x === true ? "Yes" : (p.choices?.find(c => c[0] === x) || [, x])[1];
+  return f.showIf.in ? `Shown when ${p.label} is ${f.showIf.in.map(lab).join(", ")}` : `Shown when ${p.label} = ${lab(f.showIf.eq)}`;
 }
 
 /** Build-note text for a field, e.g. "x_ar_invoice.due_date · Date". */
@@ -337,14 +355,14 @@ export function fieldNote(tableKey, key) {
 
 /** Record producer for the portal AR form: variables map onto x_ar_request fields. */
 /** Variable set "General information", shared by every AR form (D19). */
-export const GENERAL_INFO = ["requesterName", "requesterEmail", "department", "ccList"];
+export const GENERAL_INFO = ["requesterName", "requesterEmail", "department", "deptSubBu", "ccList"];
 export const RECORD_PRODUCER = {
   name: "AR-i New AR request",
   table: "requests",
   variables: [...GENERAL_INFO, "customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress",
     "contractOption", "contractId", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "contractLocation", "contractLocationRef",
     "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "poNumber",
-    "costCenter", "accountCode", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docContract", "docAcra", "docBillingForm", "details"],
+    "invoiceBreakdown", "costCenter", "accountCode", "agentName", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "lines",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;"
 };

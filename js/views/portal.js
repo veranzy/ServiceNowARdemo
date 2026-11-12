@@ -1,7 +1,7 @@
 // Project team experience: Service Portal / Employee Center with the AR forms catalogue (AR-i … AR-xvi),
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, canViewReq, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineErrors, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, needLocation, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
+import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, canViewReq, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineErrors, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, needLocation, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
 import { AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, LINE_TYPES, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
@@ -77,8 +77,8 @@ function catalogPage() {
 
 const reqField = k => TABLES.requests.fields.find(f => f.key === k);
 /** Finance coding variables (request level, all optional). */
-export const FIN_KEYS = ["costCenter", "accountCode", "billingTypeCode", "vag", "subBu", "typeOfBilling"];
-const finText = r => FIN_KEYS.filter(k => r[k] && fieldVisible("requests", reqField(k), r)).map(k => { const fl = reqField(k); return `${fl.label}: ${(fl.choices?.find(c => c[0] === r[k]) || [, r[k]])[1]}`; }).join(" · ");
+export const FIN_KEYS = ["costCenter", "accountCode", "agentName", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docBulk"];
+const finText = r => FIN_KEYS.filter(k => (Array.isArray(r[k]) ? r[k].length : r[k]) && fieldVisible("requests", reqField(k), r)).map(k => { const fl = reqField(k); return `${fl.label}: ${Array.isArray(r[k]) ? `${r[k].length} file(s)` : (fl.choices?.find(c => c[0] === r[k]) || [, r[k]])[1]}`; }).join(" · ");
 
 function docRow(t, d, onFile) {
   const key = { contract: "docContract", acra: "docAcra", billing_form: "docBillingForm" }[t];
@@ -156,7 +156,9 @@ function lineCard(l, i, e) {
     <div class="fgrid">
       ${lf("desc", { label: rec ? "What is billed each period" : "What is billed" })}
       ${lf("amount", { label: rec ? "Amount per period" : "Amount", help: null })}
-      ${rec ? `${lf("frequency", { help: null })}${lf("startDate", { label: "From (first invoice)", mandatory: true, help: null })}${lf("endDate", { label: "To (last invoice)", mandatory: true, help: null })}`
+      ${rec ? `${lf("frequency", { help: null })}${lf("startDate", { label: "From (first invoice)", mandatory: true, help: null })}${lf("endDate", { label: "To (last invoice)", mandatory: true, help: null })}
+        ${lf("remarks", { help: "Optional" })}${lf("prorate", { help: "Different amounts for the first and last month" })}
+        ${l.prorate ? `${lf("firstAmount", { mandatory: true, help: null })}${lf("lastAmount", { mandatory: true, help: null })}` : ""}`
         : lf("invoiceDate", { help: null })}
     </div>
     ${lineSum(l, i)}
@@ -164,12 +166,23 @@ function lineCard(l, i, e) {
 }
 export function lineSum(l, i) {
   if (l.lineType !== "recurring") return `<p class="lsum" id="pfLineSum-${i}">${l.amount > 0 ? `One invoice of SGD ${fmt(l.amount)}${l.invoiceDate ? ` around ${esc(l.invoiceDate)}` : ""}.` : ""}</p>`;
-  const n = periodDates(l.frequency || "monthly", l.startDate, l.endDate).length;
-  return `<p class="lsum" id="pfLineSum-${i}">${n && l.amount > 0 ? `${n} ${esc(freqLabel(l.frequency || "monthly").toLowerCase())} invoice${n === 1 ? "" : "s"} × SGD ${fmt(l.amount)} = <b>SGD ${fmt(lineValue(l))}</b>. Submit once; AR raises each invoice.` : "Enter the amount and the date range to see the number of invoices."}</p>`;
+  const n = periodDates(l.frequency || "monthly", l.startDate, l.endDate).length, pr = l.prorate && (l.firstAmount || l.lastAmount);
+  return `<p class="lsum" id="pfLineSum-${i}">${n && l.amount > 0 ? `${n} ${esc(freqLabel(l.frequency || "monthly").toLowerCase())} invoice${n === 1 ? "" : "s"}${pr ? `: first SGD ${fmt(l.firstAmount || l.amount)}${n > 2 ? `, ${n - 2} × SGD ${fmt(l.amount)}` : ""}${n > 1 ? `, last SGD ${fmt(l.lastAmount || l.amount)}` : ""}` : ` × SGD ${fmt(l.amount)}`} = <b>SGD ${fmt(lineValue(l))}</b>. Submit once; AR raises each invoice.` : "Enter the amount and the date range to see the number of invoices."}</p>`;
 }
 export function linesTotals(d) {
   const t = linesSummary(d.lines || []);
   return `<dl class="ltotals" id="pfTotals"><div><dt>One-off</dt><dd class="mono">${fmt(t.oneOffTotal)}</dd></div><div><dt>Recurring (all periods)</dt><dd class="mono">${fmt(t.recurringValue)}</dd></div><div><dt>Request value</dt><dd class="mono"><b>SGD ${fmt(t.total)}</b></dd></div></dl>`;
+}
+
+/** AR-i GIRO section (D22): read-only Yes / No from the contract's GIRO status, which only an AR-ix changes. */
+function giroSection(d, no) {
+  const v = giroOnContractOf(d), k = d.contractOption === "existing" && d.contractId ? ctrById(d.contractId) : null, cur = activeGiroCase(k);
+  const tip = "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO.";
+  return `<fieldset class="psec"${sn("PT-36")}><legend>${no}. GIRO</legend>
+    <div class="fgrid"><div class="ffield"${sn("REQ.giro_on_contract")}><span class="flabel">GIRO on this contract <span class="ftip" tabindex="0" role="img" aria-label="${esc(tip)}" data-tip="${esc(tip)}">i</span></span>
+      <div class="seg giro-ro" role="group" aria-label="GIRO on this contract (read-only)" title="${esc(tip)}"><button type="button" disabled aria-pressed="${v === "yes"}">Yes</button><button type="button" disabled aria-pressed="${v === "no"}">No</button></div>
+      <span class="fhelp">${!d.contractOption ? "Shown once the contract is chosen." : cur ? `Active on ${esc(k.number)} from ${esc(cur.number)} (${esc(giroLabel(cur))}).` : `No GIRO on ${k ? esc(k.number) : d.contractOption === "new" ? "a new contract" : "the no-contract shell"}. Raise an AR-ix (GIRO authorisation) from AR forms if it needs GIRO.`}</span></div></div>
+  </fieldset>`;
 }
 
 /** Variable set "General information" (D19): first section of every AR form. */
@@ -177,7 +190,7 @@ function generalInfo(d, e, f) {
   return `<fieldset class="psec"${sn("PT-30")}><legend>1. General information</legend>
     <div class="fgrid">${f("requesterName", { mandatory: true, help: null })}
       <div class="ffield"${sn("REQ.requester_email")}><span class="flabel">Email</span><div class="fro">${esc(me().email || "")}</div><span class="fhelp">From your sign-in (SSO); can't be changed.</span></div>
-      ${f("department")}${f("ccList", { help: "Emails separated by commas. These people can view this case on the portal." })}</div>
+      ${f("department")}${f("deptSubBu", { help: d.department ? null : "Choose the department first" })}${f("ccList", { help: "Emails separated by commas. These people can view this case on the portal." })}</div>
   </fieldset>`;
 }
 
@@ -195,6 +208,7 @@ function formPage() {
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
   const nErr = Object.keys(e).length;
   const haveCust = d.newCustomer || d.customerId;
+  let sec = 2; const n = () => ++sec;
   return `<div class="pt-inner pt-body">
     <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <button type="button" class="linkish" data-pnav="forms">AR forms</button> › <span>AR-i</span></nav>
     <div class="pt-item">
@@ -209,11 +223,13 @@ function formPage() {
           ${customerStep(d, e, f)}
         </fieldset>
 
-        ${haveCust ? `<fieldset class="psec"${sn("PT-20")}><legend>3. Contract and bill-to</legend>
+        ${haveCust ? `<fieldset class="psec"${sn("PT-20")}><legend>${n()}. Contract and bill-to</legend>
           ${contractStep(d, e, f)}
         </fieldset>` : ""}
 
-        <fieldset class="psec"${sn("PT-26")}><legend>${haveCust ? "4" : "3"}. What to bill</legend>
+        ${haveCust ? giroSection(d, n()) : ""}
+
+        <fieldset class="psec"${sn("PT-26")}><legend>${n()}. What to bill</legend>
           ${(() => { const k = targetContract(d); return d.contractOption ? `<p class="pt-hint">Billing lines are filed under ${d.contractOption === "new" ? `new contract ${esc(d.newCtrRef || "")}` : k ? esc(ctrLabel(k)) : d.contractOption === "none" ? "the no-contract shell" : "the chosen contract"}.</p>` : ""; })()}
           <div class="fgrid">${f("title")}${f("poNumber")}</div>
           <div class="lines${e.lines ? " has-err" : ""}" id="pfLines"${sn("RL-REQ-RQL")}>${(d.lines || []).map((l, i) => lineCard(l, i, e)).join("")}</div>
@@ -222,12 +238,19 @@ function formPage() {
           ${linesTotals(d)}
         </fieldset>
 
-        <fieldset class="psec"${sn("PT-29")}><legend>${haveCust ? "5" : "4"}. Finance coding</legend>
-          <p class="pt-hint">Optional. Fill in what you know; AR can complete it.</p>
-          <div class="fgrid">${FIN_KEYS.filter(k => fieldVisible("requests", reqField(k), d)).map(k => f(k, { help: null })).join("")}</div>
+        <fieldset class="psec"${sn("PT-37")}><legend>${n()}. Invoice breakdown</legend>
+          <div class="fgrid">${f("invoiceBreakdown", { help: "Optional. How the invoice should be broken down, e.g. by phase, site or cost item." })}</div>
         </fieldset>
 
-        <fieldset class="psec"${sn("PT-23")}><legend>${haveCust ? "6" : "5"}. Customer documents</legend>
+        <fieldset class="psec"${sn("PT-29")}><legend>${n()}. Finance coding</legend>
+          <p class="pt-hint">Optional. Fill in what you know; AR can complete it.</p>
+          <div class="fgrid">${FIN_KEYS.filter(k => k !== "docBulk" && fieldVisible("requests", reqField(k), d)).map(k => f(k, { help: k === "subBu" ? "Free text" : null })).join("")}</div>
+          ${fieldVisible("requests", reqField("docBulk"), d) ? `<div class="ffield wide"${sn("REQ.bulk_supporting_docs")}><span class="flabel">Supporting documents (bulk upload)</span>
+            <div><label class="btn small" for="pfBulk">${icon("clip", 15)} Upload files</label><input type="file" id="pfBulk" multiple hidden></div>
+            ${d.docBulk?.length ? `<ul class="attlist">${d.docBulk.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unbulk="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Type of billing ${esc(d.typeOfBilling)}: you can upload several supporting files at once.</span>`}</div>` : ""}
+        </fieldset>
+
+        <fieldset class="psec"${sn("PT-23")}><legend>${n()}. Customer documents</legend>
           <p class="pt-hint">${d.newCustomer ? "New customer: AR needs all three documents." : d.customerId ? "Documents AR already holds for this customer are marked On file." : "Find the customer to see which documents AR already holds."}</p>
           <div class="docs">${DOC_TYPES.map(([t]) => docRow(t, d, onFile)).join("")}</div>
           <div class="ffield wide"${sn("PT-08")}><span class="flabel">Other supporting documents</span>
@@ -300,24 +323,24 @@ export const formAlert = n => n ? `<div class="pt-alert err" role="alert">Please
 export function formSide(d) {
   if (d.form === "AR-ix") {
     const labels = [...new Set(Object.keys(validateARi(d)).map(k => k === "newCtrRef" ? "Contract reference number" : reqField(k)?.label).filter(Boolean))];
-    return `<div class="pt-card sticky">
+    return `<div class="pt-card sticky"><div class="side-info">
       <span class="ft-code">AR-ix</span><h2>Submit request</h2>
       <p class="small muted">Goes to the Accounts Receivable team as a case. You and the people on the CC list can follow it on My requests.</p>
       <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "Customer"} (not at AR yet)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(d.contractOption === "existing" ? (d.contractId ? `Contract ${ctrById(d.contractId)?.number}` : "Choose the contract") : d.contractOption === "new" ? `Contract ${d.newCtrRef || "(reference to enter)"} · AR links it` : "Contract not chosen yet")}<br>${esc(d.giroPurpose ? giroLabel(d) : "GIRO details to fill in")}${d.giroAmount ? ` · SGD ${fmt(d.giroAmount)}` : ""}</p>
       ${labels.length ? `<p class="small"><b>Still needed</b><br>${labels.map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
-      <button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
+      </div><button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
     </div>`;
   }
   const keys = Object.keys(validateARi(d));
   const labels = [...new Set(keys.map(k => k.startsWith("line:") ? `Line ${+k.split(":")[1] + 1} details` : k === "lines" ? "Billing lines" : reqField(k)?.label).filter(Boolean))];
   const t = linesSummary(d.lines || []);
-  return `<div class="pt-card sticky">
+  return `<div class="pt-card sticky"><div class="side-info">
     <span class="ft-code">AR-i</span>
     <h2>Submit request</h2>
     <p class="small muted">Goes to the Accounts Receivable team as a case. You'll get updates on My requests.</p>
     <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "New customer"} (new)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(ctrSummary(d))}<br>${esc(linesLabel(d))} · SGD ${fmt(t.total)}</p>
     ${labels.length ? `<p class="small"><b>Still needed</b><br>${labels.map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
-    <button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
+    </div><button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
   </div>`;
 }
 
@@ -376,9 +399,9 @@ function ticketPage() {
       </section>
       <aside class="pt-card"${sn("PT-13")}>
         <h2>Details</h2>
-        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${kv("Customer", esc(reqCustName(r)))}${kv("Department", esc(r.department || "—"))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
+        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${kv("Customer", esc(reqCustName(r)))}${kv("Department", esc([r.department || "—", reqField("deptSubBu").choices.find(c => c[0] === r.deptSubBu)?.[1]].filter(Boolean).join(" · ")))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
           ${giro ? `${kv("Applicant", esc([r.applicantName, r.applicantEmail, r.applicantMobile].filter(Boolean).join(" · ")))}${r.giroInvoiceRef ? kv("Invoice reference", esc(r.giroInvoiceRef)) : ""}${kv("GIRO", esc(giroLabel(r)))}${r.giroAmount ? kv("Amount", `<span class="mono">SGD ${fmt(r.giroAmount)}</span>`) : ""}`
-          : `${kv("Billing", esc(linesLabel(r)))}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
+          : `${kv("Billing", esc(linesLabel(r)))}${r.giroOnContract ? kv("GIRO on contract", r.giroOnContract === "yes" ? "Yes" : "No") : ""}${r.invoiceBreakdown ? kv("Invoice breakdown", esc(r.invoiceBreakdown)) : ""}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
 ${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>
         ${r.details ? `<p class="small">${esc(r.details)}</p>` : ""}
         ${(() => { const docs = [["docContract", "Contract / PO"], ["docAcra", "ACRA"], ["docBillingForm", "Billing form"]].filter(([k]) => r[k]).map(([k, l]) => `${l}: ${r[k]}`).concat(r.attachments || []);

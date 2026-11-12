@@ -118,7 +118,10 @@ function portalFieldUpdated(el) {
     const lab = el.closest(".ffield"); lab?.classList.remove("has-err"); lab?.querySelector(".ferr")?.remove(); el.removeAttribute("aria-invalid");
     const a = $("pfAlert"); if (a) a.innerHTML = formAlert(Object.keys(errs).length);
   }
-  const side = $("pfSide"); if (side) side.innerHTML = formSide(P().draft);
+  // refresh the summary but keep the Submit button node, so a click that caused this change (blur) still submits
+  const info = document.querySelector("#pfSide .side-info");
+  if (info) { const tmp = document.createElement("div"); tmp.innerHTML = formSide(P().draft); info.replaceWith(tmp.querySelector(".side-info")); }
+  else { const side = $("pfSide"); if (side) side.innerHTML = formSide(P().draft); }
 }
 
 /** AR-i contract step changed: drop a prefilled bill-to (it belonged to the previous choice) and prefill again. */
@@ -204,6 +207,7 @@ document.addEventListener("click", e => {
   if (d.ltype) { const [i, type] = d.ltype.split(":"), l = P().draft.lines[+i]; l.lineType = type; if (type === "recurring" && !l.frequency) l.frequency = "monthly";
     P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith(`line:${i}:`))); return render(); }
   if (d.unattach !== undefined) { P().draft.attachments.splice(+d.unattach, 1); return render(); }
+  if (d.unbulk !== undefined) { P().draft.docBulk.splice(+d.unbulk, 1); return render(); }
   // workspace navigation
   if (d.rail) {
     if (d.rail === "list") { if (W().main.kind === "list") { W().active = "main"; return render(); } return showMain({ kind: "list", table: "requests", filter: "open" }); }
@@ -274,6 +278,7 @@ document.addEventListener("change", e => {
   if (el.id === "bsuDate") { S.bsu.date = el.value; parseCurrent(); return render(); }
   if (el.id === "bsuFile") { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { S.bsu.text = String(r.result); S.bsu.fileName = f.name; parseCurrent(); render(); }; r.readAsText(f); el.value = ""; return; }
   if (el.id === "pfAttach") { P().draft.attachments.push(...[...el.files].map(f => f.name)); return render(); }
+  if (el.id === "pfBulk") { const d = P().draft; d.docBulk = [...(d.docBulk || []), ...[...el.files].map(f => f.name)]; return render(); }
   const cb = el.closest("[data-pick]");
   if (cb) { const pk = S.pick[cb.dataset.pick]; if (!pk) return;
     pk.sel = cb.checked ? [...pk.sel.filter(x => x !== cb.value), cb.value] : pk.sel.filter(x => x !== cb.value);
@@ -281,7 +286,8 @@ document.addEventListener("change", e => {
   // portal AR form: billing line fields
   if (el.closest("#arForm") && el.name?.startsWith("line:")) {
     const d = P().draft, [, i, k] = el.name.split(":"); d.lines[+i][k] = coerce("lines", k, el);
-    if (el.tagName === "SELECT") return render();
+    if (k === "prorate" && !el.checked) Object.assign(d.lines[+i], { firstAmount: 0, lastAmount: 0 });
+    if (el.tagName === "SELECT" || el.type === "checkbox") return render();
     return lineUpdated(el, +i);
   }
   // portal AR form: dependent fields re-render
@@ -290,6 +296,7 @@ document.addEventListener("change", e => {
     if (el.name === "customerId" && d.contractId && S.contracts.find(k => k.id === d.contractId)?.customerId !== d.customerId) d.contractId = null;
     if (el.name === "contractId" && d.contractId) { const k = S.contracts.find(x => x.id === d.contractId); if (k && !d.customerId) d.customerId = k.customerId; }
     if (el.name === "contractLocation" && !["repository", "physical"].includes(d.contractLocation)) d.contractLocationRef = "";
+    if (el.name === "department" && d.deptSubBu && !d.deptSubBu.startsWith(String(d.department).slice(0, 3).toUpperCase())) d.deptSubBu = "";
     if (el.name === "contractId" || el.name === "department") contractChanged(d);
     clearHidden("requests", d);
     if (el.tagName === "SELECT" || ["checkbox", "radio", "file"].includes(el.type)) { const now = validateARi(d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k]; return render(); }
@@ -302,6 +309,10 @@ document.addEventListener("change", e => {
     (tab.vals ||= {})[el.name] = coerce(tab.table, el.name, el);
     if (el.name === "customerId") { const cur = tab.vals.contractId ?? recById(tab.table, tab.id)?.contractId; if (cur && S.contracts.find(k => k.id === cur)?.customerId !== tab.vals.customerId) tab.vals.contractId = null; render(); }
     // UI policy: a parent of showIf fields changed → blank the now-hidden children and redraw
+    if (TABLES[tab.table].fields.some(f => f.choiceDependsOn === el.name)) {
+      for (const f of TABLES[tab.table].fields.filter(x => x.choiceDependsOn === el.name)) { const cur = tab.vals[f.key] ?? recById(tab.table, tab.id)?.[f.key]; if (cur && !f.choices.some(c => c[0] === cur && c[2] === el.value)) tab.vals[f.key] = ""; }
+      render();
+    }
     if (TABLES[tab.table].fields.some(f => f.showIf?.key === el.name)) {
       const merged = { ...(tab.id.startsWith("new") ? {} : recById(tab.table, tab.id)), ...tab.vals };
       for (const k of clearHidden(tab.table, merged)) tab.vals[k] = "";

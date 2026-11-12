@@ -122,6 +122,8 @@ export function validateARix(d) {
   return e;
 }
 export const giroLabel = r => [GIRO_TYPE[r.giroType] || "GIRO", r.giroPurpose === "others" ? r.giroPurposeOther || "Others" : GIRO_PURPOSE[r.giroPurpose]].filter(Boolean).join(" · ");
+/** AR-i GIRO section (read-only, D22): Yes when the existing contract has GIRO active from an AR-ix; otherwise No. */
+export const giroOnContractOf = d => d.contractOption === "existing" && d.contractId && ctrById(d.contractId)?.giroStatus === "active" ? "yes" : d.contractOption ? "no" : "";
 /** The AR-ix case whose GIRO is active on a contract (D21: at most one per contract), or null. */
 export const activeGiroCase = k => k && k.giroStatus === "active" && k.giroCaseId ? reqById(k.giroCaseId) : null;
 /** AR-ix cases filed on a contract, newest first (the contract's GIRO history). */
@@ -206,6 +208,10 @@ export function lineErrors(l) {
     if (!l.startDate) e.startDate = "Enter the first billing date.";
     if (!l.endDate) e.endDate = "Enter the last billing date.";
     if (l.startDate && l.endDate && l.endDate < l.startDate) e.endDate = "Must be on or after the From date.";
+    if (l.prorate) {
+      if (!(l.firstAmount > 0)) e.firstAmount = "Enter the first month amount.";
+      if (!(l.lastAmount > 0) && periodDates(l.frequency || "monthly", l.startDate, l.endDate).length !== 1) e.lastAmount = "Enter the last month amount.";
+    }
   }
   return e;
 }
@@ -217,7 +223,15 @@ export function periodDates(freq, start, end, cap = 120) {
   for (let n = 0; n < cap; n++) { const d = addMonths(start, step * n); if (d > end) break; out.push(d); }
   return out;
 }
-export function lineValue(l) { return l.lineType === "recurring" ? (l.amount || 0) * periodDates(l.frequency || "monthly", l.startDate, l.endDate).length : (l.amount || 0); }
+/** Amount billed for each period of a recurring line or schedule: prorated first / last period when set. */
+export function periodAmounts(x, dates) {
+  return dates.map((d, i) => x.prorate !== false && x.firstAmount && i === 0 ? x.firstAmount : x.prorate !== false && x.lastAmount && i === dates.length - 1 && i > 0 ? x.lastAmount : x.amount || 0);
+}
+export function lineValue(l) {
+  if (l.lineType !== "recurring") return l.amount || 0;
+  const dates = periodDates(l.frequency || "monthly", l.startDate, l.endDate);
+  return periodAmounts(l.prorate ? l : { amount: l.amount }, dates).reduce((s, a) => s + a, 0);
+}
 export function linesSummary(lines) {
   const one = lines.filter(l => l.lineType !== "recurring"), rec = lines.filter(l => l.lineType === "recurring");
   return { oneOffTotal: one.reduce((s, l) => s + (l.amount || 0), 0), recurringValue: rec.reduce((s, l) => s + lineValue(l), 0),
@@ -337,10 +351,11 @@ export function setupSchedule(lineId) {
   if (!r?.customerId || r.newCustomer || !l.contractId) return "Link the request to the customer and contract first.";
   if (l.scheduleId) return "This line already has a billing schedule.";
   const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: l.contractId, department: r.department, desc: l.desc,
-    frequency: l.frequency || "monthly", amount: l.amount, firstDate: l.startDate, lastDate: l.endDate, requestId: r.id, lineId: l.id };
+    frequency: l.frequency || "monthly", amount: l.amount, firstDate: l.startDate, lastDate: l.endDate, requestId: r.id, lineId: l.id,
+    firstAmount: l.prorate ? l.firstAmount || 0 : 0, lastAmount: l.prorate ? l.lastAmount || 0 : 0 };
   S.schedules.push(sch); l.scheduleId = sch.id; if (r.state === "new") r.state = "in_progress"; if (!r.assignedTo) r.assignedTo = me().id;
   const n = periodDates(sch.frequency, sch.firstDate, sch.lastDate).length;
-  journal(r, "comment", `Recurring line "${l.desc}" set up as billing schedule ${sch.number}: ${n} ${freqLabel(sch.frequency).toLowerCase()} invoice${n === 1 ? "" : "s"} of SGD ${(sch.amount / 100).toFixed(2)} from ${sch.firstDate} to ${sch.lastDate}. AR raises each invoice; no further AR forms are needed for this line.`);
+  journal(r, "comment", `Recurring line "${l.desc}" set up as billing schedule ${sch.number}: ${n} ${freqLabel(sch.frequency).toLowerCase()} invoice${n === 1 ? "" : "s"} of SGD ${(sch.amount / 100).toFixed(2)}${sch.firstAmount || sch.lastAmount ? ` (prorated: first SGD ${((sch.firstAmount || sch.amount) / 100).toFixed(2)}, last SGD ${((sch.lastAmount || sch.amount) / 100).toFixed(2)})` : ""} from ${sch.firstDate} to ${sch.lastDate}. AR raises each invoice; no further AR forms are needed for this line.`);
   updateBilled(r);
   return { opened: sch };
 }
@@ -369,8 +384,9 @@ export function raiseInvoice(scheduleId, date) {
   const k = ctrById(sch.contractId), c = custById(sch.customerId);
   const label = new Date(date + "T00:00:00").toLocaleDateString("en-SG", { month: "short", year: "numeric" });
   const invDate = date > isoToday() ? date : isoToday();
+  const dates = periodDates(sch.frequency, sch.firstDate, sch.lastDate), amount = periodAmounts(sch, dates)[dates.indexOf(date)] ?? sch.amount;
   const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: sch.customerId, contractId: sch.contractId, requestId: sch.requestId || null, scheduleId: sch.id, periodDate: date,
-    customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount: sch.amount, date: invDate, due: addDays(invDate, k?.terms || c?.terms || 30), currency: "SGD" };
+    customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount, date: invDate, due: addDays(invDate, k?.terms || c?.terms || 30), currency: "SGD" };
   S.invoices.push(inv);
   return { opened: inv };
 }
@@ -395,10 +411,13 @@ export function createRequest(vals) {
     return req;
   }
   req.amount = linesSummary(lines).total;
+  req.giroOnContract = giroOnContractOf(req);
   S.requests.push(req);
   for (const l of lines) S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, contractId: req.contractOption === "existing" ? req.contractId || null : null, lineType: l.lineType, desc: l.desc.trim(), amount: l.amount,
     invoiceDate: l.lineType === "one_off" ? l.invoiceDate || "" : "", frequency: l.lineType === "recurring" ? l.frequency || "monthly" : "",
-    startDate: l.lineType === "recurring" ? l.startDate : "", endDate: l.lineType === "recurring" ? l.endDate : "", invoiceId: null, scheduleId: null });
+    startDate: l.lineType === "recurring" ? l.startDate : "", endDate: l.lineType === "recurring" ? l.endDate : "", invoiceId: null, scheduleId: null,
+    remarks: l.lineType === "recurring" ? l.remarks || "" : "", prorate: l.lineType === "recurring" && !!l.prorate,
+    firstAmount: l.lineType === "recurring" && l.prorate ? l.firstAmount || 0 : 0, lastAmount: l.lineType === "recurring" && l.prorate ? l.lastAmount || 0 : 0 });
   const ctrText = req.contractOption === "existing" ? `under contract ${ctrById(req.contractId)?.number}` : req.contractOption === "new" ? `under new contract ${req.newCtrRef}` : "with no contract";
   journal(req, "system", `Submitted from ${req.form || "AR-i"} on the portal${req.newCustomer ? " for a new customer" : ""} ${ctrText}, with ${linesLabel(req)}.`, req.requestedBy);
   return req;

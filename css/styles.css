@@ -644,3 +644,7 @@ button.ws-tab[aria-selected="true"],.ws-tab.rec.on{background:transparent;color:
   .cs-panel{max-height:none;position:static}
   .rh-right{justify-content:flex-start}
 }
+
+/* ARF: read-only GIRO Yes / No on AR-i (set by AR-ix) */
+.seg.giro-ro button[disabled]{cursor:not-allowed;opacity:.55}
+.seg.giro-ro button[disabled][aria-pressed="true"]{opacity:.8}

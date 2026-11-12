@@ -15,6 +15,9 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 ## Done
 
+- 2026-11-12 **ARF**: AR-i change request: GIRO section (read-only from AR-ix), department Sub-BU, finance coding logic
+  (Type of billing for all, V@G for SB / PV, free-text Sub-BU, agent name, GA tooltip), bulk upload for C/D/E, recurring
+  remarks and prorating, invoice breakdown (D22).
 - 2026-11-11 **GIR**: GIRO table removed; contract › AR-ix design with GIRO status + active case, one active GIRO per
   contract (D21); GIRO history tab on the contract; demo contract TR-TA-2025-14.
 - 2026-11-10 **GIR / AR-ix**: GIRO authorisation form (contract first, applicant prefilled from the bill-to, rental /

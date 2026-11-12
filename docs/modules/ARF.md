@@ -16,6 +16,22 @@ request can mix both (e.g. a set-up fee plus monthly support). AR links the requ
 master (or creates/updates it) and files the documents on the customer, so the project team gives them
 **once**. Recurring lines become billing schedules that AR runs in the workspace.
 
+## Context: AR forms and master data are separate on purpose (D22)
+
+AR forms (AR-i, AR-ix, …) and customer / contract updates are **deliberately separate**. A form is a
+request; it never changes customer or contract data by itself. AR changes the master data in the
+workspace (Link to customer, Link contract, Activate / Remove GIRO). Each form only *reads* what the
+master data says. This creates some scenarios the build must handle:
+
+| Scenario | What happens |
+|---|---|
+| AR-i on a contract **with GIRO active** | AR-i shows GIRO = **Yes**, greyed out. It can't be changed on AR-i. |
+| AR-i on a contract **without GIRO**, and the customer wants GIRO | AR-i shows GIRO = **No**, greyed out, with a tooltip: raise an **AR-ix**. The two forms are separate cases. |
+| AR-i for a **new contract** or **no contract** | GIRO = No (a contract that doesn't exist yet can't have GIRO). After AR creates the contract from the AR-i, an AR-ix can add GIRO. |
+| AR-ix for a contract **not on file yet** | AR processes the contract's **AR-i first**, then links the AR-ix to the new contract (GIR module). |
+| GIRO changes **after** an AR-i is submitted | The AR-i keeps the value it had at submit (`giro_on_contract` is a snapshot); the contract shows the current status. |
+| Bill-to or contract details change | Only through AR in the workspace (D16), never by editing a past form. |
+
 ## Decisions
 
 | # | Question | Decision | Date |
@@ -35,6 +51,12 @@ master (or creates/updates it) and files the documents on the customer, so the p
 | 13 | Bill-to on the contract | The bill-to person sits **under the contract** (or shell), not the department. AR-i shows the contract's bill-to, or asks for one prefilled from the department's usual contact; *Change the bill-to person on this contract* updates it. Department billing contacts remain as the default used for prefill. (D16) | 2026-11-02 |
 | 14 | Relationships on the customer | The customer record shows **AR requests** (customer ↔ AR case), **Contracts** (incl. shells) and a **Billing hierarchy** of contract › lines › invoices / schedules. The contract record lists its billing lines, schedules, invoices and AR requests. | 2026-11-02 |
 | 15 | Finance coding on AR-i | Request level, **all optional**, codes only for now. **Cost center** (free text), **Account code** (free text), **Billing type** (M / SB / PV). If SB: **V@G** (Yes / No). If V@G = Yes: **Sub-BU** (1–5); if No: **Type of billing** (A–E). Hidden fields are cleared when the answer above them changes. Shown on the workspace Details tab (section *Finance coding*, editable by AR) and on the portal ticket. | 2026-11-06 |
+| 16 | GIRO on AR-i | New section **GIRO** after the contract: **GIRO on this contract** Yes / No, **read-only and greyed out**, taken from the contract's GIRO status (set only by AR-ix, D21). Tooltip: raise an AR-ix if the contract needs GIRO. The value is stored on the request at submit. | 2026-11-12 |
+| 17 | Department sub-BU | **Sub-BU** dropdown right after Department, in General information (all AR forms). Choices depend on the department (mock list of 3 per department until the client supplies the real one). Changing the department clears it. | 2026-11-12 |
+| 18 | Finance coding logic (replaces part of 15) | **Type of billing** (A–E) shows for **every** billing type (M, SB, PV). For **SB and PV**, **V@G** (Yes / No) is also asked; V@G = Yes adds **Sub-BU (V@G)** as **free text** (was a 1–5 dropdown). New: **Name of agent to be billed** (free text). **Cost center** has a tooltip "To be filled by GA". All still optional. | 2026-11-12 |
+| 19 | Bulk supporting documents | When Type of billing is **C, D or E**, a **Supporting documents (bulk upload)** field accepts several files at once. | 2026-11-12 |
+| 20 | Recurring line options | Each recurring line gets optional **Remarks** and **Prorate first and last month** (Yes / No). If Yes: **First month amount** and **Last month amount** (mandatory). Line value = first + amount × (periods − 2) + last. The billing schedule keeps both amounts and *Raise invoice* uses them for the first and last period. | 2026-11-12 |
+| 21 | Invoice breakdown | New section **Invoice breakdown**: free text, optional, after What to bill. | 2026-11-12 |
 
 Assumption to confirm: "where their contracts are" means the storage location of the signed contract
 (decision 5).
@@ -135,6 +157,10 @@ Assumption to confirm: "where their contracts are" means the storage location of
 9. Should cost center and account code be validated against a list (e.g. a cost center table or the
    finance system), or stay free text? (Owner)
 10. Do the finance coding values need to flow onto the invoice (e.g. for GL posting)? (Owner) **Deferred (2026-11-06):** to be decided with the AR request → invoice field mapping, later.
+11. Real list of sub-BUs per department (the prototype uses a mock list). (Owner)
+12. Is Sub-BU (V@G) related to the department Sub-BU list, or always free text? (Owner)
+13. Prorating: should the first / last month amounts be calculated from the dates (days in month) instead of typed in? (Owner)
+14. Does the invoice breakdown need structure (e.g. lines with amounts), or is free text enough? (Owner)
 
 ## Change log
 
@@ -147,3 +173,4 @@ Assumption to confirm: "where their contracts are" means the storage location of
 | 2026-11-06 | **AR-i finance coding** (decision 15): new request fields `REQ.cost_center`, `REQ.account_code`, `REQ.billing_type_code`, `REQ.vag`, `REQ.sub_bu`, `REQ.type_of_billing`; portal section `PT-29`; workspace Details section *Finance coding*. UI policies use a new schema `showIf` (also listed in the mapping doc). The column is `billing_type_code`, not `billing_type`, because `REQ.billing_type` was retired in PT-05 and IDs are never reused. |
 | 2026-11-06 | Open question 10 (finance coding on the invoice) deferred by the owner: AR request → invoice field mapping will be done later. |
 | 2026-11-10 | **General information** section (D19) added as section 1 of AR-i (and AR-ix): requester name, email (SSO, read-only), department, CC list; AR-i sections renumbered (Customer is now 2). New IDs `PT-30`, `REQ.requester_name`, `REQ.requester_email`, `REQ.cc_list`. **`PT-06` retired** (the read-only "Requested by" display; replaced by `REQ.requester_name`). Catalogue: AR-ix is now active (see the GIR module). Case state **Completed** added for non-billing forms. |
+| 2026-11-12 | **Owner change request (11 items).** Context section added (AR forms and master data separate on purpose, D22). AR-i: GIRO section, read-only from the contract (decision 16, `PT-36`, `REQ.giro_on_contract`); department Sub-BU dropdown on all forms (17, `REQ.department_sub_bu`); finance coding: Type of billing for M / SB / PV, V@G for SB and PV, Sub-BU (V@G) now free text (`REQ.sub_bu` changed from Choice to String), agent name (`REQ.agent_name`), GA tooltip on cost center (18); bulk supporting documents for C / D / E (19, `REQ.bulk_supporting_docs`); recurring line remarks and prorating (20, `RQL.remarks`, `RQL.prorate`, `RQL.first_period_amount`, `RQL.last_period_amount`, `SCH.first_period_amount`, `SCH.last_period_amount`); Invoice breakdown section (21, `PT-37`, `REQ.invoice_breakdown`). AR-i sections are now: 1 General information, 2 Customer, 3 Contract and bill-to, 4 GIRO, 5 What to bill, 6 Invoice breakdown, 7 Finance coding, 8 Customer documents. Also fixed: clicking Submit straight after editing a text field didn't submit. No IDs retired. |

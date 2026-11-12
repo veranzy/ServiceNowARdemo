@@ -93,6 +93,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-04` | Quick link to My Requests |
 | `PT-05` | Record producer "AR-i New AR request" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; |
 | `PT-06` | RETIRED 2026-11-10: replaced by the General information variable set (PT-30, REQ.requester_name / REQ.requester_email) |
+| `PT-36` | AR-i variable set GIRO (D22): read-only Yes / No (variable giro_on_contract) set by a catalog client script from the chosen contract's giro_status (GlideAjax); No for a new contract or no-contract shell. Tooltip: raise an AR-ix if the contract needs GIRO |
+| `PT-37` | AR-i variable set Invoice breakdown: invoice_breakdown (multi-line text, optional) |
 | `PT-30` | Variable set General information (D19), first section of every AR form record producer: requester_name (default current user's name), requester_email (from SSO, read-only), department, cc_list (emails; copied to the case watch_list so they can view it on the portal) |
 | `PT-31` | Record producer "AR-ix GIRO authorisation" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; |
 | `PT-32` | AR-ix variable set Contract and applicant: customer search, existing contract (reference qualifier: customer's contracts, not shells) or 'not listed' with a reference number; applicant name / email / mobile prefilled from the contract's bill-to (catalog client script onChange contract); invoice reference number |
@@ -136,6 +138,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.ar_form` | x_ar_request.ar_form · Choice · read-only |
 | `REQ.requester_name` | x_ar_request.requester_name · String · General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name |
 | `REQ.requester_email` | x_ar_request.requester_email · String · read-only · General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only |
+| `REQ.department_sub_bu` | x_ar_request.department_sub_bu · Choice · General information (all AR forms). Sub-BUs of the chosen department (mock list) |
 | `REQ.cc_list` | x_ar_request.cc_list · String (1000) · General information (all AR forms). Emails separated by commas; these people can view the case on the portal (Watch list) |
 | `REQ.department` | x_ar_request.department · Choice · mandatory |
 | `REQ.customer` | x_ar_request.customer · Reference → x_ar_customer · Mandatory unless New customer is ticked |
@@ -160,12 +163,16 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.short_description` | x_ar_request.short_description · String · mandatory · e.g. Data hall cooling project, phase 1 |
 | `REQ.amount` | x_ar_request.amount · Currency · read-only · Calculated: one-off lines + recurring amount × number of periods |
 | `REQ.po_number` | x_ar_request.po_number · String |
-| `REQ.cost_center` | x_ar_request.cost_center · String · Optional, free text |
+| `REQ.cost_center` | x_ar_request.cost_center · String · Optional, free text. To be filled by GA |
 | `REQ.account_code` | x_ar_request.account_code · String · Optional, free text |
+| `REQ.agent_name` | x_ar_request.agent_name · String · Optional, free text |
 | `REQ.billing_type_code` | x_ar_request.billing_type_code · Choice · Optional. M, SB or PV (full names to be confirmed) |
 | `REQ.vag` | x_ar_request.vag · Choice · Optional |
-| `REQ.sub_bu` | x_ar_request.sub_bu · Choice · Optional |
+| `REQ.sub_bu` | x_ar_request.sub_bu · String · Optional, free text |
 | `REQ.type_of_billing` | x_ar_request.type_of_billing · Choice · Optional |
+| `REQ.bulk_supporting_docs` | x_ar_request.bulk_supporting_docs · Attachment · Optional; several files at once |
+| `REQ.invoice_breakdown` | x_ar_request.invoice_breakdown · String (4000) · Optional, free text: how the invoice should be broken down |
+| `REQ.giro_on_contract` | x_ar_request.giro_on_contract · Choice · read-only · Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21) |
 | `REQ.giro_applicant_name` | x_ar_request.giro_applicant_name · String · AR-ix. Mandatory on the form; prefilled from the contract's bill-to |
 | `REQ.giro_applicant_email` | x_ar_request.giro_applicant_email · String · AR-ix. Mandatory on the form; prefilled from the contract's bill-to |
 | `REQ.giro_applicant_mobile` | x_ar_request.giro_applicant_mobile · String · AR-ix. Prefilled from the contract's bill-to phone |
@@ -414,6 +421,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `SCH.amount` | x_ar_billing_schedule.amount · Currency · mandatory |
 | `SCH.first_billing_date` | x_ar_billing_schedule.first_billing_date · Date · mandatory |
 | `SCH.last_billing_date` | x_ar_billing_schedule.last_billing_date · Date · mandatory |
+| `SCH.first_period_amount` | x_ar_billing_schedule.first_period_amount · Currency · Empty = amount per period |
+| `SCH.last_period_amount` | x_ar_billing_schedule.last_period_amount · Currency · Empty = amount per period |
 | `SCH.source_request` | x_ar_billing_schedule.source_request · Reference → x_ar_request · read-only |
 | `SCH.source_line` | x_ar_billing_schedule.source_line · Reference → x_ar_request_line · read-only |
 
@@ -440,6 +449,10 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RQL.frequency` | x_ar_request_line.frequency · Choice · Recurring only; Monthly by default (decision 10) |
 | `RQL.start_date` | x_ar_request_line.start_date · Date · Recurring only: first billing date |
 | `RQL.end_date` | x_ar_request_line.end_date · Date · Recurring only: last billing date |
+| `RQL.remarks` | x_ar_request_line.remarks · String · Recurring only, optional |
+| `RQL.prorate` | x_ar_request_line.prorate · True/False · Recurring only |
+| `RQL.first_period_amount` | x_ar_request_line.first_period_amount · Currency · Mandatory when prorated |
+| `RQL.last_period_amount` | x_ar_request_line.last_period_amount · Currency · Mandatory when prorated |
 | `RQL.invoice` | x_ar_request_line.invoice · Reference → x_ar_invoice · read-only |
 | `RQL.billing_schedule` | x_ar_request_line.billing_schedule · Reference → x_ar_billing_schedule · read-only |
 

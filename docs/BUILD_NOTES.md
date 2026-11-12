@@ -40,7 +40,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `WS-15` | Form record presence: avatars of users viewing the record (out-of-box on the Horizon Record page template) |
 | `WS-17` | Record history tab (out-of-box on the Record page template): sys_audit / sys_history_line for the record. Turn on Audit in the dictionary of every x_ar table; shows when, who, field, old and new value |
 | `WS-16` | List page template (Horizon): list menu on the left, list on the right; the menu selection drives the list. Menu can be hidden |
-| `CON-GIRO` | Tab GIRO history on the contract (and on no-contract shells): related list x_ar_request where contract = this contract and ar_form = AR-ix; GIRO column: Active (= contract.giro_case), Completed, Open, Contract to link, Rejected |
+| `CON-GIRO` | Tab GIRO history on the contract (and on no-contract shells): related list x_ar_request where contract = this contract and ar_form = AR-ix; columns AR-ix case, Type of request, Purpose, Amount, Requested by, Updated, GIRO (Active = contract.giro_case, Completed, Open, Contract to link, Rejected) |
 | `SCH-PER` | Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming |
 
 ## AR request record

@@ -13,3 +13,4 @@
 | 2026-11-12 | Type help text typo fixed at the owner's request: "please information payee" → "please inform payee" (portal form, spec, decision 14). No IDs added or retired. |
 | 2026-11-12 | Owner change: field `giro_type` label **Type** → **Purpose of GIRO/DDA request** (portal form, workspace case, spec). Choices (Add GIRO / Remove GIRO) and logic unchanged. No IDs added or retired (`REQ.giro_type` keeps its ID). |
 | 2026-11-12 | Correction (owner): the previous relabel went on the wrong field. `giro_type` (Add / Remove GIRO) is now **Type of request**; `giro_purpose` (Rental / Carpark / Others) is now **Purpose of GIRO/DDA request**. Choices and logic unchanged. No IDs added or retired. |
+| 2026-11-12 | Owner change: GIRO history tab (`CON-GIRO`, `REQ-GIROHIST`) column **Type** → **Type of request**. No IDs added or retired. |

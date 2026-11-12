@@ -482,7 +482,7 @@ function activity(rec) {
 
 /** GIRO history: the AR-ix cases filed on a contract (D21). */
 const giroHistory = (k, id) => sec(id, "GIRO history", giroCases(k).length, `<section class="rel"${sn(id)}><header><h3>GIRO history <span class="count">${giroCases(k).length}</span></h3><span class="muted small">AR-ix cases on ${esc(k.number)}; at most one GIRO active at a time</span></header>
-  ${giroCases(k).length ? `<div class="tablewrap"><table><thead><tr><th>AR-ix case</th><th>Type</th><th>Purpose</th><th>Amount</th><th>Requested by</th><th>Updated</th><th>GIRO</th></tr></thead><tbody>
+  ${giroCases(k).length ? `<div class="tablewrap"><table><thead><tr><th>AR-ix case</th><th>Type of request</th><th>Purpose</th><th>Amount</th><th>Requested by</th><th>Updated</th><th>GIRO</th></tr></thead><tbody>
   ${giroCases(k).map(r => `<tr><td>${refLink("requests", r.id, r.number)}</td><td>${esc(r.giroType === "remove" ? "Remove" : "Add")}</td><td>${esc(GIRO_PURPOSE[r.giroPurpose] || "")}<span class="desc">${esc(r.carplate || r.giroLocation || r.giroPurposeOther || "")}</span></td><td>${esc(r.giroAmount || "—")}</td><td>${esc(userById(r.requestedBy)?.name || "")}</td><td>${esc(r.updated || r.opened)}</td><td>${giroCaseChip(r)}</td></tr>`).join("")}
   </tbody></table></div>` : `<p class="empty small">No AR-ix cases on this contract yet.</p>`}</section>`);
 const rt = (title, table, rows, cols, opts) => ({ key: opts.id, label: title, n: rows.length, html: relatedTable(title, table, rows, cols, opts) });

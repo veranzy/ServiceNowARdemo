@@ -81,13 +81,13 @@ export const NOTES = {
   "PT-16": "Catalog item placeholder AR-ii … AR-xvi (inactive until defined)",
   "PT-19": "Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one (new contract, or a shell without one), prefilled from the department's x_ar_billing_contact. An existing contract's bill-to is read-only (PT-41); AR changes it in the workspace (D22)",
   "PT-20": "Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, bill-to. UI policies per option",
-  "PT-42": "AR-i variable set Others (after Customer documents; final placement to be decided by the owner): invoice_breakdown, cost_center, account_code, agent_name, po_number. All optional",
+  "PT-42": "AR-i variable set Others (after Customer documents; final placement to be decided by the owner): cost_center, agent_name, po_number. All optional (invoice_breakdown and account_code removed, AR-i decision 39)",
   "PT-43": "AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code. At least one row when Yes",
   "PT-28": "No contract required: info message (UI policy on contract_option = none). Link to customer files the lines under the customer's no-contract shell for the department (x_ar_contract, contract_type = shell)",
   "PT-25": "Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer)",
   "PT-26": "RETIRED 2026-11-12: What to bill variable set with the Billing lines multi-row variable set; replaced by Invoice details (PT-37). One billing line is now created from the invoice details",
   "PT-27": "Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden",
-  "PT-29": "Finance coding variables (all optional): cost_center (tooltip: to be filled by GA), account_code, agent_name. Now in the Others section (PT-42); type of billing and the bulk upload are on the contract (PT-40)",
+  "PT-29": "Finance coding variables (all optional): cost_center (tooltip: to be filled by GA), agent_name. Now in the Others section (PT-42); type of billing and the bulk upload are on the contract (PT-40)",
   "PT-23": "Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10)",
 };
 

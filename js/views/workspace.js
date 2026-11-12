@@ -285,7 +285,7 @@ const LAYOUT = {
     ["Contract billing (from the contract at submit)", ["typeOfBilling"], r => !isIx(r) && r.contractOption === "existing"],
     ["GIRO (from the contract at submit)", ["giroOnContract"], r => !isIx(r) && !!r.giroOnContract],
     ["Invoice details", ["attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "needItems"], r => !isIx(r)],
-    ["Others (placement to be decided)", ["invoiceBreakdown", "costCenter", "accountCode", "agentName", "poNumber"], r => !isIx(r)],
+    ["Others (placement to be decided)", ["costCenter", "agentName", "poNumber"], r => !isIx(r)],
     ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], r => !isIx(r) && r.billToName],
     ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => !isIx(r) && (r.docContract || r.docAcra || r.docBillingForm)],
     // AR-ix (AR-ix module)

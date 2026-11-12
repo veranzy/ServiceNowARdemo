@@ -59,8 +59,7 @@ AR-i never changes master data by itself (D22, see [AR-00 → Context](../AR-00/
   date: AR decides the schedule start in the workspace (open question 25).
 - **Customer documents** (decisions 4, 35): checklist of the three customer documents showing *On file* or
   *Needed*; upload only what's needed. The signed contract / PO is optional, offered for a new contract only.
-- **Others** (decision 34, optional): invoice breakdown, cost center, account code, name of agent to be
-  billed, customer PO number.
+- **Others** (decisions 34, 39, optional): cost center, name of agent to be billed, customer PO number.
 - Ticket page block: the billing line and its invoice or billing schedule.
 
 **Workspace**

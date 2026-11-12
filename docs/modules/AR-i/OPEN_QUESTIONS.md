@@ -25,6 +25,6 @@
 23. Are attention to name and email mandatory? Prototype: optional, prefilled from the contract bill-to. **Deferred 2026-11-12** by the owner (ignore for now). (Owner)
 24. ~~Should the billing cycle set the invoice day?~~ **Answered 2026-11-12:** no; billing cycle is information only and *Suggested billing cycle* stays free text (decision 36).
 13. Prorating: should the first / last month amounts be calculated from the dates (days in month) instead of typed in? (Owner)
-14. Does the invoice breakdown need structure (e.g. lines with amounts), or is free text enough? (Owner)
+14. ~~Does the invoice breakdown need structure, or is free text enough?~~ **No longer applies 2026-11-12:** invoice breakdown removed (decision 39).
 25. **Recurring contract: when does the monthly billing schedule start (first invoice)?** AR-i no longer asks for a date (decision 38). Options: the contract's *preferred invoice billing date*, the contract start date, or AR sets it when setting up the schedule. **Deferred 2026-11-12** by the owner to the workspace design ("keep all the data in the AR-i case first"). **Interim in the prototype:** the billing line starts at the contract start date, so the demo still runs. (Owner)
 26. **One-off line: what invoice date does *Create invoice* default to?** E.g. Per billing cycle → the next 1st / 15th from the contract's billing cycle; Expedited → today. **Deferred 2026-11-12** to the workspace design. **Interim in the prototype:** today. (Owner)

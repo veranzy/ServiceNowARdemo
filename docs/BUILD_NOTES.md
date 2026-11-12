@@ -117,13 +117,13 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-16` | Catalog item placeholder AR-ii … AR-xvi (inactive until defined) |
 | `PT-19` | Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one (new contract, or a shell without one), prefilled from the department's x_ar_billing_contact. An existing contract's bill-to is read-only (PT-41); AR changes it in the workspace (D22) |
 | `PT-20` | Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, bill-to. UI policies per option |
-| `PT-42` | AR-i variable set Others (after Customer documents; final placement to be decided by the owner): invoice_breakdown, cost_center, account_code, agent_name, po_number. All optional |
+| `PT-42` | AR-i variable set Others (after Customer documents; final placement to be decided by the owner): cost_center, agent_name, po_number. All optional (invoice_breakdown and account_code removed, AR-i decision 39) |
 | `PT-43` | AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code. At least one row when Yes |
 | `PT-28` | No contract required: info message (UI policy on contract_option = none). Link to customer files the lines under the customer's no-contract shell for the department (x_ar_contract, contract_type = shell) |
 | `PT-25` | Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer) |
 | `PT-26` | RETIRED 2026-11-12: What to bill variable set with the Billing lines multi-row variable set; replaced by Invoice details (PT-37). One billing line is now created from the invoice details |
 | `PT-27` | Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden |
-| `PT-29` | Finance coding variables (all optional): cost_center (tooltip: to be filled by GA), account_code, agent_name. Now in the Others section (PT-42); type of billing and the bulk upload are on the contract (PT-40) |
+| `PT-29` | Finance coding variables (all optional): cost_center (tooltip: to be filled by GA), agent_name. Now in the Others section (PT-42); type of billing and the bulk upload are on the contract (PT-40) |
 | `PT-23` | Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10) |
 
 ## AR request
@@ -187,14 +187,12 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.customer_poc_name` | x_ar_request.customer_poc_name · String · AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in and replicated to the customer by Link to customer |
 | `REQ.customer_poc_email` | x_ar_request.customer_poc_email · String · AR-i customer details; must be a valid email. Same rule as POC name |
 | `REQ.cost_center` | x_ar_request.cost_center · String · Optional, free text. To be filled by GA |
-| `REQ.account_code` | x_ar_request.account_code · String · Optional, free text |
 | `REQ.agent_name` | x_ar_request.agent_name · String · Optional, free text |
 | `REQ.agency_type` | x_ar_request.agency_type · Choice · AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master |
 | `REQ.vag` | x_ar_request.vag · Choice · AR-i customer details, optional. Found customer: read-only from the customer master |
 | `REQ.sub_bu` | x_ar_request.sub_bu · String · Optional, free text |
 | `REQ.type_of_billing` | x_ar_request.type_of_billing · Choice · Contract level: entered for a new contract (copied to the contract by Link to customer); read-only copy of the contract's value for an existing one |
 | `REQ.bulk_supporting_docs` | x_ar_request.bulk_supporting_docs · Attachment · Optional; several files at once |
-| `REQ.invoice_breakdown` | x_ar_request.invoice_breakdown · String (4000) · Optional, free text: how the invoice should be broken down |
 | `REQ.giro_on_contract` | x_ar_request.giro_on_contract · Choice · read-only · Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21) |
 | `REQ.giro_applicant_name` | x_ar_request.giro_applicant_name · String · AR-ix. Mandatory on the form; prefilled from the contract's bill-to |
 | `REQ.giro_applicant_email` | x_ar_request.giro_applicant_email · String · AR-ix. Mandatory on the form; prefilled from the contract's bill-to |

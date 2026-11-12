@@ -11,7 +11,8 @@ https://veranzy.github.io/ServiceNowARdemo/ (deploys on every push to `main` via
 ## Project instructions (team-maintained)
 
 This section is the shared brief for anyone working on the project with Claude: repo sessions read
-this file automatically, and the Claude project "ServiceNow AR" points here too. **Edit it here** when
+this file automatically. It lives **only in git**: it is not exported to the Claude project "ServiceNow AR";
+project chats read it on GitHub (https://github.com/veranzy/ServiceNowARdemo/blob/main/CLAUDE.md). **Edit it here** when
 a rule changes, commit with the prefix `DOCS:`, and add a line to *Instruction changes* at the end of
 this section. Keep it short; module detail belongs in `docs/modules/`, not here.
 
@@ -21,7 +22,8 @@ hand-over to a ServiceNow developer who must be able to build from the docs alon
 
 **Source of truth.** This repo. Docs in the Claude project (`requirements/*.md`) are exported copies
 for reference; if they differ from the repo, the repo wins. After a change that touches the docs,
-re-export the changed files to the Claude project (or tell the owner they are stale).
+re-export the changed files to the Claude project (or tell the owner they are stale). **Never export
+CLAUDE.md**: the brief has a single copy, in git.
 
 **Standing decisions** (don't revisit unless the owner asks; full list in `docs/DECISIONS.md`):
 - All tables are custom tables in the scoped app; no CSM or `ast_contract` (D1). Exception: `x_ar_customer`
@@ -64,6 +66,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-02 | Section added: goal, source of truth, standing decisions, quality bar, sign-off status, style. | Owner |
 | 2026-11-12 | Context added: AR forms and customer / contract updates are separate on purpose (D22). | Owner |
 | 2026-11-12 | Standing decision D1 amended: customer name dot-walked from `core_company` (D26). | Owner |
+| 2026-11-12 | Brief lives only in git: the Claude project copy is decommissioned and CLAUDE.md is no longer exported. | Owner |
 
 ## How we work: modules, one at a time
 

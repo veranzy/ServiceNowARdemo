@@ -279,7 +279,7 @@ const LAYOUT = {
     // AR-i
     ["Customer", ["customerId"], r => !isIx(r) && !r.newCustomer], ["New customer (to verify)", ["newCustName", "newCustUen", "newCustAddress"], r => !isIx(r) && r.newCustomer],
     ["Customer details (from the request)", ["agencyType", "vag", "subBu", "pocName", "pocEmail"], r => !isIx(r)],
-    ["Contract", ["contractOption", "contractId", "contractLocation", "contractLocationRef"], r => !isIx(r)],
+    ["Contract", ["contractOption", "contractId"], r => !isIx(r)],
     ["New contract (to create)", ["newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther",
       "newCtrProrate", "newCtrProFirst", "newCtrProLast", "typeOfBilling", "docBulk"], r => !isIx(r) && r.contractOption === "new"],
     ["Contract billing (from the contract at submit)", ["typeOfBilling"], r => !isIx(r) && r.contractOption === "existing"],
@@ -301,7 +301,7 @@ const LAYOUT = {
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
   customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]],
     ["Agency and point of contact", ["agencyType", "vag", "vagSubBu", "pocName", "pocEmail"]]],
-  contracts: [["Contract", ["category", "number", "reference", "poNumber", "contractType", "customerId", "department", "title", "start", "end", "value", "billing", "contractLocation", "contractLocationRef", "notes"]],
+  contracts: [["Contract", ["category", "number", "reference", "poNumber", "contractType", "customerId", "department", "title", "start", "end", "value", "billing", "notes"]],
     ["Billing terms", ["billingCycle", "billingCycleOther", "invoiceDate", "paymentTerms", "paymentTermsOther", "terms", "discPct", "discDays", "prorate", "prorateFirst", "prorateLast", "typeOfBilling", "bulkDocs"]],
     ["Late payment interest (LPI)", ["lpiApplicable", "lpiMinRate", "lpiRate"]],
     ["GIRO", ["giroStatus", "giroCaseId"], k => !isShell(k)],
@@ -424,13 +424,12 @@ function actionBar(items) {
 const LINE_CHIP = { open: ["Open", "c-neutral"], draft: ["Invoice draft", "c-accent"], invoiced: ["Invoiced", "c-ok"], scheduled: ["Scheduled", "c-ok"] };
 const lineChip = l => { const [lab, c] = LINE_CHIP[lineStatus(l)]; return `<span class="chip ${c}">${lab}</span>`; };
 
-/** Link to customer is needed while the customer, bill-to, documents or contract location aren't on the customer master yet. */
+/** Link to customer is needed while the customer, bill-to, or documents aren't on the customer master yet. */
 function setupPending(r, st = setupStatus(r)) {
   if (r.form === "AR-ix") return !r.contractId;
   if (!st.linked || !st.contractDone) return true;
   if (r.billToName && !st.billToOk) return true;
-  if (!st.docsDone) return true;
-  return st.location === false;
+  return !st.docsDone;
 }
 
 function setupPanel(r, tab) {
@@ -447,7 +446,6 @@ function setupPanel(r, tab) {
       ${item(st.contractDone, st.contractDone ? `${isShell(ctr) ? "No-contract shell" : "Contract"}: ${esc(ctr.number)}` : `Contract: ${ctrText}`, st.contractDone ? `${isShell(ctr) ? "No contract required; " : ""}all billing lines are filed under it` : r.contractOption === "new" ? `Link to customer creates ${esc(r.newCtrNumber)} · ${esc(r.newCtrTitle || "")} and files the billing lines under it` : r.contractOption === "none" ? "Link to customer files the billing lines under the customer's no-contract shell for the department (created if needed)" : "Link to customer files the billing lines under the contract")}
       ${item(st.billToOk ? true : false, `Bill-to on ${ctr ? esc(ctr.number) : "the contract"}`, st.billToOk ? `${esc(ctr.billToName)} · ${esc(ctr.billToEmail)}` : r.billToName ? `Will be ${ctr?.billToName ? "updated" : "set"} from this request: ${esc(r.billToName)} · ${esc(r.billToEmail)}` : "No bill-to on the contract and none on the request. Ask the requester.")}
       ${st.docsGiven.length ? item(st.docsDone, "Documents filed on the customer", st.docsGiven.map(t => `${esc(DOC_LABEL[t])}${st.filed.includes(t) ? " ✓" : ""}`).join(" · ")) : item(null, "Documents", "All already on file; nothing new supplied")}
-      ${ctr && !isShell(ctr) ? item(st.location !== false, `Contract location on ${esc(ctr.number)}`, ctr.contractLocation ? esc(ctr.contractLocationRef || ctr.contractLocation) : "Will be recorded from this request") : ""}
       ${item(lines.length && doneLines === lines.length, `Billing lines ${doneLines} of ${lines.length} done`, `${lines.length && doneLines === lines.length ? "Every line is invoiced or scheduled" : st.contractDone ? "Create the invoice or billing schedule for each line" : "Available once the request is linked"} · <button type="button" class="linkish" data-rtab="RL-REQ-RQL">Open billing lines</button>`)}
     </ul>
     ${r.newCustomer && REQ_OPEN.includes(r.state) ? `<label class="ffield linkto"${sn("REQ-LINKTO")}><span class="flabel">Link to an existing customer instead (optional)</span>

@@ -57,8 +57,6 @@ export function targetContract(d) {
 }
 /** Bill-to lives on the contract (D16): ask for it when the contract/shell has none yet, or the requester changes it. */
 export const needBillTo = d => d.contractOption === "new" || (d.contractOption === "none" && !targetContract(d)?.billToName);
-/** Contract location is asked for a new contract, or an existing contract with none recorded. */
-export const needLocation = d => d.contractOption === "new";
 /** Contract-level proration amounts (first / last month), or null. */
 export const contractPro = k => k?.prorate === "yes" ? { firstAmount: k.prorateFirst || 0, lastAmount: k.prorateLast || 0 } : null;
 /** Proration that applies to an AR-i draft / request: the new contract's fields, or the existing contract's. */
@@ -191,11 +189,6 @@ export function validateARi(d) {
     }
     if (needBillTo(d)) { need("billToName", "Enter who to bill for this contract."); need("billToEmail", "Enter the bill-to email."); }
     if (d.billToEmail && needBillTo(d) && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.billToEmail)) e.billToEmail = "Enter a valid email address.";
-    if (needLocation(d)) {
-      need("contractLocation", "Tell AR where the signed contract is kept.");
-      if (["repository", "physical"].includes(d.contractLocation)) need("contractLocationRef", "Give the link or file location.");
-      if (d.contractLocation === "attached" && !d.docContract && !(d.contractOption === "existing" && docsOnFile(d.customerId, d.contractId, d.department).contract)) e.docContract = "Attach the signed contract / PO, or choose another location.";
-    }
   }
   if (d.pocEmail && !EMAIL_RE.test(d.pocEmail)) e.pocEmail = "Enter a valid email address.";
   // Invoice details (ARF decisions 31–33): one billing event per request, recurring when the contract type is Recurring
@@ -304,12 +297,11 @@ export function setupStatus(r) {
   const docsGiven = Object.entries(DOC_KEY).filter(([, k]) => r[k]).map(([t]) => t);
   const filed = docsGiven.filter(t => S.documents.some(d => d.requestId === r.id && d.docType === t));
   const linesOnCtr = !!ctr && reqLines(r).every(l => l.contractId === ctr.id);
-  return { linked, ctr, contractDone: !!ctr && linesOnCtr, billToOk, docsGiven, filed, docsDone: filed.length === docsGiven.length,
-    location: !r.contractLocation || !ctr || isShell(ctr) ? null : !!ctr.contractLocation };
+  return { linked, ctr, contractDone: !!ctr && linesOnCtr, billToOk, docsGiven, filed, docsDone: filed.length === docsGiven.length };
 }
 
 /** UI action "Link to customer": create or link the customer, upsert the department's billing contact,
- *  file the documents on the customer, record the contract location. existingId links a new-customer AR-i to an existing customer instead. */
+ *  file the documents on the customer. existingId links a new-customer AR-i to an existing customer instead. */
 /** AR-i customer details captured on the request (transaction data) ↔ customer master fields (D23). [request key, customer key] */
 export const CUST_DETAILS = [["agencyType", "agencyType"], ["vag", "vag"], ["subBu", "vagSubBu"], ["pocName", "pocName"], ["pocEmail", "pocEmail"]];
 /** Request-shaped copy of a customer's master details (a found customer's values are read-only on AR-i). */
@@ -371,7 +363,6 @@ export function linkCustomer(id, existingId, companyId) {
       department: t === "billing_form" ? r.department : "", requestId: r.id, received: isoToday() });
     notes.push(`filed ${DOC_LABEL[t].toLowerCase()}`);
   }
-  if (ctr && !isShell(ctr) && r.contractLocation) { ctr.contractLocation = r.contractLocation; ctr.contractLocationRef = r.contractLocationRef || (r.contractLocation === "attached" ? `Customer document from ${r.number}` : ""); notes.push(`recorded contract location on ${ctr.number}`); }
   if (r.state === "new") { r.state = "in_progress"; if (!r.assignedTo) r.assignedTo = me().id; }
   journal(r, "work_note", `Link to customer: ${notes.join("; ")}.`);
   return null;

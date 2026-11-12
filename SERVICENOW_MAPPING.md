@@ -68,8 +68,6 @@ Custom contract table (not ast_contract). GIRO is a contract status set from the
 | `lpi_applicable` | LPI applicable | True/False | Late payment interest is charged on overdue invoices under this contract |
 | `lpi_min_rate` | Minimum LPI rate (%) | Decimal | Mandatory when LPI applicable. % per annum; must not exceed the LPI rate |
 | `lpi_rate` | LPI rate (%) | Decimal | Mandatory when LPI applicable. % per annum |
-| `contract_location` | Where the signed contract is kept | Choice | Choices: Attached to this form (`attached`), Already with AR (`on_file`), Document repository link (`repository`), Physical file (`physical`) |
-| `contract_location_ref` | Link or file location | String |  |
 | `billing_cycle` | Contract billing cycle | Choice | Choices: 1st of the month (`first`), 15th of the month (`fifteenth`), Others (`others`) |
 | `billing_cycle_other` | Suggested billing cycle | String | Shown when Contract billing cycle = Others (UI policy) |
 | `preferred_invoice_date` | Preferred invoice billing date | Date |  |
@@ -130,8 +128,6 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `bill_to_email` | Bill-to email | String |  |
 | `bill_to_phone` | Bill-to phone | String |  |
 | `bill_to_address` | Billing address | String (1000) |  |
-| `contract_location` | Where is the signed contract kept? | Choice | Choices: Attached to this form (`attached`), Already with AR (`on_file`), Document repository link (`repository`), Physical file (`physical`). Mandatory for a new contract, or an existing one with no location recorded |
-| `contract_location_ref` | Link or file location | String | Mandatory for repository link or physical file |
 | `short_description` | Invoice description | String | Mandatory. What the invoice is for; becomes the case's short description and the billing line's description |
 | `attention_name` | Attention to name | String | Optional. Prefilled from the contract's bill-to person |
 | `attention_email` | Attention to email | String | Optional; must be a valid email. Prefilled from the contract's bill-to email |
@@ -166,7 +162,7 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `giro_parking_start` | Parking start date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory for Add GIRO |
 | `giro_parking_end` | Parking end date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Optional; on or after the start date |
 | `giro_amount` | Amount | Currency | AR-ix, all purposes. Mandatory for Add GIRO |
-| `doc_contract_po` | Signed contract / PO | Attachment | Only when not already on file for the customer |
+| `doc_contract_po` | Signed contract / PO | Attachment | Optional, offered for a new contract only |
 | `doc_acra` | Company registration (ACRA / UEN) | Attachment | Only when not already on file |
 | `doc_billing_form` | Billing contact & address form | Attachment | Only when not already on file for this department |
 | `description` | Additional details | String (4000) |  |
@@ -256,7 +252,7 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 
 ## Portal (project team)
 
-- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_type`, `new_contract_number`, `new_contract_ref`, `new_contract_po`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `new_contract_billing_cycle`, `new_contract_billing_cycle_other`, `new_contract_invoice_date`, `new_contract_payment_terms`, `new_contract_payment_terms_other`, `new_contract_proration`, `new_contract_proration_first`, `new_contract_proration_last`, `contract_location`, `contract_location_ref`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `attention_name`, `attention_email`, `amount_per_period`, `preferred_invoice_date`, `billing_line_items_required`, `po_number`, `customer_poc_name`, `customer_poc_email`, `invoice_breakdown`, `cost_center`, `account_code`, `agent_name`, `agency_type`, `vag`, `sub_bu`, `type_of_billing`, `bulk_supporting_docs`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
+- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_type`, `new_contract_number`, `new_contract_ref`, `new_contract_po`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `new_contract_billing_cycle`, `new_contract_billing_cycle_other`, `new_contract_invoice_date`, `new_contract_payment_terms`, `new_contract_payment_terms_other`, `new_contract_proration`, `new_contract_proration_first`, `new_contract_proration_last`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `attention_name`, `attention_email`, `amount_per_period`, `preferred_invoice_date`, `billing_line_items_required`, `po_number`, `customer_poc_name`, `customer_poc_email`, `invoice_breakdown`, `cost_center`, `account_code`, `agent_name`, `agency_type`, `vag`, `sub_bu`, `type_of_billing`, `bulk_supporting_docs`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
   - Producer script: `current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item`
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.
@@ -284,7 +280,7 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 | Table | Action | Effect |
 |---|---|---|
 | AR request | Assign to me | `assigned_to` = current user; New → In progress |
-| AR request | Link to customer | Creates or links `x_ar_customer`; links / creates the contract or no-contract shell and sets it on every billing line; writes the bill-to to the contract; files documents; records contract location (D10, D15, D16) |
+| AR request | Link to customer | Creates or links `x_ar_customer`; links / creates the contract or no-contract shell and sets it on every billing line; writes the bill-to to the contract; files documents (D10, D15, D16) |
 | AR request | Request info (overflow menu) | Requires an additional comment; state → Awaiting info |
 | AR request | Reject (overflow menu) | Requires an additional comment; state → Rejected |
 | Billing line | Create invoice | One-off line: insert draft `x_ar_invoice` (customer, line's contract, description, amount, invoice date, due = date + terms); links `request_line` |

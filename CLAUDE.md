@@ -115,10 +115,9 @@ new, or *No contract required* → the customer's no-contract shell per departme
 person** (D16, held on the contract), **invoice details** (D13 amended: one billing event per request; invoice
 description, attention to, amount per period before GST, preferred invoice date, optional billing line items with
 GST 9%, D25; submit creates one billing line: recurring monthly to the contract end when the contract type is
-Recurring, else one-off), contract location, documents only if not on file → `x_ar_request` case
+Recurring, else one-off), documents only if not on file → `x_ar_request` case
 (New) in the workspace → AR **Link to customer** (creates/links the customer, links/creates the contract
-or shell and sets it on every line, writes the bill-to to the contract, files documents on the customer,
-records contract location) → AR assigns,
+or shell and sets it on every line, writes the bill-to to the contract, files documents on the customer) → AR assigns,
 may *Request info* (portal reply returns it to In progress) or *Reject* → per **billing line**: one-off →
 *Create invoice* (draft) → *Issue invoice*; recurring → *Set up billing schedule*, then **Raise invoice**
 per due period (never automatic, D12). The request becomes **Billed** when every line is invoiced

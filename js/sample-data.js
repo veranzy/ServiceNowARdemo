@@ -142,11 +142,11 @@ export function loadSample() {
     ["r7","u_pm2","meri","","Other","Install 12 additional temperature sensors",3600,"2026-10-10","rejected","u_ar1","","","","","Customer asked for extra sensors in the new cold room.",
       [["2026-10-10","u_pm2","system","Submitted from the AR form on the portal."],["2026-10-12","u_ar1","comment","This work isn't covered by contract MF-2025-07. Please raise a change order with the customer first, then submit a new AR form referencing it."],["2026-10-12","u_ar1","system","State changed to Rejected."]]]
   ];
-  // AR-i details per request: [type, department, contract location, extra fields]
+  // AR-i details per request: [type, department, extra fields]
   const ari = {
-    r1: ["adhoc", "Engineering", "on_file"], r2: ["adhoc", "Marine", "on_file"], r3: ["adhoc", "Digital", "repository", { contractLocationRef: "https://docs.example/contracts/NB-2026-05" }],
-    r4: ["recurring", "Logistics", "on_file", { frequency: "monthly", firstBillDate: "2026-10-28", lastBillDate: "" }],
-    r5: ["adhoc", "Digital", "on_file"], r6: ["adhoc", "Healthcare", "on_file"], r7: ["adhoc", "Logistics", "physical", { contractLocationRef: "Finance registry, cabinet 3" }]
+    r1: ["adhoc", "Engineering"], r2: ["adhoc", "Marine"], r3: ["adhoc", "Digital"],
+    r4: ["recurring", "Logistics", { frequency: "monthly", firstBillDate: "2026-10-28", lastBillDate: "" }],
+    r5: ["adhoc", "Digital"], r6: ["adhoc", "Healthcare"], r7: ["adhoc", "Logistics"]
   };
   S.requests = req.map(r => {
     const inv = r[10] ? invByNo(r[10]) : null;
@@ -154,8 +154,8 @@ export function loadSample() {
       billingType: r[4], title: r[5], amount: cents(r[6]), opened: shiftDate(r[7]), updated: shiftDate(r[15][r[15].length - 1][0]), state: r[8], assignedTo: r[9] || null,
       invoiceId: inv ? inv.id : null, periodStart: shiftDate(r[11]), periodEnd: shiftDate(r[12]), poNumber: r[13], details: r[14], invoiceDate: "", attachments: r[0] === "r3" ? ["Acceptance email - Novabay.pdf"] : [],
       activity: r[15].map(a => ({ at: shiftDate(a[0]) + "T09:00:00", by: a[1], kind: a[2], text: a[3] })) };
-    const [type, dept, loc, extra] = ari[r[0]];
-    Object.assign(rec, { form: "AR-i", requestType: type, department: dept, newCustomer: false, contractLocation: loc, contractLocationRef: "", scheduleId: null }, extra || {});
+    const [type, dept, extra] = ari[r[0]];
+    Object.assign(rec, { form: "AR-i", requestType: type, department: dept, newCustomer: false, scheduleId: null }, extra || {});
     if (rec.firstBillDate) rec.firstBillDate = shiftDate(rec.firstBillDate);
     rec.activity.forEach(a => { if (a.text === "Submitted from the AR form on the portal.") a.text = `Submitted from AR-i on the portal with 1 ${type === "recurring" ? "recurring" : "one-off"} line.`; });
     if (inv) inv.requestId = rec.id;
@@ -166,7 +166,7 @@ export function loadSample() {
     newCustomer: true, newCustName: "Zephyr Data Centres Pte Ltd", newCustUen: "201912345K", newCustAddress: "8 Tampines Industrial Ave 5, #04-01, Singapore 528763",
     contractOption: "new", newCtrType: "recurring", newCtrNumber: "ZDC-SA-2026-01", newCtrRef: "ZDC/MSA/2026", newCtrPo: "ZDC-PO-0091", newCtrCycle: "first", newCtrTerms: "30", newCtrProrate: "no", newCtrTitle: "Data hall cooling services agreement", newCtrStart: shiftDate("2026-11-01"), newCtrEnd: shiftDate("2027-11-30"), newCtrValue: cents(42000),
     billToName: "Alicia Koh", billToEmail: "finance@zephyrdc.example", billToPhone: "+65 6123 4567", billToAddress: "Accounts Payable, 8 Tampines Industrial Ave 5, Singapore 528763",
-    contractLocation: "attached", contractLocationRef: "", title: "Data hall cooling: monitoring and maintenance, monthly", amount: 0, poNumber: "ZDC-PO-0042",
+    title: "Data hall cooling: monitoring and maintenance, monthly", amount: 0, poNumber: "ZDC-PO-0042",
     attnName: "Alicia Koh", attnEmail: "finance@zephyrdc.example", needItems: "yes",
     docContract: "Zephyr - signed services agreement.pdf", docAcra: "Zephyr - ACRA business profile.pdf", docBillingForm: "Zephyr - billing contact form (Digital).pdf",
     details: "First project with Zephyr. Signed agreement attached.", invoiceDate: "", periodStart: "", periodEnd: "", state: "new", assignedTo: null, invoiceId: null, scheduleId: null,
@@ -247,7 +247,6 @@ export function loadSample() {
   ];
   let dn = 1000;
   S.documents = dc.map(r => ({ id: uid("d"), number: "DOC" + String(++dn).padStart(7, "0"), customerId: cid[r[0]].id, docType: r[1], fileName: r[2], contractId: r[3] ? kid[r[3]].id : null, department: r[4], requestId: null, received: shiftDate(r[5]) }));
-  for (const k of Object.values(kid)) if (S.documents.some(d => d.contractId === k.id)) { k.contractLocation = "on_file"; k.contractLocationRef = "Customer documents"; }
   // A running billing schedule: Tanjong POS retainer, monthly on the 12th; Aug and Sep already invoiced
   const tsch = { id: "s1", number: "SCH0001001", customerId: cid.tanj.id, contractId: kid["TR-2026-02"].id, department: "Digital", desc: "POS support retainer", frequency: "monthly", amount: cents(4400),
     firstDate: shiftDate("2026-08-12"), lastDate: kid["TR-2026-02"].end, requestId: null };
@@ -285,8 +284,7 @@ export function loadSample() {
 
   // GIRO demo use case: Tanjong Retail's unit tenancy TR-TA-2025-14. Rent GIRO added (r11), removed when the rent was revised (r12),
   // added again at the new rate (r13, active now). A carpark GIRO request (r14) is open but blocked: only one GIRO can be active per contract.
-  Object.assign(ta, { billToName: "Grace Lim", billToEmail: "facilities.ap@tanjongretail.example", billToPhone: "+65 6255 8800", billToAddress: "Tanjong Retail Group, Finance, 3 Jurong Gateway Road, Singapore 608532",
-    contractLocation: "repository", contractLocationRef: "https://docs.example/contracts/TR-TA-2025-14" });
+  Object.assign(ta, { billToName: "Grace Lim", billToEmail: "facilities.ap@tanjongretail.example", billToPhone: "+65 6255 8800", billToAddress: "Tanjong Retail Group, Finance, 3 Jurong Gateway Road, Singapore 608532" });
   const tApp = { applicantName: "Tanjong Retail Group", applicantEmail: ta.billToEmail, applicantMobile: "+65 9188 2201" };
   const jr = (by, d, time, kind, text) => ({ at: shiftDate(d) + "T" + time, by, kind, text });
   const tCase = o => ix({ requestedBy: "u_pm1", requesterName: pm1.name, requesterEmail: pm1.email, ccList: "", department: "Facilities",

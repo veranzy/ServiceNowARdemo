@@ -49,7 +49,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `REQ-ACT` | Activity stream: comments (visible to requester) + work_notes (AR only) + field changes |
-| `REQ-SETUP` | Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, contract location, billing lines done |
+| `REQ-SETUP` | Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, billing lines done |
 | `REQ-GIRO` | GIRO setup panel (AR-ix case, contextual side bar): contract linked? the contract's GIRO status and active case; then Activate GIRO / Remove GIRO, or why it is blocked (one active GIRO per contract, D21) |
 | `REQ-GIROHIST` | Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix) |
 | `REQ-LINKCTR` | Contract to link (AR-ix): reference to x_ar_contract, matching contract number listed first. Used by Link contract; for a contract not on file AR processes its AR-i first |
@@ -116,7 +116,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-15` | Catalog item AR-i New AR request (active record producer) |
 | `PT-16` | Catalog item placeholder AR-ii … AR-xvi (inactive until defined) |
 | `PT-19` | Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one (new contract, or a shell without one), prefilled from the department's x_ar_billing_contact. An existing contract's bill-to is read-only (PT-41); AR changes it in the workspace (D22) |
-| `PT-20` | Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, contract location, bill-to. UI policies per option |
+| `PT-20` | Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, bill-to. UI policies per option |
 | `PT-42` | AR-i variable set Others (after Customer documents; final placement to be decided by the owner): invoice_breakdown, cost_center, account_code, agent_name, po_number. All optional |
 | `PT-43` | AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: billing_item_number*, amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code. At least one row when Yes |
 | `PT-28` | No contract required: info message (UI policy on contract_option = none). Link to customer files the lines under the customer's no-contract shell for the department (x_ar_contract, contract_type = shell) |
@@ -175,8 +175,6 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.bill_to_email` | x_ar_request.bill_to_email · String |
 | `REQ.bill_to_phone` | x_ar_request.bill_to_phone · String |
 | `REQ.bill_to_address` | x_ar_request.bill_to_address · String (1000) |
-| `REQ.contract_location` | x_ar_request.contract_location · Choice · Mandatory for a new contract, or an existing one with no location recorded |
-| `REQ.contract_location_ref` | x_ar_request.contract_location_ref · String · Mandatory for repository link or physical file |
 | `REQ.short_description` | x_ar_request.short_description · String · mandatory · What the invoice is for; becomes the case's short description and the billing line's description |
 | `REQ.attention_name` | x_ar_request.attention_name · String · Optional. Prefilled from the contract's bill-to person |
 | `REQ.attention_email` | x_ar_request.attention_email · String · Optional; must be a valid email. Prefilled from the contract's bill-to email |
@@ -211,7 +209,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.giro_parking_start` | x_ar_request.giro_parking_start · Date · AR-ix carpark. Mandatory for Add GIRO |
 | `REQ.giro_parking_end` | x_ar_request.giro_parking_end · Date · AR-ix carpark. Optional; on or after the start date |
 | `REQ.giro_amount` | x_ar_request.giro_amount · Currency · AR-ix, all purposes. Mandatory for Add GIRO |
-| `REQ.doc_contract_po` | x_ar_request.doc_contract_po · Attachment · Only when not already on file for the customer |
+| `REQ.doc_contract_po` | x_ar_request.doc_contract_po · Attachment · Optional, offered for a new contract only |
 | `REQ.doc_acra` | x_ar_request.doc_acra · Attachment · Only when not already on file |
 | `REQ.doc_billing_form` | x_ar_request.doc_billing_form · Attachment · Only when not already on file for this department |
 | `REQ.description` | x_ar_request.description · String (4000) |
@@ -394,8 +392,6 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON.lpi_applicable` | x_ar_contract.lpi_applicable · True/False · Late payment interest is charged on overdue invoices under this contract |
 | `CON.lpi_min_rate` | x_ar_contract.lpi_min_rate · Decimal · Mandatory when LPI applicable. % per annum; must not exceed the LPI rate |
 | `CON.lpi_rate` | x_ar_contract.lpi_rate · Decimal · Mandatory when LPI applicable. % per annum |
-| `CON.contract_location` | x_ar_contract.contract_location · Choice |
-| `CON.contract_location_ref` | x_ar_contract.contract_location_ref · String |
 | `CON.billing_cycle` | x_ar_contract.billing_cycle · Choice |
 | `CON.billing_cycle_other` | x_ar_contract.billing_cycle_other · String |
 | `CON.preferred_invoice_date` | x_ar_contract.preferred_invoice_date · Date |
@@ -584,7 +580,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-REQ-linkctr` | UI action: Link contract (AR-ix, shown while contract is empty) → sets contract and customer from the chosen x_ar_contract; New → In progress |
 | `UA-REQ-giroadd` | UI action: Activate GIRO (AR-ix, type Add) → contract.giro_status = Active, contract.giro_case = this case; case → Completed with a requester-visible comment. Blocked when the contract already has GIRO active (D21) |
 | `UA-REQ-giroremove` | UI action: Remove GIRO (AR-ix, type Remove) → contract.giro_status = Not active, contract.giro_case cleared; system note on the case that was active; case → Completed. Blocked when GIRO is not active |
-| `UA-REQ-link` | UI action: Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document; records contract location (D10, D15, D16) |
+| `UA-REQ-link` | UI action: Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document (D10, D15, D16) |
 | `UA-SCH-raise` | UI action: Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12) |
 | `UA-SCH-save` | UI action: Save (update) |
 | `UA-BCT-save` | UI action: Save (update) |

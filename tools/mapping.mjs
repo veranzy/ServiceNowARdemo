@@ -64,7 +64,7 @@ md += `## Portal (project team)
 | Table | Action | Effect |
 |---|---|---|
 | AR request | Assign to me | \`assigned_to\` = current user; New → In progress |
-| AR request | Link to customer | Creates or links \`${TABLES.customers.table}\`; links / creates the contract or no-contract shell and sets it on every billing line; writes the bill-to to the contract; files documents; records contract location (D10, D15, D16) |
+| AR request | Link to customer | Creates or links \`${TABLES.customers.table}\`; links / creates the contract or no-contract shell and sets it on every billing line; writes the bill-to to the contract; files documents (D10, D15, D16) |
 | AR request | Request info (overflow menu) | Requires an additional comment; state → Awaiting info |
 | AR request | Reject (overflow menu) | Requires an additional comment; state → Rejected |
 | Billing line | Create invoice | One-off line: insert draft \`${TABLES.invoices.table}\` (customer, line's contract, description, amount, invoice date, due = date + terms); links \`request_line\` |

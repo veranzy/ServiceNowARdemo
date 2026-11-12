@@ -49,7 +49,6 @@ export const BILLING_CYCLES = [["first", "1st of the month"], ["fifteenth", "15t
 /** GST rate (%) for billing line items (ARF decision 33). Build: a system property, e.g. x_ar.gst_rate. */
 export const GST_RATE = 9;
 export const PAYMENT_TERM_CHOICES = [["30", "30 days"], ["others", "Others"]];
-const CONTRACT_LOCATIONS = [["attached", "Attached to this form"], ["on_file", "Already with AR"], ["repository", "Document repository link"], ["physical", "Physical file"]];
 
 export const TABLES = {
   requests: {
@@ -93,8 +92,6 @@ export const TABLES = {
       { key: "billToEmail", name: "bill_to_email", label: "Bill-to email", type: "String" },
       { key: "billToPhone", name: "bill_to_phone", label: "Bill-to phone", type: "String" },
       { key: "billToAddress", name: "bill_to_address", label: "Billing address", type: "String (1000)", wide: true },
-      { key: "contractLocation", name: "contract_location", label: "Where is the signed contract kept?", type: "Choice", choices: CONTRACT_LOCATIONS, help: "Mandatory for a new contract, or an existing one with no location recorded" },
-      { key: "contractLocationRef", name: "contract_location_ref", label: "Link or file location", type: "String", wide: true, help: "Mandatory for repository link or physical file" },
       { key: "title", name: "short_description", label: "Invoice description", type: "String", mandatory: true, wide: true, help: "What the invoice is for; becomes the case's short description and the billing line's description" },
       { key: "attnName", name: "attention_name", label: "Attention to name", type: "String", help: "Optional. Prefilled from the contract's bill-to person" },
       { key: "attnEmail", name: "attention_email", label: "Attention to email", type: "String", help: "Optional; must be a valid email. Prefilled from the contract's bill-to email" },
@@ -130,7 +127,7 @@ export const TABLES = {
       { key: "parkStart", name: "giro_parking_start", label: "Parking start date", type: "Date", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Mandatory for Add GIRO" },
       { key: "parkEnd", name: "giro_parking_end", label: "Parking end date", type: "Date", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Optional; on or after the start date" },
       { key: "giroAmount", name: "giro_amount", label: "Amount", type: "Currency", help: "AR-ix, all purposes. Mandatory for Add GIRO" },
-      { key: "docContract", name: "doc_contract_po", label: "Signed contract / PO", type: "Attachment", help: "Only when not already on file for the customer" },
+      { key: "docContract", name: "doc_contract_po", label: "Signed contract / PO", type: "Attachment", help: "Optional, offered for a new contract only" },
       { key: "docAcra", name: "doc_acra", label: "Company registration (ACRA / UEN)", type: "Attachment", help: "Only when not already on file" },
       { key: "docBillingForm", name: "doc_billing_form", label: "Billing contact & address form", type: "Attachment", help: "Only when not already on file for this department" },
       { key: "details", name: "description", label: "Additional details", type: "String (4000)", wide: true },
@@ -347,8 +344,6 @@ export const TABLES = {
       { key: "lpiApplicable", name: "lpi_applicable", label: "LPI applicable", type: "True/False", help: "Late payment interest is charged on overdue invoices under this contract" },
       { key: "lpiMinRate", name: "lpi_min_rate", label: "Minimum LPI rate (%)", type: "Decimal", help: "Mandatory when LPI applicable. % per annum; must not exceed the LPI rate" },
       { key: "lpiRate", name: "lpi_rate", label: "LPI rate (%)", type: "Decimal", help: "Mandatory when LPI applicable. % per annum" },
-      { key: "contractLocation", name: "contract_location", label: "Where the signed contract is kept", type: "Choice", choices: CONTRACT_LOCATIONS },
-      { key: "contractLocationRef", name: "contract_location_ref", label: "Link or file location", type: "String", wide: true },
       { key: "billingCycle", name: "billing_cycle", label: "Contract billing cycle", type: "Choice", choices: BILLING_CYCLES },
       { key: "billingCycleOther", name: "billing_cycle_other", label: "Suggested billing cycle", type: "String", showIf: { key: "billingCycle", eq: "others" } },
       { key: "invoiceDate", name: "preferred_invoice_date", label: "Preferred invoice billing date", type: "Date" },
@@ -420,7 +415,7 @@ export const RECORD_PRODUCER = {
   table: "requests",
   variables: [...GENERAL_INFO, "customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress",
     "contractOption", "contractId", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther",
-    "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast", "contractLocation", "contractLocationRef",
+    "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast",
     "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "attnName", "attnEmail", "perPeriod", "prefInvDate", "needItems", "poNumber",
     "pocName", "pocEmail", "invoiceBreakdown", "costCenter", "accountCode", "agentName", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "items",

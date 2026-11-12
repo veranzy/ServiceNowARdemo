@@ -15,6 +15,8 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 ## Done
 
+- 2026-11-12 **ARF**: contract location removed everywhere (ARF 35); bulk upload hint removed; open questions 20–24
+  answered (ARF 36; LPI parked as issue #3).
 - 2026-11-12 **ARF**: AR-i Invoice details revamp: billing lines replaced by invoice description, attention to, amount per
   period, preferred invoice date and optional billing line items (GST 9% calculated, LPI %); recurring follows the
   contract type; Others section for finance coding (ARF 31–34, D13 amended, D25).

@@ -2,7 +2,7 @@
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { custDetailsOf, itemCalc, targetContract, applyGiro, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, needLocation, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { custDetailsOf, itemCalc, targetContract, applyGiro, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -304,7 +304,6 @@ document.addEventListener("change", e => {
     const d = P().draft; d[el.name] = coerce("requests", el.name, el);
     if (el.name === "customerId" && d.contractId && S.contracts.find(k => k.id === d.contractId)?.customerId !== d.customerId) d.contractId = null;
     if (el.name === "contractId" && d.contractId) { const k = S.contracts.find(x => x.id === d.contractId); if (k && !d.customerId) d.customerId = k.customerId; }
-    if (el.name === "contractLocation" && !["repository", "physical"].includes(d.contractLocation)) d.contractLocationRef = "";
     if (el.name === "department" && d.deptSubBu && !d.deptSubBu.startsWith(String(d.department).slice(0, 3).toUpperCase())) d.deptSubBu = "";
     if (el.name === "contractId" || el.name === "department") contractChanged(d);
     if (el.name === "needItems" && d.needItems === "yes" && !(d.items || []).length) d.items = [{ itemNo: "", amount: 0, lpiRate: 0, accountCode: "" }];
@@ -370,7 +369,6 @@ document.addEventListener("submit", e => {
     if (vals.contractOption !== "new") Object.assign(vals, { newCtrType: "", newCtrNumber: "", newCtrRef: "", newCtrPo: "", newCtrTitle: "", newCtrStart: "", newCtrEnd: "", newCtrValue: 0, newCtrCycle: "", newCtrCycleOther: "",
       newCtrInvDate: "", newCtrTerms: "", newCtrTermsOther: "", newCtrProrate: "", newCtrProFirst: 0, newCtrProLast: 0, typeOfBilling: "", docBulk: [] });
     if (vals.contractOption !== "existing") vals.contractId = null;
-    if (!needLocation(vals)) Object.assign(vals, { contractLocation: "", contractLocationRef: "" });
     if (vals.newCustomer) vals.customerId = null; else { vals.newCustName = ""; vals.newCustUen = ""; vals.newCustAddress = ""; }
     const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;
     render(); return window.scrollTo(0, 0);

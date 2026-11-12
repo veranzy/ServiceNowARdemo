@@ -1,7 +1,7 @@
 // Project team experience: Service Portal / Employee Center with the AR forms catalogue (AR-i … AR-xvi),
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, billingMode, canViewReq, draftLine, draftPro, itemCalc, reqItems, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, needLocation, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
+import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, billingMode, canViewReq, draftLine, draftPro, itemCalc, reqItems, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
 import { AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, GST_RATE, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
@@ -87,12 +87,13 @@ const finText = r => FIN_KEYS.filter(k => (Array.isArray(r[k]) ? r[k].length : r
 function docRow(t, d, onFile) {
   const key = { contract: "docContract", acra: "docAcra", billing_form: "docBillingForm" }[t];
   const f = reqField(key), err = P().errors?.[key], have = t === "contract" && d.contractOption !== "existing" ? null : onFile[t];
-  const elsewhere = t === "contract" && !(needLocation(d) && d.contractLocation === "attached");
+  // Signed contract / PO: only offered (optional) for a new contract; an existing one shows On file or Not needed
+  const elsewhere = t === "contract" && d.contractOption !== "new";
   let status, ctl = "";
   if (have) status = `<span class="chip c-ok">On file</span> <span class="desc">${esc(have.fileName)} · received ${esc(have.received)}</span>`;
   else if (d[key]) status = `<span class="chip c-accent">Attached</span> <span class="desc">${esc(d[key])}</span>`;
-  else if (elsewhere) status = `<span class="chip c-neutral">Not needed</span> <span class="desc">${d.contractOption === "none" ? "No contract required" : !d.contractOption ? "Choose the contract first" : "Kept elsewhere (see contract)"}</span>`;
-  else status = `<span class="chip c-warn">Needed</span>`;
+  else if (elsewhere) status = `<span class="chip c-neutral">Not needed</span> <span class="desc">${d.contractOption === "none" ? "No contract required" : !d.contractOption ? "Choose the contract first" : "Not on file for this contract"}</span>`;
+  else status = t === "contract" ? `<span class="chip c-neutral">Optional</span> <span class="desc">Attach the signed contract / PO if you have it</span>` : `<span class="chip c-warn">Needed</span>`;
   if (!have && !elsewhere) ctl = `<label class="btn small" for="pfDoc-${key}">${icon("clip", 14)} ${d[key] ? "Replace" : "Attach"}</label><input type="file" id="pfDoc-${key}" name="${key}" hidden>${d[key] ? ` <button type="button" class="linkish small" data-undoc="${key}">Remove</button>` : ""}`;
   return `<div class="docrow${err ? " has-err" : ""}"${sn(`REQ.${f.name}`)}><div><b>${esc(DOC_LABEL[t])}</b>${t === "billing_form" && d.department ? `<span class="desc">for ${esc(d.department)}</span>` : ""}<div>${status}</div>${err ? `<span class="ferr">${esc(err)}</span>` : ""}</div><div class="docctl">${ctl}</div></div>`;
 }
@@ -153,17 +154,16 @@ function contractStep(d, e, f) {
         ${f("typeOfBilling", { help: null })}</div>
       ${["C", "D", "E"].includes(d.typeOfBilling) ? `<div class="ffield wide"${sn("REQ.bulk_supporting_docs")}><span class="flabel">Supporting documents (bulk upload)</span>
         <div><label class="btn small" for="pfBulk">${icon("clip", 15)} Upload files</label><input type="file" id="pfBulk" multiple hidden></div>
-        ${d.docBulk?.length ? `<ul class="attlist">${d.docBulk.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unbulk="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Type of billing ${esc(d.typeOfBilling)}: you can upload several supporting files at once.</span>`}</div>` : ""}`;
+        ${d.docBulk?.length ? `<ul class="attlist">${d.docBulk.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unbulk="${ix}">Remove</button></li>`).join("")}</ul>` : ""}</div>` : ""}`;
   }
   else if (d.contractOption === "none") body = `<div class="pt-info"${sn("PT-28")}><b>No contract required</b><p class="small">AR files this billing under ${shell ? `the customer's no-contract shell <b class="mono">${esc(shell.number)}</b>` : `a new no-contract shell for ${esc(d.department || "your department")}`}, so the customer › contract › billing lines › invoices hierarchy stays complete.</p></div>`;
-  const loc = needLocation(d) ? `<div class="fgrid">${f("contractLocation", { mandatory: true, help: null })}${["repository", "physical"].includes(d.contractLocation) ? f("contractLocationRef", { mandatory: true, label: d.contractLocation === "repository" ? "Link to the contract" : "Where the physical file is", help: null }) : ""}</div>` : "";
   const bt = d.contractOption !== "none" ? "" : `<div class="pbill"${sn("PT-19")}><h3 class="small">Bill-to person${tgt ? ` on ${esc(tgt.number)}` : " for the no-contract shell"}</h3>
       ${tgt?.billToName ? `<div class="pt-info"><b>Invoices under this shell go to</b><p class="small">${esc(tgt.billToName)} · ${esc(tgt.billToEmail)}${tgt.billToPhone ? ` · ${esc(tgt.billToPhone)}` : ""}</p></div>`
         : `<p class="pt-hint">${d.billToPrefilled ? `Prefilled from the ${esc(d.department)} department's usual bill-to person.` : "Tell AR who to bill."}</p><div class="fgrid">${f("billToName", { mandatory: true, help: null })}${f("billToEmail", { mandatory: true })}${f("billToPhone")}</div>`}</div>`;
   return `<div class="ffield wide${optErr ? " has-err" : ""}"${sn("REQ.contract_option")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Which contract does this bill under?</span>
       <div class="optcards" role="group" aria-label="Contract">${opts.map(([k, l]) => `<button type="button" class="optcard" data-ctropt="${k}" aria-pressed="${d.contractOption === k}">${esc(l)}<span>${k === "existing" ? `${ctrs.length} on file` : k === "new" ? "AR creates it" : "Ad-hoc billing"}</span></button>`).join("")}</div>
       ${optErr ? `<span class="ferr">${esc(optErr)}</span>` : ""}</div>
-    ${body}${loc}${bt}${d.contractOption ? giroSub(d) : ""}`;
+    ${body}${bt}${d.contractOption ? giroSub(d) : ""}`;
 }
 
 /** Existing contract: every contract detail read-only, in the owner's order (D22). */

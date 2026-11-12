@@ -45,6 +45,8 @@ export const AGENCY_TYPES = [["M", "M"], ["SB", "SB"], ["PV", "PV"]];
 const YES_NO = [["yes", "Yes"], ["no", "No"]];
 const BILLING_KINDS = ["A", "B", "C", "D", "E"].map(x => [x, x]);
 export const CONTRACT_CATEGORIES = [["recurring", "Recurring"], ["ad_hoc", "Ad-hoc"]];
+/** AR-i invoice timing for one-invoice requests (AR-i decision 38). */
+export const INVOICE_TIMING = [["per_cycle", "Per billing cycle"], ["expedited", "Expedited"]];
 export const BILLING_CYCLES = [["first", "1st of the month"], ["fifteenth", "15th of the month"], ["others", "Others"]];
 /** GST rate (%) for billing line items (AR-i decision 33). Build: a system property, e.g. x_ar.gst_rate. */
 export const GST_RATE = 9;
@@ -96,7 +98,8 @@ export const TABLES = {
       { key: "attnName", name: "attention_name", label: "Attention to name", type: "String", help: "Optional. Prefilled from the contract's bill-to person" },
       { key: "attnEmail", name: "attention_email", label: "Attention to email", type: "String", help: "Optional; must be a valid email. Prefilled from the contract's bill-to email" },
       { key: "perPeriod", name: "amount_per_period", label: "Amount billed per period", type: "Currency", mandatory: true, help: "Before GST. Recurring contract: billed every period; ad-hoc or no contract: one invoice of this amount" },
-      { key: "prefInvDate", name: "preferred_invoice_date", label: "Preferred invoice date", type: "Date", help: "Recurring contract: mandatory, the first invoice; invoices then follow monthly until the contract end date" },
+      { key: "invoiceTiming", name: "invoice_timing", label: "Invoice timing", type: "Choice", choices: INVOICE_TIMING, help: "One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Mandatory when shown; defaults to Per billing cycle (AR-i decision 38)" },
+      { key: "expediteReason", name: "expedite_justification", label: "Justification for expedited or off billing cycle request", type: "String (1000)", wide: true, showIf: { key: "invoiceTiming", eq: "expedited" }, help: "Mandatory when invoice timing is Expedited" },
       { key: "needItems", name: "billing_line_items_required", label: "Require billing line item?", type: "Choice", choices: YES_NO, help: "Yes shows the billing line items table (multi-row variable set)" },
       { key: "amount", name: "amount", label: "Request value", type: "Currency", readonly: true, help: "Calculated: one-off lines + recurring amount × number of periods" },
       { key: "poNumber", name: "po_number", label: "Customer PO number", type: "String" },
@@ -236,11 +239,11 @@ export const TABLES = {
       { name: "line_value", label: "Line value", type: "Currency", how: "one-off: amount; recurring: amount × periods, or when prorated: first month amount + amount × (periods − 2) + last month amount" }]
   },
   items: {
-    table: `${SCOPE}_request_item`, label: "Billing line item", plural: "Billing line items", display: "itemNo",
+    table: `${SCOPE}_request_item`, label: "Billing line item", plural: "Billing line items", display: "seq",
     note: "Breakdown of an AR request's invoice (AR-i decision 32). Portal: multi-row variable set on AR-i, shown when 'Require billing line item?' is Yes. GST and total are calculated (GST_RATE).",
     fields: [
       { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
-      { key: "itemNo", name: "billing_item_number", label: "Billing item number", type: "String", mandatory: true },
+      { key: "seq", name: "item_number", label: "Item number", type: "Integer", readonly: true, help: "System number 1, 2, 3… in row order within the AR request; set by the producer script, never typed (AR-i decision 37)" },
       { key: "amount", name: "amount_excl_gst", label: "Amount (w/o GST)", type: "Currency", mandatory: true },
       { key: "gst", name: "gst_amount", label: "GST amount", type: "Currency", readonly: true, help: "Calculated: amount × GST rate (9%), rounded to the cent" },
       { key: "total", name: "total_amount", label: "Total amount", type: "Currency", readonly: true, help: "Calculated: amount + GST" },
@@ -416,7 +419,7 @@ export const RECORD_PRODUCER = {
   variables: [...GENERAL_INFO, "customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress",
     "contractOption", "contractId", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther",
     "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast",
-    "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "attnName", "attnEmail", "perPeriod", "prefInvDate", "needItems", "poNumber",
+    "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "needItems", "poNumber",
     "pocName", "pocEmail", "invoiceBreakdown", "costCenter", "accountCode", "agentName", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "items",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item"

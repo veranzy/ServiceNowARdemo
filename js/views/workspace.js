@@ -284,7 +284,7 @@ const LAYOUT = {
       "newCtrProrate", "newCtrProFirst", "newCtrProLast", "typeOfBilling", "docBulk"], r => !isIx(r) && r.contractOption === "new"],
     ["Contract billing (from the contract at submit)", ["typeOfBilling"], r => !isIx(r) && r.contractOption === "existing"],
     ["GIRO (from the contract at submit)", ["giroOnContract"], r => !isIx(r) && !!r.giroOnContract],
-    ["Invoice details", ["attnName", "attnEmail", "perPeriod", "prefInvDate", "needItems"], r => !isIx(r)],
+    ["Invoice details", ["attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "needItems"], r => !isIx(r)],
     ["Others (placement to be decided)", ["invoiceBreakdown", "costCenter", "accountCode", "agentName", "poNumber"], r => !isIx(r)],
     ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], r => !isIx(r) && r.billToName],
     ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => !isIx(r) && (r.docContract || r.docAcra || r.docBillingForm)],
@@ -502,7 +502,7 @@ function related(table, rec) {
       ["", l => !ok || lineStatus(l) !== "open" ? "" : l.lineType === "recurring" ? `<button type="button" class="btn small primary" data-lineact="schedule:${l.id}"${sn("UA-RQL-schedule")}>Set up billing schedule</button>` : `<button type="button" class="btn small primary" data-lineact="invoice:${l.id}"${sn("UA-RQL-invoice")}>Create invoice</button>`]
     ], { id: "RL-REQ-RQL", actions: ok ? "" : `<span class="muted small">${REQ_OPEN.includes(r.state) ? "Link to customer files the lines under the contract; then bill each line" : ""}</span>` }),
     ...(r.needItems === "yes" || reqItems(r).length ? [rt("Billing line items", "items", reqItems(r), [
-      ["Billing item number", q => esc(q.itemNo)], ["Amount (w/o GST)", q => fmt(q.amount), "num"], ["GST amount", q => fmt(q.gst), "num"], ["Total amount", q => fmt(q.total), "num"],
+      ["Item number", q => esc(q.seq)], ["Amount (w/o GST)", q => fmt(q.amount), "num"], ["GST amount", q => fmt(q.gst), "num"], ["Total amount", q => fmt(q.total), "num"],
       ["Late payment interest", q => q.lpiRate ? `${esc(q.lpiRate)}%` : "—"], ["Account code", q => esc(q.accountCode || "—")]
     ], { id: "RL-REQ-RQI" })] : [])];
   }

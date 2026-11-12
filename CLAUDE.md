@@ -129,8 +129,8 @@ Core flow: project team submits **AR-i**: searches the customer and adds it as n
 (D14; a "first request" is just a request for a new customer), department, **contract** (D15: existing,
 new, or *No contract required* → the customer's no-contract shell per department) with its **bill-to
 person** (D16, held on the contract), **invoice details** (D13 amended: one billing event per request; invoice
-description, attention to, amount per period before GST, preferred invoice date, optional billing line items with
-GST 9%, D25; submit creates one billing line: recurring monthly to the contract end when the contract type is
+description, attention to, amount per period before GST, invoice timing for one-invoice requests (Per billing cycle /
+Expedited with justification), optional billing line items numbered 1, 2, 3… with GST 9%, D25; submit creates one billing line: recurring monthly to the contract end when the contract type is
 Recurring, else one-off), documents only if not on file → `x_ar_request` case
 (New) in the workspace → AR **Link to customer** (creates/links the customer, links/creates the contract
 or shell and sets it on every line, writes the bill-to to the contract, files documents on the customer) → AR assigns,
@@ -229,7 +229,7 @@ docs/GIT_WORKFLOW.md    git rules for every session
 Serve with `python3 -m http.server` (modules don't load from `file://`). Click through: portal AR form
 AR-i with each contract option (new contract, existing contract with bill-to, no contract with existing /
 new shell); (search → add new customer with a new recurring contract; existing ad-hoc contract → one invoice;
-existing recurring contract with billing line items, GST calculated; recurring without a first invoice date rejected) → workspace Link to customer (contract / shell created, lines filed) → customer
+existing recurring contract with billing line items, GST calculated; expedited without a justification rejected; recurring shows no invoice timing) → workspace Link to customer (contract / shell created, lines filed) → customer
 billing hierarchy → per line Create invoice / Set up billing
 schedule → request Billed → Raise invoice → portal ticket shows each line's invoice / schedule; BSU upload
 (sample file and a real CSV file, wrong-bank error); cash application Find invoice → Apply, Remove match;

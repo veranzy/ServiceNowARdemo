@@ -197,15 +197,16 @@ export function validateARi(d) {
   if (!(d.perPeriod > 0)) e.perPeriod = "Enter the amount billed per period (before GST).";
   const bm = billingMode(d);
   if (bm.recurring) {
-    const end = contractEnd(d);
-    if (!d.prefInvDate) e.prefInvDate = "Recurring contract: enter the date of the first invoice.";
-    else if (end && d.prefInvDate > end) e.prefInvDate = `Must be on or before the contract end date (${end}).`;
-    if (!end) { if (d.contractOption === "new") e.newCtrEnd = "A recurring contract needs an end date."; else if (d.prefInvDate) e.prefInvDate = "The contract has no end date, so the invoices can't be scheduled. Ask AR to set it."; }
+    // AR-i decision 38: no invoice date or timing for a recurring contract; it still needs an end date
+    if (!contractEnd(d)) { if (d.contractOption === "new") e.newCtrEnd = "A recurring contract needs an end date."; else e.contractId = "This recurring contract has no end date, so it can't be billed monthly. Ask AR to set it."; }
+  } else {
+    if (!d.invoiceTiming) e.invoiceTiming = "Choose the invoice timing.";
+    if (d.invoiceTiming === "expedited") need("expediteReason", "Explain why this invoice is expedited or off the billing cycle.");
   }
   if (d.needItems === "yes") {
     const items = d.items || [];
     if (!items.length) e.items = "Add at least one billing line item, or choose No.";
-    items.forEach((it, i) => { if (!String(it.itemNo || "").trim()) e[`item:${i}:itemNo`] = "Enter the item number."; if (!(it.amount > 0)) e[`item:${i}:amount`] = "Enter the amount."; });
+    items.forEach((it, i) => { if (!(it.amount > 0)) e[`item:${i}:amount`] = "Enter the amount."; });
   }
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
   for (const [t, label] of DOC_TYPES) if (t !== "contract" && !onFile[t] && !d[DOC_KEY[t]]) e[DOC_KEY[t]] = `Attach the ${label.toLowerCase()} (not on file yet).`;
@@ -220,12 +221,15 @@ export function contractCategoryOf(d) {
 }
 /** How the request is billed (D13 as amended, AR-i decision 31): recurring contract → every period; otherwise one invoice. */
 export const billingMode = d => ({ category: contractCategoryOf(d), recurring: contractCategoryOf(d) === "recurring" });
+export const contractStart = d => d.contractOption === "new" ? d.newCtrStart || "" : d.contractOption === "existing" ? ctrById(d.contractId)?.start || "" : "";
 export const contractEnd = d => d.contractOption === "new" ? d.newCtrEnd || "" : d.contractOption === "existing" ? ctrById(d.contractId)?.end || "" : "";
-/** The one billing line created from the invoice details at submit. */
+/** The one billing line created from the invoice details at submit. AR-i decision 38: the form asks no invoice date.
+ *  INTERIM until the workspace is designed (AR-i open questions 25–26): a recurring line starts at the contract start
+ *  date; a one-off line has no preferred date, so Create invoice defaults to today. */
 export function draftLine(d) {
   const rec = billingMode(d).recurring;
-  return { lineType: rec ? "recurring" : "one_off", desc: String(d.title || "").trim(), amount: d.perPeriod || 0, invoiceDate: rec ? "" : d.prefInvDate || "",
-    frequency: rec ? "monthly" : "", startDate: rec ? d.prefInvDate || "" : "", endDate: rec ? contractEnd(d) : "", remarks: "" };
+  return { lineType: rec ? "recurring" : "one_off", desc: String(d.title || "").trim(), amount: d.perPeriod || 0, invoiceDate: "",
+    frequency: rec ? "monthly" : "", startDate: rec ? contractStart(d) : "", endDate: rec ? contractEnd(d) : "", remarks: "" };
 }
 /** GST on an amount in cents (GST_RATE %), rounded to the cent. */
 export const gstOf = amt => Math.round((amt || 0) * GST_RATE / 100);
@@ -467,7 +471,9 @@ export function createRequest(vals) {
   if (req.contractOption === "existing") { const k = ctrById(req.contractId); req.typeOfBilling = k?.typeOfBilling || ""; req.docBulk = []; }
   S.requests.push(req);
   S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, contractId: req.contractOption === "existing" ? req.contractId || null : null, ...line, invoiceId: null, scheduleId: null });
-  if (req.needItems === "yes") for (const it of items) S.items.push({ id: uid("q"), requestId: req.id, ...itemCalc({ itemNo: String(it.itemNo).trim(), amount: it.amount || 0, lpiRate: it.lpiRate || 0, accountCode: it.accountCode || "" }) });
+  if (line.lineType === "recurring") { req.invoiceTiming = ""; req.expediteReason = ""; }
+  // Billing line items are numbered 1, 2, 3… in row order (AR-i decision 37)
+  if (req.needItems === "yes") items.forEach((it, i) => S.items.push({ id: uid("q"), requestId: req.id, ...itemCalc({ seq: i + 1, amount: it.amount || 0, lpiRate: it.lpiRate || 0, accountCode: it.accountCode || "" }) }));
   const ctrText = req.contractOption === "existing" ? `under contract ${ctrById(req.contractId)?.number}` : req.contractOption === "new" ? `under new contract ${req.newCtrNumber}` : "with no contract";
   journal(req, "system", `Submitted from ${req.form || "AR-i"} on the portal${req.newCustomer ? " for a new customer" : ""} ${ctrText}, with ${linesLabel(req)}.`, req.requestedBy);
   return req;

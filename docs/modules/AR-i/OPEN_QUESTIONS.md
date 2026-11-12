@@ -18,7 +18,7 @@
 16. If an existing customer's details are blank (e.g. no agency type on file), should the requester be allowed to fill them on AR-i, or must AR complete the customer first? Prototype: they stay read-only and blank. (Owner)
 17. Does contract proration apply to **every** recurring line under the contract, or should a line be able to opt out? Prototype: every recurring line. (Owner)
 18. Payment terms *Others* is free text, so the due date can't be calculated from it. Should Others ask for a number of days instead? Prototype: AR sets the days on the contract. (Owner)
-19. Is the *preferred invoice billing date* a single date, or a day of the month (overlapping the billing cycle)? Prototype: a date. (Owner)
+19. ~~Is the *preferred invoice billing date* a single date, or a day of the month?~~ **No longer applies 2026-11-12:** the date is removed from AR-i (decision 38).
 20. Late payment interest on a billing line item: a rate (%), as built, or an amount, or Yes / No? **Parked 2026-11-12** as [GitHub issue #3](https://github.com/veranzy/ServiceNowARdemo/issues/3); to be confirmed with the users. (Owner)
 21. ~~Final place of the *Others* fields; keep account code in both places?~~ **Answered 2026-11-12:** keep the Others section as it is for now, with account code in both places (decision 36). Final placement may be revisited later.
 22. ~~Should the billing line items and attention to flow onto the invoice?~~ **Answered 2026-11-12:** yes; how is decided with the AR request → invoice mapping in the workspace (decision 36, deferred to that work).
@@ -26,3 +26,5 @@
 24. ~~Should the billing cycle set the invoice day?~~ **Answered 2026-11-12:** no; billing cycle is information only and *Suggested billing cycle* stays free text (decision 36).
 13. Prorating: should the first / last month amounts be calculated from the dates (days in month) instead of typed in? (Owner)
 14. Does the invoice breakdown need structure (e.g. lines with amounts), or is free text enough? (Owner)
+25. **Recurring contract: when does the monthly billing schedule start (first invoice)?** AR-i no longer asks for a date (decision 38). Options: the contract's *preferred invoice billing date*, the contract start date, or AR sets it when setting up the schedule. **Deferred 2026-11-12** by the owner to the workspace design ("keep all the data in the AR-i case first"). **Interim in the prototype:** the billing line starts at the contract start date, so the demo still runs. (Owner)
+26. **One-off line: what invoice date does *Create invoice* default to?** E.g. Per billing cycle → the next 1st / 15th from the contract's billing cycle; Expedited → today. **Deferred 2026-11-12** to the workspace design. **Interim in the prototype:** today. (Owner)

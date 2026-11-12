@@ -217,7 +217,7 @@ document.addEventListener("click", e => {
     contractChanged(dr); delete P().errors.contractOption; render();
     return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? $(dr.form === "AR-ix" ? "pf-newCtrRef" : "pf-newCtrType") : null)?.focus(); }
   // AR-i billing line items (multi-row variable set, AR-i decision 32)
-  if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ itemNo: "", amount: 0, lpiRate: 0, accountCode: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
+  if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ amount: 0, lpiRate: 0, accountCode: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
   if (d.iremove !== undefined) { P().draft.items.splice(+d.iremove, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith("item:"))); return render(); }
   if (d.unattach !== undefined) { P().draft.attachments.splice(+d.unattach, 1); return render(); }
   if (d.unbulk !== undefined) { P().draft.docBulk.splice(+d.unbulk, 1); return render(); }
@@ -306,7 +306,7 @@ document.addEventListener("change", e => {
     if (el.name === "contractId" && d.contractId) { const k = S.contracts.find(x => x.id === d.contractId); if (k && !d.customerId) d.customerId = k.customerId; }
     if (el.name === "department" && d.deptSubBu && !d.deptSubBu.startsWith(String(d.department).slice(0, 3).toUpperCase())) d.deptSubBu = "";
     if (el.name === "contractId" || el.name === "department") contractChanged(d);
-    if (el.name === "needItems" && d.needItems === "yes" && !(d.items || []).length) d.items = [{ itemNo: "", amount: 0, lpiRate: 0, accountCode: "" }];
+    if (el.name === "needItems" && d.needItems === "yes" && !(d.items || []).length) d.items = [{ amount: 0, lpiRate: 0, accountCode: "" }];
     clearHidden("requests", d);
     if (el.tagName === "SELECT" || ["checkbox", "radio", "file"].includes(el.type)) { const now = validateARi(d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k]; return render(); }
     portalFieldUpdated(el); return invUpdated();

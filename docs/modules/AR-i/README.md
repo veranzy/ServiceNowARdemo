@@ -49,11 +49,13 @@ AR-i never changes master data by itself (D22, see [AR-00 → Context](../AR-00/
   billing position), *New contract* (the decision 27 fields, contract type first) or *No contract required*
   (files under the department's no-contract shell; bill-to asked only if the shell has none). Ends with the
   **GIRO** subsection (existing DDA, read-only; greyed for new / no contract).
-- **Invoice details** (decisions 31–33): invoice description, attention to name / email (prefilled from
-  the contract bill-to), amount billed per period (before GST), preferred invoice date (first invoice for a
-  recurring contract), *Require billing line item?* → billing line items table (item number, amount w/o GST,
-  GST and total calculated at 9%, late payment interest %, account code). A summary shows how AR will bill:
-  monthly invoices to the contract end date (with proration) or one invoice.
+- **Invoice details** (decisions 31–33, 37–38): invoice description, attention to name / email (prefilled
+  from the contract bill-to), amount billed per period (before GST); for a **one-invoice request** only,
+  **invoice timing** (Per billing cycle by default / Expedited → justification, mandatory); *Require billing
+  line item?* → billing line items table (system item number 1, 2, 3…, amount w/o GST, GST and total
+  calculated at 9%, late payment interest %, account code). A summary shows how AR will bill: monthly
+  invoices to the contract end date (with proration) or one invoice. A recurring contract asks no timing or
+  date: AR decides the schedule start in the workspace (open question 25).
 - **Customer documents** (decisions 4, 35): checklist of the three customer documents showing *On file* or
   *Needed*; upload only what's needed. The signed contract / PO is optional, offered for a new contract only.
 - **Others** (decision 34, optional): invoice breakdown, cost center, account code, name of agent to be
@@ -81,9 +83,9 @@ AR-i never changes master data by itself (D22, see [AR-00 → Context](../AR-00/
 |---|---|
 | AR-i | Record producer on `x_ar_request` (`PT-05`, `PT-15`) with variable sets General information (AR-00), Customer, Contract and bill-to (with GIRO), Invoice details (multi-row billing line items), Customer documents, Others. UI policies show / hide by *New customer* and `contract_option`. Catalog client scripts read documents on file and the contract's bill-to (GlideAjax). |
 | `x_ar_request` | Fields: `ar_form`, `department`, new-customer fields, `contract_option` (existing / new / none), `contract`, new-contract fields (`new_contract_type`, `_number`, `_ref`, `_po`, `_title`, `_start`, `_end`, `_value`, `_billing_cycle`, `_billing_cycle_other`, `_invoice_date`, `_payment_terms`, `_payment_terms_other`, `_proration`, `_proration_first`, `_proration_last`), `type_of_billing` + `bulk_supporting_docs` (new contract; read-only copy for an existing one), bill-to fields (written to the contract). `amount` is the calculated request value (sum of lines). |
-| `x_ar_request` invoice details | `short_description` (invoice description), `attention_name`, `attention_email`, `amount_per_period` (Currency, before GST), `preferred_invoice_date`, `billing_line_items_required` (Yes / No). Producer script creates one `x_ar_request_line` (recurring when the contract's `contract_category` is recurring; start = preferred invoice date, end = contract end; else one-off) and `amount` = its value. |
+| `x_ar_request` invoice details | `short_description` (invoice description), `attention_name`, `attention_email`, `amount_per_period` (Currency, before GST), `invoice_timing` (Choice: Per billing cycle / Expedited; UI policy shows it only for a one-invoice request, mandatory, default Per billing cycle), `expedite_justification` (String 1000, mandatory when Expedited), `billing_line_items_required` (Yes / No). Producer script creates one `x_ar_request_line` (recurring when the contract's `contract_category` is recurring, end = contract end, start to be decided: open question 25; else one-off) and `amount` = its value; it clears `invoice_timing` for a recurring contract. |
 | `x_ar_request_line` | Billing lines: request, **contract** (set at submit for an existing contract, else by Link to customer), line type (one-off / recurring), description, amount, preferred invoice date (one-off), frequency + from / to dates (recurring), invoice (one-off, once created), billing schedule (recurring, once set up). |
-| `x_ar_request_item` | Billing line items (multi-row variable set, copied to this table by the producer script): `ar_request`, `billing_item_number`, `amount_excl_gst`, `gst_amount` (= amount × `x_ar.gst_rate`, 9), `total_amount`, `late_payment_interest` (rate %), `account_code`. Related list *Billing line items* on the AR request. |
+| `x_ar_request_item` | Billing line items (multi-row variable set, copied to this table by the producer script): `ar_request`, `item_number` (Integer, read-only: 1, 2, 3… in row order, set by the producer script), `amount_excl_gst`, `gst_amount` (= amount × `x_ar.gst_rate`, 9), `total_amount`, `late_payment_interest` (rate %), `account_code`. Related list *Billing line items* on the AR request. |
 | `x_ar_billing_schedule` | Customer, contract, department, description, frequency, amount per period, first / last billing date, source AR request; periods computed (or a child table `x_ar_billing_period` in the build). |
 | Contract fields written by AR-i | The new-contract and bill-to fields land on `x_ar_contract` through *Link to customer*; the contract table itself is specified in [CCI](../CCI/README.md). |
 | UI actions | *Link to customer* on AR request; *Create invoice* / *Set up billing schedule* on each billing line; *Raise invoice* on billing period. |

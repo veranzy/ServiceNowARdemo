@@ -58,7 +58,7 @@ export function contractBox(d) {
     <dl><div><dt>Contract value</dt><dd class="mono">${fmt(k.value || 0)}</dd></div><div><dt>Invoiced so far</dt><dd class="mono">${fmt(r.billed)}</dd></div>
       <div><dt>Requested, not yet invoiced</dt><dd class="mono">${fmt(pending)}</dd></div><div><dt>Remaining to bill</dt><dd class="mono${left < 0 ? " bad" : ""}">${fmt(left)}</dd></div>
       <div><dt>Billing</dt><dd>${esc(k.billing)} · Net ${esc(k.terms)}</dd></div></dl>
-    ${(() => { const amt = d.id ? d.amount || 0 : lineValue(draftLine(d), draftPro(d)); return amt && left - amt < 0 && k.value ? `<p class="bad small">This request takes billing over the contract value by SGD ${fmt(amt - left)}. AR may ask for a change order.</p>` : ""; })()}
+    ${(() => { const dl = draftLine(d); if (!d.id && dl.lineType === "recurring") return ""; /* schedule start not on the form yet (AR-i open question 25) */ const amt = d.id ? d.amount || 0 : lineValue(dl, draftPro(d)); return amt && left - amt < 0 && k.value ? `<p class="bad small">This request takes billing over the contract value by SGD ${fmt(amt - left)}. AR may ask for a change order.</p>` : ""; })()}
   </div>`;
 }
 
@@ -183,12 +183,12 @@ export function invSum(d) {
   const bm = billingMode(d), l = draftLine(d), pro = draftPro(d);
   let txt;
   if (!d.contractOption) txt = "Choose the contract first: a recurring contract is billed every period, anything else as one invoice.";
-  else if (!bm.recurring) txt = `${bm.category ? "" : "The contract type isn't on file, so "}${bm.category ? "One invoice" : "this is billed as one invoice"}${d.perPeriod > 0 ? ` of SGD ${fmt(d.perPeriod)} (before GST)` : ""}${d.prefInvDate ? ` around ${esc(d.prefInvDate)}` : ""}.`;
+  else if (!bm.recurring) txt = `${bm.category ? "" : "The contract type isn't on file, so "}${bm.category ? "One invoice" : "this is billed as one invoice"}${d.perPeriod > 0 ? ` of SGD ${fmt(d.perPeriod)} (before GST)` : ""}${d.invoiceTiming === "expedited" ? ", <b>expedited</b>" : d.invoiceTiming === "per_cycle" ? ", raised per the billing cycle" : ""}.`;
   else {
-    const n = periodDates("monthly", l.startDate, l.endDate).length, pr = pro && (pro.firstAmount || pro.lastAmount);
+    // AR-i decision 38: no invoice date on the form for a recurring contract; AR sets the schedule up in the workspace
+    const pr = pro && (pro.firstAmount || pro.lastAmount);
     txt = !l.endDate ? "Recurring contract: the invoices run until the contract end date, which isn't set yet."
-      : !(n && d.perPeriod > 0) ? `Recurring contract: monthly invoices from the preferred invoice date until the contract ends on ${esc(l.endDate)}.`
-      : `${n} monthly invoice${n === 1 ? "" : "s"} to ${esc(l.endDate)}${pr ? `: first SGD ${fmt(pro.firstAmount || d.perPeriod)}${n > 2 ? `, ${n - 2} × SGD ${fmt(d.perPeriod)}` : ""}${n > 1 ? `, last SGD ${fmt(pro.lastAmount || d.perPeriod)}` : ""} (contract proration)` : ` × SGD ${fmt(d.perPeriod)}`} = <b>SGD ${fmt(lineValue(l, pro))}</b> before GST. Submit once; AR raises each invoice.`;
+      : `Recurring contract: monthly invoices${d.perPeriod > 0 ? ` of SGD ${fmt(d.perPeriod)} (before GST)` : ""} until the contract ends on ${esc(l.endDate)}${pr ? `, first and last month per the contract proration` : ""}. Submit once; AR sets up the billing schedule and raises each invoice.`;
   }
   return `<p class="lsum" id="pfInvSum">${txt}</p>`;
 }
@@ -202,8 +202,8 @@ function itemsTable(d, e) {
       : `<input type="text" id="pi${i}-${k}" name="item:${i}:${k}" value="${esc(v || "")}"${err ? ` aria-invalid="true"` : ""} aria-label="${esc(f.label)}, item ${i + 1}">`;
     return `<td data-label="${esc(f.label)}"${sn(`RQI.${f.name}`)}>${ctl}${err ? `<span class="ferr">${esc(err)}</span>` : ""}</td>`; };
   return `<div class="ffield wide${e.items ? " has-err" : ""}"${sn("PT-43")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Billing line items</span>
-    <div class="tablewrap"><table class="list mrvs" id="pfItems"><thead><tr><th>Billing item number</th><th class="num">Amount (w/o GST)</th><th class="num">GST amount (${GST_RATE}%)</th><th class="num">Total amount</th><th>Late payment interest (%)</th><th>Account code</th><th><span class="sr">Remove</span></th></tr></thead>
-    <tbody>${items.map((it, i) => { const c = itemCalc(it); return `<tr>${inp(i, "itemNo", it)}${inp(i, "amount", it)}<td class="num mono" data-label="GST amount" id="pfItemGst-${i}"${sn("RQI.gst_amount")}>${fmt(c.gst)}</td><td class="num mono" data-label="Total amount" id="pfItemTot-${i}"${sn("RQI.total_amount")}>${fmt(c.total)}</td>${inp(i, "lpiRate", it)}${inp(i, "accountCode", it)}<td><button type="button" class="linkish small" data-iremove="${i}" aria-label="Remove item ${i + 1}">Remove</button></td></tr>`; }).join("")}</tbody>
+    <div class="tablewrap"><table class="list mrvs" id="pfItems"><thead><tr><th>Item</th><th class="num">Amount (w/o GST)</th><th class="num">GST amount (${GST_RATE}%)</th><th class="num">Total amount</th><th>Late payment interest (%)</th><th>Account code</th><th><span class="sr">Remove</span></th></tr></thead>
+    <tbody>${items.map((it, i) => { const c = itemCalc(it); return `<tr><td class="mono" data-label="Item number" id="pfItemNo-${i}"${sn("RQI.item_number")}>${i + 1}</td>${inp(i, "amount", it)}<td class="num mono" data-label="GST amount" id="pfItemGst-${i}"${sn("RQI.gst_amount")}>${fmt(c.gst)}</td><td class="num mono" data-label="Total amount" id="pfItemTot-${i}"${sn("RQI.total_amount")}>${fmt(c.total)}</td>${inp(i, "lpiRate", it)}${inp(i, "accountCode", it)}<td><button type="button" class="linkish small" data-iremove="${i}" aria-label="Remove item ${i + 1}">Remove</button></td></tr>`; }).join("")}</tbody>
     ${itemTotals(d)}</table></div>
     ${e.items ? `<span class="ferr">${esc(e.items)}</span>` : ""}
     <div class="row start"><button type="button" class="btn small" data-iadd${sn("UA-PT-additem")}>+ Add item</button><span class="fhelp">GST and total are calculated at ${GST_RATE}%. Late payment interest is a rate in % (to be confirmed).</span></div></div>`;
@@ -240,7 +240,7 @@ function formPage() {
   if (!p.draft || p.draft.form !== code) {
     const gen = { form: code, requesterName: me().name, requesterEmail: me().email || "", ccList: "", department: me().department || "", newCustomer: false, custQ: "", attachments: [] };
     p.draft = code === "AR-ix" ? { ...gen, contractOption: "", giroPurpose: "", giroType: "add" }
-      : { ...gen, needItems: "no", items: [] };
+      : { ...gen, needItems: "no", items: [], invoiceTiming: "per_cycle" };
     p.errors = {};
   }
   if (code === "AR-ix") return giroFormPage();
@@ -272,7 +272,7 @@ function formPage() {
           ${(() => { const bm = billingMode(d), k = targetContract(d); return d.contractOption ? `<p class="pt-hint">Billed under ${d.contractOption === "new" ? `new contract ${esc(d.newCtrNumber || "")}` : k ? esc(ctrLabel(k)) : d.contractOption === "none" ? "the no-contract shell" : "the chosen contract"}: ${bm.recurring ? "<b>recurring contract</b>, so the amount below is billed every month until the contract ends" : "<b>one invoice</b>"}.</p>` : ""; })()}
           <div class="fgrid">${f("title", { help: null })}${f("attnName", { help: d.attnPrefilled ? "Prefilled from the contract's bill-to person" : null })}${f("attnEmail", { help: null })}
             ${f("perPeriod", { label: billingMode(d).recurring ? "Amount billed per period (SGD, before GST)" : "Amount billed (SGD, before GST)", help: null })}
-            ${f("prefInvDate", { mandatory: billingMode(d).recurring, label: billingMode(d).recurring ? "Preferred invoice date (first invoice)" : "Preferred invoice date", help: null })}
+            ${billingMode(d).recurring ? "" : `${f("invoiceTiming", { mandatory: true, help: null })}${d.invoiceTiming === "expedited" ? f("expediteReason", { mandatory: true, help: null }) : ""}`}
             ${f("needItems", { help: null })}</div>
           ${invSum(d)}
           ${d.needItems === "yes" ? itemsTable(d, e) : ""}
@@ -372,7 +372,7 @@ export function formSide(d) {
     <span class="ft-code">AR-i</span>
     <h2>Submit request</h2>
     <p class="small muted">Goes to the Accounts Receivable team as a case. You'll get updates on My requests.</p>
-    <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "New customer"} (new)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(ctrSummary(d))}<br>${esc(l.lineType === "recurring" ? "Recurring, monthly" : "One invoice")} · SGD ${fmt(val)}</p>
+    <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "New customer"} (new)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(ctrSummary(d))}<br>${l.lineType === "recurring" ? `Recurring, monthly · SGD ${fmt(d.perPeriod || 0)} per month` : `One invoice · SGD ${fmt(val)}`}</p>
     ${labels.length ? `<p class="small"><b>Still needed</b><br>${labels.map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
     </div><button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
   </div>`;
@@ -435,7 +435,7 @@ function ticketPage() {
         <h2>Details</h2>
         <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${kv("Customer", esc(reqCustName(r)))}${r.pocName || r.pocEmail ? kv("Customer POC", esc([r.pocName, r.pocEmail].filter(Boolean).join(" · "))) : ""}${kv("Department", esc([r.department || "—", reqField("deptSubBu").choices.find(c => c[0] === r.deptSubBu)?.[1]].filter(Boolean).join(" · ")))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
           ${giro ? `${kv("Applicant", esc([r.applicantName, r.applicantEmail, r.applicantMobile].filter(Boolean).join(" · ")))}${r.giroInvoiceRef ? kv("Invoice reference", esc(r.giroInvoiceRef)) : ""}${kv("GIRO", esc(giroLabel(r)))}${r.giroAmount ? kv("Amount", `<span class="mono">SGD ${fmt(r.giroAmount)}</span>`) : ""}`
-          : `${kv("Billing", esc(linesLabel(r)))}${r.attnName || r.attnEmail ? kv("Attention to", esc([r.attnName, r.attnEmail].filter(Boolean).join(" · "))) : ""}${r.perPeriod ? kv("Amount per period", `<span class="mono">SGD ${fmt(r.perPeriod)}</span> before GST`) : ""}${r.prefInvDate ? kv("Preferred invoice date", esc(r.prefInvDate)) : ""}${reqItems(r).length ? kv("Billing line items", reqItems(r).map(it => `${esc(it.itemNo)}: SGD ${fmt(it.total)} incl. GST`).join("<br>")) : ""}${r.giroOnContract ? kv("GIRO on contract", r.giroOnContract === "yes" ? "Yes" : "No") : ""}${r.invoiceBreakdown ? kv("Invoice breakdown", esc(r.invoiceBreakdown)) : ""}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
+          : `${kv("Billing", esc(linesLabel(r)))}${r.attnName || r.attnEmail ? kv("Attention to", esc([r.attnName, r.attnEmail].filter(Boolean).join(" · "))) : ""}${r.perPeriod ? kv("Amount per period", `<span class="mono">SGD ${fmt(r.perPeriod)}</span> before GST`) : ""}${r.invoiceTiming ? kv("Invoice timing", `${esc(reqField("invoiceTiming").choices.find(c => c[0] === r.invoiceTiming)?.[1] || r.invoiceTiming)}${r.expediteReason ? `<br><span class="small">${esc(r.expediteReason)}</span>` : ""}`) : ""}${reqItems(r).length ? kv("Billing line items", reqItems(r).map(it => `Item ${esc(it.seq)}: SGD ${fmt(it.total)} incl. GST`).join("<br>")) : ""}${r.giroOnContract ? kv("GIRO on contract", r.giroOnContract === "yes" ? "Yes" : "No") : ""}${r.invoiceBreakdown ? kv("Invoice breakdown", esc(r.invoiceBreakdown)) : ""}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
 ${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>
         ${r.details ? `<p class="small">${esc(r.details)}</p>` : ""}
         ${(() => { const docs = [["docContract", "Contract / PO"], ["docAcra", "ACRA"], ["docBillingForm", "Billing form"]].filter(([k]) => r[k]).map(([k, l]) => `${l}: ${r[k]}`).concat(r.attachments || []);

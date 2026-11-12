@@ -196,10 +196,10 @@ export function loadSample() {
   // Invoice details (AR-i decisions 31–33) mirror each request's billing line; Zephyr breaks its monthly charge into items
   for (const r of S.requests.filter(x => x.form !== "AR-ix")) {
     const l = S.lines.find(x => x.requestId === r.id); if (!l) continue;
-    Object.assign(r, { perPeriod: l.amount, prefInvDate: l.invoiceDate || l.startDate || "", needItems: r.needItems || "no" });
+    Object.assign(r, { perPeriod: l.amount, invoiceTiming: l.lineType === "recurring" ? "" : "per_cycle", needItems: r.needItems || "no" });
   }
-  S.items = [["r8", "ZDC-01", 2000, 2.5, "4100-OPS"], ["r8", "ZDC-02", 1500, 2.5, "4100-MNT"]]
-    .map(([rid, itemNo, amt, lpiRate, accountCode]) => ({ id: uid("q"), requestId: rid, ...itemCalc({ itemNo, amount: cents(amt), lpiRate, accountCode }) }));
+  S.items = [["r8", 1, 2000, 2.5, "4100-OPS"], ["r8", 2, 1500, 2.5, "4100-MNT"]]
+    .map(([rid, seq, amt, lpiRate, accountCode]) => ({ id: uid("q"), requestId: rid, ...itemCalc({ seq, amount: cents(amt), lpiRate, accountCode }) }));
 
   // Billing contacts per customer per department (D11)
   const ct = [

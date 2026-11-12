@@ -20,9 +20,9 @@ this section. Keep it short; module detail belongs in `docs/modules/`, not here.
 hand-over to a ServiceNow developer who must be able to build from the docs alone (spec +
 `SERVICENOW_MAPPING.md` + `docs/BUILD_NOTES.md`), without the prototype.
 
-**Source of truth.** This repo. Docs in the Claude project (`requirements/*.md`) are exported copies
-for reference; if they differ from the repo, the repo wins. After a change that touches the docs,
-re-export the changed files to the Claude project (or tell the owner they are stale). **Never export
+**Source of truth.** This repo.
+
+**Never export
 CLAUDE.md**: the brief has a single copy, in git.
 
 **Standing decisions** (don't revisit unless the owner asks; full list in `docs/DECISIONS.md`):

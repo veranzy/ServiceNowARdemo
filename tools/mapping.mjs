@@ -3,7 +3,9 @@ import { writeFileSync } from "node:fs";
 import { BANKS, RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
 
 const refName = r => r === "users" ? "sys_user" : TABLES[r].table;
-const order = ["companies", "customers", "contracts", "requests", "invoices", "bankAccounts", "uploads", "deposits", "allocations"];
+// Preferred section order; any table missing from it is still listed (appended), so no table is ever left out.
+const preferred = ["companies", "customers", "contracts", "contacts", "documents", "requests", "lines", "items", "schedules", "invoices", "bankAccounts", "uploads", "deposits", "allocations"];
+const order = [...preferred.filter(k => TABLES[k]), ...Object.keys(TABLES).filter(k => !preferred.includes(k))];
 let md = `# ServiceNow build mapping
 
 Generated from \`js/schema.js\` by \`node tools/mapping.mjs\`. Edit the schema, not this file's table sections.

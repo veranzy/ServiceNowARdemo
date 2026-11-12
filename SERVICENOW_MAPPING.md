@@ -86,6 +86,35 @@ Custom contract table (not ast_contract). GIRO is a contract status set from the
 | `bill_to_address` | Billing address | String (1000) |  |
 | `notes` | Notes | String (4000) |  |
 
+### Billing contact — `x_ar_billing_contact`
+
+The department's usual bill-to person at a customer (D11): unique per customer + department. Used to prefill the bill-to on a new contract or shell; the bill-to used for invoicing is on the contract (D16).
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
+| `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory |
+| `contact_name` | Bill-to person | String | Mandatory |
+| `email` | Email | String | Mandatory |
+| `phone` | Phone | String |  |
+| `billing_address` | Billing address | String (1000) |  |
+| `source_request` | From AR request | Reference | → `x_ar_request`. Read-only on form |
+
+### Customer document — `x_ar_customer_document`
+
+Documents supplied once per customer (D10). The file itself is a sys_attachment on this record. Number prefix: `DOC`.
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `number` | Number | String | Read-only on form |
+| `customer` | Customer | Reference | → `x_ar_customer`. Read-only on form |
+| `document_type` | Document type | Choice | Choices: Signed contract / PO (`contract`), Company registration (ACRA / UEN) (`acra`), Billing contact & address form (`billing_form`). Read-only on form |
+| `file_name` | File | String | Read-only on form |
+| `contract` | Contract | Reference | → `x_ar_contract`. Read-only on form. For signed contract / PO |
+| `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Read-only on form. For billing contact & address forms |
+| `source_request` | From AR request | Reference | → `x_ar_request`. Read-only on form |
+| `received_on` | Received | Date | Read-only on form |
+
 ### AR request — `x_ar_request` (extends `task`)
 
 Case raised by the project team through an AR form record producer (AR-i … AR-xvi). Extends Task for assignment, SLAs and the activity stream. Number prefix: `ARQ`.
@@ -170,6 +199,63 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `assigned_to` | Assigned to | Reference | → `sys_user` (users with x_ar.ar_team) |
 | `opened_at` | Opened | Date | Read-only on form |
 | `comments` / `work_notes` | Additional comments / Work notes | Journal (inherited from task) | Comments visible on portal; work notes AR team only |
+
+### Billing line — `x_ar_request_line`
+
+What to bill on an AR request (D13): one-off, or recurring over a from–to date range. Portal: multi-row variable set on AR-i. Number prefix: `RQL`.
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `number` | Number | String | Read-only on form |
+| `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
+| `contract` | Contract | Reference | → `x_ar_contract`. Read-only on form. Billing lines are contract level (D15). Existing contract at submit; otherwise set by Link to customer |
+| `line_type` | Line type | Choice | Choices: One-off (`one_off`), Recurring (`recurring`). Mandatory |
+| `short_description` | Description | String | Mandatory |
+| `amount` | Amount | Currency | Mandatory. Recurring: amount per period |
+| `preferred_invoice_date` | Preferred invoice date | Date | One-off only |
+| `frequency` | Frequency | Choice | Choices: Monthly (`monthly`), Quarterly (`quarterly`), Half-yearly (`half_yearly`), Annually (`annually`). Recurring only; Monthly by default (decision 10) |
+| `start_date` | From | Date | Recurring only: first billing date |
+| `end_date` | To | Date | Recurring only: last billing date |
+| `remarks` | Remarks | String | Recurring only, optional |
+| `invoice` | Invoice | Reference | → `x_ar_invoice`. Read-only on form |
+| `billing_schedule` | Billing schedule | Reference | → `x_ar_billing_schedule`. Read-only on form |
+| `periods` | Number of invoices | Integer | Calculated: recurring: periods between start and end at the frequency |
+| `line_value` | Line value | Currency | Calculated: one-off: amount; recurring: amount × periods, or when prorated: first month amount + amount × (periods − 2) + last month amount |
+
+### Billing line item — `x_ar_request_item`
+
+Breakdown of an AR request's invoice (AR-i decision 32). Portal: multi-row variable set on AR-i, shown when 'Require billing line item?' is Yes. GST and total are calculated (GST_RATE).
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
+| `item_number` | Item number | Integer | Read-only on form. System number 1, 2, 3… in row order within the AR request; set by the producer script, never typed (AR-i decision 37) |
+| `amount_excl_gst` | Amount (w/o GST) | Currency | Mandatory |
+| `gst_amount` | GST amount | Currency | Read-only on form. Calculated: amount × GST rate (9%), rounded to the cent |
+| `total_amount` | Total amount | Currency | Read-only on form. Calculated: amount + GST |
+| `late_payment_interest` | Late payment interest (%) | Decimal | Rate % (to be confirmed with the users) |
+| `account_code` | Account code | String |  |
+
+### Billing schedule — `x_ar_billing_schedule`
+
+Recurring billing set up once from a recurring billing line (D12, D13): from–to date range and frequency. Periods are listed; AR raises each invoice manually. Number prefix: `SCH`.
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `number` | Number | String | Read-only on form |
+| `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
+| `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer |
+| `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory |
+| `short_description` | What is billed | String | Mandatory |
+| `frequency` | Frequency | Choice | Choices: Monthly (`monthly`), Quarterly (`quarterly`), Half-yearly (`half_yearly`), Annually (`annually`). Mandatory |
+| `amount` | Amount per period | Currency | Mandatory |
+| `first_billing_date` | First billing date | Date | Mandatory |
+| `last_billing_date` | Last billing date | Date | Mandatory |
+| `first_period_amount` | First period amount (prorated) | Currency | Empty = amount per period |
+| `last_period_amount` | Last period amount (prorated) | Currency | Empty = amount per period |
+| `source_request` | From AR request | Reference | → `x_ar_request`. Read-only on form |
+| `source_line` | From billing line | Reference | → `x_ar_request_line`. Read-only on form |
+| `next_billing_date` | Next billing date | Date | Calculated: first period on or after today without an invoice |
 
 ### Invoice — `x_ar_invoice`
 

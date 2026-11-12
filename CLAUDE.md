@@ -31,6 +31,12 @@ re-export the changed files to the Claude project (or tell the owner they are st
 - Billing is contract level: customer › contract (or no-contract shell) › billing lines › invoices (D15);
   bill-to sits on the contract (D16).
 
+**Context: forms vs master data (D22).** AR forms and customer / contract updates are separate **on
+purpose**. A form is a request and never changes master data by itself; AR updates customers and
+contracts in the workspace, and forms only read it (e.g. AR-i shows the contract's GIRO status
+read-only, and only an AR-ix changes GIRO). Expect, and design for, scenarios that follow from this
+(listed in `docs/modules/ARF.md` → Context).
+
 If a request conflicts with a recorded decision, point out the conflict and ask. Never override a
 decision silently; a changed decision is recorded as a new or amended entry with its date.
 
@@ -55,6 +61,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | Date | Change | By |
 |---|---|---|
 | 2026-11-02 | Section added: goal, source of truth, standing decisions, quality bar, sign-off status, style. | Owner |
+| 2026-11-12 | Context added: AR forms and customer / contract updates are separate on purpose (D22). | Owner |
 
 ## How we work: modules, one at a time
 

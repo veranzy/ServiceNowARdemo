@@ -88,6 +88,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-12 | Locks: the *Lock* column in `docs/modules/README.md` locks a module or a part of it against changes; AR-i portal form locked. | Owner |
 | 2026-11-12 | Source of truth: the repo only; no exported copies in the Claude project. | Owner |
 | 2026-11-12 | Code layout: demo AR request cases now live in `data/AR_form.csv`, loaded by `js/cases.js` (UIX decision 13). | Owner |
+| 2026-11-12 | Code layout: `js/router.js` gives every page its own URL (UIX decision 14). | Owner |
 
 ## How we work: modules, one at a time
 
@@ -208,6 +209,7 @@ js/sample-data.js       users, customers, contracts, invoices, BSU data (dates s
 js/cases.js             loads AR request cases from data/AR_form.csv (UIX decision 13)
 data/AR_form.csv        demo AR-i / AR-ix cases, one row per case, headers = x_ar_request field names
 js/views/app.js         render(): demo bar + active persona; toast; setStatus
+js/router.js            page URLs (#/ws/…, #/portal/…): URL → screen on load and Back / Forward, screen → URL after render (UIX decision 14)
 js/views/workspace.js   workspace shell, landing page, list pages (LISTS), record pages (LAYOUT, UI actions, activity)
 js/views/portal.js      portal home, AR forms catalogue (AR-i … AR-xvi), AR-i form, confirmation, My requests, ticket page
 js/views/cash.js        cash application page (manual matching of deposits)

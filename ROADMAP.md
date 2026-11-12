@@ -15,6 +15,9 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 ## Done
 
+- 2026-11-12 **ARF**: AR-i Invoice details revamp: billing lines replaced by invoice description, attention to, amount per
+  period, preferred invoice date and optional billing line items (GST 9% calculated, LPI %); recurring follows the
+  contract type; Others section for finance coding (ARF 31–34, D13 amended, D25).
 - 2026-11-12 **ARF**: AR-i contract details revamp: existing contract read-only; new contract fields (contract type first,
   billing cycle, payment terms, proration, type of billing); proration and type of billing moved to the contract;
   GIRO is a subsection of Contract (existing DDA, greyed for new / no contract) (ARF 27–30, D24).

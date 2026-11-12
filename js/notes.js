@@ -4,7 +4,7 @@
 import { RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES } from "./schema.js";
 
 /** Short code per table, used as the prefix of field IDs (e.g. INV.due_date) and record-page IDs. */
-export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL" };
+export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI" };
 const T = Object.fromEntries(Object.entries(CODE).map(([k, c]) => [c, k]));
 
 /** Screen elements that aren't a field, list, record page, related list or UI action. */
@@ -62,7 +62,7 @@ export const NOTES = {
   "PT-36": "AR-i GIRO subsection inside Contract (D22): 'Is there an existing DDA?' read-only Yes / No (variable giro_on_contract) from the chosen contract's giro_status (GlideAjax), plus the active AR-ix case number when Yes. Greyed out with a tooltip for a new contract or no-contract billing: raise an AR-ix once AR has set up the contract",
   "PT-40": "AR-i new contract variables, in order: new_contract_type (Recurring / Ad-hoc), new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle (+ suggested billing cycle when Others), new_contract_invoice_date, new_contract_payment_terms (+ other terms when Others), new_contract_proration (+ 1st / last month amounts when Yes), type_of_billing (+ bulk upload when C / D / E). Link to customer creates x_ar_contract from them",
   "PT-41": "AR-i existing contract: every contract detail read-only from x_ar_contract, in the same order as a new contract (catalog client script / read-only HTML widget)",
-  "PT-37": "AR-i variable set Invoice details: invoice_breakdown (multi-line text, optional) and the finance coding block (PT-29)",
+  "PT-37": "AR-i variable set Invoice details (ARF decisions 31–33): short_description (invoice description), attention_name / attention_email (prefilled from the contract bill-to), amount_per_period (before GST), preferred_invoice_date (mandatory for a recurring contract: first invoice), billing_line_items_required (Yes / No → multi-row variable set PT-43). Catalog client script shows the billing summary: recurring contract → monthly to the contract end date (with contract proration); otherwise one invoice. The producer script creates one x_ar_request_line from these",
   "PT-30": "Variable set General information (D19), first section of every AR form record producer: requester_name (default current user's name), requester_email (from SSO, read-only), department, cc_list (emails; copied to the case watch_list so they can view it on the portal)",
   "PT-31": `Record producer "${RECORD_PRODUCER_ARIX.name}" on ${TABLES.requests.table}. Producer script: ${RECORD_PRODUCER_ARIX.script}`,
   "PT-32": "AR-ix variable set Contract and applicant: customer search, existing contract (reference qualifier: customer's contracts, not shells) or 'not listed' with a reference number; applicant name / email / mobile prefilled from the contract's bill-to (catalog client script onChange contract); invoice reference number",
@@ -80,11 +80,13 @@ export const NOTES = {
   "PT-16": "Catalog item placeholder AR-ii … AR-xvi (inactive until defined)",
   "PT-19": "Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one (new contract, or a shell without one), prefilled from the department's x_ar_billing_contact. An existing contract's bill-to is read-only (PT-41); AR changes it in the workspace (D22)",
   "PT-20": "Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, contract location, bill-to. UI policies per option",
+  "PT-42": "AR-i variable set Others (after Customer documents; final placement to be decided by the owner): invoice_breakdown, cost_center, account_code, agent_name, po_number. All optional",
+  "PT-43": "AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: billing_item_number*, amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code. At least one row when Yes",
   "PT-28": "No contract required: info message (UI policy on contract_option = none). Link to customer files the lines under the customer's no-contract shell for the department (x_ar_contract, contract_type = shell)",
   "PT-25": "Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer)",
-  "PT-26": "Variable set What to bill: request summary, PO, and multi-row variable set Billing lines (x_ar_request_line); totals by catalog client script",
+  "PT-26": "RETIRED 2026-11-12: What to bill variable set with the Billing lines multi-row variable set; replaced by Invoice details (PT-37). One billing line is now created from the invoice details",
   "PT-27": "Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden",
-  "PT-29": "Finance coding block inside the AR-i Invoice details section (request level, all optional): cost_center (tooltip: to be filled by GA), account_code, agent_name. Type of billing and the bulk upload moved to the contract (PT-40, ARF decision 29)",
+  "PT-29": "Finance coding variables (all optional): cost_center (tooltip: to be filled by GA), account_code, agent_name. Now in the Others section (PT-42); type of billing and the bulk upload are on the contract (PT-40)",
   "PT-23": "Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10)",
 };
 
@@ -105,7 +107,8 @@ export const UI_ACTIONS = {
   "UA-RQL-schedule": "Set up billing schedule (recurring line) → inserts x_ar_billing_schedule over the line's date range; comment to requester (D12, D13)",
   "UA-RQL-save": "Save (update, while the line is open)",
   "UA-PT-newcust": "Portal: Add as new customer (sets new_customer = true, copies the search text into the name)",
-  "UA-PT-addline": "Portal: Add one-off / recurring line (multi-row variable set)",
+  "UA-PT-additem": "Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row",
+  "UA-PT-addline": "RETIRED 2026-11-12: Add one-off / recurring line; the request has one billing event from the invoice details (PT-37)",
   "UA-REQ-post": "Post work note / additional comment to the activity stream",
   "UA-REQ-save": "Save (update)",
   "UA-INV-issue": "Issue invoice → state = Issued; BR sets AR request to Invoiced and posts a comment to the requester",
@@ -127,7 +130,7 @@ export const UI_ACTIONS = {
 
 /** Related lists: "RL-<PARENT>-<CHILD>" with the reference field that links them. */
 export const RELATED = {
-  "RL-REQ-RQL": "ar_request",
+  "RL-REQ-RQL": "ar_request", "RL-REQ-RQI": "ar_request",
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",

@@ -2,7 +2,7 @@
 import { S } from "./state.js";
 import { DAY, cents, today, uid } from "./util.js";
 import { depositId } from "./bsu.js";
-import { resetAudit } from "./records.js";
+import { itemCalc, resetAudit } from "./records.js";
 import { render } from "./views/app.js";
 
 // Sample dates are authored as if "today" were SAMPLE_AS_OF, then shifted so the demo
@@ -161,11 +161,12 @@ export function loadSample() {
     newCustomer: true, newCustName: "Zephyr Data Centres Pte Ltd", newCustUen: "201912345K", newCustAddress: "8 Tampines Industrial Ave 5, #04-01, Singapore 528763",
     contractOption: "new", newCtrType: "recurring", newCtrNumber: "ZDC-SA-2026-01", newCtrRef: "ZDC/MSA/2026", newCtrPo: "ZDC-PO-0091", newCtrCycle: "first", newCtrTerms: "30", newCtrProrate: "no", newCtrTitle: "Data hall cooling services agreement", newCtrStart: shiftDate("2026-11-01"), newCtrEnd: shiftDate("2027-11-30"), newCtrValue: cents(42000),
     billToName: "Alicia Koh", billToEmail: "finance@zephyrdc.example", billToPhone: "+65 6123 4567", billToAddress: "Accounts Payable, 8 Tampines Industrial Ave 5, Singapore 528763",
-    contractLocation: "attached", contractLocationRef: "", title: "Data hall cooling: design and monitoring", amount: 0, poNumber: "ZDC-PO-0042",
+    contractLocation: "attached", contractLocationRef: "", title: "Data hall cooling: monitoring and maintenance, monthly", amount: 0, poNumber: "ZDC-PO-0042",
+    attnName: "Alicia Koh", attnEmail: "finance@zephyrdc.example", needItems: "yes",
     docContract: "Zephyr - signed services agreement.pdf", docAcra: "Zephyr - ACRA business profile.pdf", docBillingForm: "Zephyr - billing contact form (Digital).pdf",
     details: "First project with Zephyr. Signed agreement attached.", invoiceDate: "", periodStart: "", periodEnd: "", state: "new", assignedTo: null, invoiceId: null, scheduleId: null,
     opened: shiftDate("2026-10-24"), updated: shiftDate("2026-10-24"), attachments: [],
-    activity: [{ at: shiftDate("2026-10-24") + "T08:40:00", by: "u_pm1", kind: "system", text: "Submitted from AR-i on the portal for a new customer under new contract ZDC-SA-2026-01, with 1 one-off · 1 recurring." }] });
+    activity: [{ at: shiftDate("2026-10-24") + "T08:40:00", by: "u_pm1", kind: "system", text: "Submitted from AR-i on the portal for a new customer under new contract ZDC-SA-2026-01, with 1 recurring." }] });
 
   // Billing lines (D13): one per earlier request; Zephyr mixes a one-off fee with 12 months of monitoring
   let ln = 1000;
@@ -174,8 +175,7 @@ export function loadSample() {
   S.lines = [];
   for (const r of S.requests) {
     if (r.id === "r8") {
-      L(r, "one_off", "Design phase: data hall cooling assessment", cents(24000), { invoiceDate: shiftDate("2026-11-15") });
-      L(r, "recurring", "Cooling performance monitoring service", cents(1500), { startDate: shiftDate("2026-12-01"), endDate: shiftDate("2027-11-01") });
+      L(r, "recurring", r.title, cents(3500), { startDate: shiftDate("2026-12-01"), endDate: r.newCtrEnd });
     } else if (r.requestType === "recurring") {
       L(r, "recurring", r.title, r.amount, { frequency: r.frequency || "monthly", startDate: r.firstBillDate, endDate: S.contracts.find(k => k.id === r.contractId)?.end || shiftDate("2027-03-31") });
       r.title = "Warehouse management services, rest of contract";
@@ -187,6 +187,14 @@ export function loadSample() {
     const ls = S.lines.filter(l => l.requestId === r.id);
     r.amount = ls.reduce((sum, l) => sum + (l.lineType === "recurring" ? l.amount * monthsBetween(l.startDate, l.endDate) : l.amount), 0);
   }
+
+  // Invoice details (ARF decisions 31–33) mirror each request's billing line; Zephyr breaks its monthly charge into items
+  for (const r of S.requests.filter(x => x.form !== "AR-ix")) {
+    const l = S.lines.find(x => x.requestId === r.id); if (!l) continue;
+    Object.assign(r, { perPeriod: l.amount, prefInvDate: l.invoiceDate || l.startDate || "", needItems: r.needItems || "no" });
+  }
+  S.items = [["r8", "ZDC-01", 2000, 2.5, "4100-OPS"], ["r8", "ZDC-02", 1500, 2.5, "4100-MNT"]]
+    .map(([rid, itemNo, amt, lpiRate, accountCode]) => ({ id: uid("q"), requestId: rid, ...itemCalc({ itemNo, amount: cents(amt), lpiRate, accountCode }) }));
 
   // Billing contacts per customer per department (D11)
   const ct = [
@@ -247,6 +255,8 @@ export function loadSample() {
   for (const k of S.contracts) Object.assign(k, { giroStatus: "none", giroCaseId: null });
   // Contract billing terms (ARF decision 27): sample values on a few contracts, the rest left blank.
   const kb = (n, o) => kid[n] && Object.assign(kid[n], o);
+  // Contract type drives AR-i billing (ARF decision 31): monthly contracts are Recurring, the rest Ad-hoc
+  for (const k of S.contracts) if (!k.contractType || k.contractType === "contract") k.category ||= k.billing === "Monthly" ? "recurring" : "ad_hoc";
   kb("TR-TA-2025-14", { category: "recurring", reference: "TA/JG/0123", poNumber: "", billingCycle: "first", invoiceDate: shiftDate("2025-12-01"), paymentTerms: "30", prorate: "no", typeOfBilling: "A" });
   kb("HL-2026-01", { category: "recurring", reference: "HL-WMS-26", poNumber: "HL-PO-4410", billingCycle: "fifteenth", invoiceDate: shiftDate("2026-04-15"), paymentTerms: "30", prorate: "yes", prorateFirst: cents(6240), prorateLast: cents(6240), typeOfBilling: "C", bulkDocs: ["HL-usage-breakdown-template.xlsx"] });
   kb("KE-2026-03", { category: "ad_hoc", reference: "KE-RFQ-2026-011", poNumber: "KE-PO-7781", paymentTerms: "30", prorate: "no", typeOfBilling: "B" });

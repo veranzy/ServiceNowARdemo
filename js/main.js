@@ -2,15 +2,15 @@
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { custDetailsOf, applyGiro, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, needLocation, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { custDetailsOf, itemCalc, targetContract, applyGiro, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, needLocation, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
-import { cents, uid } from "./util.js";
+import { cents, fmt, uid } from "./util.js";
 import { render, setStatus, toast } from "./views/app.js";
 import { initDevNotes } from "./views/devnotes.js";
 import { refreshPicker } from "./views/finder.js";
-import { contractBox, custResults, formAlert, formSide, lineSum, linesTotals } from "./views/portal.js";
+import { contractBox, custResults, formAlert, formSide, invSum, itemTotals } from "./views/portal.js";
 import { listRows } from "./views/workspace.js";
 
 const W = () => S.ui.ws, P = () => S.ui.portal;
@@ -136,6 +136,10 @@ function contractChanged(d) {
   }
   if (d.billToPrefilled) { Object.assign(d, { billToName: "", billToEmail: "", billToPhone: "", billToAddress: "" }); delete d.billToPrefilled; }
   prefillBillTo(d);
+  // Invoice details: attention to defaults to the contract's (or shell's) bill-to person
+  if (d.attnPrefilled) { Object.assign(d, { attnName: "", attnEmail: "" }); delete d.attnPrefilled; }
+  const tk = d.contractOption === "existing" ? S.contracts.find(x => x.id === d.contractId) : d.contractOption === "none" ? targetContract(d) : null;
+  if (tk?.billToName && !d.attnName && !d.attnEmail) Object.assign(d, { attnName: tk.billToName, attnEmail: tk.billToEmail || "", attnPrefilled: true });
   const now = validateARi(d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k];
 }
 const resetContract = d => { Object.assign(d, { contractOption: "", contractId: null }); contractChanged(d); };
@@ -164,12 +168,21 @@ function bsuAction(name) {
   }
 }
 
-/** Billing line typed into: refresh its summary, the totals, contract box and sidebar in place. */
-function lineUpdated(el, i) {
-  const d = P().draft, swap = (id, html) => { const n = $(id) || document.querySelector(id); if (n) n.outerHTML = html; };
-  portalFieldUpdated(el);
-  swap(`pfLineSum-${i}`, lineSum(d.lines[i], i)); swap("pfTotals", linesTotals(d));
+/** AR-i invoice details typed into: refresh the billing summary and contract box in place. */
+function invUpdated() {
+  const d = P().draft; if (!d || d.form === "AR-ix") return;
+  const swap = (id, html) => { const n = $(id); if (n) n.outerHTML = html; };
+  swap("pfInvSum", invSum(d));
   const box = document.querySelector(".pt-info.ctr-box"); if (box) box.outerHTML = contractBox(d);
+}
+/** Billing line item typed into: recalculate its GST / total and the table totals in place. */
+function itemUpdated(el, i) {
+  const d = P().draft, k = el.name.split(":")[2], c = itemCalc(d.items[i]);
+  const g = $(`pfItemGst-${i}`), t = $(`pfItemTot-${i}`); if (g) g.textContent = fmt(c.gst); if (t) t.textContent = fmt(c.total);
+  const tf = $("pfItemTotals"); if (tf) tf.outerHTML = itemTotals(d);
+  const key = `item:${i}:${k}`;
+  if (P().errors[key]) { delete P().errors[key]; el.removeAttribute("aria-invalid"); el.closest("td")?.querySelector(".ferr")?.remove(); const a = $("pfAlert"); if (a) a.innerHTML = formAlert(Object.keys(P().errors).length); }
+  portalFieldUpdated(el);
 }
 
 // ---------- events ----------
@@ -203,11 +216,9 @@ document.addEventListener("click", e => {
     if (d.ctropt === "new" && dr.form !== "AR-ix") { dr.newCtrTerms ||= "30"; dr.newCtrProrate ||= "no"; }
     contractChanged(dr); delete P().errors.contractOption; render();
     return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? $(dr.form === "AR-ix" ? "pf-newCtrRef" : "pf-newCtrType") : null)?.focus(); }
-  // AR-i billing lines (D13)
-  if (d.ladd) { P().draft.lines.push({ lineType: d.ladd, desc: "", amount: 0, invoiceDate: "", frequency: "monthly", startDate: "", endDate: "" }); delete P().errors.lines; render(); return $(`pl${P().draft.lines.length - 1}-desc`)?.focus(); }
-  if (d.lremove !== undefined) { P().draft.lines.splice(+d.lremove, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith("line:"))); return render(); }
-  if (d.ltype) { const [i, type] = d.ltype.split(":"), l = P().draft.lines[+i]; l.lineType = type; if (type === "recurring" && !l.frequency) l.frequency = "monthly";
-    P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith(`line:${i}:`))); return render(); }
+  // AR-i billing line items (multi-row variable set, ARF decision 32)
+  if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ itemNo: "", amount: 0, lpiRate: 0, accountCode: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
+  if (d.iremove !== undefined) { P().draft.items.splice(+d.iremove, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith("item:"))); return render(); }
   if (d.unattach !== undefined) { P().draft.attachments.splice(+d.unattach, 1); return render(); }
   if (d.unbulk !== undefined) { P().draft.docBulk.splice(+d.unbulk, 1); return render(); }
   // workspace navigation
@@ -285,12 +296,8 @@ document.addEventListener("change", e => {
   if (cb) { const pk = S.pick[cb.dataset.pick]; if (!pk) return;
     pk.sel = cb.checked ? [...pk.sel.filter(x => x !== cb.value), cb.value] : pk.sel.filter(x => x !== cb.value);
     cb.closest(".cand")?.classList.toggle("on", cb.checked); return refreshPicker(cb.dataset.pick, "preview"); }
-  // portal AR form: billing line fields
-  if (el.closest("#arForm") && el.name?.startsWith("line:")) {
-    const d = P().draft, [, i, k] = el.name.split(":"); d.lines[+i][k] = coerce("lines", k, el);
-    if (el.tagName === "SELECT" || el.type === "checkbox") return render();
-    return lineUpdated(el, +i);
-  }
+  // portal AR form: billing line item fields
+  if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
   // portal AR form: dependent fields re-render
   if (el.closest("#arForm") && el.name) {
     const d = P().draft; d[el.name] = coerce("requests", el.name, el);
@@ -299,9 +306,10 @@ document.addEventListener("change", e => {
     if (el.name === "contractLocation" && !["repository", "physical"].includes(d.contractLocation)) d.contractLocationRef = "";
     if (el.name === "department" && d.deptSubBu && !d.deptSubBu.startsWith(String(d.department).slice(0, 3).toUpperCase())) d.deptSubBu = "";
     if (el.name === "contractId" || el.name === "department") contractChanged(d);
+    if (el.name === "needItems" && d.needItems === "yes" && !(d.items || []).length) d.items = [{ itemNo: "", amount: 0, lpiRate: 0, accountCode: "" }];
     clearHidden("requests", d);
     if (el.tagName === "SELECT" || ["checkbox", "radio", "file"].includes(el.type)) { const now = validateARi(d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k]; return render(); }
-    return portalFieldUpdated(el);
+    portalFieldUpdated(el); return invUpdated();
   }
   // workspace record form: refilter dependent references
   const rf = el.closest("[data-rform]");
@@ -330,8 +338,8 @@ document.addEventListener("input", e => {
   if (el.dataset.pickq && S.pick[el.dataset.pickq]) { S.pick[el.dataset.pickq].q = el.value; return refreshPicker(el.dataset.pickq, "list"); }
   if (el.dataset.picknote && S.pick[el.dataset.picknote]) { S.pick[el.dataset.picknote].note = el.value; return; }
   if (el.id === "pfCustQ") { P().draft.custQ = el.value; const n = $("pfCustResults"); if (n) n.outerHTML = custResults(P().draft); return; }
-  if (el.closest("#arForm") && el.name?.startsWith("line:") && el.tagName !== "SELECT") { const [, i, k] = el.name.split(":"); P().draft.lines[+i][k] = coerce("lines", k, el); return lineUpdated(el, +i); }
-  if (el.closest("#arForm") && el.name && el.tagName !== "SELECT") { P().draft[el.name] = coerce("requests", el.name, el); return portalFieldUpdated(el); }
+  if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
+  if (el.closest("#arForm") && el.name && el.tagName !== "SELECT") { P().draft[el.name] = coerce("requests", el.name, el); portalFieldUpdated(el); return invUpdated(); }
   const rf = el.closest("[data-rform]");
   if (rf && el.name && el.tagName !== "SELECT") { const tab = W().tabs.find(x => x.key === rf.dataset.rform); if (tab) (tab.vals ||= {})[el.name] = coerce(tab.table, el.name, el); }
 });
@@ -355,7 +363,8 @@ document.addEventListener("submit", e => {
       const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;
       render(); return window.scrollTo(0, 0);
     }
-    const { custQ, billToPrefilled, ...vals } = d;
+    const { custQ, billToPrefilled, attnPrefilled, ...vals } = d;
+    if (vals.needItems !== "yes") vals.items = [];
     if (!needBillTo(vals)) Object.assign(vals, { billToName: "", billToEmail: "", billToPhone: "", billToAddress: "" });
     if (vals.contractOption !== "new") Object.assign(vals, { newCtrType: "", newCtrNumber: "", newCtrRef: "", newCtrPo: "", newCtrTitle: "", newCtrStart: "", newCtrEnd: "", newCtrValue: 0, newCtrCycle: "", newCtrCycleOther: "",
       newCtrInvDate: "", newCtrTerms: "", newCtrTermsOther: "", newCtrProrate: "", newCtrProFirst: 0, newCtrProLast: 0, typeOfBilling: "", docBulk: [] });

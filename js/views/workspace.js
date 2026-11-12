@@ -1,7 +1,7 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroBlock, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
+import { DOC_LABEL, reqItems, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroBlock, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
 import { CODE } from "../notes.js";
 import { ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
@@ -274,7 +274,7 @@ function listView(table, filter, menuOpen) {
 // ---------- record pages ----------
 const has = k => r => !!r[k], not = k => r => !r[k], isIx = r => r.form === "AR-ix";
 const LAYOUT = {
-  requests: [["AR form", ["form", "title", "amount"]],
+  requests: [["AR form", ["form", "title", "amount"]],  // AR-i: title is the invoice description
     ["General information", ["requesterName", "requesterEmail", "department", "deptSubBu", "ccList"]],
     // AR-i
     ["Customer", ["customerId"], r => !isIx(r) && !r.newCustomer], ["New customer (to verify)", ["newCustName", "newCustUen", "newCustAddress"], r => !isIx(r) && r.newCustomer],
@@ -283,9 +283,9 @@ const LAYOUT = {
     ["New contract (to create)", ["newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther",
       "newCtrProrate", "newCtrProFirst", "newCtrProLast", "typeOfBilling", "docBulk"], r => !isIx(r) && r.contractOption === "new"],
     ["Contract billing (from the contract at submit)", ["typeOfBilling"], r => !isIx(r) && r.contractOption === "existing"],
-    ["Customer PO", ["poNumber"], r => !isIx(r)],
     ["GIRO (from the contract at submit)", ["giroOnContract"], r => !isIx(r) && !!r.giroOnContract],
-    ["Invoice details", ["invoiceBreakdown", "costCenter", "accountCode", "agentName"], r => !isIx(r)],
+    ["Invoice details", ["attnName", "attnEmail", "perPeriod", "prefInvDate", "needItems"], r => !isIx(r)],
+    ["Others (placement to be decided)", ["invoiceBreakdown", "costCenter", "accountCode", "agentName", "poNumber"], r => !isIx(r)],
     ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], r => !isIx(r) && r.billToName],
     ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => !isIx(r) && (r.docContract || r.docAcra || r.docBillingForm)],
     // AR-ix (GIR module)
@@ -499,7 +499,11 @@ function related(table, rec) {
       ["Status", l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId);
         return `${lineChip(l)}${inv ? ` ${refLink("invoices", inv.id, inv.number)}` : ""}${sch ? ` ${refLink("schedules", sch.id, sch.number)}` : ""}`; }],
       ["", l => !ok || lineStatus(l) !== "open" ? "" : l.lineType === "recurring" ? `<button type="button" class="btn small primary" data-lineact="schedule:${l.id}"${sn("UA-RQL-schedule")}>Set up billing schedule</button>` : `<button type="button" class="btn small primary" data-lineact="invoice:${l.id}"${sn("UA-RQL-invoice")}>Create invoice</button>`]
-    ], { id: "RL-REQ-RQL", actions: ok ? "" : `<span class="muted small">${REQ_OPEN.includes(r.state) ? "Link to customer files the lines under the contract; then bill each line" : ""}</span>` })];
+    ], { id: "RL-REQ-RQL", actions: ok ? "" : `<span class="muted small">${REQ_OPEN.includes(r.state) ? "Link to customer files the lines under the contract; then bill each line" : ""}</span>` }),
+    ...(r.needItems === "yes" || reqItems(r).length ? [rt("Billing line items", "items", reqItems(r), [
+      ["Billing item number", q => esc(q.itemNo)], ["Amount (w/o GST)", q => fmt(q.amount), "num"], ["GST amount", q => fmt(q.gst), "num"], ["Total amount", q => fmt(q.total), "num"],
+      ["Late payment interest", q => q.lpiRate ? `${esc(q.lpiRate)}%` : "—"], ["Account code", q => esc(q.accountCode || "—")]
+    ], { id: "RL-REQ-RQI" })] : [])];
   }
   if (table === "schedules") {
     const per = schedulePeriods(rec);

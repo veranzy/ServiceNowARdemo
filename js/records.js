@@ -1,7 +1,7 @@
 // Record lifecycle: AR request cases, invoices, journal entries, numbering, generic save.
 // Each function mirrors a ServiceNow UI action or business rule (named in the comments).
 import { ctrById, custById, invoiceUse } from "./ledger.js";
-import { CONTRACT_CATEGORIES, DOC_TYPES, FREQUENCIES, GIRO_PURPOSES, GIRO_TYPES, TABLES, clearHidden } from "./schema.js";
+import { CONTRACT_CATEGORIES, DOC_TYPES, FREQUENCIES, GIRO_PURPOSES, GIRO_TYPES, GST_RATE, TABLES, clearHidden } from "./schema.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, today, uid } from "./util.js";
 
@@ -198,16 +198,46 @@ export function validateARi(d) {
     }
   }
   if (d.pocEmail && !EMAIL_RE.test(d.pocEmail)) e.pocEmail = "Enter a valid email address.";
-  need("title", "Give the request a short summary.");
-  const lines = d.lines || [];
-  if (!lines.length) e.lines = "Add at least one billing line.";
-  lines.forEach((l, i) => {
-    const le = lineErrors(l); for (const [k, m] of Object.entries(le)) e[`line:${i}:${k}`] = m;
-  });
+  // Invoice details (ARF decisions 31–33): one billing event per request, recurring when the contract type is Recurring
+  need("title", "Describe what the invoice is for.");
+  if (d.attnEmail && !EMAIL_RE.test(d.attnEmail)) e.attnEmail = "Enter a valid email address.";
+  if (!(d.perPeriod > 0)) e.perPeriod = "Enter the amount billed per period (before GST).";
+  const bm = billingMode(d);
+  if (bm.recurring) {
+    const end = contractEnd(d);
+    if (!d.prefInvDate) e.prefInvDate = "Recurring contract: enter the date of the first invoice.";
+    else if (end && d.prefInvDate > end) e.prefInvDate = `Must be on or before the contract end date (${end}).`;
+    if (!end) { if (d.contractOption === "new") e.newCtrEnd = "A recurring contract needs an end date."; else if (d.prefInvDate) e.prefInvDate = "The contract has no end date, so the invoices can't be scheduled. Ask AR to set it."; }
+  }
+  if (d.needItems === "yes") {
+    const items = d.items || [];
+    if (!items.length) e.items = "Add at least one billing line item, or choose No.";
+    items.forEach((it, i) => { if (!String(it.itemNo || "").trim()) e[`item:${i}:itemNo`] = "Enter the item number."; if (!(it.amount > 0)) e[`item:${i}:amount`] = "Enter the amount."; });
+  }
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
   for (const [t, label] of DOC_TYPES) if (t !== "contract" && !onFile[t] && !d[DOC_KEY[t]]) e[DOC_KEY[t]] = `Attach the ${label.toLowerCase()} (not on file yet).`;
   return e;
 }
+
+/** Contract type of the request's contract: Recurring or Ad-hoc ("" when not on file). No contract = ad-hoc. */
+export function contractCategoryOf(d) {
+  if (d.contractOption === "new") return d.newCtrType || "";
+  if (d.contractOption === "existing") return ctrById(d.contractId)?.category || "";
+  return d.contractOption === "none" ? "ad_hoc" : "";
+}
+/** How the request is billed (D13 as amended, ARF decision 31): recurring contract → every period; otherwise one invoice. */
+export const billingMode = d => ({ category: contractCategoryOf(d), recurring: contractCategoryOf(d) === "recurring" });
+export const contractEnd = d => d.contractOption === "new" ? d.newCtrEnd || "" : d.contractOption === "existing" ? ctrById(d.contractId)?.end || "" : "";
+/** The one billing line created from the invoice details at submit. */
+export function draftLine(d) {
+  const rec = billingMode(d).recurring;
+  return { lineType: rec ? "recurring" : "one_off", desc: String(d.title || "").trim(), amount: d.perPeriod || 0, invoiceDate: rec ? "" : d.prefInvDate || "",
+    frequency: rec ? "monthly" : "", startDate: rec ? d.prefInvDate || "" : "", endDate: rec ? contractEnd(d) : "", remarks: "" };
+}
+/** GST on an amount in cents (GST_RATE %), rounded to the cent. */
+export const gstOf = amt => Math.round((amt || 0) * GST_RATE / 100);
+export const itemCalc = it => ({ ...it, gst: gstOf(it.amount), total: (it.amount || 0) + gstOf(it.amount) });
+export const reqItems = r => (S.items || []).filter(x => x.requestId === r.id);
 
 /** Errors for one billing line. */
 export function lineErrors(l) {
@@ -421,7 +451,7 @@ export function journal(req, kind, text, by) {
 
 /** Record producer submit (portal AR form). */
 export function createRequest(vals) {
-  const { lines = [], ...rest } = vals;
+  const { lines, items = [], ...rest } = vals;
   clearHidden("requests", rest);
   const req = { id: uid("r"), number: nextNumber("requests"), state: "new", requestedBy: me().id, assignedTo: null,
     opened: isoToday(), updated: isoToday(), activity: [], attachments: rest.attachments || [], ...rest, requesterEmail: me().email || "" };
@@ -432,14 +462,13 @@ export function createRequest(vals) {
     journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : `for contract ${req.newCtrRef} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
     return req;
   }
-  req.amount = linesSummary(lines, draftPro(req)).total;
+  const line = draftLine(req);
+  req.amount = lineValue(line, draftPro(req));
   req.giroOnContract = giroOnContractOf(req);
   if (req.contractOption === "existing") { const k = ctrById(req.contractId); req.typeOfBilling = k?.typeOfBilling || ""; req.docBulk = []; }
   S.requests.push(req);
-  for (const l of lines) S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, contractId: req.contractOption === "existing" ? req.contractId || null : null, lineType: l.lineType, desc: l.desc.trim(), amount: l.amount,
-    invoiceDate: l.lineType === "one_off" ? l.invoiceDate || "" : "", frequency: l.lineType === "recurring" ? l.frequency || "monthly" : "",
-    startDate: l.lineType === "recurring" ? l.startDate : "", endDate: l.lineType === "recurring" ? l.endDate : "", invoiceId: null, scheduleId: null,
-    remarks: l.lineType === "recurring" ? l.remarks || "" : "" });
+  S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, contractId: req.contractOption === "existing" ? req.contractId || null : null, ...line, invoiceId: null, scheduleId: null });
+  if (req.needItems === "yes") for (const it of items) S.items.push({ id: uid("q"), requestId: req.id, ...itemCalc({ itemNo: String(it.itemNo).trim(), amount: it.amount || 0, lpiRate: it.lpiRate || 0, accountCode: it.accountCode || "" }) });
   const ctrText = req.contractOption === "existing" ? `under contract ${ctrById(req.contractId)?.number}` : req.contractOption === "new" ? `under new contract ${req.newCtrNumber}` : "with no contract";
   journal(req, "system", `Submitted from ${req.form || "AR-i"} on the portal${req.newCustomer ? " for a new customer" : ""} ${ctrText}, with ${linesLabel(req)}.`, req.requestedBy);
   return req;

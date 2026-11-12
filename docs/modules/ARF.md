@@ -66,6 +66,10 @@ master data says. This creates some scenarios the build must handle:
 | 28 | Proration | Moves from the billing line to the **contract** (replaces decision 20's line prorating; line remarks stay). When the contract has proration Yes, every recurring line under it uses the contract's 1st / last month amounts for its first and last period (line value, billing schedule, *Raise invoice*). | 2026-11-12 |
 | 29 | Type of billing | Lives on the **contract only** (with the C / D / E bulk upload); removed from Invoice details (changes decision 26). For an existing contract the request keeps a read-only copy taken at submit. | 2026-11-12 |
 | 30 | GIRO | No longer its own section: a **GIRO subsection inside Contract**: *Is there an existing DDA?* Yes / No, read-only, with the active AR-ix case number when Yes. For a new contract or *No contract required* it is **greyed out**, with a tooltip telling the project team to raise an AR-ix once AR has set up the contract. AR-i sections: 1 General information, 2 Customer, 3 Contract and bill-to (with GIRO), 4 What to bill, 5 Invoice details, 6 Customer documents. | 2026-11-12 |
+| 31 | Invoice details replace billing lines | Section 4 *What to bill* (billing lines) is replaced by **Invoice details**: **invoice description**, **attention to name**, **attention to email**, **amount billed per period** (before GST), **preferred invoice date**, **Require billing line item?** (Yes / No). One request = one billing event (D13 amended): **Recurring contract** → billed monthly from the preferred invoice date (then mandatory, the first invoice) to the contract end date (a new recurring contract must have an end date), with contract proration; **Ad-hoc contract, No contract, or contract type not on file** → one invoice. Submit creates one `x_ar_request_line`, so the workspace flow (Link to customer, Create invoice / Set up billing schedule, Billed) is unchanged. Attention to name / email are optional and prefilled from the contract's bill-to. Replaces decisions 8 and 10 for the form. | 2026-11-12 |
+| 32 | Billing line items | When *Require billing line item?* = Yes, a multi-row table: **billing item number*, amount (w/o GST)*, GST amount, total amount, late payment interest, account code**; at least one row. Saved as `x_ar_request_item` rows on the request. **No check** that the items add up to the amount billed per period. | 2026-11-12 |
+| 33 | GST and LPI on items | GST amount = amount × 9% (calculated, read-only), total = amount + GST (D25). **Late payment interest is a rate (%)** for now; to be confirmed with the users (open question 20). | 2026-11-12 |
+| 34 | Others section | Invoice breakdown, cost center, account code, name of agent to be billed and customer PO number move to a new last section **Others**; their final place is to be decided (open question 21). AR-i sections: 1 General information, 2 Customer, 3 Contract and bill-to, 4 Invoice details, 5 Customer documents, 6 Others. | 2026-11-12 |
 
 Assumption to confirm: "where their contracts are" means the storage location of the signed contract
 (decision 5).
@@ -101,11 +105,13 @@ Assumption to confirm: "where their contracts are" means the storage location of
      first) or *No contract required* (files under the department's no-contract shell; bill-to asked
      only if the shell has none). Contract location is asked for a new contract. Ends with the **GIRO**
      subsection (existing DDA, read-only; greyed for new / no contract).
-   - **What to bill** (after the contract): request summary, PO, then **billing lines**: *Add one-off* / *Add recurring*.
-     One-off: description, amount, preferred invoice date. Recurring: description, amount per period,
-     frequency (Monthly default), from and to dates; the line shows the number of invoices and total.
-     A summary shows one-off total, recurring per period and total request value.
-   - **Invoice details** (optional): invoice breakdown, cost center, account code, name of agent to be billed.
+   - **Invoice details** (decisions 31–33): invoice description, attention to name / email (prefilled from
+     the contract bill-to), amount billed per period (before GST), preferred invoice date (first invoice for a
+     recurring contract), *Require billing line item?* → billing line items table (item number, amount w/o GST,
+     GST and total calculated at 9%, late payment interest %, account code). A summary shows how AR will bill:
+     monthly invoices to the contract end date (with proration) or one invoice.
+   - **Documents** (below), then **Others** (decision 34, optional): invoice breakdown, cost center, account code,
+     name of agent to be billed, customer PO number.
    - **Documents**: checklist of the three customer documents showing *On file* or *Needed*; upload
      only what's needed. The signed contract is only needed for a new contract kept as an attachment.
 3. My requests / ticket page shows the lines and, per line, the invoice or billing schedule.
@@ -142,6 +148,8 @@ Assumption to confirm: "where their contracts are" means the storage location of
 | `x_ar_billing_contact` | Customer + department → the department's usual bill-to person; used to prefill the bill-to on a new contract or shell. Unique per customer + department. |
 | `x_ar_customer_document` | Customer documents: type (contract/PO, ACRA, billing form), file (sys_attachment), contract (optional), department (billing form), source AR request. |
 | `x_ar_billing_schedule` | Customer, contract, department, description, frequency, amount per period, first/last billing date, source AR request; periods computed (or a child table `x_ar_billing_period` in the build). |
+| `x_ar_request` invoice details | `short_description` (invoice description), `attention_name`, `attention_email`, `amount_per_period` (Currency, before GST), `preferred_invoice_date`, `billing_line_items_required` (Yes / No). Producer script creates one `x_ar_request_line` (recurring when the contract's `contract_category` is recurring; start = preferred invoice date, end = contract end; else one-off) and `amount` = its value. |
+| `x_ar_request_item` | Billing line items (multi-row variable set on AR-i, copied to this table by the producer script): `ar_request`, `billing_item_number`, `amount_excl_gst`, `gst_amount` (= amount × `x_ar.gst_rate`, 9), `total_amount`, `late_payment_interest` (rate %), `account_code`. Related list *Billing line items* on the AR request. |
 | UI actions | *Link to customer* on AR request; *Create invoice* / *Set up billing schedule* on each billing line; *Raise invoice* on billing period. |
 
 ## Out of scope / later
@@ -172,6 +180,11 @@ Assumption to confirm: "where their contracts are" means the storage location of
 17. Does contract proration apply to **every** recurring line under the contract, or should a line be able to opt out? Prototype: every recurring line. (Owner)
 18. Payment terms *Others* is free text, so the due date can't be calculated from it. Should Others ask for a number of days instead? Prototype: AR sets the days on the contract. (Owner)
 19. Is the *preferred invoice billing date* a single date, or a day of the month (overlapping the billing cycle)? Prototype: a date. (Owner)
+20. Late payment interest on a billing line item: a rate (%), as built, or an amount, or Yes / No? To be confirmed with the users. (Owner)
+21. Final place of the *Others* fields (invoice breakdown, cost center, account code, agent name, customer PO). Account code is now also on each billing line item: keep both? (Owner)
+22. Should the billing line items (and attention to) flow onto the invoice (invoice lines with GST)? Part of the AR request → invoice mapping, deferred. (Owner)
+23. Are attention to name and email mandatory? Prototype: optional, prefilled from the contract bill-to. (Owner)
+24. A recurring request's amount is billed monthly regardless of the contract billing cycle (1st / 15th / Others). Should the billing cycle set the invoice day? (Owner)
 13. Prorating: should the first / last month amounts be calculated from the dates (days in month) instead of typed in? (Owner)
 14. Does the invoice breakdown need structure (e.g. lines with amounts), or is free text enough? (Owner)
 
@@ -191,3 +204,4 @@ Assumption to confirm: "where their contracts are" means the storage location of
 | 2026-11-12 | Billing type renamed **Agency type** (decision 23). New ID `REQ.agency_type`; **`REQ.billing_type_code` retired** (same field, renamed column). |
 | 2026-11-12 | **Customer section revamp** (decisions 24–26, D23): found customer's details read-only in the owner's order; details stored on the request and replicated to the customer by Link to customer; new customer fields `CUS.agency_type`, `CUS.vag`, `CUS.vag_sub_bu`, `CUS.poc_name`, `CUS.poc_email`; `REQ.sub_bu` label now "V@G sub-BU". Finance coding block (`PT-29`) moved into **Invoice details** (`PT-37`, renamed from Invoice breakdown). New ID `PT-39` (customer details block). **`PT-38` retired** (separate POC block). |
 | 2026-11-12 | **Contract details revamp** (decisions 27–30): existing contract read-only (`PT-41`); new contract fields in the owner's order (`PT-40`; new IDs `REQ.new_contract_type`, `REQ.new_contract_number`, `REQ.new_contract_po`, `REQ.new_contract_billing_cycle`, `REQ.new_contract_billing_cycle_other`, `REQ.new_contract_invoice_date`, `REQ.new_contract_payment_terms`, `REQ.new_contract_payment_terms_other`, `REQ.new_contract_proration`, `REQ.new_contract_proration_first`, `REQ.new_contract_proration_last`, `CON.contract_category`, `CON.reference_number`, `CON.po_number`, `CON.billing_cycle`, `CON.billing_cycle_other`, `CON.preferred_invoice_date`, `CON.payment_terms_choice`, `CON.payment_terms_other`, `CON.proration`, `CON.proration_first`, `CON.proration_last`, `CON.type_of_billing`, `CON.bulk_supporting_docs`); proration and type of billing moved to the contract; GIRO is a subsection of Contract (`PT-36`) with "existing DDA", greyed for new / no contract. `CON.contract_type` relabelled *Record type*. **Retired IDs:** `RQL.prorate`, `RQL.first_period_amount`, `RQL.last_period_amount` (line proration → contract), `REQ.update_bill_to` (existing contract's bill-to is read-only). |
+| 2026-11-12 | **Invoice details revamp** (decisions 31–34, D13 amended, D25): billing lines removed from the form; Invoice details (`PT-37`, rewritten) with new IDs `REQ.attention_name`, `REQ.attention_email`, `REQ.amount_per_period`, `REQ.preferred_invoice_date`, `REQ.billing_line_items_required`; billing line items table `PT-43` → new table `x_ar_request_item` (`RQI.*`, related list `RL-REQ-RQI`, portal action `UA-PT-additem`); new section Others `PT-42` (invoice breakdown, finance coding `PT-29`, customer PO). `REQ.short_description` relabelled *Invoice description*. Sample contracts now all have a contract type (monthly → Recurring); Zephyr's sample request is one recurring line with two billing line items. **Retired IDs:** `PT-26` (What to bill variable set), `UA-PT-addline` (add one-off / recurring line). |

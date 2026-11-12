@@ -651,3 +651,8 @@ button.ws-tab[aria-selected="true"],.ws-tab.rec.on{background:transparent;color:
 .psub{display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:12px;margin-top:4px}
 .psub h3{margin:0}
 .psub.greyed{opacity:.6}
+/* AR-i billing line items (multi-row variable set) */
+.mrvs td { vertical-align: top; }
+.mrvs input { width: 100%; min-width: 96px; }
+.mrvs td .ferr { display: block; }
+.mrvs tfoot th, .mrvs tfoot td { border-top: 1px solid var(--line); }

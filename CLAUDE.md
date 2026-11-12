@@ -52,6 +52,13 @@ for that exact change or confirmed it.
 - If a requested change seems to need another label or logic change, list each one and ask before
   building. Changes made without confirmation are reverted unless the owner keeps them.
 
+**Locks.** The *Lock* column of the index in `docs/modules/README.md` is the lock switch; only the owner
+edits it. Before any change, check it. If the change touches a **Locked** part, don't build it: say it is
+locked and ask the owner to unlock it. A part counts as touched if its screen, behaviour or docs would
+change, including through shared code, shared parts (e.g. AR-00 General information on a locked form) or
+`js/schema.js` / `js/notes.js`. *AR-i portal form* = everything the requester sees and does on the AR-i form:
+sections, fields, labels, choices, hints, help, validation, show / hide rules, defaults and the summary.
+
 **Quality bar for requirements.**
 - Every screen element maps to a ServiceNow artefact (table, field, UI action, business rule, ACL,
   widget, flow) and carries a registered Build notes ID.
@@ -78,6 +85,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-12 | Brief lives only in git: the Claude project copy is decommissioned and CLAUDE.md is no longer exported. | Owner |
 | 2026-11-12 | Module map changed (D27): one module per AR form (AR-00 shared, AR-i, AR-ix, …), CCI, BSU (with cash application), UIX; one folder per module; git rules in `docs/GIT_WORKFLOW.md` with `node tools/check.mjs` before every push. | Owner |
 | 2026-11-12 | Labels and logic: confirm first. No label name or logic change unless the owner asked for it or confirmed it; use the owner's wording exactly. | Owner |
+| 2026-11-12 | Locks: the *Lock* column in `docs/modules/README.md` locks a module or a part of it against changes; AR-i portal form locked. | Owner |
 
 ## How we work: modules, one at a time
 

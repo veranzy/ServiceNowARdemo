@@ -32,14 +32,18 @@ Cross-module decisions go in [`../DECISIONS.md`](../DECISIONS.md).
 
 ## Index (sign-off checklist)
 
-| Code | Module | Persona | Status |
-|---|---|---|---|
-| [AR-00](AR-00/README.md) | AR forms, shared parts: catalogue of 16 forms (AR-i … AR-xvi), General information, department sub-BU, CC list, My requests, ticket page, case states | Project team, AR team | In prototype |
-| [AR-i](AR-i/README.md) | AR-i New AR request: the form, Link to customer, billing lines, Create invoice / billing schedules, Raise invoice | Project team, AR team | In prototype |
-| [AR-ix](AR-ix/README.md) | AR-ix GIRO authorisation: add / remove GIRO on a contract; contract GIRO status from the approved AR-ix case (one active per contract) | Project team, AR team | In prototype |
-| [CCI](CCI/README.md) | Customers, contracts and invoices: master data, billing hierarchy, billing contacts, customer documents, invoice lifecycle (draft → issued → cancelled) | AR team | In prototype |
-| [BSU](BSU/README.md) | Bank statement upload and cash application: daily CSV upload, Deposit IDs, manual matching of deposits to invoices | AR team | In prototype |
-| [UIX](UIX/README.md) | Workspace look and layout aligned to the Horizon Design System (app shell, list page, record page) | AR team | In prototype |
+**Lock** says what Claude may not change. *Open*: normal rules. *Locked*: no change of any kind to that part
+until the owner unlocks it (CLAUDE.md → *Locks*). Only the owner edits this column: write *Locked* or *Open*
+for a module or a named part of it (e.g. *Portal form: Locked*) with the date.
+
+| Code | Module | Persona | Status | Lock |
+|---|---|---|---|---|
+| [AR-00](AR-00/README.md) | AR forms, shared parts: catalogue of 16 forms (AR-i … AR-xvi), General information, department sub-BU, CC list, My requests, ticket page, case states | Project team, AR team | In prototype | Open |
+| [AR-i](AR-i/README.md) | AR-i New AR request: the form, Link to customer, billing lines, Create invoice / billing schedules, Raise invoice | Project team, AR team | In prototype | **Portal form: Locked** (2026-11-12, Owner) |
+| [AR-ix](AR-ix/README.md) | AR-ix GIRO authorisation: add / remove GIRO on a contract; contract GIRO status from the approved AR-ix case (one active per contract) | Project team, AR team | In prototype | Open |
+| [CCI](CCI/README.md) | Customers, contracts and invoices: master data, billing hierarchy, billing contacts, customer documents, invoice lifecycle (draft → issued → cancelled) | AR team | In prototype | Open |
+| [BSU](BSU/README.md) | Bank statement upload and cash application: daily CSV upload, Deposit IDs, manual matching of deposits to invoices | AR team | In prototype | Open |
+| [UIX](UIX/README.md) | Workspace look and layout aligned to the Horizon Design System (app shell, list page, record page) | AR team | In prototype | Open |
 
 AR-ii … AR-xvi each get a module folder named after the form (e.g. `AR-ii/`) when the owner defines them.
 

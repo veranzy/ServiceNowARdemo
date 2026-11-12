@@ -8,7 +8,8 @@ redeploys the live demo, so `main` must always be demo-ready.
 
 1. **Get the latest `main`.** `git pull --ff-only origin main` (or a fresh clone). Never work from a
    copy you haven't just updated.
-2. **Read** `CLAUDE.md`, then the index in `docs/modules/README.md` (status of every module).
+2. **Read** `CLAUDE.md`, then the index in `docs/modules/README.md` (status and **Lock** of every module;
+   nothing locked may change).
 3. **Check open GitHub issues** for parked questions (`gh api repos/veranzy/ServiceNowARdemo/issues`).
 4. **Name the module** you are working on (`AR-i`, `CCI`, …) before changing anything. One session can
    touch several modules, but one change belongs to one module.

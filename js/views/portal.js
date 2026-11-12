@@ -120,7 +120,7 @@ function customerStep(d, e, f, o = {}) {
     const ro = (id, label, v) => `<div class="ffield${id === "CUS.registered_address" ? " wide" : ""}"${sn(id)}><span class="flabel">${esc(label)}</span><div class="fro">${v ? esc(v) : `<span class="muted">Not on file</span>`}</div></div>`;
     const lab = k => { const fl = reqField(k); return fl.choices ? (fl.choices.find(x => x[0] === d[k]) || [, d[k]])[1] : d[k]; };
     return `<div class="custpick"><div><span class="chip c-ok">Found</span> <span class="desc">Customer details come from AR's customer record and can't be changed here.</span></div><button type="button" class="linkish small" data-custclear>Change customer</button></div>
-      <div class="fgrid custro"${sn("PT-39")}>${ro("CUS.name", "Customer name", c?.name)}${ro("CUS.uen", "Customer UEN", c?.uen)}${ro("CUS.registered_address", "Address", c?.address)}
+      <div class="fgrid custro"${sn("PT-39")}>${ro("CUS.company.name", "Customer name", c?.name)}${ro("CUS.uen", "Customer UEN", c?.uen)}${ro("CUS.registered_address", "Address", c?.address)}
         ${CUST_KEYS.filter(show).map(k => ro(`REQ.${reqField(k).name}`, reqField(k).label, lab(k))).join("")}</div>`;
   }
   if (d.newCustomer) return `<div class="custpick new"><div><span class="chip c-warn">New customer</span> <span class="desc">${esc(o.newLabel || "AR will verify and create it. This makes it a first request.")}</span></div><button type="button" class="linkish small" data-custclear>Search existing customers instead</button></div>

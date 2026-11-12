@@ -87,6 +87,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-12 | Labels and logic: confirm first. No label name or logic change unless the owner asked for it or confirmed it; use the owner's wording exactly. | Owner |
 | 2026-11-12 | Locks: the *Lock* column in `docs/modules/README.md` locks a module or a part of it against changes; AR-i portal form locked. | Owner |
 | 2026-11-12 | Source of truth: the repo only; no exported copies in the Claude project. | Owner |
+| 2026-11-12 | Code layout: demo AR request cases now live in `data/AR_form.csv`, loaded by `js/cases.js` (UIX decision 13). | Owner |
 
 ## How we work: modules, one at a time
 
@@ -203,7 +204,9 @@ js/ledger.js            ledger reads: invoiceUse (applied/reserved), rollup, loo
 js/matching.js          manual allocation (act: manual/remove), allocationPlan, finder ranking (signals)
 js/bsu.js               BSU: parse bank CSV by template, Deposit IDs, saveUpload, sample CSV per bank
 js/io.js                CSV parser, matches CSV export
-js/sample-data.js       users, customers, contracts, invoices, AR requests, payments (dates shift to today)
+js/sample-data.js       users, customers, contracts, invoices, BSU data (dates shift to today); no AR requests
+js/cases.js             loads AR request cases from data/AR_form.csv (UIX decision 13)
+data/AR_form.csv        demo AR-i / AR-ix cases, one row per case, headers = x_ar_request field names
 js/views/app.js         render(): demo bar + active persona; toast; setStatus
 js/views/workspace.js   workspace shell, landing page, list pages (LISTS), record pages (LAYOUT, UI actions, activity)
 js/views/portal.js      portal home, AR forms catalogue (AR-i … AR-xvi), AR-i form, confirmation, My requests, ticket page

@@ -40,7 +40,7 @@ for a module or a named part of it (e.g. *Portal form: Locked*) with the date.
 |---|---|---|---|---|
 | [AR-00](AR-00/README.md) | AR forms, shared parts: catalogue of 16 forms (AR-i … AR-xvi), General information, department sub-BU, CC list, My requests, ticket page, case states | Project team, AR team | In prototype | Open |
 | [AR-i](AR-i/README.md) | AR-i New AR request: the form, Link to customer, billing lines, Create invoice / billing schedules, Raise invoice | Project team, AR team | In prototype | **Portal form: Locked** (2026-11-12, Owner) |
-| [AR-ix](AR-ix/README.md) | AR-ix GIRO authorisation: add / remove GIRO on a contract; contract GIRO status from the approved AR-ix case (one active per contract) | Project team, AR team | In prototype | Open |
+| [AR-ix](AR-ix/README.md) | AR-ix GIRO authorisation: a request to add / remove GIRO on a contract; AR updates the contract's GIRO status by hand, then completes the case (one active per contract) | Project team, AR team | In prototype | Open |
 | [CCI](CCI/README.md) | Customers, contracts and invoices: master data, billing hierarchy, billing contacts, customer documents, invoice lifecycle (draft → issued → cancelled) | AR team | In prototype | Open |
 | [BSU](BSU/README.md) | Bank statement upload and cash application: daily CSV upload, Deposit IDs, manual matching of deposits to invoices | AR team | In prototype | Open |
 | [UIX](UIX/README.md) | Workspace look and layout aligned to the Horizon Design System (app shell, list page, record page) | AR team | In prototype | Open |

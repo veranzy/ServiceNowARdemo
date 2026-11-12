@@ -40,7 +40,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `WS-15` | Form record presence: avatars of users viewing the record (out-of-box on the Horizon Record page template) |
 | `WS-17` | Record history tab (out-of-box on the Record page template): sys_audit / sys_history_line for the record. Turn on Audit in the dictionary of every x_ar table; shows when, who, field, old and new value |
 | `WS-16` | List page template (Horizon): list menu on the left, list on the right; the menu selection drives the list. Menu can be hidden |
-| `CON-GIRO` | Tab GIRO history on the contract: related list x_ar_request where contract = this contract and ar_form = AR-ix; GIRO column: Active (= contract.giro_case), Ended, Removed GIRO, Open, Rejected |
+| `CON-GIRO` | Tab GIRO history on the contract (and on no-contract shells): related list x_ar_request where contract = this contract and ar_form = AR-ix; GIRO column: Active (= contract.giro_case), Completed, Open, Contract to link, Rejected |
 | `SCH-PER` | Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming |
 
 ## AR request record
@@ -49,7 +49,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `REQ-ACT` | Activity stream: comments (visible to requester) + work_notes (AR only) + field changes |
 | `REQ-SETUP` | Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, billing lines done |
-| `REQ-GIRO` | GIRO setup panel (AR-ix case, contextual side bar): contract linked? the contract's GIRO status and active case; then Activate GIRO / Remove GIRO, or why it is blocked (one active GIRO per contract, D21) |
+| `REQ-GIRO` | GIRO setup panel (AR-ix case, contextual side bar): contract linked? (for No contract required: the customer's no-contract shell for the department); the contract's GIRO status and active case; reminder to update GIRO status and Active GIRO case on the contract record, then Complete (AR-ix decision 11) |
 | `REQ-GIROHIST` | Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix) |
 | `REQ-LINKCTR` | Contract to link (AR-ix): reference to x_ar_contract, matching contract number listed first. Used by Link contract; for a contract not on file AR processes its AR-i first |
 | `REQ-LINKCO` | Company (core_company) for the new customer; mandatory when Link to customer creates a new x_ar_customer. Lists companies with no customer yet, closest name first (D26) |
@@ -100,11 +100,13 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-41` | AR-i existing contract: every contract detail read-only from x_ar_contract, in the same order as a new contract (catalog client script / read-only HTML widget) |
 | `PT-37` | AR-i variable set Invoice details (AR-i decisions 31–33): short_description (invoice description), attention_name / attention_email (prefilled from the contract bill-to), amount_per_period (before GST), preferred_invoice_date_choice (label 'Preferred invoice date': Per Billing Cycle / Expedited, optional; only for a one-invoice request, UI policy hides and clears it for a recurring contract) and preferred_invoice_date_justification (shown when Expedited, optional), billing_line_items_required (Yes / No → multi-row variable set PT-43). Catalog client script shows the billing summary: recurring contract → monthly to the contract end date (with contract proration); otherwise one invoice. The producer script creates one x_ar_request_line from these |
 | `PT-30` | Variable set General information (D19), first section of every AR form record producer: requester_name (default current user's name), requester_email (from SSO, read-only), department, cc_list (emails; copied to the case watch_list so they can view it on the portal) |
-| `PT-31` | Record producer "AR-ix GIRO authorisation" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; |
-| `PT-32` | AR-ix variable set Contract and applicant: customer search, existing contract (reference qualifier: customer's contracts, not shells) or 'not listed' with a reference number; applicant name / email / mobile prefilled from the contract's bill-to (catalog client script onChange contract); invoice reference number |
-| `PT-33` | AR-ix variable set GIRO details: purpose (Rental / Carpark / Others), other purpose, type (Add / Remove GIRO); UI policies: rental → location, effective start/end; carpark → car plate, parking start/end; amount (mandatory for Add); supporting documents (attachments) |
-| `PT-34` | Info message on AR-ix: the chosen contract's GIRO status and active case (GlideAjax read of x_ar_contract.giro_status / giro_case). Add GIRO on a contract with GIRO active is blocked (onSubmit / validation) |
-| `PT-35` | Ticket page block for AR-ix: GIRO request summary and its outcome (contract to be linked / with AR / active / removed) |
+| `PT-31` | Record producer "AR-ix GIRO authorisation" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; contract_option = none → current.contract = the customer's no-contract shell for the department, if it exists; |
+| `PT-32` | AR-ix variable set Select Contract (AR-ix decision 12): Existing contract (reference qualifier: customer's contracts, not shells), New contract (contract / tenancy agreement / reference number) or No contract required (producer script sets contract = the customer's no-contract shell for the department when it exists); applicant name / email / mobile prefilled from the contract's or shell's bill-to (catalog client script onChange contract / department); invoice reference number |
+| `PT-33` | AR-ix variable set GIRO details: purpose (Rental / Carpark / Others), other purpose, type (Add / Remove GIRO); UI policies: rental → location, effective start/end; carpark → car plate, parking start/end; amount (free text, optional, no linkages, AR-ix decision 13); supporting documents (attachments) |
+| `PT-34` | Info message on AR-ix: the chosen contract's (or no-contract shell's) GIRO status and active case (GlideAjax read of x_ar_contract.giro_status / giro_case). Add GIRO on an existing contract with GIRO active is blocked (onSubmit / validation, AR-ix decision 9; open question 6) |
+| `PT-35` | Ticket page block for AR-ix: GIRO request summary and its outcome (contract to be linked / with AR / completed / GIRO active when the contract's giro_case is this case) |
+| `PT-44` | AR-ix variable set Select Customer (AR-ix decision 12): customer search showing the customer name only, or add the name as a new customer (AR sets it up when it processes the contract's AR-i) |
+| `PT-45` | AR-ix info message for No contract required: the customer's no-contract shell for the department (x_ar_contract, contract_type = shell) the GIRO goes on, or that AR links it once the shell is set up |
 | `PT-07` | Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include |
 | `PT-08` | Variable attachments → sys_attachment on the created x_ar_request |
 | `PT-09` | Submit → inserts x_ar_request (state New, assignment group AR team). Automation to be defined |
@@ -206,7 +208,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.giro_carplate` | x_ar_request.giro_carplate · String · AR-ix carpark. Mandatory; one vehicle per form |
 | `REQ.giro_parking_start` | x_ar_request.giro_parking_start · Date · AR-ix carpark. Mandatory for Add GIRO |
 | `REQ.giro_parking_end` | x_ar_request.giro_parking_end · Date · AR-ix carpark. Optional; on or after the start date |
-| `REQ.giro_amount` | x_ar_request.giro_amount · Currency · AR-ix, all purposes. Mandatory for Add GIRO |
+| `REQ.giro_amount` | x_ar_request.giro_amount · String · AR-ix, all purposes. Optional free text; not used by any other field or calculation (AR-ix decision 13) |
 | `REQ.doc_contract_po` | x_ar_request.doc_contract_po · Attachment · Optional, offered for a new contract only |
 | `REQ.doc_acra` | x_ar_request.doc_acra · Attachment · Only when not already on file |
 | `REQ.doc_billing_form` | x_ar_request.doc_billing_form · Attachment · Only when not already on file for this department |
@@ -400,8 +402,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON.proration_last` | x_ar_contract.proration_last · Currency |
 | `CON.type_of_billing` | x_ar_contract.type_of_billing · Choice |
 | `CON.bulk_supporting_docs` | x_ar_contract.bulk_supporting_docs · Attachment |
-| `CON.giro_status` | x_ar_contract.giro_status · Choice · read-only · Set by Activate GIRO / Remove GIRO on an AR-ix case. At most one active GIRO per contract (D21) |
-| `CON.giro_case` | x_ar_contract.giro_case · Reference → x_ar_request · read-only · The approved AR-ix case whose GIRO is active; empty when GIRO is not active |
+| `CON.giro_status` | x_ar_contract.giro_status · Choice · Updated by AR on the contract from the AR-ix case (manual, AR-ix decision 11). At most one active GIRO per contract (D21) |
+| `CON.giro_case` | x_ar_contract.giro_case · Reference → x_ar_request · AR links the AR-ix case whose GIRO is active (reference qualifier: ar_form = AR-ix, giro_type = Add GIRO and contract = this contract). Mandatory when GIRO status is Active; cleared when Not active |
 | `CON.bill_to_name` | x_ar_contract.bill_to_name · String |
 | `CON.bill_to_email` | x_ar_contract.bill_to_email · String |
 | `CON.bill_to_phone` | x_ar_contract.bill_to_phone · String |
@@ -576,8 +578,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-REQ-info` | UI action: Request info → state = Awaiting info; requires an additional comment (visible on portal) |
 | `UA-REQ-reject` | UI action: Reject → state = Rejected; requires an additional comment |
 | `UA-REQ-linkctr` | UI action: Link contract (AR-ix, shown while contract is empty) → sets contract and customer from the chosen x_ar_contract; New → In progress |
-| `UA-REQ-giroadd` | UI action: Activate GIRO (AR-ix, type Add) → contract.giro_status = Active, contract.giro_case = this case; case → Completed with a requester-visible comment. Blocked when the contract already has GIRO active (D21) |
-| `UA-REQ-giroremove` | UI action: Remove GIRO (AR-ix, type Remove) → contract.giro_status = Not active, contract.giro_case cleared; system note on the case that was active; case → Completed. Blocked when GIRO is not active |
+| `UA-REQ-giroadd` | UI action: RETIRED 2026-11-12 (AR-ix decision 11): Activate GIRO. AR now updates GIRO on the contract record and uses Complete (UA-REQ-girocomplete) |
+| `UA-REQ-giroremove` | UI action: RETIRED 2026-11-12 (AR-ix decision 11): Remove GIRO. AR now updates GIRO on the contract record and uses Complete (UA-REQ-girocomplete) |
+| `UA-REQ-girocomplete` | UI action: Complete (AR-ix, open case) → state = Completed with a system note. No check on the contract: AR updates x_ar_contract.giro_status / giro_case by hand first (AR-ix decision 11). Primary once the contract is linked, overflow before |
 | `UA-REQ-link` | UI action: Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document (D10, D15, D16) |
 | `UA-SCH-raise` | UI action: Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12) |
 | `UA-SCH-save` | UI action: Save (update) |

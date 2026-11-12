@@ -272,13 +272,13 @@ export function loadSample() {
   // Open AR-ix cases: ready to activate (r9) and contract not on file yet (r10, Priya on the CC list)
   S.requests.push(ix({ id: "r9", number: "ARQ0001009", requestedBy: "u_pm1", requesterName: pm1.name, requesterEmail: pm1.email, ccList: "", department: "Digital",
     customerId: nb.customerId, contractId: nb.id, contractOption: "existing", newCtrRef: "", applicantName: nb.billToName || "Novabay Analytics", applicantEmail: nb.billToEmail || "ap@novabay.example", applicantMobile: nb.billToPhone || "",
-    giroPurpose: "carpark", giroType: "add", carplate: "SNB 4821 K", parkStart: shiftDate("2026-11-15"), parkEnd: shiftDate("2027-05-14"), giroAmount: cents(180), amount: cents(180),
+    giroPurpose: "carpark", giroType: "add", carplate: "SNB 4821 K", parkStart: shiftDate("2026-11-15"), parkEnd: shiftDate("2027-05-14"), giroAmount: "SGD 180.00", amount: 0,
     title: "Add GIRO · Carpark · SNB 4821 K", opened: shiftDate("2026-10-20"), updated: shiftDate("2026-10-20"), attachments: ["Novabay - GIRO form signed.pdf"],
     activity: [{ at: shiftDate("2026-10-20") + "T10:05:00", by: "u_pm1", kind: "system", text: "Submitted from AR-ix on the portal: Add GIRO · Carpark on contract NB-2026-05." }] }));
   const mer = S.customers.find(c => c.name.startsWith("Meridian"));
   S.requests.push(ix({ id: "r10", number: "ARQ0001010", requestedBy: "u_pm2", requesterName: pm2.name, requesterEmail: pm2.email, ccList: pm1.email, department: "Logistics",
     customerId: mer.id, contractId: null, contractOption: "new", newCtrRef: "TA-2026-118", applicantName: "Meridian Foods Pte Ltd", applicantEmail: "ap@meridianfoods.example", applicantMobile: "+65 6862 4400",
-    giroPurpose: "rental", giroType: "add", giroStart: shiftDate("2026-12-01"), giroEnd: shiftDate("2028-11-30"), giroLocation: "Cold store bay 3, 9 Senoko Way", giroAmount: cents(5600), amount: cents(5600),
+    giroPurpose: "rental", giroType: "add", giroStart: shiftDate("2026-12-01"), giroEnd: shiftDate("2028-11-30"), giroLocation: "Cold store bay 3, 9 Senoko Way", giroAmount: "SGD 5,600.00", amount: 0,
     title: "Add GIRO · Rental · Cold store bay 3, 9 Senoko Way", opened: shiftDate("2026-10-22"), updated: shiftDate("2026-10-22"), attachments: ["Meridian - tenancy agreement TA-2026-118.pdf", "Meridian - GIRO form.pdf"],
     activity: [{ at: shiftDate("2026-10-22") + "T15:20:00", by: "u_pm2", kind: "system", text: "Submitted from AR-ix on the portal: Add GIRO · Rental for contract TA-2026-118 (not on file yet; AR links it after processing its AR-i)." }] }));
 
@@ -294,24 +294,24 @@ export function loadSample() {
   const rental = "#01-23, 3 Jurong Gateway Road";
   S.requests.push(
     tCase({ id: "r11", number: "ARQ0001011", giroPurpose: "rental", giroType: "add", giroLocation: rental, giroStart: shiftDate("2025-12-01"), giroEnd: shiftDate("2027-11-30"),
-      giroAmount: cents(4500), amount: cents(4500), title: `Add GIRO · Rental · ${rental}`, attachments: ["Tanjong - GIRO form (rent) signed.pdf"], opened: shiftDate("2025-11-18"), updated: shiftDate("2026-07-31"),
+      giroAmount: "SGD 4,500.00", amount: 0, title: `Add GIRO · Rental · ${rental}`, attachments: ["Tanjong - GIRO form (rent) signed.pdf"], opened: shiftDate("2025-11-18"), updated: shiftDate("2026-07-31"),
       activity: [subm("2025-11-18", "Add GIRO · Rental"), asg("2025-11-18"), jr("u_ar1", "2025-11-24", "15:00:00", "comment", "GIRO is now active on contract TR-TA-2025-14."), fin("2025-11-24"),
         jr("u_ar1", "2026-07-31", "14:00:00", "system", "GIRO ended on TR-TA-2025-14 by ARQ0001012.")] }),
-    tCase({ id: "r12", number: "ARQ0001012", giroPurpose: "rental", giroType: "remove", giroLocation: rental, giroEnd: shiftDate("2026-07-31"), giroAmount: 0, amount: 0,
+    tCase({ id: "r12", number: "ARQ0001012", giroPurpose: "rental", giroType: "remove", giroLocation: rental, giroEnd: shiftDate("2026-07-31"), giroAmount: "", amount: 0,
       title: `Remove GIRO · Rental · ${rental}`, details: "Rent revised from 1 Aug; the new GIRO at the new rate is on ARQ0001013.", opened: shiftDate("2026-07-20"), updated: shiftDate("2026-07-31"),
       activity: [subm("2026-07-20", "Remove GIRO · Rental"), asg("2026-07-20"), jr("u_ar1", "2026-07-31", "14:00:00", "comment", "GIRO removed on contract TR-TA-2025-14; it was active from ARQ0001011."), fin("2026-07-31")] }),
     tCase({ id: "r13", number: "ARQ0001013", giroPurpose: "rental", giroType: "add", giroLocation: rental, giroStart: shiftDate("2026-08-01"), giroEnd: shiftDate("2027-11-30"),
-      giroAmount: cents(4800), amount: cents(4800), title: `Add GIRO · Rental · ${rental}`, attachments: ["Tanjong - GIRO form (revised rent) signed.pdf"], opened: shiftDate("2026-07-20"), updated: shiftDate("2026-07-31"),
+      giroAmount: "SGD 4,800.00", amount: 0, title: `Add GIRO · Rental · ${rental}`, attachments: ["Tanjong - GIRO form (revised rent) signed.pdf"], opened: shiftDate("2026-07-20"), updated: shiftDate("2026-07-31"),
       activity: [subm("2026-07-20", "Add GIRO · Rental"), asg("2026-07-20"), jr("u_ar1", "2026-07-31", "15:00:00", "comment", "GIRO is now active on contract TR-TA-2025-14."), fin("2026-07-31")] }),
     tCase({ id: "r14", number: "ARQ0001014", state: "in_progress", giroPurpose: "carpark", giroType: "add", carplate: "SJK 7720 R", parkStart: shiftDate("2026-11-01"), parkEnd: shiftDate("2027-11-30"),
-      giroAmount: cents(150), amount: cents(150), title: "Add GIRO · Carpark · SJK 7720 R", attachments: ["Tanjong - GIRO form (season parking).pdf"], opened: shiftDate("2026-10-21"), updated: shiftDate("2026-10-21"),
+      giroAmount: "SGD 150.00", amount: 0, title: "Add GIRO · Carpark · SJK 7720 R", attachments: ["Tanjong - GIRO form (season parking).pdf"], opened: shiftDate("2026-10-21"), updated: shiftDate("2026-10-21"),
       activity: [subm("2026-10-21", "Add GIRO · Carpark"), asg("2026-10-21"),
         jr("u_ar1", "2026-10-21", "11:40:00", "work_note", "Rent GIRO from ARQ0001013 is active on this contract, so this can't be activated (one GIRO per contract). Checking with the requester.")] }));
   Object.assign(ta, { giroStatus: "active", giroCaseId: "r13" });
   // Harbourline HL-2026-01: rent GIRO active from a completed case (use it for a Remove GIRO demo)
   S.requests.push(ix({ id: "r15", number: "ARQ0001015", requestedBy: "u_pm2", requesterName: pm2.name, requesterEmail: pm2.email, ccList: "", department: "Logistics", state: "completed", assignedTo: "u_ar2",
     customerId: hl.customerId, contractId: hl.id, contractOption: "existing", newCtrRef: "", applicantName: "Harbourline Logistics Pte Ltd", applicantEmail: hl.billToEmail || "ap@harbourline.example", applicantMobile: "+65 9123 4401",
-    giroPurpose: "rental", giroType: "add", giroLocation: "Unit 05-12, 21 Pioneer Road", giroStart: shiftDate("2026-04-01"), giroEnd: shiftDate("2027-03-31"), giroAmount: cents(2400), amount: cents(2400),
+    giroPurpose: "rental", giroType: "add", giroLocation: "Unit 05-12, 21 Pioneer Road", giroStart: shiftDate("2026-04-01"), giroEnd: shiftDate("2027-03-31"), giroAmount: "SGD 2,400.00", amount: 0,
     title: "Add GIRO · Rental · Unit 05-12, 21 Pioneer Road", opened: shiftDate("2026-03-25"), updated: shiftDate("2026-04-03"), attachments: ["Harbourline - GIRO form.pdf"],
     activity: [jr("u_pm2", "2026-03-25", "10:00:00", "system", "Submitted from AR-ix on the portal: Add GIRO · Rental on contract HL-2026-01."), jr("u_ar2", "2026-03-26", "09:00:00", "system", "Assigned to Siti Rahman."),
       jr("u_ar2", "2026-04-03", "16:00:00", "comment", "GIRO is now active on contract HL-2026-01."), jr("u_ar2", "2026-04-03", "16:00:01", "system", "State changed to Completed.")] }));

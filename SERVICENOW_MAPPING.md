@@ -46,7 +46,7 @@ Custom customer master (not CSM customer_account). Each customer references one 
 
 ### Contract — `x_ar_contract`
 
-Custom contract table (not ast_contract). GIRO is a contract status set from the approved AR-ix case (D21). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.
+Custom contract table (not ast_contract). GIRO is a contract status that AR updates manually from the AR-ix case (D21, AR-ix decision 11). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
@@ -78,8 +78,8 @@ Custom contract table (not ast_contract). GIRO is a contract status set from the
 | `proration_last` | Proration for last month | Currency | Shown when Proration = Yes (UI policy) |
 | `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E |
 | `bulk_supporting_docs` | Supporting documents (bulk upload) | Attachment | Shown when Type of billing is C, D, E (UI policy) |
-| `giro_status` | GIRO status | Choice | Choices: Active (`active`), Not active (`none`). Read-only on form. Set by Activate GIRO / Remove GIRO on an AR-ix case. At most one active GIRO per contract (D21) |
-| `giro_case` | Active GIRO case | Reference | → `x_ar_request`. Read-only on form. The approved AR-ix case whose GIRO is active; empty when GIRO is not active |
+| `giro_status` | GIRO status | Choice | Choices: Active (`active`), Not active (`none`). Updated by AR on the contract from the AR-ix case (manual, AR-ix decision 11). At most one active GIRO per contract (D21) |
+| `giro_case` | Active GIRO case | Reference | → `x_ar_request`. AR links the AR-ix case whose GIRO is active (reference qualifier: ar_form = AR-ix, giro_type = Add GIRO and contract = this contract). Mandatory when GIRO status is Active; cleared when Not active |
 | `bill_to_name` | Bill-to person | String |  |
 | `bill_to_email` | Bill-to email | String |  |
 | `bill_to_phone` | Bill-to phone | String |  |
@@ -189,7 +189,7 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `giro_carplate` | Car plate | String | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory; one vehicle per form |
 | `giro_parking_start` | Parking start date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory for Add GIRO |
 | `giro_parking_end` | Parking end date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Optional; on or after the start date |
-| `giro_amount` | Amount | Currency | AR-ix, all purposes. Mandatory for Add GIRO |
+| `giro_amount` | Amount | String | AR-ix, all purposes. Optional free text; not used by any other field or calculation (AR-ix decision 13) |
 | `doc_contract_po` | Signed contract / PO | Attachment | Optional, offered for a new contract only |
 | `doc_acra` | Company registration (ACRA / UEN) | Attachment | Only when not already on file |
 | `doc_billing_form` | Billing contact & address form | Attachment | Only when not already on file for this department |
@@ -343,7 +343,7 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
   - Contract reference qualifier: contracts of the selected customer.
 - **Variable set "General information"** (D19), first section of every AR form: `requester_name` (default: current user's name), `requester_email` (from SSO, read-only), `department`, `cc_list` (emails; the producer script adds them to the case `watch_list` so they can view it on the portal).
 - **Record producer "AR-ix GIRO authorisation"** on `x_ar_request` (AR-ix module). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `contract_option`, `contract`, `new_contract_ref`, `giro_applicant_name`, `giro_applicant_email`, `giro_applicant_mobile`, `giro_invoice_ref`, `giro_purpose`, `giro_purpose_other`, `giro_type`, `giro_start_date`, `giro_end_date`, `giro_location`, `giro_carplate`, `giro_parking_start`, `giro_parking_end`, `giro_amount`, `description`, plus attachments.
-  - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>;`
+  - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; contract_option = none → current.contract = the customer's no-contract shell for the department, if it exists;`
   - Catalog client script on contract change: prefill applicant name / email / mobile from the contract's bill-to; show active GIRO on the contract.
   - UI policies: Other purpose when Purpose = Others; location and effective start/end for Rental; car plate and parking start/end for Carpark; amount and start date mandatory for Add GIRO.
 - **My requests**: list widget on `x_ar_request` where `opened_by = me` **or the user's email is on the CC list** (`watch_list` contains me); CC'd cases are marked *CC*.

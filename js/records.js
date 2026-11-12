@@ -100,7 +100,7 @@ export function validateARix(d) {
   if (d.newCustomer) need("newCustName", "Enter the customer's name.");
   else need("customerId", "Search for the customer, or add its name if AR doesn't have it.");
   if (d.newCustomer || d.customerId) {
-    need("contractOption", "Choose the contract, or say it isn't listed yet.");
+    need("contractOption", "Choose the contract.");
     if (d.contractOption === "existing") need("contractId", "Choose the contract.");
     if (d.contractOption === "existing" && d.contractId && d.giroType) { const b = giroBlock(d); if (b) e.contractId = b; }
     if (d.contractOption === "new") need("newCtrRef", "Enter the contract / tenancy agreement / reference number.");
@@ -112,7 +112,6 @@ export function validateARix(d) {
   if (d.giroPurpose === "others") need("giroPurposeOther", "Describe the purpose.");
   need("giroType", "Choose Add GIRO or Remove GIRO.");
   const add = d.giroType === "add";
-  if (add && !(d.giroAmount > 0)) e.giroAmount = "Enter the GIRO amount.";
   if (d.giroPurpose === "rental") {
     need("giroLocation", "Enter the location.");
     if (add) need("giroStart", "Enter the effective start date.");
@@ -148,25 +147,16 @@ export function linkContract(reqId, contractId) {
   if (r.state === "new") r.state = "in_progress";
   return null;
 }
-/** UI actions: Activate GIRO / Remove GIRO. Writes the GIRO authorisation on the contract and completes the case. */
-export function applyGiro(reqId) {
+/** UI action: Complete (AR-ix decision 11). Closes the case only; AR updates the contract's GIRO status and active case on the contract record by hand. */
+export function completeGiro(reqId) {
   const r = reqById(reqId); if (!r) return "Record not found.";
-  if (!r.contractId) return "Link the contract first. If it is a new contract, process its AR-i first.";
-  const today = isoToday(), k = ctrById(r.contractId), block = giroBlock(r, k);
-  if (block) return block;
-  if (r.giroType === "remove") {
-    const cur = activeGiroCase(k);
-    Object.assign(k, { giroStatus: "none", giroCaseId: null });
-    journal(r, "comment", `GIRO removed on contract ${k.number}; it was active from ${cur.number}.`);
-    journal(cur, "system", `GIRO ended on ${k.number} by ${r.number}.`);
-  } else {
-    Object.assign(k, { giroStatus: "active", giroCaseId: r.id });
-    journal(r, "comment", `GIRO is now active on contract ${k.number}.`);
-  }
-  r.state = "completed"; r.updated = today;
+  r.state = "completed"; r.updated = isoToday();
   journal(r, "system", "State changed to Completed.");
   return null;
 }
+/** AR-ix: the contract a draft or case points at. Existing contract, or for No contract required the customer's shell for the department when it exists. */
+export const giroTarget = d => d.contractOption === "existing" ? (d.contractId ? ctrById(d.contractId) : null)
+  : d.contractOption === "none" && d.customerId && !d.newCustomer ? shellFor(d.customerId, d.department) || null : null;
 
 /** AR-i record producer validation (UI policies + mandatory variables + billing lines). Returns {key: message}.
  *  Line errors are keyed "line:<index>:<field>"; "lines" when there are no lines. */
@@ -455,10 +445,11 @@ export function createRequest(vals) {
   const req = { id: uid("r"), number: nextNumber("requests"), state: "new", requestedBy: me().id, assignedTo: null,
     opened: isoToday(), updated: isoToday(), activity: [], attachments: rest.attachments || [], ...rest, requesterEmail: me().email || "" };
   if (req.form === "AR-ix") {
-    req.amount = req.giroAmount || 0;
+    req.amount = 0;                                  // AR-ix amount is free text with no linkages (AR-ix decision 13)
+    if (req.contractOption === "none") req.contractId = giroTarget(req)?.id || null;
     req.title = `${giroLabel(req)}${req.carplate ? ` · ${req.carplate}` : req.giroLocation ? ` · ${req.giroLocation}` : ""}`;
     S.requests.push(req);
-    journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : `for contract ${req.newCtrRef} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
+    journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : req.contractOption === "none" ? (req.contractId ? `on no-contract shell ${ctrById(req.contractId)?.number}` : `with no contract (no ${req.department} no-contract shell on file yet; AR links it)`) : `for contract ${req.newCtrRef} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
     return req;
   }
   const line = draftLine(req);
@@ -559,6 +550,8 @@ export function saveRecord(table, id, raw) {
   const errors = validate(table, merged);
   if (table === "contacts" && S.contacts.some(c => c.id !== merged.id && c.customerId === merged.customerId && c.department === merged.department)) errors.department = `This customer already has a ${merged.department} billing contact. Edit that one instead.`;
   if (table === "contracts" && S.contracts.some(k => k.id !== merged.id && k.number && k.number.toLowerCase() === String(merged.number || "").toLowerCase())) errors.number = `Contract ${merged.number} already exists.`;
+  if (table === "contracts" && merged.giroStatus !== "active" && merged.giroCaseId) merged.giroCaseId = vals.giroCaseId = null;   // AR-ix decision 11
+  if (table === "contracts" && merged.giroStatus === "active" && !merged.giroCaseId) errors.giroCaseId = "Choose the AR-ix case whose GIRO is active.";
   if (table === "contracts" && merged.contractType === "shell" && !merged.department) errors.department = "A no-contract shell needs a department.";
   if (table === "contracts" && merged.contractType === "shell" && S.contracts.some(k => k.id !== merged.id && isShell(k) && k.customerId === merged.customerId && k.department === merged.department)) errors.department = `This customer already has a ${merged.department} no-contract shell.`;
   if (table === "customers" && merged.companyId && S.customers.some(c => c.id !== merged.id && c.companyId === merged.companyId)) errors.companyId = `${companyById(merged.companyId)?.name} already has a customer record. One customer per company (D26).`;

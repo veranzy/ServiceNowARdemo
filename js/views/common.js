@@ -58,6 +58,8 @@ function refOptions(f, rec, formVals) {
   if (f.ref === "bankAccounts") return S.bankAccounts.map(a => [a.id, `${BANKS[a.bank].name} · ${a.number} · ${a.name}`]);
   if (f.ref === "users") return S.users.filter(u => !f.refFilter || u.team === f.refFilter).map(u => [u.id, u.name]);
   if (f.ref === "companies") return S.companies.filter(co => co.id === rec.companyId || !S.customers.some(c => c.companyId === co.id)).sort((a, b) => a.name.localeCompare(b.name)).map(co => [co.id, co.name]);
+  // Active GIRO case (contract): AR-ix cases on this contract (AR-ix decision 11)
+  if (f.key === "giroCaseId") return S.requests.filter(r => r.form === "AR-ix" && r.giroType === "add" && r.contractId === rec.id).map(r => [r.id, `${r.number} · ${r.title}`]);
   if (f.ref === "contracts") {
     const cust = formVals?.customerId ?? rec.customerId;
     return S.contracts.filter(k => !cust || k.customerId === cust).map(k => [k.id, `${k.number} · ${k.title}`]);

@@ -127,7 +127,7 @@ export const TABLES = {
       { key: "carplate", name: "giro_carplate", label: "Car plate", type: "String", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Mandatory; one vehicle per form" },
       { key: "parkStart", name: "giro_parking_start", label: "Parking start date", type: "Date", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Mandatory for Add GIRO" },
       { key: "parkEnd", name: "giro_parking_end", label: "Parking end date", type: "Date", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Optional; on or after the start date" },
-      { key: "giroAmount", name: "giro_amount", label: "Amount", type: "Currency", help: "AR-ix, all purposes. Mandatory for Add GIRO" },
+      { key: "giroAmount", name: "giro_amount", label: "Amount", type: "String", help: "AR-ix, all purposes. Optional free text; not used by any other field or calculation (AR-ix decision 13)" },
       { key: "docContract", name: "doc_contract_po", label: "Signed contract / PO", type: "Attachment", help: "Optional, offered for a new contract only" },
       { key: "docAcra", name: "doc_acra", label: "Company registration (ACRA / UEN)", type: "Attachment", help: "Only when not already on file" },
       { key: "docBillingForm", name: "doc_billing_form", label: "Billing contact & address form", type: "Attachment", help: "Only when not already on file for this department" },
@@ -325,7 +325,7 @@ export const TABLES = {
   },
   contracts: {
     table: `${SCOPE}_contract`, label: "Contract", plural: "Contracts", display: "number",
-    note: "Custom contract table (not ast_contract). GIRO is a contract status set from the approved AR-ix case (D21). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.",
+    note: "Custom contract table (not ast_contract). GIRO is a contract status that AR updates manually from the AR-ix case (D21, AR-ix decision 11). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.",
     fields: [
       { key: "number", name: "number", label: "Contract number", type: "String", mandatory: true },
       { key: "contractType", name: "contract_type", label: "Record type", type: "Choice", choices: CONTRACT_TYPES, mandatory: true, help: "Contract, or the customer's no-contract shell (D15)" },
@@ -355,8 +355,8 @@ export const TABLES = {
       { key: "prorateLast", name: "proration_last", label: "Proration for last month", type: "Currency", showIf: { key: "prorate", eq: "yes" } },
       { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS },
       { key: "bulkDocs", name: "bulk_supporting_docs", label: "Supporting documents (bulk upload)", type: "Attachment", multiple: true, showIf: { key: "typeOfBilling", in: ["C", "D", "E"] } },
-      { key: "giroStatus", name: "giro_status", label: "GIRO status", type: "Choice", choices: GIRO_STATUS, readonly: true, help: "Set by Activate GIRO / Remove GIRO on an AR-ix case. At most one active GIRO per contract (D21)" },
-      { key: "giroCaseId", name: "giro_case", label: "Active GIRO case", type: "Reference", ref: "requests", readonly: true, help: "The approved AR-ix case whose GIRO is active; empty when GIRO is not active" },
+      { key: "giroStatus", name: "giro_status", label: "GIRO status", type: "Choice", choices: GIRO_STATUS, help: "Updated by AR on the contract from the AR-ix case (manual, AR-ix decision 11). At most one active GIRO per contract (D21)" },
+      { key: "giroCaseId", name: "giro_case", label: "Active GIRO case", type: "Reference", ref: "requests", help: "AR links the AR-ix case whose GIRO is active (reference qualifier: ar_form = AR-ix, giro_type = Add GIRO and contract = this contract). Mandatory when GIRO status is Active; cleared when Not active" },
       { key: "billToName", name: "bill_to_name", label: "Bill-to person", type: "String" },
       { key: "billToEmail", name: "bill_to_email", label: "Bill-to email", type: "String" },
       { key: "billToPhone", name: "bill_to_phone", label: "Bill-to phone", type: "String" },
@@ -428,6 +428,6 @@ export const RECORD_PRODUCER_ARIX = {
   table: "requests",
   variables: [...GENERAL_INFO, "customerId", "newCustomer", "newCustName", "contractOption", "contractId", "newCtrRef", "applicantName", "applicantEmail", "applicantMobile", "giroInvoiceRef",
     "giroPurpose", "giroPurposeOther", "giroType", "giroStart", "giroEnd", "giroLocation", "carplate", "parkStart", "parkEnd", "giroAmount", "details"],
-  script: "current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>;"
+  script: "current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; contract_option = none → current.contract = the customer's no-contract shell for the department, if it exists;"
 };
 export const RECORD_PRODUCERS = [RECORD_PRODUCER, RECORD_PRODUCER_ARIX];

@@ -2,7 +2,7 @@
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { custDetailsOf, itemCalc, targetContract, applyGiro, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { custDetailsOf, itemCalc, targetContract, completeGiro, giroTarget, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -63,10 +63,10 @@ function uiAction(name) {
     if (err) { tab.msg = { kind: "err", text: err }; return render(); }
     toast("GIRO request linked to the contract."); return render();
   }
-  if (tab.table === "requests" && (name === "giroadd" || name === "giroremove")) {
-    const err = applyGiro(tab.id);
+  if (tab.table === "requests" && name === "girocomplete") {
+    const err = completeGiro(tab.id);
     if (err) { tab.msg = { kind: "err", text: err }; return render(); }
-    toast(name === "giroadd" ? "GIRO activated on the contract. Case completed." : "GIRO removed from the contract. Case completed."); return render();
+    toast("Case completed."); return render();
   }
   if (tab.table === "requests" && name === "link") {
     const err = linkCustomer(tab.id, tab.linkTo || null, tab.linkCo || null); if (!err) { tab.linkTo = null; tab.linkCo = null; }
@@ -128,7 +128,7 @@ function contractChanged(d) {
   if (d.form === "AR-ix") {
     // AR-ix: the applicant is prefilled from the contract's bill-to (cleared again when the contract changes)
     if (d.applicantPrefilled) { Object.assign(d, { applicantName: "", applicantEmail: "", applicantMobile: "" }); delete d.applicantPrefilled; }
-    const k = d.contractOption === "existing" && d.contractId ? S.contracts.find(x => x.id === d.contractId) : null;
+    const k = giroTarget(d);
     if (k?.billToName && !d.applicantName && !d.applicantEmail) Object.assign(d, { applicantName: k.billToName, applicantEmail: k.billToEmail || "", applicantMobile: k.billToPhone || "", applicantPrefilled: true });
     const now = validateARi(d); for (const key of Object.keys(P().errors)) if (!now[key]) delete P().errors[key];
     return;

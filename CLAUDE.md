@@ -86,6 +86,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-12 | Module map changed (D27): one module per AR form (AR-00 shared, AR-i, AR-ix, …), CCI, BSU (with cash application), UIX; one folder per module; git rules in `docs/GIT_WORKFLOW.md` with `node tools/check.mjs` before every push. | Owner |
 | 2026-11-12 | Labels and logic: confirm first. No label name or logic change unless the owner asked for it or confirmed it; use the owner's wording exactly. | Owner |
 | 2026-11-12 | Locks: the *Lock* column in `docs/modules/README.md` locks a module or a part of it against changes; AR-i portal form locked. | Owner |
+| 2026-11-12 | Source of truth: the repo only; no exported copies in the Claude project. | Owner |
 
 ## How we work: modules, one at a time
 

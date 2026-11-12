@@ -1,4 +1,5 @@
 // Entry point: delegated event handling for the demo bar, workspace and portal, then boot.
+import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
@@ -374,6 +375,7 @@ document.addEventListener("submit", e => {
   }
 });
 
-// boot
-loadSample();
+// boot: read the URL first (the first render rewrites nothing until the router starts), then route once the CSV cases are in
+const initialHash = location.hash;
+loadSample().then(() => startRouter(render, toast, initialHash));
 window.addEventListener("resize", syncBarHeight);

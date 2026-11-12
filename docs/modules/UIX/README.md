@@ -48,6 +48,21 @@ Horizon Design System workspace guidance at https://horizon.servicenow.com/works
 - To add or change a demo case, edit the CSV (Excel works) and push; the live demo reads it on load and on Reset demo. Cases raised on the portal during a demo are kept in memory only.
 - Build: the same layout works as an import set for `x_ar_request` (transform map on field names, references by display value) if the client wants to load test cases.
 
+## Page URLs (decision 14)
+
+| URL | Screen |
+|---|---|
+| `#/ws` | Workspace landing page |
+| `#/ws/list/<table>/<filter>` | A list, e.g. `#/ws/list/requests/open`, `#/ws/list/invoices/overdue` |
+| `#/ws/bsu`, `#/ws/cash` | Bank statement upload, Cash application |
+| `#/ws/<table>/<number>` | A record, e.g. `#/ws/requests/ARQ0001004`, `#/ws/contracts/HL-2026-01`, `#/ws/invoices/INV…` |
+| `#/ws/customers/<name>` | A customer, e.g. `#/ws/customers/Tanjong%20Retail%20Group` |
+| `#/portal` | Portal home |
+| `#/portal/forms`, `#/portal/form/AR-i`, `#/portal/form/AR-ix` | AR forms catalogue, an AR form |
+| `#/portal/requests`, `#/portal/ticket/<number>` | My requests, a ticket page (also shown after submitting) |
+
+Links to the CSV cases (ARQ0001001–0001008) always work. A case raised during a demo (ARQ0001009 on) lasts until the page reloads; after that its link opens the list with a message. Form drafts are not in the URL.
+
 ## Out of scope / later
 
 - Portal restyle (decision 1).

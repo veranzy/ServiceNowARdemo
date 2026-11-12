@@ -1,4 +1,5 @@
 // Top-level render: the demo control bar (not part of the ServiceNow product) and the active persona's UI.
+import { syncUrl } from "../router.js";
 import { auditTick, me } from "../records.js";
 import { ROLES } from "../schema.js";
 import { $, S } from "../state.js";
@@ -45,6 +46,7 @@ export function render() {
   syncBarHeight();
   window.scrollTo(0, y);
   if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
+  syncUrl();   // UIX decision 14: the URL follows the screen
 }
 
 /** The demo bar is pinned (position: sticky); other sticky elements sit below it via --db-h. */

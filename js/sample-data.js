@@ -355,5 +355,5 @@ export function loadSample() {
   S.status = null;
   render();
   // AR form cases come from data/AR_form.csv (UIX decision 13); redraw once they are in
-  loadCases().then(n => { if (n) render(); });
+  return loadCases().then(n => { if (n) render(); });
 }

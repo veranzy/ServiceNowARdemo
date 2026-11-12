@@ -133,7 +133,7 @@ export const TABLES = {
       { key: "giroInvoiceRef", name: "giro_invoice_ref", label: "Invoice reference number", type: "String", showIf: { key: "giroPurpose", eq: "others" }, help: "AR-ix others. Optional; requirement to be confirmed (open question 1)" },
       { key: "giroAmount", name: "giro_amount", label: "Amount", type: "String", showIf: { key: "giroPurpose", in: ["rental", "carpark", "others"] }, help: "AR-ix Add GIRO, all purposes. Optional free text; not used by any other field or calculation (AR-ix decision 13)" },
       { key: "giroOtherRemarks", name: "giro_others_remarks", label: "Remarks", type: "String (1000)", wide: true, showIf: { key: "giroPurpose", eq: "others" }, help: "AR-ix others. Optional; a second Remarks for the Others block (decision 15)" },
-      { key: "giroFormNo", name: "giro_form_number", label: "Form number", type: "String", showIf: { key: "giroPurpose", eq: "others" }, help: "AR-ix others. Optional; to be verified (open question 8)" },
+      { key: "giroFormNo", name: "giro_form_number", label: "Form number", type: "String", help: "AR-ix section Others, every type and purpose. Optional; to be verified (open question 8, decision 16)" },
       { key: "docContract", name: "doc_contract_po", label: "Signed contract / PO", type: "Attachment", help: "Optional, offered for a new contract only" },
       { key: "docAcra", name: "doc_acra", label: "Company registration (ACRA / UEN)", type: "Attachment", help: "Only when not already on file" },
       { key: "docBillingForm", name: "doc_billing_form", label: "Billing contact & address form", type: "Attachment", help: "Only when not already on file for this department" },

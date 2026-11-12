@@ -7,4 +7,4 @@
 5. ~~Should CC'd people be able to comment, or only view?~~ Moved to [AR-00](../AR-00/OPEN_QUESTIONS.md) question 3 (applies to every form).
 6. ~~Should a new *Add GIRO* **replace** the active GIRO instead of being blocked?~~ No: an existing contract with GIRO active offers only Remove GIRO (decision 14). [GitHub issue #2](https://github.com/veranzy/ServiceNowARdemo/issues/2) can be closed once the owner agrees.
 7. Should completing an AR-ix case update the contract's GIRO automatically (flow or UI action)? Next major release, about 6 months. (Owner; [GitHub issue #4](https://github.com/veranzy/ServiceNowARdemo/issues/4))
-8. Others: verify the **Form number** field (what form, and is it needed?). Built as optional for now (decision 15). (Owner)
+8. Verify the **Form number** field in section Others (what form, and is it needed?). Built as optional for now (decision 16). (Owner)

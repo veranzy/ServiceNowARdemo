@@ -291,7 +291,8 @@ const LAYOUT = {
     // AR-ix (AR-ix module)
     ["Customer not at AR yet", ["newCustName"], r => isIx(r) && r.newCustomer],
     ["Customer and contract", ["customerId", "contractId", "newCtrRef"], isIx],
-    ["GIRO details", ["giroType", "giroPurpose", "giroPurposeOther", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks", "giroLocation", "giroTenancy", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroCtrRef", "giroInvoiceRef", "giroAmount", "giroOtherRemarks", "giroFormNo"], isIx],
+    ["GIRO details", ["giroType", "giroPurpose", "giroPurposeOther", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks", "giroLocation", "giroTenancy", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroCtrRef", "giroInvoiceRef", "giroAmount", "giroOtherRemarks"], isIx],
+    ["Others", ["giroFormNo"], isIx],
     ["Case", ["state", "requestedBy", "assignedTo", "opened", "details"]]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],

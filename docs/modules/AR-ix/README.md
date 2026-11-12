@@ -27,18 +27,19 @@ Fields are free text unless stated. `*` = mandatory.
    - Which contract is the GIRO for?* **Existing contract** (choice of the customer's contracts; shows the contract's GIRO status and active case), **New contract** → Contract / tenancy agreement / reference number*, or **No contract required** → the customer's no-contract shell for the requesting department (linked at submit when it exists; otherwise AR links it). New customers see New contract and No contract required only.
 4. **GIRO details** (decisions 14, 15)
    - **Type*** first, set by the contract: new contract or no contract → *Add GIRO* only; existing contract → *Add GIRO* if it has no GIRO, *Remove GIRO* only if GIRO is active. Help text (owner's wording): "remove-ask payee to contact their bank to terminate, new-please information payee to make payment until giro is up, officer will contact applicant to complete giro application form and to mail the bank endorsed completed form back".
-   - **Remove GIRO:** no further fields. Supporting documents optional.
+   - **Remove GIRO:** no further fields in this section.
    - **Add GIRO:** Purpose* (Rental / Carpark / Others); Other purpose* when Others. Applicant name / entity*, Applicant email*, Applicant mobile (prefilled from the contract's or shell's bill-to). Remarks.
      - Rental: Location*, Tenancy agreement, Effective start date*, Effective end date, Amount.
      - Carpark: Car plate* (one vehicle per form), Parking start date*, Parking end date, Amount.
-     - Others: Contract reference number, Invoice reference number (open question 1), Amount, Remarks, Form number (to be verified, open question 8).
-     - Then Supporting documents (attachments).
+     - Others: Contract reference number, Invoice reference number (open question 1), Amount, Remarks.
    - Amount is free text, optional, no linkages (decision 13). End dates must be on or after start dates. Fields hidden by a choice are cleared.
+5. **Attachments** (decision 16, as AR-i): Supporting documents, optional. Add and Remove GIRO.
+6. **Others** (decision 16, as AR-i, hint *Optional. Where these fields finally go is still to be decided.*): Form number, optional, to be verified (open question 8). Every type and purpose.
 
 ## Workspace (AR team)
 
 - List menu *GIRO*: AR-ix GIRO requests (open), All AR-ix GIRO cases, Contracts with GIRO active.
-- AR-ix case: Details tab (General information, Customer and contract, GIRO details); ribbon (GIRO, amount, contract and its GIRO status); tab **GIRO history** (AR-ix cases on the same contract).
+- AR-ix case: Details tab (General information, Customer and contract, GIRO details, Others); ribbon (GIRO, amount, contract and its GIRO status); tab **GIRO history** (AR-ix cases on the same contract).
 - Side panel **GIRO setup** (`REQ-GIRO`): contract linked? (if not: for a new contract *process the AR-i that sets up this contract first, then link it*; for No contract required, link the customer's no-contract shell; the picker lists the matching reference, the customer and the department first) → the contract's GIRO status and active case → reminder: *Update GIRO on the contract*, then Complete.
 - UI actions:
   - **Link contract** (while contract is empty) → sets contract and customer; New → In progress.
@@ -52,7 +53,7 @@ Fields are free text unless stated. `*` = mandatory.
 
 | Item | Build |
 |---|---|
-| Record producer | "AR-ix GIRO authorisation" on `x_ar_request` (`PT-31`); variable sets General information (`PT-30`), Select Customer (`PT-44`), Select Contract (`PT-32`, no-contract message `PT-45`), GIRO details (`PT-33`). UI policies per type and purpose; catalog client script on contract change filters the Type choices, prefills the applicant and shows active GIRO (`PT-34`, GlideAjax). Producer script sets `ar_form`, `short_description`, `watch_list` from `cc_list`, and for No contract required `contract` = the customer's no-contract shell for the department when it exists. |
+| Record producer | "AR-ix GIRO authorisation" on `x_ar_request` (`PT-31`); variable sets General information (`PT-30`), Select Customer (`PT-44`), Select Contract (`PT-32`, no-contract message `PT-45`), GIRO details (`PT-33`), Attachments (`PT-46`), Others (`PT-47`). UI policies per type and purpose; catalog client script on contract change filters the Type choices, prefills the applicant and shows active GIRO (`PT-34`, GlideAjax). Producer script sets `ar_form`, `short_description`, `watch_list` from `cc_list`, and for No contract required `contract` = the customer's no-contract shell for the department when it exists. |
 | Case fields | `x_ar_request`: `requester_name`, `requester_email`, `cc_list`, `giro_type`, `giro_purpose`, `giro_purpose_other`, `giro_applicant_name/_email/_mobile`, `giro_remarks`, `giro_location`, `giro_tenancy_agreement`, `giro_start_date`, `giro_end_date`, `giro_contract_ref`, `giro_invoice_ref`, `giro_others_remarks`, `giro_form_number`, `giro_carplate`, `giro_parking_start`, `giro_parking_end`, `giro_amount` (String, free text). New state **Completed** (`completed`). |
 | Contract fields | `x_ar_contract.giro_status` (Choice: Active / Not active) and `x_ar_contract.giro_case` (Reference → `x_ar_request`, reference qualifier `ar_form = AR-ix`, `giro_type = add`, `contract = current`), **editable by `x_ar.ar_team`** (decision 11). Audit on, so Record history shows every change. |
 | UI policy / business rule | `giro_case` mandatory when `giro_status` = Active; before update: clear `giro_case` when `giro_status` = Not active. One active GIRO per contract is guaranteed by the single `giro_case` field. |

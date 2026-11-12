@@ -16,6 +16,7 @@ shipped. Requirement questions still open for the client live in each module's
 
 ## Done
 
+- 2026-11-12 **AR-ix**: sections 5. Attachments and 6. Others (Form number for every choice), modelled on AR-i (decision 16).
 - 2026-11-12 **AR-ix**: GIRO details revamp: Type set by the contract (Remove only when GIRO is active; nothing more for Remove), new Add GIRO fields (Remarks, Tenancy agreement, Contract reference number, second Remarks, Form number) (decisions 14–15).
 - 2026-11-12 **AR-ix**: form sections Select Customer / Select Contract (existing, new or no contract); Amount free text; AR-ix is a request: Complete replaces Activate / Remove GIRO and AR updates GIRO on the contract by hand (decisions 11–13, issue #4 for the next major release).
 - 2026-11-12 **TOOLS**: ServiceNow notes developer view removed (Show IDs stays); demo bar pinned to the top.

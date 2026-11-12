@@ -348,11 +348,19 @@ function giroFormPage() {
           <div class="fgrid">${f("applicantName", { mandatory: true, help: null })}${f("applicantEmail", { mandatory: true, help: null })}${f("applicantMobile", { help: null })}${f("giroRemarks", { help: null })}</div>
           ${d.giroPurpose === "rental" ? `<h3 class="small">Rental</h3><div class="fgrid">${f("giroLocation", { mandatory: true, help: null })}${f("giroTenancy", { help: null })}${f("giroStart", { mandatory: true, help: null })}${f("giroEnd", { help: null })}${f("giroAmount", { help: null })}</div>` : ""}
           ${d.giroPurpose === "carpark" ? `<h3 class="small">Carpark</h3><div class="fgrid">${f("carplate", { mandatory: true, help: "One vehicle per form" })}${f("parkStart", { mandatory: true, help: null })}${f("parkEnd", { help: null })}${f("giroAmount", { help: null })}</div>` : ""}
-          ${d.giroPurpose === "others" ? `<h3 class="small">Others</h3><div class="fgrid">${f("giroCtrRef", { help: null })}${f("giroInvoiceRef", { help: null })}${f("giroAmount", { help: null })}${f("giroOtherRemarks", { help: null })}${f("giroFormNo", { help: "To be verified" })}</div>` : ""}` : ""}
-          ${d.giroType ? `<div class="ffield wide"${sn("PT-08")}><span class="flabel">Supporting documents</span>
+          ${d.giroPurpose === "others" ? `<h3 class="small">Others</h3><div class="fgrid">${f("giroCtrRef", { help: null })}${f("giroInvoiceRef", { help: null })}${f("giroAmount", { help: null })}${f("giroOtherRemarks", { help: null })}</div>` : ""}` : ""}
+        </fieldset>
+
+        <fieldset class="psec"${sn("PT-46")}><legend>5. Attachments</legend>
+          <div class="ffield wide"${sn("PT-08")}><span class="flabel">Supporting documents</span>
             <div><label class="btn small" for="pfAttach">${icon("clip", 15)} Add attachment</label><input type="file" id="pfAttach" multiple hidden></div>
             ${d.attachments?.length ? `<ul class="attlist">${d.attachments.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unattach="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">${d.giroType === "remove" ? "Optional." : "For example the signed GIRO form or the tenancy agreement."}</span>`}
-          </div>` : ""}
+          </div>
+        </fieldset>
+
+        <fieldset class="psec"${sn("PT-47")}><legend>6. Others</legend>
+          <p class="pt-hint">Optional. Where these fields finally go is still to be decided.</p>
+          <div class="fgrid">${f("giroFormNo", { help: "To be verified" })}</div>
         </fieldset>
       </form>
       <aside class="pt-side" id="pfSide">${formSide(d)}</aside>

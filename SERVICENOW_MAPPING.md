@@ -194,7 +194,7 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `giro_invoice_ref` | Invoice reference number | String | Shown when Purpose = Others (UI policy). AR-ix others. Optional; requirement to be confirmed (open question 1) |
 | `giro_amount` | Amount | String | Shown when Purpose is Rental, Carpark, Others (UI policy). AR-ix Add GIRO, all purposes. Optional free text; not used by any other field or calculation (AR-ix decision 13) |
 | `giro_others_remarks` | Remarks | String (1000) | Shown when Purpose = Others (UI policy). AR-ix others. Optional; a second Remarks for the Others block (decision 15) |
-| `giro_form_number` | Form number | String | Shown when Purpose = Others (UI policy). AR-ix others. Optional; to be verified (open question 8) |
+| `giro_form_number` | Form number | String | AR-ix section Others, every type and purpose. Optional; to be verified (open question 8, decision 16) |
 | `doc_contract_po` | Signed contract / PO | Attachment | Optional, offered for a new contract only |
 | `doc_acra` | Company registration (ACRA / UEN) | Attachment | Only when not already on file |
 | `doc_billing_form` | Billing contact & address form | Attachment | Only when not already on file for this department |

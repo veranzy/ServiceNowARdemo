@@ -1,7 +1,7 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, reqItems, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroBlock, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById } from "../records.js";
+import { DOC_LABEL, reqItems, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroBlock, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById, freeCompanies } from "../records.js";
 import { CODE } from "../notes.js";
 import { ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
@@ -299,7 +299,7 @@ const LAYOUT = {
   deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "bankRef", "payer", "reference"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
-  customers: [["Customer", ["name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]],
+  customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]],
     ["Agency and point of contact", ["agencyType", "vag", "vagSubBu", "pocName", "pocEmail"]]],
   contracts: [["Contract", ["category", "number", "reference", "poNumber", "contractType", "customerId", "department", "title", "start", "end", "value", "billing", "contractLocation", "contractLocationRef", "notes"]],
     ["Billing terms", ["billingCycle", "billingCycleOther", "invoiceDate", "paymentTerms", "paymentTermsOther", "terms", "discPct", "discDays", "prorate", "prorateFirst", "prorateLast", "typeOfBilling", "bulkDocs"]],
@@ -443,7 +443,7 @@ function setupPanel(r, tab) {
   return `<section class="setup"${sn("REQ-SETUP")}>
     <header><h2>Customer setup</h2><span class="muted small">${esc(r.form || "AR-i")}${r.newCustomer ? " · new customer (first request)" : ""}</span></header>
     <ul class="checklist">
-      ${item(st.linked, st.linked ? `Customer: ${esc(custName(r.customerId))}` : `New customer to verify: ${esc(r.newCustName)}`, st.linked ? "" : `UEN ${esc(r.newCustUen || "not given")}. Link to customer creates it, or pick an existing customer below.`)}
+      ${item(st.linked, st.linked ? `Customer: ${esc(custName(r.customerId))}` : `New customer to verify: ${esc(r.newCustName)}`, st.linked ? "" : `UEN ${esc(r.newCustUen || "not given")}. Choose its company (core_company) below and Link to customer creates the customer, or link to an existing customer.`)}
       ${item(st.contractDone, st.contractDone ? `${isShell(ctr) ? "No-contract shell" : "Contract"}: ${esc(ctr.number)}` : `Contract: ${ctrText}`, st.contractDone ? `${isShell(ctr) ? "No contract required; " : ""}all billing lines are filed under it` : r.contractOption === "new" ? `Link to customer creates ${esc(r.newCtrNumber)} · ${esc(r.newCtrTitle || "")} and files the billing lines under it` : r.contractOption === "none" ? "Link to customer files the billing lines under the customer's no-contract shell for the department (created if needed)" : "Link to customer files the billing lines under the contract")}
       ${item(st.billToOk ? true : false, `Bill-to on ${ctr ? esc(ctr.number) : "the contract"}`, st.billToOk ? `${esc(ctr.billToName)} · ${esc(ctr.billToEmail)}` : r.billToName ? `Will be ${ctr?.billToName ? "updated" : "set"} from this request: ${esc(r.billToName)} · ${esc(r.billToEmail)}` : "No bill-to on the contract and none on the request. Ask the requester.")}
       ${st.docsGiven.length ? item(st.docsDone, "Documents filed on the customer", st.docsGiven.map(t => `${esc(DOC_LABEL[t])}${st.filed.includes(t) ? " ✓" : ""}`).join(" · ")) : item(null, "Documents", "All already on file; nothing new supplied")}
@@ -451,7 +451,10 @@ function setupPanel(r, tab) {
       ${item(lines.length && doneLines === lines.length, `Billing lines ${doneLines} of ${lines.length} done`, `${lines.length && doneLines === lines.length ? "Every line is invoiced or scheduled" : st.contractDone ? "Create the invoice or billing schedule for each line" : "Available once the request is linked"} · <button type="button" class="linkish" data-rtab="RL-REQ-RQL">Open billing lines</button>`)}
     </ul>
     ${r.newCustomer && REQ_OPEN.includes(r.state) ? `<label class="ffield linkto"${sn("REQ-LINKTO")}><span class="flabel">Link to an existing customer instead (optional)</span>
-      <select id="linkTo-${r.id}" data-linkto="${esc(tab.key)}"><option value="">Create new customer "${esc(r.newCustName)}"</option>${S.customers.slice().sort((a, b) => nameSim(r.newCustName, b.name) - nameSim(r.newCustName, a.name)).map(c => `<option value="${c.id}"${tab.linkTo === c.id ? " selected" : ""}>${esc(c.name)}${similar.includes(c) ? " (similar)" : ""}</option>`).join("")}</select></label>` : ""}
+      <select id="linkTo-${r.id}" data-linkto="${esc(tab.key)}"><option value="">Create new customer "${esc(r.newCustName)}"</option>${S.customers.slice().sort((a, b) => nameSim(r.newCustName, b.name) - nameSim(r.newCustName, a.name)).map(c => `<option value="${c.id}"${tab.linkTo === c.id ? " selected" : ""}>${esc(c.name)}${similar.includes(c) ? " (similar)" : ""}</option>`).join("")}</select></label>
+    ${!tab.linkTo ? `<label class="ffield linkto" for="linkCo-${r.id}"${sn("REQ-LINKCO")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Company (core_company) for the new customer</span>
+      <select id="linkCo-${r.id}" data-linkco="${esc(tab.key)}"><option value="">-- Choose the company --</option>${freeCompanies().sort((a, b) => nameSim(r.newCustName, b.name) - nameSim(r.newCustName, a.name)).map(co => `<option value="${co.id}"${tab.linkCo === co.id ? " selected" : ""}>${esc(co.name)}</option>`).join("")}</select>
+      <span class="fhelp">The customer name comes from the company record (D26). Requested name: ${esc(r.newCustName)}</span></label>` : ""}` : ""}
   </section>`;
 }
 

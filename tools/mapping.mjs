@@ -3,14 +3,14 @@ import { writeFileSync } from "node:fs";
 import { BANKS, RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
 
 const refName = r => r === "users" ? "sys_user" : TABLES[r].table;
-const order = ["customers", "contracts", "requests", "invoices", "bankAccounts", "uploads", "deposits", "allocations"];
+const order = ["companies", "customers", "contracts", "requests", "invoices", "bankAccounts", "uploads", "deposits", "allocations"];
 let md = `# ServiceNow build mapping
 
 Generated from \`js/schema.js\` by \`node tools/mapping.mjs\`. Edit the schema, not this file's table sections.
 Every screen element in the prototype carries the same references (turn on **Build notes** in the demo bar).
 
 Scope: \`${SCOPE}\` is a placeholder for the real application scope (for example \`x_1234_ar\`).
-All tables are **custom tables in the scoped app**. No CSM, Contract Management or core_company tables are used.
+All tables are **custom tables in the scoped app**, except that each customer references the platform **\`core_company\`** table for its name (D26). No CSM or Contract Management tables are used.
 
 ## Personas and roles
 

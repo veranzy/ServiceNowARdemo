@@ -70,7 +70,7 @@ function uiAction(name) {
     toast(name === "giroadd" ? "GIRO activated on the contract. Case completed." : "GIRO removed from the contract. Case completed."); return render();
   }
   if (tab.table === "requests" && name === "link") {
-    const err = linkCustomer(tab.id, tab.linkTo || null); tab.linkTo = null;
+    const err = linkCustomer(tab.id, tab.linkTo || null, tab.linkCo || null); if (!err) { tab.linkTo = null; tab.linkCo = null; }
     if (err) { tab.msg = { kind: "err", text: err }; return render(); }
     toast("Linked to the customer: billing contact and documents filed on the customer record."); return render();
   }
@@ -286,7 +286,8 @@ document.addEventListener("change", e => {
   if (el.id === "notesToggle") { S.ui.notes = el.checked; return render(); }
   if (el.id === "devToggle") { S.ui.dev = el.checked; return render(); }
   if (el.dataset.linkctr) { const tab = W().tabs.find(x => x.key === el.dataset.linkctr); if (tab) tab.linkCtr = el.value || null; return; }
-  if (el.dataset.linkto) { const tab = W().tabs.find(x => x.key === el.dataset.linkto); if (tab) tab.linkTo = el.value || null; return; }
+  if (el.dataset.linkto) { const tab = W().tabs.find(x => x.key === el.dataset.linkto); if (tab) tab.linkTo = el.value || null; return render(); }
+  if (el.dataset.linkco) { const tab = W().tabs.find(x => x.key === el.dataset.linkco); if (tab) tab.linkCo = el.value || null; return; }
   if (el.id === "bsuAcct") { Object.assign(S.bsu, { acctId: el.value, text: "", fileName: "", parsed: null, error: "" }); return render(); }
   if (el.id === "bsuDate") { S.bsu.date = el.value; parseCurrent(); return render(); }
   if (el.id === "bsuFile") { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { S.bsu.text = String(r.result); S.bsu.fileName = f.name; parseCurrent(); render(); }; r.readAsText(f); el.value = ""; return; }

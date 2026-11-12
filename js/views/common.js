@@ -57,6 +57,7 @@ export function refLink(table, id, label) {
 function refOptions(f, rec, formVals) {
   if (f.ref === "bankAccounts") return S.bankAccounts.map(a => [a.id, `${BANKS[a.bank].name} · ${a.number} · ${a.name}`]);
   if (f.ref === "users") return S.users.filter(u => !f.refFilter || u.team === f.refFilter).map(u => [u.id, u.name]);
+  if (f.ref === "companies") return S.companies.filter(co => co.id === rec.companyId || !S.customers.some(c => c.companyId === co.id)).sort((a, b) => a.name.localeCompare(b.name)).map(co => [co.id, co.name]);
   if (f.ref === "contracts") {
     const cust = formVals?.customerId ?? rec.customerId;
     return S.contracts.filter(k => !cust || k.customerId === cust).map(k => [k.id, `${k.number} · ${k.title}`]);
@@ -66,7 +67,7 @@ function refOptions(f, rec, formVals) {
 
 function readValue(table, f, rec) {
   const v = rec[f.key];
-  if (f.type === "Reference") return f.ref === "users" ? esc(userById(v)?.name || "—") : refLink(f.ref, v);
+  if (f.type === "Reference") return f.ref === "users" ? esc(userById(v)?.name || "—") : f.ref === "companies" ? esc(S.companies.find(co => co.id === v)?.name || "—") : refLink(f.ref, v);
   if (f.type === "Choice") return esc((f.choices.find(c => c[0] === v) || [, v || "—"])[1]);
   if (f.type === "Currency") return v ? `<span class="mono">SGD ${fmt(v)}</span>` : "—";
   if (f.key === "aliases") return (v || []).length ? v.map(a => `<span class="ref">${esc(a)}</span>`).join(" ") : "—";

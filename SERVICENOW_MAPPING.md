@@ -4,7 +4,7 @@ Generated from `js/schema.js` by `node tools/mapping.mjs`. Edit the schema, not 
 Every screen element in the prototype carries the same references (turn on **Build notes** in the demo bar).
 
 Scope: `x_ar` is a placeholder for the real application scope (for example `x_1234_ar`).
-All tables are **custom tables in the scoped app**. No CSM, Contract Management or core_company tables are used.
+All tables are **custom tables in the scoped app**, except that each customer references the platform **`core_company`** table for its name (D26). No CSM or Contract Management tables are used.
 
 ## Personas and roles
 
@@ -15,13 +15,22 @@ All tables are **custom tables in the scoped app**. No CSM, Contract Management 
 
 ## Tables
 
-### Customer — `x_ar_customer`
+### Company — `core_company`
 
-Custom customer master (not core_company / customer_account). Documents and per-department billing contacts hang off the customer (D10, D11).
+**Existing platform table, not created by the app** (D26). The app only references it: `x_ar_customer.company` points here and the customer name is dot-walked from `company.name`. The app does not create or edit companies (open question MDM-5).
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
-| `name` | Customer name | String | Mandatory |
+| `name` | Name | String | Mandatory |
+
+### Customer — `x_ar_customer`
+
+Custom customer master (not CSM customer_account). Each customer references one core_company record; the customer name is **dot-walked** from `company.name` and not stored on this table (D26). Make `company` the table's display field so references to a customer show the company name. UEN, address and the other details stay on this table. Documents and per-department billing contacts hang off the customer (D10, D11).
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `company` | Company | Reference | → `core_company`. Mandatory. The core_company record for this customer. One customer per company. Display field of the table |
+| `company.name` | Customer name | String | Read-only on form. Dot-walked from company.name (core_company); not a column on this table (D26) |
 | `uen` | UEN (company registration no.) | String |  |
 | `parent_group` | Parent group | String |  |
 | `registered_address` | Registered address | String (1000) |  |

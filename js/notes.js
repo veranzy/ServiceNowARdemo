@@ -4,7 +4,7 @@
 import { RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES } from "./schema.js";
 
 /** Short code per table, used as the prefix of field IDs (e.g. INV.due_date) and record-page IDs. */
-export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI" };
+export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI" };
 const T = Object.fromEntries(Object.entries(CODE).map(([k, c]) => [c, k]));
 
 /** Screen elements that aren't a field, list, record page, related list or UI action. */
@@ -34,6 +34,7 @@ export const NOTES = {
   "REQ-GIROHIST": "Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix)",
   "CON-GIRO": "Tab GIRO history on the contract: related list x_ar_request where contract = this contract and ar_form = AR-ix; GIRO column: Active (= contract.giro_case), Ended, Removed GIRO, Open, Rejected",
   "REQ-LINKCTR": "Contract to link (AR-ix): reference to x_ar_contract, matching contract number listed first. Used by Link contract; for a contract not on file AR processes its AR-i first",
+  "REQ-LINKCO": "Company (core_company) for the new customer; mandatory when Link to customer creates a new x_ar_customer. Lists companies with no customer yet, closest name first (D26)",
   "REQ-LINKTO": "Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check)",
   "SCH-PER": "Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming",
   "REQ-ATT": `Attachments: sys_attachment on ${TABLES.requests.table} (added on the portal form)`,
@@ -173,7 +174,7 @@ export function noteText(id) {
     return { RP: `Record page (UI Builder) · ${t.table}${t.extends ? ` extends ${t.extends}` : ""}`, HDR: `Record header: highlighted values of ${t.table}`,
       FRM: `Form view: ${t.table} (Default view)`, LST: `List: ${t.table} · list view layout + list menu condition` }[m[1]];
   }
-  if ((m = id.match(/^([A-Z]+)\.([a-z_]+)$/)) && T[m[1]]) {
+  if ((m = id.match(/^([A-Z]+)\.([a-z_.]+)$/)) && T[m[1]]) {
     const f = TABLES[T[m[1]]].fields.find(x => x.name === m[2]);
     if (f) return fieldText(T[m[1]], f);
   }

@@ -24,6 +24,13 @@ export function invoiceState(i) {
 }
 
 export const custById = id => S.customers.find(c => c.id === id);
+export const companyById = id => S.companies.find(c => c.id === id);
+/** Customer name is dot-walked from core_company (D26): `c.name` reads company.name, it is never stored. */
+export function withCompany(c) {
+  delete c.name;
+  Object.defineProperty(c, "name", { get() { return companyById(c.companyId)?.name || ""; }, enumerable: true, configurable: true });
+  return c;
+}
 
 export const ctrById = id => S.contracts.find(k => k.id === id);
 
@@ -31,13 +38,6 @@ export const custNames = c => c ? [c.name, c.parent, ...(c.aliases || [])].filte
 
 export function payerSim(payer, inv) { return Math.max(nameSim(payer, inv.customer), ...custNames(custById(inv.customerId)).map(n => nameSim(payer, n))); }
 
-export function findOrCreateCustomer(name) {
-  const n = String(name || "").trim(); if (!n) return null;
-  const key = nameToks(n).join(" ");
-  let c = S.customers.find(x => custNames(x).some(y => nameToks(y).join(" ") === key));
-  if (!c) { c = { id: uid("c"), name: n, parent: "", aliases: [], terms: 30, creditLimit: 0, notes: "" }; S.customers.push(c); }
-  return c;
-}
 
 export function findOrCreateContract(c, number) {
   const n = String(number || "").trim(); if (!c || !n) return null;

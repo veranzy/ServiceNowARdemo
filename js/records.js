@@ -1,6 +1,6 @@
 // Record lifecycle: AR request cases, invoices, journal entries, numbering, generic save.
 // Each function mirrors a ServiceNow UI action or business rule (named in the comments).
-import { ctrById, custById, invoiceUse } from "./ledger.js";
+import { companyById, ctrById, custById, invoiceUse, withCompany } from "./ledger.js";
 import { CONTRACT_CATEGORIES, DOC_TYPES, FREQUENCIES, GIRO_PURPOSES, GIRO_TYPES, GST_RATE, TABLES, clearHidden } from "./schema.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, today, uid } from "./util.js";
@@ -314,12 +314,20 @@ export function setupStatus(r) {
 export const CUST_DETAILS = [["agencyType", "agencyType"], ["vag", "vag"], ["subBu", "vagSubBu"], ["pocName", "pocName"], ["pocEmail", "pocEmail"]];
 /** Request-shaped copy of a customer's master details (a found customer's values are read-only on AR-i). */
 export const custDetailsOf = c => Object.fromEntries(CUST_DETAILS.map(([rk, ck]) => [rk, c?.[ck] || ""]));
-export function linkCustomer(id, existingId) {
+/** core_company records with no x_ar_customer yet: the companies a new customer can be created for (D26). */
+export const freeCompanies = () => S.companies.filter(co => !S.customers.some(c => c.companyId === co.id));
+export function linkCustomer(id, existingId, companyId) {
   const r = reqById(id); if (!r) return "Record not found.";
   const notes = [];
   if (r.newCustomer) {
     let c = existingId ? custById(existingId) : null;
-    if (!c) { c = { id: uid("c"), name: r.newCustName, uen: r.newCustUen || "", address: r.newCustAddress || "", parent: "", aliases: [], terms: 30, creditLimit: 0, notes: `Created from ${r.number}.` }; S.customers.push(c); notes.push(`created customer ${c.name}`); }
+    if (!c) {
+      // the officer creates the customer: it must point to a core_company record (D26); the name is dot-walked, never typed
+      const co = companyById(companyId);
+      if (!co) return "Choose the company (core_company) for the new customer, or link to an existing customer.";
+      if (S.customers.some(x => x.companyId === co.id)) return `${co.name} already has a customer record. Link to that customer instead.`;
+      c = withCompany({ id: uid("c"), companyId: co.id, uen: r.newCustUen || "", address: r.newCustAddress || "", parent: "", aliases: [], terms: 30, creditLimit: 0, notes: `Created from ${r.number}.` }); S.customers.push(c); notes.push(`created customer for company ${c.name}`);
+    }
     else notes.push(`linked to existing customer ${c.name}`);
     r.customerId = c.id; r.newCustomer = false;
   } else notes.push(`customer ${custById(r.customerId)?.name} confirmed`);
@@ -560,6 +568,7 @@ export function saveRecord(table, id, raw) {
   if (table === "contracts" && S.contracts.some(k => k.id !== merged.id && k.number && k.number.toLowerCase() === String(merged.number || "").toLowerCase())) errors.number = `Contract ${merged.number} already exists.`;
   if (table === "contracts" && merged.contractType === "shell" && !merged.department) errors.department = "A no-contract shell needs a department.";
   if (table === "contracts" && merged.contractType === "shell" && S.contracts.some(k => k.id !== merged.id && isShell(k) && k.customerId === merged.customerId && k.department === merged.department)) errors.department = `This customer already has a ${merged.department} no-contract shell.`;
+  if (table === "customers" && merged.companyId && S.customers.some(c => c.id !== merged.id && c.companyId === merged.companyId)) errors.companyId = `${companyById(merged.companyId)?.name} already has a customer record. One customer per company (D26).`;
   if (Object.keys(errors).length) return { errors };
   if (existing) {
     Object.assign(existing, vals);
@@ -570,7 +579,7 @@ export function saveRecord(table, id, raw) {
     return { rec: existing };
   }
   const rec = { id: uid(table[0]), ...vals };
-  if (table === "customers") Object.assign(rec, { aliases: rec.aliases || [], terms: rec.terms || 30 });
+  if (table === "customers") { Object.assign(rec, { aliases: rec.aliases || [], terms: rec.terms || 30 }); withCompany(rec); }
   if (table === "contracts") Object.assign(rec, { terms: rec.terms || custById(rec.customerId)?.terms || 30 });
   if (table === "bankAccounts") rec.currency = "SGD";
   S[table].push(rec);

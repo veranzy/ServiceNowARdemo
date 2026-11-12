@@ -24,7 +24,8 @@ for reference; if they differ from the repo, the repo wins. After a change that 
 re-export the changed files to the Claude project (or tell the owner they are stale).
 
 **Standing decisions** (don't revisit unless the owner asks; full list in `docs/DECISIONS.md`):
-- All tables are custom tables in the scoped app; no CSM, `core_company` or `ast_contract` (D1).
+- All tables are custom tables in the scoped app; no CSM or `ast_contract` (D1). Exception: `x_ar_customer`
+  references the platform `core_company` table and dot-walks the customer name from `company.name` (D26).
 - The app is the system of record for invoices (D2).
 - Project team uses the portal only; AR team uses the workspace only (D3).
 - **No auto-matching, ever** (D5). Money received is only ever a BSU deposit (D7).
@@ -62,6 +63,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 |---|---|---|
 | 2026-11-02 | Section added: goal, source of truth, standing decisions, quality bar, sign-off status, style. | Owner |
 | 2026-11-12 | Context added: AR forms and customer / contract updates are separate on purpose (D22). | Owner |
+| 2026-11-12 | Standing decision D1 amended: customer name dot-walked from `core_company` (D26). | Owner |
 
 ## How we work: modules, one at a time
 

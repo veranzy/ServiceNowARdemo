@@ -3,6 +3,7 @@ import { S } from "./state.js";
 import { DAY, cents, today, uid } from "./util.js";
 import { depositId } from "./bsu.js";
 import { itemCalc, resetAudit } from "./records.js";
+import { withCompany } from "./ledger.js";
 import { render } from "./views/app.js";
 
 // Sample dates are authored as if "today" were SAMPLE_AS_OF, then shifted so the demo
@@ -81,7 +82,11 @@ export function loadSample() {
   ];
   const cid = {}, kid = {};
   const uens = { harb: "199804512G", meri: "200511234K", kest: "Malaysia SSM 1123456-X", tanj: "201002233N", orch: "201505566M", nova: "201809988D", bws: "200733445R", bwo: "200733446H", lume: "53312345W", paci: "201211122E" };
-  S.customers = cus.map(r => { const c = { id: uid("c"), name: r[1], uen: uens[r[0]] || "", address: "", parent: r[2], aliases: r[3], terms: r[4], creditLimit: cents(r[5]), notes: r[6] }; cid[r[0]] = c; return c; });
+  // core_company (platform table, D26): one per customer, plus companies with no AR customer yet
+  S.companies = [...cus.map(r => r[1]), "Zephyr Data Centres Pte Ltd", "Straits Aquaculture Pte Ltd", "Kallang Precision Works Pte Ltd"].map(name => ({ id: uid("co"), name }));
+  const coId = name => S.companies.find(x => x.name === name).id;
+  S.customers = cus.map(r => { const c = withCompany({ id: uid("c"), companyId: coId(r[1]), uen: uens[r[0]] || "", address: "", parent: r[2], aliases: r[3], terms: r[4], creditLimit: cents(r[5]), notes: r[6] }); cid[r[0]] = c; return c; });
+
   // Customer details (D23): agency type, V@G, V@G sub-BU and POC, replicated from earlier AR-i requests. Some customers have none on file yet.
   const det = { tanj: ["M", "", "", "Grace Lim", "grace.lim@tanjongretail.example", "3 Jurong Gateway Road, Singapore 608532"],
     harb: ["SB", "yes", "Port Operations West", "Daniel Ong", "daniel.ong@harbourline.example", "21 Pioneer Road, Singapore 628503"],

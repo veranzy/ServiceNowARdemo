@@ -298,11 +298,19 @@ export const TABLES = {
     ],
     calculated: [{ name: "next_billing_date", label: "Next billing date", type: "Date", how: "first period on or after today without an invoice" }]
   },
+  companies: {
+    table: "core_company", label: "Company", plural: "Companies", display: "name", platform: true,
+    note: "**Existing platform table, not created by the app** (D26). The app only references it: `x_ar_customer.company` points here and the customer name is dot-walked from `company.name`. The app does not create or edit companies (open question MDM-5).",
+    fields: [
+      { key: "name", name: "name", label: "Name", type: "String", mandatory: true, wide: true }
+    ]
+  },
   customers: {
     table: `${SCOPE}_customer`, label: "Customer", plural: "Customers", display: "name",
-    note: "Custom customer master (not core_company / customer_account). Documents and per-department billing contacts hang off the customer (D10, D11).",
+    note: "Custom customer master (not CSM customer_account). Each customer references one core_company record; the customer name is **dot-walked** from `company.name` and not stored on this table (D26). Make `company` the table's display field so references to a customer show the company name. UEN, address and the other details stay on this table. Documents and per-department billing contacts hang off the customer (D10, D11).",
     fields: [
-      { key: "name", name: "name", label: "Customer name", type: "String", mandatory: true, wide: true },
+      { key: "companyId", name: "company", label: "Company", type: "Reference", ref: "companies", mandatory: true, wide: true, help: "The core_company record for this customer. One customer per company. Display field of the table" },
+      { key: "name", name: "company.name", label: "Customer name", type: "String", readonly: true, wide: true, help: "Dot-walked from company.name (core_company); not a column on this table (D26)" },
       { key: "uen", name: "uen", label: "UEN (company registration no.)", type: "String" },
       { key: "parent", name: "parent_group", label: "Parent group", type: "String" },
       { key: "address", name: "registered_address", label: "Registered address", type: "String (1000)", wide: true },

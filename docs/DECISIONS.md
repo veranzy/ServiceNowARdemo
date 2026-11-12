@@ -5,7 +5,7 @@ module spec under `docs/modules/`.
 
 | # | Date | Decision | Source |
 |---|---|---|---|
-| D1 | 2026-11-01 | All tables are custom tables in the scoped app (no CSM `customer_account`, `core_company` or Contract Management `ast_contract`). | Owner |
+| D1 | 2026-11-01 | All tables are custom tables in the scoped app (no CSM `customer_account`, `core_company` or Contract Management `ast_contract`). **Amended by D26:** the customer references `core_company` for its name. | Owner |
 | D2 | 2026-11-01 | The app is the system of record for invoices. | Owner |
 | D3 | 2026-11-01 | Two roles: project team uses the portal only; AR team uses the workspace only. | Owner |
 | D4 | 2026-11-01 | Project team raises the AR form as a record producer; it creates an AR request case worked in the workspace. | Owner |
@@ -30,3 +30,4 @@ module spec under `docs/modules/`.
 | D23 | 2026-11-12 | **Customer details on AR-i** (agency type, V@G, V@G sub-BU, POC name and email) are transaction data on the request and are **replicated to the customer master** when AR links the customer. For a customer already on file the form shows the master values **read-only** (follows D22). | Owner (ARF) |
 | D24 | 2026-11-12 | **Contract billing terms live on the contract.** Contract type (Recurring / Ad-hoc), reference and PO numbers, billing cycle, preferred invoice date, payment terms, proration (1st / last month amounts) and type of billing (with the C / D / E bulk upload) are contract fields. AR-i shows an existing contract read-only and collects them only for a new contract; Link to customer copies them. Proration applies to every recurring line under the contract. (ARF decisions 27–30.) |
 | D25 | 2026-11-12 | **Billing line items** carry GST: GST amount = amount (w/o GST) × the GST rate (9%, a system property), total = amount + GST, both calculated. Amounts entered on AR-i (amount billed per period, item amounts) are **before GST**. | Owner (ARF 32–33) |
+| D26 | 2026-11-12 | **Customer name comes from `core_company`** (amends D1). `x_ar_customer` stays a custom table but has a mandatory reference `company` → platform `core_company`; the customer name is dot-walked from `company.name` and not stored on our table. `company` is the display field. UEN, address and the other customer details stay on `x_ar_customer`. One customer per company. AR-i keeps the requested customer details as transaction data on the request; the processing officer creates the customer record (Link to customer) and must pick its company. | Owner (MDM 2) |

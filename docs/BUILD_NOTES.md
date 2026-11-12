@@ -53,6 +53,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ-GIRO` | GIRO setup panel (AR-ix case, contextual side bar): contract linked? the contract's GIRO status and active case; then Activate GIRO / Remove GIRO, or why it is blocked (one active GIRO per contract, D21) |
 | `REQ-GIROHIST` | Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix) |
 | `REQ-LINKCTR` | Contract to link (AR-ix): reference to x_ar_contract, matching contract number listed first. Used by Link contract; for a contract not on file AR processes its AR-i first |
+| `REQ-LINKCO` | Company (core_company) for the new customer; mandatory when Link to customer creates a new x_ar_customer. Lists companies with no customer yet, closest name first (D26) |
 | `REQ-LINKTO` | Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check) |
 | `REQ-ATT` | Attachments: sys_attachment on x_ar_request (added on the portal form) |
 
@@ -319,6 +320,21 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `ALC.exception` | x_ar_allocation.exception · Choice |
 | `ALC.reason` | x_ar_allocation.reason · String (1000) |
 
+## Company
+
+| ID | ServiceNow |
+|---|---|
+| `LST-CMP` | List: core_company · list view layout + list menu condition |
+| `RP-CMP` | Record page (UI Builder) · core_company |
+| `HDR-CMP` | Record header: highlighted values of core_company |
+| `FRM-CMP` | Form view: core_company (Default view) |
+
+## Company fields
+
+| ID | ServiceNow |
+|---|---|
+| `CMP.name` | core_company.name · String · mandatory |
+
 ## Customer
 
 | ID | ServiceNow |
@@ -332,7 +348,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 
 | ID | ServiceNow |
 |---|---|
-| `CUS.name` | x_ar_customer.name · String · mandatory |
+| `CUS.company` | x_ar_customer.company · Reference → core_company · mandatory · The core_company record for this customer. One customer per company. Display field of the table |
+| `CUS.company.name` | x_ar_customer.company.name · String · read-only · Dot-walked from company.name (core_company); not a column on this table (D26) |
 | `CUS.uen` | x_ar_customer.uen · String |
 | `CUS.parent_group` | x_ar_customer.parent_group · String |
 | `CUS.registered_address` | x_ar_customer.registered_address · String (1000) |

@@ -63,14 +63,8 @@ Fields are free text unless stated. `*` = mandatory.
 
 ## Demo data
 
-- Sample amounts are free text (e.g. `SGD 4,800.00`); AR-ix cases have no request value.
-- **TR-TA-2025-14** (Tanjong Retail Group, Facilities, retail unit tenancy): the worked example. GIRO **Active** from **ARQ0001013**.
-  - ARQ0001011 Add GIRO rental SGD 4,500 (completed; later replaced by ARQ0001013).
-  - ARQ0001012 Remove GIRO rental (completed): rent revised.
-  - ARQ0001013 Add GIRO rental SGD 4,800 (completed; **active**).
-  - ARQ0001014 Add GIRO carpark SJK 7720 R (open, **blocked**: GIRO already active).
-- **HL-2026-01** (Harbourline): GIRO active from ARQ0001015, for a Remove GIRO demo.
-- **ARQ0001009** (ready to complete on NB-2026-05) and **ARQ0001010** (contract not on file; Link contract first) are open AR-ix cases. New portal submissions start at ARQ0001016.
+- **No sample AR-ix cases** (removed 2026-11-12, UIX decision 12). Every contract starts with GIRO *Not active*. Raise an AR-ix on the portal (Project team › AR forms › AR-ix) to create one; numbering starts at ARQ0001001, shared with AR-i.
+- Workspace case page: Details tab is the AR-ix form view (`REQ-FV-ARIX`), sections as on the portal.
 
 ## Out of scope / later
 

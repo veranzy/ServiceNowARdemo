@@ -272,28 +272,27 @@ function listView(table, filter, menuOpen) {
 }
 
 // ---------- record pages ----------
-const has = k => r => !!r[k], not = k => r => !r[k], isIx = r => r.form === "AR-ix";
+const has = k => r => !!r[k], not = k => r => !r[k], isIx = r => r.form === "AR-ix", isI = r => !isIx(r);
 const LAYOUT = {
-  requests: [["AR form", ["form", "title", "amount"]],  // AR-i: title is the invoice description
-    ["General information", ["requesterName", "requesterEmail", "department", "deptSubBu", "ccList"]],
-    // AR-i
-    ["Customer", ["customerId"], r => !isIx(r) && !r.newCustomer], ["New customer (to verify)", ["newCustName", "newCustUen", "newCustAddress"], r => !isIx(r) && r.newCustomer],
-    ["Customer details (from the request)", ["agencyType", "vag", "subBu", "pocName", "pocEmail"], r => !isIx(r)],
-    ["Contract", ["contractOption", "contractId"], r => !isIx(r)],
-    ["New contract (to create)", ["newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther",
-      "newCtrProrate", "newCtrProFirst", "newCtrProLast", "typeOfBilling", "docBulk"], r => !isIx(r) && r.contractOption === "new"],
-    ["Contract billing (from the contract at submit)", ["typeOfBilling"], r => !isIx(r) && r.contractOption === "existing"],
-    ["GIRO (from the contract at submit)", ["giroOnContract"], r => !isIx(r) && !!r.giroOnContract],
-    ["Invoice details", ["attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "needItems"], r => !isIx(r)],
-    ["Others (placement to be decided)", ["costCenter", "agentName", "poNumber"], r => !isIx(r)],
-    ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], r => !isIx(r) && r.billToName],
-    ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => !isIx(r) && (r.docContract || r.docAcra || r.docBillingForm)],
-    // AR-ix (AR-ix module)
-    ["Customer not at AR yet", ["newCustName"], r => isIx(r) && r.newCustomer],
-    ["Customer and contract", ["customerId", "contractId", "newCtrRef"], isIx],
-    ["GIRO details", ["giroType", "giroPurpose", "giroPurposeOther", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks", "giroLocation", "giroTenancy", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroCtrRef", "giroInvoiceRef", "giroAmount", "giroOtherRemarks"], isIx],
-    ["Others", ["giroFormNo"], isIx],
-    ["Case", ["state", "requestedBy", "assignedTo", "opened", "details"]]],
+  // Case page Details = one form view per AR form (UIX decision 12): the portal form's sections, same names and order, every field shown (empty when not answered)
+  requests: [["Case", ["form", "state", "requestedBy", "assignedTo", "opened", "amount"], isI],
+    ["Case", ["form", "state", "requestedBy", "assignedTo", "opened"], isIx],
+    ["1. General information", ["requesterName", "requesterEmail", "department", "deptSubBu", "ccList"]],
+    // AR-i form view (portal: PT-25, PT-20, PT-37, PT-23, PT-42)
+    ["2. Customer", ["customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "agencyType", "vag", "subBu", "pocName", "pocEmail"], isI],
+    ["3. Contract and bill-to", ["contractOption", "contractId", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue",
+      "billToName", "billToEmail", "billToPhone", "billToAddress", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther",
+      "newCtrProrate", "newCtrProFirst", "newCtrProLast", "typeOfBilling", "docBulk", "giroOnContract"], isI],
+    ["4. Invoice details", ["title", "attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "needItems"], isI],
+    ["5. Customer documents", ["docContract", "docAcra", "docBillingForm", "details"], isI],
+    ["6. Others", ["costCenter", "agentName", "poNumber"], isI],
+    // AR-ix form view (portal: PT-44, PT-32, PT-33, PT-46, PT-47)
+    ["2. Select Customer", ["customerId", "newCustomer", "newCustName"], isIx],
+    ["3. Select Contract", ["contractOption", "contractId", "newCtrRef"], isIx],
+    ["4. GIRO details", ["giroType", "giroPurpose", "giroPurposeOther", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks", "giroLocation", "giroTenancy", "giroStart", "giroEnd",
+      "carplate", "parkStart", "parkEnd", "giroCtrRef", "giroInvoiceRef", "giroAmount", "giroOtherRemarks"], isIx],
+    ["5. Attachments", ["@attachments"], isIx],
+    ["6. Others", ["giroFormNo"], isIx]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
@@ -458,6 +457,10 @@ function setupPanel(r, tab) {
   </section>`;
 }
 
+/** Attachment names on a case (portal attachments and the AR-i document variables). */
+const attNames = rec => [["docContract", "Signed contract / PO"], ["docAcra", "ACRA"], ["docBillingForm", "Billing form"]].filter(([k]) => rec[k]).map(([k, l]) => `${rec[k]} (${l})`).concat(rec.attachments || []);
+/** AR-ix form view section 5. Attachments: read-only list of the case's attachments (sc_attachment). */
+const attList = rec => { const a = attNames(rec); return a.length ? `<ul class="attlist">${a.map(x => `<li>${icon("clip", 14)} ${esc(x)}</li>`).join("")}</ul>` : `<p class="muted small">No attachments.</p>`; };
 function attachments(rec) {
   const docs = [["docContract", "Signed contract / PO"], ["docAcra", "ACRA"], ["docBillingForm", "Billing form"]].filter(([k]) => rec[k]).map(([k, l]) => `${rec[k]} (${l})`).concat(rec.attachments || []);
   return `<section class="att"${sn("REQ-ATT")}><header><h2>Attachments</h2></header>${docs.length ? `<ul>${docs.map(a => `<li>${icon("clip", 15)} ${esc(a)}</li>`).join("")}</ul>` : `<p class="empty small">No attachments.</p>`}</section>`;
@@ -586,7 +589,7 @@ function recordPage(tab) {
   const vals = tab.vals || null;
   const shown = vals ? { ...rec, ...vals } : rec;
   const ro = RO[table] || [];
-  const sections = LAYOUT[table].filter(([, , when]) => !when || isNew || when(shown)).map(([title, keys]) => `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).filter(f => fieldVisible(table, f, shown)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit || ro.includes(f.key), errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
+  const sections = LAYOUT[table].filter(([, , when]) => !when || isNew || when(shown)).map(([title, keys]) => keys[0] === "@attachments" ? `<fieldset class="fsec"><legend>${esc(title)}</legend>${attList(rec)}</fieldset>` : `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).filter(f => table === "requests" || fieldVisible(table, f, shown)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit || ro.includes(f.key), errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
   const title = isNew ? `New ${def.label.toLowerCase()}` : displayOf(table, rec);
   const sub = table === "requests" ? rec.title : table === "invoices" ? rec.desc : table === "contracts" ? rec.title : table === "deposits" ? `${rec.payer} · ${acctLabel(acctById(rec.bankAccountId))}`
     : table === "uploads" ? `${acctLabel(acctById(rec.bankAccountId))} · statement ${rec.statementDate}` : table === "bankAccounts" ? rec.name
@@ -594,7 +597,8 @@ function recordPage(tab) {
   // Horizon record page: header (title, presence, UI action bar, label-value pairs) › ribbon › resizable pane (record tabs | contextual side bar)
   const tabs = [{ key: "details", label: "Details" }, ...(isNew ? [] : [...related(table, rec), historyTab(table, rec)])];
   const cur = tabs.find(x => x.key === tab.sub) || tabs[0];
-  const form = `<form class="rform" data-rform="${esc(tab.key)}" novalidate${sn(`FRM-${CODE[table]}`)}>${sections}</form>`;
+  const view = table === "requests" ? `<div${sn(isIx(rec) ? "REQ-FV-ARIX" : "REQ-FV-ARI")}>${sections}</div>` : sections;
+  const form = `<form class="rform" data-rform="${esc(tab.key)}" novalidate${sn(`FRM-${CODE[table]}`)}>${view}</form>`;
   const MAXT = window.innerWidth < 760 ? 2 : 5, shownT = tabs.slice(0, MAXT), moreT = tabs.slice(MAXT), curMore = moreT.includes(cur);
   const tabBtn = x => `<button type="button" role="tab" class="rtab" data-rtab="${esc(x.key)}" aria-selected="${x === cur}">${esc(x.label)}${x.n !== undefined ? ` <span class="count">${x.n}</span>` : ""}</button>`;
   const side = isNew ? [] : sidePanels(table, rec, tab);

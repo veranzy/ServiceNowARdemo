@@ -8,6 +8,7 @@ shipped. Requirement questions still open for the client live in each module's
 ## Inbox
 
 <!-- Add ideas here, one line each. Detail can follow as indented notes. -->
+- **UIX** Clean the other workspace areas (lists, landing page, customer and contract records, side panels) against the latest AR-i / AR-ix forms (owner, later).
 - **AR-00** Automation after AR form submission (owner to describe).
 - **AR-ii … AR-xvi**: names and content (owner to describe, one at a time; one module each).
 - **AR-i / CCI** AR request → invoice field mapping (incl. finance coding: cost center, account code, billing type) (owner, later).
@@ -16,6 +17,7 @@ shipped. Requirement questions still open for the client live in each module's
 
 ## Done
 
+- 2026-11-12 **UIX**: case page Details rebuilt as a form view per AR form (AR-i, AR-ix), portal sections and order, every field shown; all sample cases removed (decision 12). AR-ix portal form locked; AR-ix questions 1, 7, 8 deferred.
 - 2026-11-12 **AR-ix**: sections 5. Attachments and 6. Others (Form number for every choice), modelled on AR-i (decision 16).
 - 2026-11-12 **AR-ix**: GIRO details revamp: Type set by the contract (Remove only when GIRO is active; nothing more for Remove), new Add GIRO fields (Remarks, Tenancy agreement, Contract reference number, second Remarks, Form number) (decisions 14–15).
 - 2026-11-12 **AR-ix**: form sections Select Customer / Select Contract (existing, new or no contract); Amount free text; AR-ix is a request: Complete replaces Activate / Remove GIRO and AR updates GIRO on the contract by hand (decisions 11–13, issue #4 for the next major release).

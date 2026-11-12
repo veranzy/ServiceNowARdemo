@@ -17,3 +17,4 @@
 | 2026-11-12 | Owner change: GIRO history tab column **Purpose** → **Purpose of GIRO/DDA request**, to match the form. No IDs added or retired. |
 | 2026-11-12 | Open question 6 closed with the owner: GitHub issue #2 closed (answered by decision 14). D21 and decision 9 notes updated. No IDs added or retired. |
 | 2026-11-12 | **Owner:** AR-ix **portal form locked** (everything the requester sees and does on the AR-ix form, as for AR-i). Open questions 1, 7 and 8 deferred: not needed for this release. No IDs added or retired. |
+| 2026-11-12 | Workspace case page now follows the AR-ix form (UIX decision 12, `REQ-FV-ARIX`); all sample AR-ix cases removed, so no contract has GIRO active in the demo. |

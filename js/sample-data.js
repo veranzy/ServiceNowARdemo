@@ -337,6 +337,16 @@ export function loadSample() {
   g("2026-07-31", "giroStatus", "active", "none"); g("2026-07-31", "giroCaseId", "r11", null);
   g("2026-07-31", "giroStatus", "none", "active"); g("2026-07-31", "giroCaseId", null, "r13");
   upd("contracts", hl.id, shiftDate("2026-04-03") + "T16:00:00", "giroStatus", "none", "active", "u_ar2"); upd("contracts", hl.id, shiftDate("2026-04-03") + "T16:00:00", "giroCaseId", null, "r15", "u_ar2");
+  // Owner 2026-11-12 (UIX decision 12): every sample case is removed so the workspace only holds cases raised from
+  // the latest AR-i and AR-ix forms. Customers, contracts, invoices, schedules, documents and BSU data stay, unhooked
+  // from the removed cases; GIRO is Not active on every contract until AR sets it from a new AR-ix case.
+  S.requests = []; S.lines = []; S.items = [];
+  for (const i of S.invoices) Object.assign(i, { requestId: null, lineId: null });
+  for (const x of S.schedules) Object.assign(x, { requestId: null, lineId: null });
+  for (const d of S.documents) d.requestId = null;
+  for (const c of S.contacts) c.requestId = null;
+  for (const k of S.contracts) Object.assign(k, { giroStatus: "none", giroCaseId: null });
+  S.history = S.history.filter(h => !["requests", "lines"].includes(h.table) && !(h.table === "contracts" && ["giroStatus", "giroCaseId"].includes(h.field)));
   S.history.sort((a, b) => a.at.localeCompare(b.at));
   resetAudit();
   S.ui.ws = { main: { kind: "home" }, tabs: [], active: "main", lmOpen: null, side: { open: true, w: 380 }, q: "", composer: {} };

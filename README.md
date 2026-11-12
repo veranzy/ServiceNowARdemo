@@ -28,7 +28,10 @@ Turn both off for a clean client demo. You can also switch persona or reset the 
   and open questions. Generated from `js/schema.js` with `node tools/mapping.mjs`.
 - `docs/BUILD_NOTES.md`: every ID tag and what it maps to. Request changes as `<ID> - <change>`;
   Alt/Option+click a tagged element to copy its ID.
-- `docs/modules/`: one requirement spec per module (e.g. `BSU.md`), plus `docs/DECISIONS.md`.
+- `docs/modules/`: one folder per module (AR-00, AR-i, AR-ix, CCI, BSU, UIX) with its spec, decisions,
+  open questions and change log; the index there is the sign-off checklist. Cross-module decisions:
+  `docs/DECISIONS.md`.
+- `docs/GIT_WORKFLOW.md`: how we use git (commit codes, checks before push, sign-off tags).
 - `CLAUDE.md`: project brief, how we add modules, code layout and conventions.
 - `ROADMAP.md`: ideas and what has shipped.
 
@@ -37,9 +40,12 @@ Turn both off for a clean client demo. You can also switch persona or reset the 
 `python3 -m http.server` in this folder, then open http://localhost:8000 (ES modules don't load from a
 `file://` URL).
 
+Before pushing: `node tools/check.mjs` (syntax, build-note IDs, generated docs, module folders, links).
+
 ## Deploy
 
-Every push to `main` deploys to GitHub Pages (Settings → Pages → Source: GitHub Actions).
+Every push to `main` deploys to GitHub Pages (Settings → Pages → Source: GitHub Actions) and runs the
+**Check** workflow.
 
 ## Notes
 

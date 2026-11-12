@@ -193,7 +193,7 @@ export function loadSample() {
     r.amount = ls.reduce((sum, l) => sum + (l.lineType === "recurring" ? l.amount * monthsBetween(l.startDate, l.endDate) : l.amount), 0);
   }
 
-  // Invoice details (ARF decisions 31–33) mirror each request's billing line; Zephyr breaks its monthly charge into items
+  // Invoice details (AR-i decisions 31–33) mirror each request's billing line; Zephyr breaks its monthly charge into items
   for (const r of S.requests.filter(x => x.form !== "AR-ix")) {
     const l = S.lines.find(x => x.requestId === r.id); if (!l) continue;
     Object.assign(r, { perPeriod: l.amount, prefInvDate: l.invoiceDate || l.startDate || "", needItems: r.needItems || "no" });
@@ -254,12 +254,12 @@ export function loadSample() {
   for (const [no, d] of [["INV-10045", "2026-08-12"], ["INV-10046", "2026-09-12"]]) { const i = invByNo(no); i.scheduleId = tsch.id; i.periodDate = shiftDate(d); }
   // General information (D19) on every sample request
   for (const r of S.requests) { const u = S.users.find(x => x.id === r.requestedBy); Object.assign(r, { requesterName: u?.name || "", requesterEmail: u?.email || "", ccList: r.ccList || "" }); }
-  // GIRO (GIR module, D21): GIRO is a contract status set from the approved AR-ix case; at most one active per contract.
+  // GIRO (AR-ix module, D21): GIRO is a contract status set from the approved AR-ix case; at most one active per contract.
   const kOf = no => S.contracts.find(k => k.number === no);
   for (const k of S.contracts) Object.assign(k, { giroStatus: "none", giroCaseId: null });
-  // Contract billing terms (ARF decision 27): sample values on a few contracts, the rest left blank.
+  // Contract billing terms (AR-i decision 27): sample values on a few contracts, the rest left blank.
   const kb = (n, o) => kid[n] && Object.assign(kid[n], o);
-  // Contract type drives AR-i billing (ARF decision 31): monthly contracts are Recurring, the rest Ad-hoc
+  // Contract type drives AR-i billing (AR-i decision 31): monthly contracts are Recurring, the rest Ad-hoc
   for (const k of S.contracts) if (!k.contractType || k.contractType === "contract") k.category ||= k.billing === "Monthly" ? "recurring" : "ad_hoc";
   kb("TR-TA-2025-14", { category: "recurring", reference: "TA/JG/0123", poNumber: "", billingCycle: "first", invoiceDate: shiftDate("2025-12-01"), paymentTerms: "30", prorate: "no", typeOfBilling: "A" });
   kb("HL-2026-01", { category: "recurring", reference: "HL-WMS-26", poNumber: "HL-PO-4410", billingCycle: "fifteenth", invoiceDate: shiftDate("2026-04-15"), paymentTerms: "30", prorate: "yes", prorateFirst: cents(6240), prorateLast: cents(6240), typeOfBilling: "C", bulkDocs: ["HL-usage-breakdown-template.xlsx"] });

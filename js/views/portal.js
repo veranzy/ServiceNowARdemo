@@ -178,7 +178,7 @@ function contractRo(k) {
     ${ro("prorate")}${ro("prorateFirst")}${ro("prorateLast")}${ro("typeOfBilling")}${ro("bulkDocs")}</div>`;
 }
 
-/** AR-i Invoice details summary (ARF decision 31): what AR will bill from the contract type and the amount per period. */
+/** AR-i Invoice details summary (AR-i decision 31): what AR will bill from the contract type and the amount per period. */
 export function invSum(d) {
   const bm = billingMode(d), l = draftLine(d), pro = draftPro(d);
   let txt;
@@ -193,7 +193,7 @@ export function invSum(d) {
   return `<p class="lsum" id="pfInvSum">${txt}</p>`;
 }
 const itemField = k => TABLES.items.fields.find(f => f.key === k);
-/** Billing line items (multi-row variable set, ARF decision 32). GST and total are calculated. */
+/** Billing line items (multi-row variable set, AR-i decision 32). GST and total are calculated. */
 function itemsTable(d, e) {
   const items = d.items || [];
   const inp = (i, k, it) => { const f = itemField(k), err = e[`item:${i}:${k}`], v = it[k];
@@ -299,7 +299,7 @@ function formPage() {
   </div>`;
 }
 
-/** AR-ix GIRO authorisation (GIR module). Contract first (prefills the applicant), then the GIRO details. */
+/** AR-ix GIRO authorisation (AR-ix module). Contract first (prefills the applicant), then the GIRO details. */
 function giroFormPage() {
   const p = P(), d = p.draft, e = p.errors || {};
   const f = (k, o = {}) => fieldHtml("requests", reqField(k), d, { prefix: "pf", errors: e, vals: d, ...o });

@@ -46,7 +46,7 @@ const YES_NO = [["yes", "Yes"], ["no", "No"]];
 const BILLING_KINDS = ["A", "B", "C", "D", "E"].map(x => [x, x]);
 export const CONTRACT_CATEGORIES = [["recurring", "Recurring"], ["ad_hoc", "Ad-hoc"]];
 export const BILLING_CYCLES = [["first", "1st of the month"], ["fifteenth", "15th of the month"], ["others", "Others"]];
-/** GST rate (%) for billing line items (ARF decision 33). Build: a system property, e.g. x_ar.gst_rate. */
+/** GST rate (%) for billing line items (AR-i decision 33). Build: a system property, e.g. x_ar.gst_rate. */
 export const GST_RATE = 9;
 export const PAYMENT_TERM_CHOICES = [["30", "30 days"], ["others", "Others"]];
 
@@ -112,7 +112,7 @@ export const TABLES = {
       { key: "docBulk", name: "bulk_supporting_docs", label: "Supporting documents (bulk upload)", type: "Attachment", multiple: true, showIf: { key: "typeOfBilling", in: ["C", "D", "E"] }, help: "Optional; several files at once" },
       { key: "invoiceBreakdown", name: "invoice_breakdown", label: "Invoice breakdown", type: "String (4000)", wide: true, help: "Optional, free text: how the invoice should be broken down" },
       { key: "giroOnContract", name: "giro_on_contract", label: "GIRO on this contract", type: "Choice", choices: YES_NO, readonly: true, help: "Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21)", tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." },
-      // AR-ix GIRO authorisation (record producer variables; mandatory rules enforced on the form, see GIR module)
+      // AR-ix GIRO authorisation (record producer variables; mandatory rules enforced on the form, see AR-ix module)
       { key: "applicantName", name: "giro_applicant_name", label: "Applicant name / entity", type: "String", help: "AR-ix. Mandatory on the form; prefilled from the contract's bill-to" },
       { key: "applicantEmail", name: "giro_applicant_email", label: "Applicant email", type: "String", help: "AR-ix. Mandatory on the form; prefilled from the contract's bill-to" },
       { key: "applicantMobile", name: "giro_applicant_mobile", label: "Applicant mobile", type: "String", help: "AR-ix. Prefilled from the contract's bill-to phone" },
@@ -237,7 +237,7 @@ export const TABLES = {
   },
   items: {
     table: `${SCOPE}_request_item`, label: "Billing line item", plural: "Billing line items", display: "itemNo",
-    note: "Breakdown of an AR request's invoice (ARF decision 32). Portal: multi-row variable set on AR-i, shown when 'Require billing line item?' is Yes. GST and total are calculated (GST_RATE).",
+    note: "Breakdown of an AR request's invoice (AR-i decision 32). Portal: multi-row variable set on AR-i, shown when 'Require billing line item?' is Yes. GST and total are calculated (GST_RATE).",
     fields: [
       { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
       { key: "itemNo", name: "billing_item_number", label: "Billing item number", type: "String", mandatory: true },
@@ -421,7 +421,7 @@ export const RECORD_PRODUCER = {
   lineSet: "items",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item"
 };
-/** AR-ix GIRO authorisation (GIR module): same case table, its own variables. */
+/** AR-ix GIRO authorisation (AR-ix module): same case table, its own variables. */
 export const RECORD_PRODUCER_ARIX = {
   name: "AR-ix GIRO authorisation",
   table: "requests",

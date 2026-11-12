@@ -91,7 +91,7 @@ function generalInfoErrors(d, e) {
 /** Portal: requests the user raised, or is on the CC list of (CC'd people can view the case). */
 export const canViewReq = (r, u = me()) => r.requestedBy === u.id || ccEmails(r.ccList).map(x => x.toLowerCase()).includes(String(u.email || "").toLowerCase());
 
-// ---------- AR-ix GIRO authorisation (GIR module) ----------
+// ---------- AR-ix GIRO authorisation (AR-ix module) ----------
 export const CONTRACT_CATEGORY = Object.fromEntries(CONTRACT_CATEGORIES);
 export const GIRO_PURPOSE = Object.fromEntries(GIRO_PURPOSES), GIRO_TYPE = Object.fromEntries(GIRO_TYPES);
 export function validateARix(d) {
@@ -191,7 +191,7 @@ export function validateARi(d) {
     if (d.billToEmail && needBillTo(d) && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.billToEmail)) e.billToEmail = "Enter a valid email address.";
   }
   if (d.pocEmail && !EMAIL_RE.test(d.pocEmail)) e.pocEmail = "Enter a valid email address.";
-  // Invoice details (ARF decisions 31–33): one billing event per request, recurring when the contract type is Recurring
+  // Invoice details (AR-i decisions 31–33): one billing event per request, recurring when the contract type is Recurring
   need("title", "Describe what the invoice is for.");
   if (d.attnEmail && !EMAIL_RE.test(d.attnEmail)) e.attnEmail = "Enter a valid email address.";
   if (!(d.perPeriod > 0)) e.perPeriod = "Enter the amount billed per period (before GST).";
@@ -218,7 +218,7 @@ export function contractCategoryOf(d) {
   if (d.contractOption === "existing") return ctrById(d.contractId)?.category || "";
   return d.contractOption === "none" ? "ad_hoc" : "";
 }
-/** How the request is billed (D13 as amended, ARF decision 31): recurring contract → every period; otherwise one invoice. */
+/** How the request is billed (D13 as amended, AR-i decision 31): recurring contract → every period; otherwise one invoice. */
 export const billingMode = d => ({ category: contractCategoryOf(d), recurring: contractCategoryOf(d) === "recurring" });
 export const contractEnd = d => d.contractOption === "new" ? d.newCtrEnd || "" : d.contractOption === "existing" ? ctrById(d.contractId)?.end || "" : "";
 /** The one billing line created from the invoice details at submit. */

@@ -489,7 +489,7 @@ body.sn-dev [data-snid]::before{display:none!important}
   .pt-hero h1{font-size:28px}
 }
 
-/* ARF PT-05: contract step, bill-to under contract, billing hierarchy */
+/* AR-i PT-05: contract step, bill-to under contract, billing hierarchy */
 .optcards{display:flex;flex-wrap:wrap;gap:8px}
 .optcard{flex:1 1 150px;display:grid;gap:2px;text-align:left;border:1px solid var(--line);border-radius:9px;padding:9px 12px;background:var(--surface);color:var(--fg);font-weight:600;cursor:pointer}
 .optcard span{font-weight:400;font-size:12px;color:var(--muted)}
@@ -508,7 +508,7 @@ body.sn-dev [data-snid]::before{display:none!important}
 /* =========================================================================================
    UIX: Horizon Design System alignment for the AR team workspace only (portal unchanged).
    Fonts: Cabin (headers, titles), Lato (body). Radius sm 2 / md 6 / lg 8. Spacing 2 4 8 12 16 24 40.
-   Colours are approximations of the Next Experience default theme (see docs/modules/UIX.md).
+   Colours are approximations of the Next Experience default theme (see docs/modules/UIX/README.md).
    ========================================================================================= */
 body[data-persona="ar"]{
   --bg:#f1f3f4; --surface:#ffffff; --sunk:#e8ecee; --line:#cfd5d7; --fg:#0b1012; --muted:#4f5c62;
@@ -645,7 +645,7 @@ button.ws-tab[aria-selected="true"],.ws-tab.rec.on{background:transparent;color:
   .rh-right{justify-content:flex-start}
 }
 
-/* ARF: read-only GIRO Yes / No on AR-i (set by AR-ix) */
+/* AR-i: read-only GIRO Yes / No on AR-i (set by AR-ix) */
 .seg.giro-ro button[disabled]{cursor:not-allowed;opacity:.55}
 .seg.giro-ro button[disabled][aria-pressed="true"]{opacity:.8}
 .psub{display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:12px;margin-top:4px}

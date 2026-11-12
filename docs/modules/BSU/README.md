@@ -1,29 +1,18 @@
-# BSU — Bank statement upload
+# BSU — Bank statement upload and cash application
 
 **Status:** In prototype
 **Persona(s):** AR team (workspace)
-**Demo:** Workspace → left rail → **BSU** (upload icon). Lists: *Bank statements* group in the list menu.
+**Demo:** Workspace → left rail → **BSU** (upload icon) and **Cash application**. Lists: *Bank statements* group in the list menu.
+
+Files in this folder: this spec, [DECISIONS.md](DECISIONS.md), [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md),
+[CHANGELOG.md](CHANGELOG.md). Formerly two modules: BSU (upload) and CSH (cash application). Money in
+is only ever a BSU deposit (D7); there is **no auto-matching, ever** (D5).
 
 ## Purpose
 
 Every morning the AR team loads the previous day's bank statement for each company bank account so
 that customer deposits are recorded in ServiceNow. Each deposit gets a **Deposit ID** and is stored in
 the **Bank statements** table, where the AR team reviews it and matches it to invoices manually.
-
-## Decisions
-
-| # | Question | Decision | Date |
-|---|---|---|---|
-| 1 | File formats | CSV bank export only. Each bank has its own column layout; the upload uses the template of the account's bank. | 2026-11-01 |
-| 2 | What happens after upload | Deposits are saved to the **Bank statements** table for later manual review and matching. **No auto-matching, ever** (see D5). | 2026-11-01 |
-| 3 | Which lines | **Deposits (credits) only.** Withdrawals in the file are skipped and counted. | 2026-11-01 |
-| 4 | Banks | Mock aliases for Singapore's three largest banks: **Marina Bank**, **Orchard Bank**, **Union Straits Bank**, each with a different CSV layout. | 2026-11-01 |
-| 5 | Upload cadence | One upload per bank account per day, for the **previous day** (statement date defaults to yesterday). | 2026-11-01 |
-| 6 | Deposit ID | Each deposit is tagged `DEP-<bank code><last 4 of account>-<YYMMDD>-<NNN>`, e.g. `DEP-MB4521-261031-001`. | 2026-11-01 |
-| 7 | Bank accounts | Bank account master with bank, account number, name, **department** and **account type** (Revenue, Deposit, Operating). | 2026-11-01 |
-| 8 | Controls | Keep it simple for now: no duplicate, balance or continuity checks. | 2026-11-01 |
-| 9 | Routing by department / account type | **No routing.** All deposits go to one AR queue (Cash application). Department and account type are labels for reference only. | 2026-11-01 |
-| 10 | Non-customer deposits (interest, refunds, transfers) | **Leave them unmatched.** No special status; they stay in the to-match list and are handled outside the app. | 2026-11-01 |
 
 ## User stories
 
@@ -56,9 +45,29 @@ the **Bank statements** table, where the AR team reviews it and matches it to in
 | `x_ar_bank_statement` | **Bank statements** table: one row per deposit, `deposit_id` as display value, reference to upload and bank account, value date, payer, reference, amount, match state. |
 | Parsing | Scripted upload: UI action *Save to bank statements* on a custom workspace page calls Script Include `x_ar.BankStatementParser` with the bank's template (or one Data Source + Transform Map per bank). Templates in a small config table or system properties. |
 | Deposit ID | Before-insert business rule: `DEP-` + bank code + last 4 of account + statement date + 3-digit sequence per upload. |
-| Matching | No auto-match. Manual matching from the Cash application page creates `x_ar_allocation` records. |
+| Matching | No auto-match. Manual matching on the Cash application page (below) creates `x_ar_allocation` records. |
 
 See `SERVICENOW_MAPPING.md` (generated) for full column lists.
+
+## Cash application (manual matching)
+
+The AR team matches each BSU deposit to one or more **issued** invoices ([CCI](../CCI/README.md)) by hand.
+
+1. **Cash application page** (`CSH-01`): summary cards (`CSH-02`: to match, matched, amounts) and the
+   deposits list (`CSH-03`) with filter tabs *To match / Matched / All*.
+2. **Find invoice** opens the invoice finder (`CSH-04`): issued invoices ranked as a suggestion only (invoice
+   number in the bank reference, amount fit, payer-name similarity), with an allocation preview. AR picks the
+   invoices and amounts and clicks **Apply**, which creates accepted allocations.
+3. **Remove match** clears the deposit's allocations.
+4. Allocations update each invoice's amount due and payment status (Unpaid / Part paid / Paid / Overdue).
+   Exceptions (short pay, over pay, multi-invoice) are labels on the match, not separate flows.
+
+| Item | Build |
+|---|---|
+| Cash application page | UI Builder custom page over `x_ar_bank_statement` with match state filters. |
+| Invoice finder | Modal or side panel; Script Include ranks `x_ar_invoice` where state = issued and amount due > 0. Suggestion only. |
+| `x_ar_allocation` | Deposit, invoice, amount, status (accepted); business rule recalculates the invoice's `amount_due` / `payment_status` and the deposit's match state. |
+| UI actions | Deposit: *Find invoice → Apply* (inserts allocations), *Remove match*. Related lists `RL-INV-ALC`, `RL-DEP-ALC`. |
 
 ## Bank CSV layouts (mock)
 
@@ -73,17 +82,3 @@ See `SERVICENOW_MAPPING.md` (generated) for full column lists.
 - Duplicate statement detection, opening/closing balance check, date continuity warnings.
 - CAMT.053, MT940 or Excel formats; direct bank integration (host-to-host / API).
 - Non-SGD accounts.
-
-## Open questions
-
-1. Who may upload: any AR team member, or a named few?
-2. Should an upload be deletable/re-uploadable if the wrong file was used?
-3. Non-customer deposits stay in the to-match list (decision 10). Revisit if the list gets noisy?
-
-## Change log
-
-| Date | Change |
-|---|---|
-| 2026-11-01 | Module specified from owner's answers; first prototype built. Auto-match removed app-wide. |
-| 2026-11-01 | Decisions 9–10: one AR queue, no routing by department/type; non-customer deposits left unmatched. No prototype change needed. |
-| 2026-11-01 | D7: "payments" renamed to **BSU deposits** everywhere (UI, schema, code, docs). Cash application works only on BSU deposits. |

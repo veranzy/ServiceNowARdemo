@@ -1,0 +1,15 @@
+# UIX — decisions
+
+| # | Question | Decision | Date |
+|---|---|---|---|
+| 1 | Scope | **Workspace only.** The portal keeps its Employee Center look. | 2026-11-03 |
+| 2 | App shell | Unified navigation header (navy), app navigation on the left (icon rail), workspace tabs below the header: one primary tab (not closable) plus closable record tabs. | 2026-11-03 |
+| 3 | List page | Horizon **list page template**: list menu on the left, list on the right; the menu selection drives the list. The menu can be hidden (hidden by default on phones). | 2026-11-03 |
+| 4 | Record page | Horizon **Record page template**: header (name, description, label-value pairs, form record presence, UI action bar with overflow menu) › **ribbon** of metric widgets (collapsible) › **resizable pane**: record tabs on the left, **contextual side bar** on the right. | 2026-11-03 |
+| 5 | Record tabs | Order per Horizon: **Details** (the form) first, then related items (e.g. *Billing hierarchy*, *Billing periods*), then **one tab per related list**. Beyond 5 tabs (2 on phones) the rest go into a *More* menu. | 2026-11-03 |
+| 6 | Contextual side bar | Vertical icon tabs, open by default, collapsible, resizable by dragging its left edge. AR request: **Customer setup**, **Activity** (stream + composer), **Attachments**. Opens on Customer setup while setup is pending, otherwise Activity. Other tables have no side bar for now. | 2026-11-03 |
+| 7 | UI action bar | Main actions as buttons; secondary and destructive ones (Request info, Reject, Cancel invoice, Add billing contact) in the overflow menu (⋯), as in the template's defaults. | 2026-11-03 |
+| 8 | Header vs ribbon | Header label-value pairs hold identity (state, customer, contract, department, people, dates). Money and progress move to the ribbon (request value, lines done, setup done; amount due; open AR / overdue; billed vs contract value; periods due). | 2026-11-03 |
+| 10 | Theme | Use the **ServiceNow default workspace theme**; no custom or branded theme. The prototype's colours approximate it. (Open question 1, answered by the owner.) | 2026-11-03 |
+| 11 | Record history | A **Record history** tab on **every** record page, last in the tab order: when, who, field, old value, new value, newest first, plus a *Record created* row. Needs Audit turned on for every `x_ar_` table. (Open question 3, answered by the owner.) | 2026-11-03 |
+| 9 | Foundations | Fonts **Cabin** (headers, titles) and **Lato** (body). Corner radius 2 px (badges) / 6 px (buttons, inputs) / 8 px (containers). Spacing scale 2, 4, 8, 12, 16, 24, 40 px: card padding 16, gaps between cards 8, between form fields 12, between form columns 24. Type sizes header 24 / section 20 / sub 16. | 2026-11-03 |

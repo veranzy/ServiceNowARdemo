@@ -288,7 +288,7 @@ const LAYOUT = {
     ["Others (placement to be decided)", ["invoiceBreakdown", "costCenter", "accountCode", "agentName", "poNumber"], r => !isIx(r)],
     ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], r => !isIx(r) && r.billToName],
     ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => !isIx(r) && (r.docContract || r.docAcra || r.docBillingForm)],
-    // AR-ix (GIR module)
+    // AR-ix (AR-ix module)
     ["Customer not at AR yet", ["newCustName"], r => isIx(r) && r.newCustomer],
     ["Contract and applicant", ["customerId", "contractId", "newCtrRef", "applicantName", "applicantEmail", "applicantMobile", "giroInvoiceRef"], isIx],
     ["GIRO details", ["giroPurpose", "giroPurposeOther", "giroType", "giroLocation", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroAmount"], isIx],

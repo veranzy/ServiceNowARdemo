@@ -38,7 +38,7 @@ CLAUDE.md**: the brief has a single copy, in git.
 purpose**. A form is a request and never changes master data by itself; AR updates customers and
 contracts in the workspace, and forms only read it (e.g. AR-i shows the contract's GIRO status
 read-only, and only an AR-ix changes GIRO). Expect, and design for, scenarios that follow from this
-(listed in `docs/modules/ARF.md` → Context).
+(listed in `docs/modules/AR-00/README.md` → Context).
 
 If a request conflicts with a recorded decision, point out the conflict and ask. Never override a
 decision silently; a changed decision is recorded as a new or amended entry with its date.
@@ -67,19 +67,32 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-12 | Context added: AR forms and customer / contract updates are separate on purpose (D22). | Owner |
 | 2026-11-12 | Standing decision D1 amended: customer name dot-walked from `core_company` (D26). | Owner |
 | 2026-11-12 | Brief lives only in git: the Claude project copy is decommissioned and CLAUDE.md is no longer exported. | Owner |
+| 2026-11-12 | Module map changed (D27): one module per AR form (AR-00 shared, AR-i, AR-ix, …), CCI, BSU (with cash application), UIX; one folder per module; git rules in `docs/GIT_WORKFLOW.md` with `node tools/check.mjs` before every push. | Owner |
 
 ## How we work: modules, one at a time
 
-Features are added progressively as **modules** with a short code (ARF, INV, CSH, MDM, BSU, …).
-For every new module or change:
+Features are added progressively as **modules** (D27, index and status in `docs/modules/README.md`):
+
+| Code | Module |
+|---|---|
+| `AR-00` | AR forms, shared parts: catalogue, General information, My requests, ticket page, case states |
+| `AR-i`, `AR-ix`, … | One module per AR form number: its portal form and its workspace processing |
+| `CCI` | Customers, contracts and invoices |
+| `BSU` | Bank statement upload and cash application (manual matching) |
+| `UIX` | Workspace look and layout (Horizon) |
+
+Each module is a folder `docs/modules/<CODE>/` with `README.md` (spec), `DECISIONS.md`,
+`OPEN_QUESTIONS.md` and `CHANGELOG.md`. **Git rules for every session are in `docs/GIT_WORKFLOW.md`:**
+pull first, one module per commit with its code as prefix, docs in the same commit, `node tools/check.mjs`
+before every push, never force-push. For every new module or change:
 
 1. **Ask first.** Before building, ask the owner 2–4 focused questions (multiple choice with a
    recommended option) about the decisions that change the build. Don't build on guesses.
-2. **Spec.** Create or update `docs/modules/<CODE>.md` from `docs/modules/_TEMPLATE.md`: decisions table,
-   user stories, screens/flow, ServiceNow mapping, out of scope, open questions, change log. Add the
-   module to `docs/modules/README.md`. Cross-module decisions go to `docs/DECISIONS.md` (D1, D2, …).
+2. **Spec.** Create or update `docs/modules/<CODE>/` (copy `docs/modules/_TEMPLATE/`): spec, decisions,
+   open questions, change log. Add the module to the index in `docs/modules/README.md`. Cross-module decisions go to `docs/DECISIONS.md` (D1, D2, …).
 3. **Build** in the prototype with schema + Build notes; regenerate `SERVICENOW_MAPPING.md`.
-4. **Commit** with the module code as prefix (`BSU: …`), push to `main`, confirm the Pages deploy.
+4. **Check and commit** (`docs/GIT_WORKFLOW.md`): `node tools/check.mjs`, commit with the module code as
+   prefix (`AR-i: …`), push to `main`, confirm the Pages deploy and the Check run.
 5. **Prompt the next step.** End by suggesting the next module or refinement and the questions it needs.
 
 ## Change requests by build-note ID
@@ -97,9 +110,9 @@ separate layer (`js/views/devnotes.js`, `#snLayer`) so nothing clips them; click
 3. Every new outlined element gets a **new** registered ID: add it to `NOTES` / `UI_ACTIONS` /
    `RELATED` / `CALC_COLS` in `js/notes.js` and call `sn("ID")`. `sn()` warns in the console for
    unregistered IDs. IDs are stable: never renumber or reuse one; if an element is removed, leave a
-   line in the module spec change log saying the ID was retired.
-4. Record the request in the owning module spec's change log (quote the ID), regenerate
-   `node tools/notes.mjs` and `node tools/mapping.mjs`, commit with the module code prefix, push.
+   line in the module's `CHANGELOG.md` saying the ID was retired.
+4. Record the request in the owning module's `CHANGELOG.md` (quote the ID), run `node tools/check.mjs`
+   (it regenerates `docs/BUILD_NOTES.md` and `SERVICENOW_MAPPING.md`), commit with the module code prefix, push.
 5. If the request is ambiguous or changes a decision, ask before building.
 
 "App 1" was an earlier Claude-hosted prototype with Claude-powered matching. It is frozen and will be
@@ -109,7 +122,7 @@ rebuilt later from this codebase. Do not add Claude/LLM calls here unless the ow
 
 | Persona | Role | UI | Does |
 |---|---|---|---|
-| Company project team | `x_ar.project_team` | **Portal only** (Service Portal / Employee Center look) | Picks from **16 AR forms (AR-i … AR-xvi)**; defined so far: AR-i *New AR request* (customer search, contract, invoice details) and AR-ix *GIRO authorisation* (GIR module). Every form starts with **General information** (D19). Follows **My requests** (own cases and cases they are CC'd on), replies on the ticket page |
+| Company project team | `x_ar.project_team` | **Portal only** (Service Portal / Employee Center look) | Picks from **16 AR forms (AR-i … AR-xvi)**; defined so far: AR-i *New AR request* (customer search, contract, invoice details) and AR-ix *GIRO authorisation*. Every form starts with **General information** (D19). Follows **My requests** (own cases and cases they are CC'd on), replies on the ticket page |
 | Accounts receivable team | `x_ar.ar_team` | **Workspace only** (configurable workspace look) | Works AR request **cases**, creates and issues invoices, uploads bank statements (**BSU**), matches deposits to invoices **manually**, maintains customers, contracts and bank accounts |
 
 Core flow: project team submits **AR-i**: searches the customer and adds it as new only if not found
@@ -185,7 +198,9 @@ js/views/common.js      sn() build-note attribute, fieldHtml (forms from schema)
 tools/mapping.mjs       generates SERVICENOW_MAPPING.md from the schema
 js/notes.js             build-note ID registry (table codes, element notes, UI actions, related lists)
 tools/notes.mjs         generates docs/BUILD_NOTES.md (every ID and what it maps to)
-docs/modules/           one spec per module (see "How we work"); docs/DECISIONS.md cross-module decisions
+tools/check.mjs         pre-push check (syntax, IDs, generated docs, module folders, links); CI runs it
+docs/modules/<CODE>/    one folder per module (see "How we work"); docs/DECISIONS.md cross-module decisions
+docs/GIT_WORKFLOW.md    git rules for every session
 ```
 
 ## Conventions
@@ -201,7 +216,7 @@ docs/modules/           one spec per module (see "How we work"); docs/DECISIONS.
   ID registered in `js/notes.js` (see "Change requests by build-note ID"). Fields get `<CODE>.<column>`
   IDs automatically through `fieldHtml`.
 - **Workspace vs portal:** AR features go in the workspace only; project-team features in the portal only.
-- **Workspace layout follows Horizon (D17, `docs/modules/UIX.md`):** record pages are header › ribbon ›
+- **Workspace layout follows Horizon (D17, `docs/modules/UIX/README.md`):** record pages are header › ribbon ›
   record tabs (`related()` returns one tab per related list) + contextual side bar (`sidePanels()`);
   UI actions return `{html, ovf}` (overflow menu); metrics go in `ribbon()`, identity in `headerFields()`.
   Workspace tokens are scoped to `body[data-persona="ar"]` in `css/styles.css`.
@@ -223,4 +238,5 @@ No console errors.
 
 ## Deploy
 
-Push to `main`. Pages source must stay "GitHub Actions".
+Push to `main` (after `node tools/check.mjs`). Pages source must stay "GitHub Actions". Two workflows run on
+every push: **Deploy to GitHub Pages** and **Check** (`.github/workflows/check.yml`); both must be green.

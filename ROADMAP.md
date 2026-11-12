@@ -1,20 +1,23 @@
 # Roadmap
 
-Ideas for App 2 (Receivables Desk prototype for the ServiceNow build). Add new ideas under **Inbox**;
-move them to **Next** once agreed, and to **Done** with the date when shipped. Requirement questions
-still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
+Ideas for App 2 (Receivables Desk prototype for the ServiceNow build). Add new ideas under **Inbox**,
+starting with the module code; move them to **Next** once agreed, and to **Done** with the date when
+shipped. Requirement questions still open for the client live in each module's
+`docs/modules/<CODE>/OPEN_QUESTIONS.md`.
 
 ## Inbox
 
 <!-- Add ideas here, one line each. Detail can follow as indented notes. -->
-- Automation after AR form submission (owner to describe).
-- AR-ii … AR-xvi: names and content (owner to describe, one at a time).
-- AR request → invoice field mapping (incl. finance coding: cost center, account code, billing type) (owner, later).
+- **AR-00** Automation after AR form submission (owner to describe).
+- **AR-ii … AR-xvi**: names and content (owner to describe, one at a time; one module each).
+- **AR-i / CCI** AR request → invoice field mapping (incl. finance coding: cost center, account code, billing type) (owner, later).
 
 ## Next
 
 ## Done
 
+- 2026-11-12 **DOCS / TOOLS**: module map D27 (AR-00, AR-i, AR-ix, CCI, BSU, UIX), one folder per module;
+  git rules in `docs/GIT_WORKFLOW.md`; `tools/check.mjs` and the Check workflow; `.gitignore`.
 - 2026-11-12 **ARF**: contract location removed everywhere (ARF 35); bulk upload hint removed; open questions 20–24
   answered (ARF 36; LPI parked as issue #3).
 - 2026-11-12 **ARF**: AR-i Invoice details revamp: billing lines replaced by invoice description, attention to, amount per

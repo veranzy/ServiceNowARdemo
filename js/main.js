@@ -216,7 +216,7 @@ document.addEventListener("click", e => {
     if (d.ctropt === "new" && dr.form !== "AR-ix") { dr.newCtrTerms ||= "30"; dr.newCtrProrate ||= "no"; }
     contractChanged(dr); delete P().errors.contractOption; render();
     return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? $(dr.form === "AR-ix" ? "pf-newCtrRef" : "pf-newCtrType") : null)?.focus(); }
-  // AR-i billing line items (multi-row variable set, ARF decision 32)
+  // AR-i billing line items (multi-row variable set, AR-i decision 32)
   if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ itemNo: "", amount: 0, lpiRate: 0, accountCode: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
   if (d.iremove !== undefined) { P().draft.items.splice(+d.iremove, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith("item:"))); return render(); }
   if (d.unattach !== undefined) { P().draft.attachments.splice(+d.unattach, 1); return render(); }

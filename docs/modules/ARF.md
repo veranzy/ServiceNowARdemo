@@ -58,6 +58,7 @@ master data says. This creates some scenarios the build must handle:
 | 20 | Recurring line options | Each recurring line gets optional **Remarks** and **Prorate first and last month** (Yes / No). If Yes: **First month amount** and **Last month amount** (mandatory). Line value = first + amount × (periods − 2) + last. The billing schedule keeps both amounts and *Raise invoice* uses them for the first and last period. | 2026-11-12 |
 | 21 | Invoice breakdown | New section **Invoice breakdown**: free text, optional, after What to bill. | 2026-11-12 |
 | 22 | Customer section | **Finance coding moves into section 2 Customer** (no longer its own section), and the section gets a **Customer point of contact**: POC name and POC email (both optional; email validated). AR-i sections: 1 General information, 2 Customer (customer, POC, finance coding), 3 Contract and bill-to, 4 GIRO, 5 What to bill, 6 Invoice breakdown, 7 Customer documents. | 2026-11-12 |
+| 23 | Agency type | **Billing type** is renamed **Agency type** (same choices M / SB / PV, same rules; decisions 15 and 18 now read "agency type"). The column becomes `agency_type`. | 2026-11-12 |
 
 Assumption to confirm: "where their contracts are" means the storage location of the signed contract
 (decision 5).
@@ -154,7 +155,7 @@ Assumption to confirm: "where their contracts are" means the storage location of
 7. Should AR be able to move a shell's billing lines onto a real contract later (e.g. when a contract is signed)?
 5. Should a recurring line be able to change amount part-way (e.g. price step-up), or is that a second line with its own date range?
 4. Who maintains the list of 11 departments (fixed choice list vs. a department table)?
-8. Full names of billing types **M**, **SB** and **PV**, and what **V@G** stands for. (Owner)
+8. Full names of agency types **M**, **SB** and **PV**, and what **V@G** stands for. (Owner)
 9. Should cost center and account code be validated against a list (e.g. a cost center table or the
    finance system), or stay free text? (Owner)
 10. Do the finance coding values need to flow onto the invoice (e.g. for GL posting)? (Owner) **Deferred (2026-11-06):** to be decided with the AR request → invoice field mapping, later.
@@ -177,3 +178,4 @@ Assumption to confirm: "where their contracts are" means the storage location of
 | 2026-11-10 | **General information** section (D19) added as section 1 of AR-i (and AR-ix): requester name, email (SSO, read-only), department, CC list; AR-i sections renumbered (Customer is now 2). New IDs `PT-30`, `REQ.requester_name`, `REQ.requester_email`, `REQ.cc_list`. **`PT-06` retired** (the read-only "Requested by" display; replaced by `REQ.requester_name`). Catalogue: AR-ix is now active (see the GIR module). Case state **Completed** added for non-billing forms. |
 | 2026-11-12 | **Owner change request (11 items).** Context section added (AR forms and master data separate on purpose, D22). AR-i: GIRO section, read-only from the contract (decision 16, `PT-36`, `REQ.giro_on_contract`); department Sub-BU dropdown on all forms (17, `REQ.department_sub_bu`); finance coding: Type of billing for M / SB / PV, V@G for SB and PV, Sub-BU (V@G) now free text (`REQ.sub_bu` changed from Choice to String), agent name (`REQ.agent_name`), GA tooltip on cost center (18); bulk supporting documents for C / D / E (19, `REQ.bulk_supporting_docs`); recurring line remarks and prorating (20, `RQL.remarks`, `RQL.prorate`, `RQL.first_period_amount`, `RQL.last_period_amount`, `SCH.first_period_amount`, `SCH.last_period_amount`); Invoice breakdown section (21, `PT-37`, `REQ.invoice_breakdown`). AR-i sections are now: 1 General information, 2 Customer, 3 Contract and bill-to, 4 GIRO, 5 What to bill, 6 Invoice breakdown, 7 Finance coding, 8 Customer documents. Also fixed: clicking Submit straight after editing a text field didn't submit. No IDs retired. |
 | 2026-11-12 | Finance coding merged into the Customer section; Customer POC name and email added (decision 22, `PT-38`, `REQ.customer_poc_name`, `REQ.customer_poc_email`). `PT-29` is now the finance coding block inside the Customer section (no longer a section of its own). No IDs retired. |
+| 2026-11-12 | Billing type renamed **Agency type** (decision 23). New ID `REQ.agency_type`; **`REQ.billing_type_code` retired** (same field, renamed column). |

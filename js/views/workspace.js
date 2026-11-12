@@ -284,7 +284,7 @@ const LAYOUT = {
     ["Customer PO", ["poNumber"], r => !isIx(r)],
     ["GIRO (from the contract at submit)", ["giroOnContract"], r => !isIx(r) && !!r.giroOnContract],
     ["Invoice breakdown", ["invoiceBreakdown"], r => !isIx(r)],
-    ["Finance coding", ["costCenter", "accountCode", "agentName", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docBulk"], r => !isIx(r)],
+    ["Finance coding", ["costCenter", "accountCode", "agentName", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk"], r => !isIx(r)],
     ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], r => !isIx(r) && r.billToName],
     ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => !isIx(r) && (r.docContract || r.docAcra || r.docBillingForm)],
     // AR-ix (GIR module)

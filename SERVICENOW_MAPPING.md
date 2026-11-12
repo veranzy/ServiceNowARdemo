@@ -103,10 +103,10 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `cost_center` | Cost center | String | Optional, free text. To be filled by GA. Tooltip: "To be filled by GA" |
 | `account_code` | Account code | String | Optional, free text |
 | `agent_name` | Name of agent to be billed | String | Optional, free text |
-| `billing_type_code` | Billing type | Choice | Choices: M, SB, PV. Optional. M, SB or PV (full names to be confirmed) |
-| `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Billing type is SB, PV (UI policy). Optional |
+| `agency_type` | Agency type | Choice | Choices: M, SB, PV. Optional. M, SB or PV (full names to be confirmed) |
+| `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type is SB, PV (UI policy). Optional |
 | `sub_bu` | Sub-BU (V@G) | String | Shown when V@G = Yes (UI policy). Optional, free text |
-| `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Shown when Billing type is M, SB, PV (UI policy). Optional |
+| `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Shown when Agency type is M, SB, PV (UI policy). Optional |
 | `bulk_supporting_docs` | Supporting documents (bulk upload) | Attachment | Shown when Type of billing is C, D, E (UI policy). Optional; several files at once |
 | `invoice_breakdown` | Invoice breakdown | String (4000) | Optional, free text: how the invoice should be broken down |
 | `giro_on_contract` | GIRO on this contract | Choice | Choices: Yes (`yes`), No (`no`). Read-only on form. Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21). Tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." |
@@ -214,7 +214,7 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 
 ## Portal (project team)
 
-- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_ref`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `contract_location`, `contract_location_ref`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `po_number`, `customer_poc_name`, `customer_poc_email`, `invoice_breakdown`, `cost_center`, `account_code`, `agent_name`, `billing_type_code`, `vag`, `sub_bu`, `type_of_billing`, `bulk_supporting_docs`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
+- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_ref`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `contract_location`, `contract_location_ref`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `po_number`, `customer_poc_name`, `customer_poc_email`, `invoice_breakdown`, `cost_center`, `account_code`, `agent_name`, `agency_type`, `vag`, `sub_bu`, `type_of_billing`, `bulk_supporting_docs`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
   - Producer script: `current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;`
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.

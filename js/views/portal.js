@@ -77,7 +77,7 @@ function catalogPage() {
 
 const reqField = k => TABLES.requests.fields.find(f => f.key === k);
 /** Finance coding variables (request level, all optional). */
-export const FIN_KEYS = ["costCenter", "accountCode", "agentName", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docBulk"];
+export const FIN_KEYS = ["costCenter", "accountCode", "agentName", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk"];
 const finText = r => FIN_KEYS.filter(k => (Array.isArray(r[k]) ? r[k].length : r[k]) && fieldVisible("requests", reqField(k), r)).map(k => { const fl = reqField(k); return `${fl.label}: ${Array.isArray(r[k]) ? `${r[k].length} file(s)` : (fl.choices?.find(c => c[0] === r[k]) || [, r[k]])[1]}`; }).join(" · ");
 
 function docRow(t, d, onFile) {

@@ -41,7 +41,7 @@ export const FREQUENCIES = [["monthly", "Monthly", 1], ["quarterly", "Quarterly"
 export const DOC_TYPES = [["contract", "Signed contract / PO"], ["acra", "Company registration (ACRA / UEN)"], ["billing_form", "Billing contact & address form"]];
 export const CONTRACT_OPTIONS = [["existing", "Existing contract"], ["new", "New contract"], ["none", "No contract required"]];
 export const CONTRACT_TYPES = [["contract", "Contract"], ["shell", "No-contract shell"]];
-export const BILLING_TYPE_CODES = [["M", "M"], ["SB", "SB"], ["PV", "PV"]];
+export const AGENCY_TYPES = [["M", "M"], ["SB", "SB"], ["PV", "PV"]];
 const YES_NO = [["yes", "Yes"], ["no", "No"]];
 const BILLING_KINDS = ["A", "B", "C", "D", "E"].map(x => [x, x]);
 const CONTRACT_LOCATIONS = [["attached", "Attached to this form"], ["on_file", "Already with AR"], ["repository", "Document repository link"], ["physical", "Physical file"]];
@@ -87,10 +87,10 @@ export const TABLES = {
       { key: "costCenter", name: "cost_center", label: "Cost center", type: "String", help: "Optional, free text. To be filled by GA", tooltip: "To be filled by GA" },
       { key: "accountCode", name: "account_code", label: "Account code", type: "String", help: "Optional, free text" },
       { key: "agentName", name: "agent_name", label: "Name of agent to be billed", type: "String", help: "Optional, free text" },
-      { key: "billingTypeCode", name: "billing_type_code", label: "Billing type", type: "Choice", choices: BILLING_TYPE_CODES, help: "Optional. M, SB or PV (full names to be confirmed)" },
-      { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "billingTypeCode", in: ["SB", "PV"] }, help: "Optional" },
+      { key: "agencyType", name: "agency_type", label: "Agency type", type: "Choice", choices: AGENCY_TYPES, help: "Optional. M, SB or PV (full names to be confirmed)" },
+      { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "agencyType", in: ["SB", "PV"] }, help: "Optional" },
       { key: "subBu", name: "sub_bu", label: "Sub-BU (V@G)", type: "String", showIf: { key: "vag", eq: "yes" }, help: "Optional, free text" },
-      { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, showIf: { key: "billingTypeCode", in: ["M", "SB", "PV"] }, help: "Optional" },
+      { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, showIf: { key: "agencyType", in: ["M", "SB", "PV"] }, help: "Optional" },
       { key: "docBulk", name: "bulk_supporting_docs", label: "Supporting documents (bulk upload)", type: "Attachment", multiple: true, showIf: { key: "typeOfBilling", in: ["C", "D", "E"] }, help: "Optional; several files at once" },
       { key: "invoiceBreakdown", name: "invoice_breakdown", label: "Invoice breakdown", type: "String (4000)", wide: true, help: "Optional, free text: how the invoice should be broken down" },
       { key: "giroOnContract", name: "giro_on_contract", label: "GIRO on this contract", type: "Choice", choices: YES_NO, readonly: true, help: "Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21)", tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." },
@@ -340,7 +340,7 @@ export function clearHidden(tableKey, vals) {
   for (const f of TABLES[tableKey].fields) if (f.showIf && !fieldVisible(tableKey, f, vals) && vals[f.key]) { vals[f.key] = ""; out.push(f.key); }
   return out;
 }
-/** "Shown when Billing type = SB" text for docs. */
+/** "Shown when Agency type = SB" text for docs. */
 export function showIfText(tableKey, f) {
   if (!f.showIf) return "";
   const p = fieldOf(tableKey, f.showIf.key), lab = x => x === true ? "Yes" : (p.choices?.find(c => c[0] === x) || [, x])[1];
@@ -364,7 +364,7 @@ export const RECORD_PRODUCER = {
   variables: [...GENERAL_INFO, "customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress",
     "contractOption", "contractId", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "contractLocation", "contractLocationRef",
     "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "poNumber",
-    "pocName", "pocEmail", "invoiceBreakdown", "costCenter", "accountCode", "agentName", "billingTypeCode", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
+    "pocName", "pocEmail", "invoiceBreakdown", "costCenter", "accountCode", "agentName", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "lines",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;"
 };

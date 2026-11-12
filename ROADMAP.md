@@ -15,6 +15,8 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 ## Done
 
+- 2026-11-12 **ARF**: AR-i Customer section revamp (read-only customer details for a found customer, replicated to the
+  customer master, D23); finance coding moved into Invoice details; Billing type renamed Agency type.
 - 2026-11-12 **ARF**: AR-i change request: GIRO section (read-only from AR-ix), department Sub-BU, finance coding logic
   (Type of billing for all, V@G for SB / PV, free-text Sub-BU, agent name, GA tooltip), bulk upload for C/D/E, recurring
   remarks and prorating, invoice breakdown (D22).

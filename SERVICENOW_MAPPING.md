@@ -25,6 +25,11 @@ Custom customer master (not core_company / customer_account). Documents and per-
 | `uen` | UEN (company registration no.) | String |  |
 | `parent_group` | Parent group | String |  |
 | `registered_address` | Registered address | String (1000) |  |
+| `agency_type` | Agency type | Choice | Choices: M, SB, PV. Master data replicated from the AR-i that set the customer up (Link to customer, D23) |
+| `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type is SB, PV (UI policy) |
+| `vag_sub_bu` | V@G sub-BU | String | Shown when V@G = Yes (UI policy) |
+| `poc_name` | POC name | String |  |
+| `poc_email` | POC email | String |  |
 | `payment_terms` | Payment terms (days) | Integer |  |
 | `credit_limit` | Credit limit | Currency |  |
 | `bank_names` | Names seen on bank statements | String (1000) | Comma-separated. Used to rank invoices in the invoice finder. |
@@ -98,14 +103,14 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `short_description` | Request summary | String | Mandatory. e.g. Data hall cooling project, phase 1 |
 | `amount` | Request value | Currency | Read-only on form. Calculated: one-off lines + recurring amount × number of periods |
 | `po_number` | Customer PO number | String |  |
-| `customer_poc_name` | Customer POC name | String | AR-i. Optional: the customer's point of contact for this request |
-| `customer_poc_email` | Customer POC email | String | AR-i. Optional; must be a valid email |
+| `customer_poc_name` | POC name | String | AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in and replicated to the customer by Link to customer |
+| `customer_poc_email` | POC email | String | AR-i customer details; must be a valid email. Same rule as POC name |
 | `cost_center` | Cost center | String | Optional, free text. To be filled by GA. Tooltip: "To be filled by GA" |
 | `account_code` | Account code | String | Optional, free text |
 | `agent_name` | Name of agent to be billed | String | Optional, free text |
-| `agency_type` | Agency type | Choice | Choices: M, SB, PV. Optional. M, SB or PV (full names to be confirmed) |
-| `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type is SB, PV (UI policy). Optional |
-| `sub_bu` | Sub-BU (V@G) | String | Shown when V@G = Yes (UI policy). Optional, free text |
+| `agency_type` | Agency type | Choice | Choices: M, SB, PV. AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master |
+| `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type is SB, PV (UI policy). AR-i customer details, optional. Found customer: read-only from the customer master |
+| `sub_bu` | V@G sub-BU | String | Shown when V@G = Yes (UI policy). Optional, free text |
 | `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Shown when Agency type is M, SB, PV (UI policy). Optional |
 | `bulk_supporting_docs` | Supporting documents (bulk upload) | Attachment | Shown when Type of billing is C, D, E (UI policy). Optional; several files at once |
 | `invoice_breakdown` | Invoice breakdown | String (4000) | Optional, free text: how the invoice should be broken down |

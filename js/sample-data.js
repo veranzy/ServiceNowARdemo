@@ -82,6 +82,11 @@ export function loadSample() {
   const cid = {}, kid = {};
   const uens = { harb: "199804512G", meri: "200511234K", kest: "Malaysia SSM 1123456-X", tanj: "201002233N", orch: "201505566M", nova: "201809988D", bws: "200733445R", bwo: "200733446H", lume: "53312345W", paci: "201211122E" };
   S.customers = cus.map(r => { const c = { id: uid("c"), name: r[1], uen: uens[r[0]] || "", address: "", parent: r[2], aliases: r[3], terms: r[4], creditLimit: cents(r[5]), notes: r[6] }; cid[r[0]] = c; return c; });
+  // Customer details (D23): agency type, V@G, V@G sub-BU and POC, replicated from earlier AR-i requests. Some customers have none on file yet.
+  const det = { tanj: ["M", "", "", "Grace Lim", "grace.lim@tanjongretail.example", "3 Jurong Gateway Road, Singapore 608532"],
+    harb: ["SB", "yes", "Port Operations West", "Daniel Ong", "daniel.ong@harbourline.example", "21 Pioneer Road, Singapore 628503"],
+    kest: ["PV", "no", "", "Mei Tan", "mei.tan@kestrel-eng.example", "50 Ubi Avenue 3, Singapore 408866"] };
+  for (const [k, v] of Object.entries(det)) if (cid[k]) Object.assign(cid[k], { agencyType: v[0], vag: v[1], vagSubBu: v[2], pocName: v[3], pocEmail: v[4], address: cid[k].address || v[5] });
   S.contracts = ctr.map(r => { const k = { id: uid("k"), customerId: cid[r[0]].id, number: r[1], title: r[2], start: shiftDate(r[3]), end: shiftDate(r[4]), value: cents(r[5]), billing: r[6], terms: r[7], discPct: r[8], discDays: r[9], lpiApplicable: false, lpiMinRate: 0, lpiRate: 0, notes: r[10] }; kid[r[1]] = k; return k; });
   Object.assign(S.contracts[0], { lpiApplicable: true, lpiMinRate: 5, lpiRate: 8 });
   S.invoices = inv.map(r => ({ id: uid("i"), customerId: cid[r[0]].id, contractId: r[1] ? kid[r[1]].id : null, customer: cid[r[0]].name, number: r[2], date: shiftDate(r[3]), due: shiftDate(r[4]), amount: cents(r[5]), desc: r[6], currency: "SGD", state: "issued", requestId: null }));

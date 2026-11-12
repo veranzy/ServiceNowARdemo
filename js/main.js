@@ -2,7 +2,7 @@
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { applyGiro, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, needLocation, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { custDetailsOf, applyGiro, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, needLocation, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -195,9 +195,9 @@ document.addEventListener("click", e => {
   if (d.preply) { const err = portalComment(d.preply, $("ptReply")?.value); if (err) return toast(err); toast("Comment sent to Accounts Receivable."); return render(); }
   if (d.undoc) { P().draft[d.undoc] = ""; return render(); }
   // AR-i customer step (D14)
-  if (d.pickcust) { Object.assign(P().draft, { customerId: d.pickcust, newCustomer: false }); resetContract(P().draft); delete P().errors.customerId; return render(); }
-  if (d.newcust !== undefined) { const dr = P().draft; Object.assign(dr, { newCustomer: true, newCustName: dr.custQ || "", customerId: null }); resetContract(dr); delete P().errors.customerId; render(); return $("pf-newCustUen")?.focus(); }
-  if (d.custclear !== undefined) { Object.assign(P().draft, { customerId: null, newCustomer: false }); resetContract(P().draft); render(); return $("pfCustQ")?.focus(); }
+  if (d.pickcust) { Object.assign(P().draft, { customerId: d.pickcust, newCustomer: false }, P().draft.form === "AR-i" ? custDetailsOf(S.customers.find(c => c.id === d.pickcust)) : {}); resetContract(P().draft); delete P().errors.customerId; return render(); }
+  if (d.newcust !== undefined) { const dr = P().draft; Object.assign(dr, { newCustomer: true, newCustName: dr.custQ || "", customerId: null }, dr.form === "AR-i" ? custDetailsOf(null) : {}); resetContract(dr); delete P().errors.customerId; render(); return $("pf-newCustUen")?.focus(); }
+  if (d.custclear !== undefined) { Object.assign(P().draft, { customerId: null, newCustomer: false }, P().draft.form === "AR-i" ? custDetailsOf(null) : {}); resetContract(P().draft); render(); return $("pfCustQ")?.focus(); }
   // AR-i contract step (D15)
   if (d.ctropt) { const dr = P().draft; dr.contractOption = d.ctropt; if (d.ctropt !== "existing") dr.contractId = null; contractChanged(dr); delete P().errors.contractOption; render();
     return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? $("pf-newCtrRef") : null)?.focus(); }

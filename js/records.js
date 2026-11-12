@@ -273,6 +273,10 @@ export function setupStatus(r) {
 
 /** UI action "Link to customer": create or link the customer, upsert the department's billing contact,
  *  file the documents on the customer, record the contract location. existingId links a new-customer AR-i to an existing customer instead. */
+/** AR-i customer details captured on the request (transaction data) ↔ customer master fields (D23). [request key, customer key] */
+export const CUST_DETAILS = [["agencyType", "agencyType"], ["vag", "vag"], ["subBu", "vagSubBu"], ["pocName", "pocName"], ["pocEmail", "pocEmail"]];
+/** Request-shaped copy of a customer's master details (a found customer's values are read-only on AR-i). */
+export const custDetailsOf = c => Object.fromEntries(CUST_DETAILS.map(([rk, ck]) => [rk, c?.[ck] || ""]));
 export function linkCustomer(id, existingId) {
   const r = reqById(id); if (!r) return "Record not found.";
   const notes = [];
@@ -282,6 +286,10 @@ export function linkCustomer(id, existingId) {
     else notes.push(`linked to existing customer ${c.name}`);
     r.customerId = c.id; r.newCustomer = false;
   } else notes.push(`customer ${custById(r.customerId)?.name} confirmed`);
+  // replicate the request's customer details to the customer master (D23): fill what the master doesn't have yet
+  { const c = custById(r.customerId), set = CUST_DETAILS.filter(([rk, ck]) => r[rk] && !c[ck]);
+    for (const [rk, ck] of set) c[ck] = r[rk];
+    if (set.length) notes.push(`copied ${set.map(([rk]) => TABLES.requests.fields.find(f => f.key === rk).label).join(", ")} to the customer`); }
   // contract level (D15): existing contract, new contract, or the customer's no-contract shell for the department
   let ctr = r.contractId ? ctrById(r.contractId) : null;
   if (ctr && ctr.customerId !== r.customerId) ctr = null;

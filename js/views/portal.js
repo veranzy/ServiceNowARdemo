@@ -78,6 +78,10 @@ function catalogPage() {
 const reqField = k => TABLES.requests.fields.find(f => f.key === k);
 /** Finance coding variables (request level, all optional). */
 export const FIN_KEYS = ["costCenter", "accountCode", "agentName", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk"];
+/** AR-i customer details (D23), in form order after name / UEN / address. */
+const CUST_KEYS = ["agencyType", "vag", "subBu", "pocName", "pocEmail"];
+/** Finance coding fields that sit in Invoice details. */
+const INV_KEYS = ["costCenter", "accountCode", "agentName", "typeOfBilling", "docBulk"];
 const finText = r => FIN_KEYS.filter(k => (Array.isArray(r[k]) ? r[k].length : r[k]) && fieldVisible("requests", reqField(k), r)).map(k => { const fl = reqField(k); return `${fl.label}: ${Array.isArray(r[k]) ? `${r[k].length} file(s)` : (fl.choices?.find(c => c[0] === r[k]) || [, r[k]])[1]}`; }).join(" · ");
 
 function docRow(t, d, onFile) {
@@ -108,12 +112,20 @@ export function custResults(d) {
 }
 
 function customerStep(d, e, f, o = {}) {
+  const show = k => fieldVisible("requests", reqField(k), d);
   if (d.customerId && !d.newCustomer) {
     const c = custById(d.customerId);
-    return `<div class="custpick"><div><span class="desc">Customer</span><b>${esc(c?.name)}</b><span class="desc">${esc(c?.uen ? `UEN ${c.uen}` : "")}</span></div><button type="button" class="linkish small" data-custclear>Change</button></div>`;
+    if (!o.details) return `<div class="custpick"><div><span class="desc">Customer</span><b>${esc(c?.name)}</b><span class="desc">${esc(c?.uen ? `UEN ${c.uen}` : "")}</span></div><button type="button" class="linkish small" data-custclear>Change</button></div>`;
+    // AR-i: every customer field read-only, from the customer master (D22, D23)
+    const ro = (id, label, v) => `<div class="ffield${id === "CUS.registered_address" ? " wide" : ""}"${sn(id)}><span class="flabel">${esc(label)}</span><div class="fro">${v ? esc(v) : `<span class="muted">Not on file</span>`}</div></div>`;
+    const lab = k => { const fl = reqField(k); return fl.choices ? (fl.choices.find(x => x[0] === d[k]) || [, d[k]])[1] : d[k]; };
+    return `<div class="custpick"><div><span class="chip c-ok">Found</span> <span class="desc">Customer details come from AR's customer record and can't be changed here.</span></div><button type="button" class="linkish small" data-custclear>Change customer</button></div>
+      <div class="fgrid custro"${sn("PT-39")}>${ro("CUS.name", "Customer name", c?.name)}${ro("CUS.uen", "Customer UEN", c?.uen)}${ro("CUS.registered_address", "Address", c?.address)}
+        ${CUST_KEYS.filter(show).map(k => ro(`REQ.${reqField(k).name}`, reqField(k).label, lab(k))).join("")}</div>`;
   }
   if (d.newCustomer) return `<div class="custpick new"><div><span class="chip c-warn">New customer</span> <span class="desc">${esc(o.newLabel || "AR will verify and create it. This makes it a first request.")}</span></div><button type="button" class="linkish small" data-custclear>Search existing customers instead</button></div>
-    <div class="fgrid">${f("newCustName", { mandatory: true, help: null })}${o.newFields === false ? "" : `${f("newCustUen")}${f("newCustAddress")}`}</div>`;
+    <div class="fgrid">${f("newCustName", { mandatory: true, help: null, label: o.details ? "Customer name" : undefined })}${o.newFields === false ? "" : `${f("newCustUen", { label: "Customer UEN" })}${f("newCustAddress", { label: "Address" })}`}
+      ${o.details ? CUST_KEYS.filter(show).map(k => f(k, { help: k === "subBu" ? "Free text" : k === "pocEmail" ? "Optional" : null })).join("") : ""}</div>`;
   return `<label class="ffield wide${e.customerId ? " has-err" : ""}" for="pfCustQ"${sn("REQ.customer")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Find the customer</span>
       <input type="search" id="pfCustQ" value="${esc(d.custQ || "")}" placeholder="Company name or UEN" autocomplete="off"${e.customerId ? ` aria-invalid="true"` : ""}>${e.customerId ? `<span class="ferr">${esc(e.customerId)}</span>` : ""}</label>
     ${custResults(d)}`;
@@ -220,16 +232,7 @@ function formPage() {
         ${generalInfo(d, e, f)}
 
         <fieldset class="psec"${sn("PT-25")}><legend>2. Customer</legend>
-          ${customerStep(d, e, f)}
-          <div${sn("PT-38")}><h3 class="small">Customer point of contact</h3>
-            <div class="fgrid">${f("pocName", { help: "Optional" })}${f("pocEmail", { help: "Optional" })}</div></div>
-          <div${sn("PT-29")}><h3 class="small">Finance coding</h3>
-            <p class="pt-hint">Optional. Fill in what you know; AR can complete it.</p>
-            <div class="fgrid">${FIN_KEYS.filter(k => k !== "docBulk" && fieldVisible("requests", reqField(k), d)).map(k => f(k, { help: k === "subBu" ? "Free text" : null })).join("")}</div>
-            ${fieldVisible("requests", reqField("docBulk"), d) ? `<div class="ffield wide"${sn("REQ.bulk_supporting_docs")}><span class="flabel">Supporting documents (bulk upload)</span>
-              <div><label class="btn small" for="pfBulk">${icon("clip", 15)} Upload files</label><input type="file" id="pfBulk" multiple hidden></div>
-              ${d.docBulk?.length ? `<ul class="attlist">${d.docBulk.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unbulk="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Type of billing ${esc(d.typeOfBilling)}: you can upload several supporting files at once.</span>`}</div>` : ""}
-          </div>
+          ${customerStep(d, e, f, { details: true })}
         </fieldset>
 
         ${haveCust ? `<fieldset class="psec"${sn("PT-20")}><legend>${n()}. Contract and bill-to</legend>
@@ -247,8 +250,16 @@ function formPage() {
           ${linesTotals(d)}
         </fieldset>
 
-        <fieldset class="psec"${sn("PT-37")}><legend>${n()}. Invoice breakdown</legend>
+        <fieldset class="psec"${sn("PT-37")}><legend>${n()}. Invoice details</legend>
           <div class="fgrid">${f("invoiceBreakdown", { help: "Optional. How the invoice should be broken down, e.g. by phase, site or cost item." })}</div>
+          <div${sn("PT-29")}><h3 class="small">Finance coding</h3>
+            <p class="pt-hint">Optional. Fill in what you know; AR can complete it.</p>
+            <div class="fgrid">${INV_KEYS.filter(k => k !== "docBulk" && fieldVisible("requests", reqField(k), d)).map(k => f(k, { help: null })).join("")}</div>
+            ${d.agencyType ? "" : `<p class="fhelp">Type of billing appears once the customer's agency type is known.</p>`}
+            ${fieldVisible("requests", reqField("docBulk"), d) ? `<div class="ffield wide"${sn("REQ.bulk_supporting_docs")}><span class="flabel">Supporting documents (bulk upload)</span>
+              <div><label class="btn small" for="pfBulk">${icon("clip", 15)} Upload files</label><input type="file" id="pfBulk" multiple hidden></div>
+              ${d.docBulk?.length ? `<ul class="attlist">${d.docBulk.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unbulk="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Type of billing ${esc(d.typeOfBilling)}: you can upload several supporting files at once.</span>`}</div>` : ""}
+          </div>
         </fieldset>
 
         <fieldset class="psec"${sn("PT-23")}><legend>${n()}. Customer documents</legend>

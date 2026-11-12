@@ -176,24 +176,24 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Contract level: entered for a new contract (copied to the contract by Link to customer); read-only copy of the contract's value for an existing one |
 | `bulk_supporting_docs` | Supporting documents (bulk upload) | Attachment | Shown when Type of billing is C, D, E (UI policy). Optional; several files at once |
 | `giro_on_contract` | GIRO on this contract | Choice | Choices: Yes (`yes`), No (`no`). Read-only on form. Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21). Tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." |
-| `giro_type` | Purpose of GIRO/DDA request | Choice | Choices: Add GIRO (`add`), Remove GIRO (`remove`). AR-ix. Mandatory. New contract or no contract: Add GIRO only. Existing contract: Add GIRO when GIRO is not active, Remove GIRO only when it is (catalog client script filters the choices) |
-| `giro_purpose` | Purpose | Choice | Choices: Rental (`rental`), Carpark (`carpark`), Others (`others`). Shown when Purpose of GIRO/DDA request = Add GIRO (UI policy). AR-ix Add GIRO. Mandatory |
-| `giro_purpose_other` | Other purpose | String | Shown when Purpose = Others (UI policy). AR-ix. Mandatory when Purpose = Others |
-| `giro_applicant_name` | Applicant name / entity | String | Shown when Purpose of GIRO/DDA request = Add GIRO (UI policy). AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to |
-| `giro_applicant_email` | Applicant email | String | Shown when Purpose of GIRO/DDA request = Add GIRO (UI policy). AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to |
-| `giro_applicant_mobile` | Applicant mobile | String | Shown when Purpose of GIRO/DDA request = Add GIRO (UI policy). AR-ix Add GIRO. Prefilled from the contract's bill-to phone |
-| `giro_remarks` | Remarks | String (1000) | Shown when Purpose of GIRO/DDA request = Add GIRO (UI policy). AR-ix Add GIRO, all purposes. Optional |
-| `giro_location` | Location | String | Shown when Purpose = Rental (UI policy). AR-ix rental. Mandatory |
-| `giro_tenancy_agreement` | Tenancy agreement | String | Shown when Purpose = Rental (UI policy). AR-ix rental. Optional (decision 15) |
-| `giro_start_date` | Effective start date | Date | Shown when Purpose = Rental (UI policy). AR-ix rental. Mandatory |
-| `giro_end_date` | Effective end date | Date | Shown when Purpose = Rental (UI policy). AR-ix rental. Optional; on or after the start date |
-| `giro_carplate` | Car plate | String | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory; one vehicle per form |
-| `giro_parking_start` | Parking start date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory |
-| `giro_parking_end` | Parking end date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Optional; on or after the start date |
-| `giro_contract_ref` | Contract reference number | String | Shown when Purpose = Others (UI policy). AR-ix others. Optional |
-| `giro_invoice_ref` | Invoice reference number | String | Shown when Purpose = Others (UI policy). AR-ix others. Optional; requirement to be confirmed (open question 1) |
-| `giro_amount` | Amount | String | Shown when Purpose is Rental, Carpark, Others (UI policy). AR-ix Add GIRO, all purposes. Optional free text; not used by any other field or calculation (AR-ix decision 13) |
-| `giro_others_remarks` | Remarks | String (1000) | Shown when Purpose = Others (UI policy). AR-ix others. Optional; a second Remarks for the Others block (decision 15) |
+| `giro_type` | Type of request | Choice | Choices: Add GIRO (`add`), Remove GIRO (`remove`). AR-ix. Mandatory. New contract or no contract: Add GIRO only. Existing contract: Add GIRO when GIRO is not active, Remove GIRO only when it is (catalog client script filters the choices) |
+| `giro_purpose` | Purpose of GIRO/DDA request | Choice | Choices: Rental (`rental`), Carpark (`carpark`), Others (`others`). Shown when Type of request = Add GIRO (UI policy). AR-ix Add GIRO. Mandatory |
+| `giro_purpose_other` | Other purpose | String | Shown when Purpose of GIRO/DDA request = Others (UI policy). AR-ix. Mandatory when Purpose = Others |
+| `giro_applicant_name` | Applicant name / entity | String | Shown when Type of request = Add GIRO (UI policy). AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to |
+| `giro_applicant_email` | Applicant email | String | Shown when Type of request = Add GIRO (UI policy). AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to |
+| `giro_applicant_mobile` | Applicant mobile | String | Shown when Type of request = Add GIRO (UI policy). AR-ix Add GIRO. Prefilled from the contract's bill-to phone |
+| `giro_remarks` | Remarks | String (1000) | Shown when Type of request = Add GIRO (UI policy). AR-ix Add GIRO, all purposes. Optional |
+| `giro_location` | Location | String | Shown when Purpose of GIRO/DDA request = Rental (UI policy). AR-ix rental. Mandatory |
+| `giro_tenancy_agreement` | Tenancy agreement | String | Shown when Purpose of GIRO/DDA request = Rental (UI policy). AR-ix rental. Optional (decision 15) |
+| `giro_start_date` | Effective start date | Date | Shown when Purpose of GIRO/DDA request = Rental (UI policy). AR-ix rental. Mandatory |
+| `giro_end_date` | Effective end date | Date | Shown when Purpose of GIRO/DDA request = Rental (UI policy). AR-ix rental. Optional; on or after the start date |
+| `giro_carplate` | Car plate | String | Shown when Purpose of GIRO/DDA request = Carpark (UI policy). AR-ix carpark. Mandatory; one vehicle per form |
+| `giro_parking_start` | Parking start date | Date | Shown when Purpose of GIRO/DDA request = Carpark (UI policy). AR-ix carpark. Mandatory |
+| `giro_parking_end` | Parking end date | Date | Shown when Purpose of GIRO/DDA request = Carpark (UI policy). AR-ix carpark. Optional; on or after the start date |
+| `giro_contract_ref` | Contract reference number | String | Shown when Purpose of GIRO/DDA request = Others (UI policy). AR-ix others. Optional |
+| `giro_invoice_ref` | Invoice reference number | String | Shown when Purpose of GIRO/DDA request = Others (UI policy). AR-ix others. Optional; requirement to be confirmed (open question 1) |
+| `giro_amount` | Amount | String | Shown when Purpose of GIRO/DDA request is Rental, Carpark, Others (UI policy). AR-ix Add GIRO, all purposes. Optional free text; not used by any other field or calculation (AR-ix decision 13) |
+| `giro_others_remarks` | Remarks | String (1000) | Shown when Purpose of GIRO/DDA request = Others (UI policy). AR-ix others. Optional; a second Remarks for the Others block (decision 15) |
 | `giro_form_number` | Form number | String | AR-ix section Others, every type and purpose. Optional; to be verified (open question 8, decision 16) |
 | `doc_contract_po` | Signed contract / PO | Attachment | Optional, offered for a new contract only |
 | `doc_acra` | Company registration (ACRA / UEN) | Attachment | Only when not already on file |

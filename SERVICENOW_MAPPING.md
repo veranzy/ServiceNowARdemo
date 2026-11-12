@@ -176,20 +176,25 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Contract level: entered for a new contract (copied to the contract by Link to customer); read-only copy of the contract's value for an existing one |
 | `bulk_supporting_docs` | Supporting documents (bulk upload) | Attachment | Shown when Type of billing is C, D, E (UI policy). Optional; several files at once |
 | `giro_on_contract` | GIRO on this contract | Choice | Choices: Yes (`yes`), No (`no`). Read-only on form. Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21). Tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." |
-| `giro_applicant_name` | Applicant name / entity | String | AR-ix. Mandatory on the form; prefilled from the contract's bill-to |
-| `giro_applicant_email` | Applicant email | String | AR-ix. Mandatory on the form; prefilled from the contract's bill-to |
-| `giro_applicant_mobile` | Applicant mobile | String | AR-ix. Prefilled from the contract's bill-to phone |
-| `giro_invoice_ref` | Invoice reference number | String | AR-ix. Optional; requirement to be confirmed |
-| `giro_purpose` | Purpose | Choice | Choices: Rental (`rental`), Carpark (`carpark`), Others (`others`). AR-ix. Mandatory on the form |
+| `giro_type` | Type | Choice | Choices: Add GIRO (`add`), Remove GIRO (`remove`). AR-ix. Mandatory. New contract or no contract: Add GIRO only. Existing contract: Add GIRO when GIRO is not active, Remove GIRO only when it is (catalog client script filters the choices) |
+| `giro_purpose` | Purpose | Choice | Choices: Rental (`rental`), Carpark (`carpark`), Others (`others`). Shown when Type = Add GIRO (UI policy). AR-ix Add GIRO. Mandatory |
 | `giro_purpose_other` | Other purpose | String | Shown when Purpose = Others (UI policy). AR-ix. Mandatory when Purpose = Others |
-| `giro_type` | Type | Choice | Choices: Add GIRO (`add`), Remove GIRO (`remove`). AR-ix. Mandatory on the form |
-| `giro_start_date` | Effective start date | Date | Shown when Purpose = Rental (UI policy). AR-ix rental. Mandatory for Add GIRO |
-| `giro_end_date` | Effective end date | Date | Shown when Purpose = Rental (UI policy). AR-ix rental. Optional; on or after the start date |
+| `giro_applicant_name` | Applicant name / entity | String | Shown when Type = Add GIRO (UI policy). AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to |
+| `giro_applicant_email` | Applicant email | String | Shown when Type = Add GIRO (UI policy). AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to |
+| `giro_applicant_mobile` | Applicant mobile | String | Shown when Type = Add GIRO (UI policy). AR-ix Add GIRO. Prefilled from the contract's bill-to phone |
+| `giro_remarks` | Remarks | String (1000) | Shown when Type = Add GIRO (UI policy). AR-ix Add GIRO, all purposes. Optional |
 | `giro_location` | Location | String | Shown when Purpose = Rental (UI policy). AR-ix rental. Mandatory |
+| `giro_tenancy_agreement` | Tenancy agreement | String | Shown when Purpose = Rental (UI policy). AR-ix rental. Optional (decision 15) |
+| `giro_start_date` | Effective start date | Date | Shown when Purpose = Rental (UI policy). AR-ix rental. Mandatory |
+| `giro_end_date` | Effective end date | Date | Shown when Purpose = Rental (UI policy). AR-ix rental. Optional; on or after the start date |
 | `giro_carplate` | Car plate | String | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory; one vehicle per form |
-| `giro_parking_start` | Parking start date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory for Add GIRO |
+| `giro_parking_start` | Parking start date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Mandatory |
 | `giro_parking_end` | Parking end date | Date | Shown when Purpose = Carpark (UI policy). AR-ix carpark. Optional; on or after the start date |
-| `giro_amount` | Amount | String | AR-ix, all purposes. Optional free text; not used by any other field or calculation (AR-ix decision 13) |
+| `giro_contract_ref` | Contract reference number | String | Shown when Purpose = Others (UI policy). AR-ix others. Optional |
+| `giro_invoice_ref` | Invoice reference number | String | Shown when Purpose = Others (UI policy). AR-ix others. Optional; requirement to be confirmed (open question 1) |
+| `giro_amount` | Amount | String | Shown when Purpose is Rental, Carpark, Others (UI policy). AR-ix Add GIRO, all purposes. Optional free text; not used by any other field or calculation (AR-ix decision 13) |
+| `giro_others_remarks` | Remarks | String (1000) | Shown when Purpose = Others (UI policy). AR-ix others. Optional; a second Remarks for the Others block (decision 15) |
+| `giro_form_number` | Form number | String | Shown when Purpose = Others (UI policy). AR-ix others. Optional; to be verified (open question 8) |
 | `doc_contract_po` | Signed contract / PO | Attachment | Optional, offered for a new contract only |
 | `doc_acra` | Company registration (ACRA / UEN) | Attachment | Only when not already on file |
 | `doc_billing_form` | Billing contact & address form | Attachment | Only when not already on file for this department |
@@ -342,7 +347,7 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.
 - **Variable set "General information"** (D19), first section of every AR form: `requester_name` (default: current user's name), `requester_email` (from SSO, read-only), `department`, `cc_list` (emails; the producer script adds them to the case `watch_list` so they can view it on the portal).
-- **Record producer "AR-ix GIRO authorisation"** on `x_ar_request` (AR-ix module). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `contract_option`, `contract`, `new_contract_ref`, `giro_applicant_name`, `giro_applicant_email`, `giro_applicant_mobile`, `giro_invoice_ref`, `giro_purpose`, `giro_purpose_other`, `giro_type`, `giro_start_date`, `giro_end_date`, `giro_location`, `giro_carplate`, `giro_parking_start`, `giro_parking_end`, `giro_amount`, `description`, plus attachments.
+- **Record producer "AR-ix GIRO authorisation"** on `x_ar_request` (AR-ix module). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `contract_option`, `contract`, `new_contract_ref`, `giro_type`, `giro_purpose`, `giro_purpose_other`, `giro_applicant_name`, `giro_applicant_email`, `giro_applicant_mobile`, `giro_remarks`, `giro_location`, `giro_tenancy_agreement`, `giro_start_date`, `giro_end_date`, `giro_carplate`, `giro_parking_start`, `giro_parking_end`, `giro_contract_ref`, `giro_invoice_ref`, `giro_amount`, `giro_others_remarks`, `giro_form_number`, plus attachments.
   - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; contract_option = none → current.contract = the customer's no-contract shell for the department, if it exists;`
   - Catalog client script on contract change: prefill applicant name / email / mobile from the contract's bill-to; show active GIRO on the contract.
   - UI policies: Other purpose when Purpose = Others; location and effective start/end for Rental; car plate and parking start/end for Carpark; amount and start date mandatory for Add GIRO.

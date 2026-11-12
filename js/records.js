@@ -102,27 +102,34 @@ export function validateARix(d) {
   if (d.newCustomer || d.customerId) {
     need("contractOption", "Choose the contract.");
     if (d.contractOption === "existing") need("contractId", "Choose the contract.");
-    if (d.contractOption === "existing" && d.contractId && d.giroType) { const b = giroBlock(d); if (b) e.contractId = b; }
     if (d.contractOption === "new") need("newCtrRef", "Enter the contract / tenancy agreement / reference number.");
   }
+  const types = giroTypesFor(d);
+  need("giroType", "Choose Add GIRO or Remove GIRO.");
+  if (d.giroType && types.length && !types.includes(d.giroType)) e.giroType = giroBlock(d) || "This type isn't possible for the chosen contract.";
+  if (d.giroType !== "add") return e;                    // AR-ix decision 14: Remove GIRO needs nothing more
+  need("giroPurpose", "Choose the purpose.");
+  if (d.giroPurpose === "others") need("giroPurposeOther", "Describe the purpose.");
   need("applicantName", "Enter the applicant name or entity.");
   need("applicantEmail", "Enter the applicant's email.");
   if (d.applicantEmail && !EMAIL_RE.test(d.applicantEmail)) e.applicantEmail = "Enter a valid email address.";
-  need("giroPurpose", "Choose the purpose.");
-  if (d.giroPurpose === "others") need("giroPurposeOther", "Describe the purpose.");
-  need("giroType", "Choose Add GIRO or Remove GIRO.");
-  const add = d.giroType === "add";
   if (d.giroPurpose === "rental") {
     need("giroLocation", "Enter the location.");
-    if (add) need("giroStart", "Enter the effective start date.");
+    need("giroStart", "Enter the effective start date.");
     if (d.giroStart && d.giroEnd && d.giroEnd < d.giroStart) e.giroEnd = "Must be on or after the start date.";
   }
   if (d.giroPurpose === "carpark") {
     need("carplate", "Enter the car plate.");
-    if (add) need("parkStart", "Enter the parking start date.");
+    need("parkStart", "Enter the parking start date.");
     if (d.parkStart && d.parkEnd && d.parkEnd < d.parkStart) e.parkEnd = "Must be on or after the start date.";
   }
   return e;
+}
+/** AR-ix decision 14: the GIRO types the chosen contract allows. New contract or no contract → Add only; existing contract → Add when GIRO is not active, Remove only when it is. */
+export function giroTypesFor(d) {
+  if (d.contractOption === "new" || d.contractOption === "none") return ["add"];
+  if (d.contractOption === "existing" && d.contractId) return activeGiroCase(ctrById(d.contractId)) ? ["remove"] : ["add"];
+  return [];
 }
 export const giroLabel = r => [GIRO_TYPE[r.giroType] || "GIRO", r.giroPurpose === "others" ? r.giroPurposeOther || "Others" : GIRO_PURPOSE[r.giroPurpose]].filter(Boolean).join(" · ");
 /** AR-i GIRO section (read-only, D22): Yes when the existing contract has GIRO active from an AR-ix; otherwise No. */

@@ -290,8 +290,8 @@ const LAYOUT = {
     ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => !isIx(r) && (r.docContract || r.docAcra || r.docBillingForm)],
     // AR-ix (AR-ix module)
     ["Customer not at AR yet", ["newCustName"], r => isIx(r) && r.newCustomer],
-    ["Contract and applicant", ["customerId", "contractId", "newCtrRef", "applicantName", "applicantEmail", "applicantMobile", "giroInvoiceRef"], isIx],
-    ["GIRO details", ["giroPurpose", "giroPurposeOther", "giroType", "giroLocation", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroAmount"], isIx],
+    ["Customer and contract", ["customerId", "contractId", "newCtrRef"], isIx],
+    ["GIRO details", ["giroType", "giroPurpose", "giroPurposeOther", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks", "giroLocation", "giroTenancy", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroCtrRef", "giroInvoiceRef", "giroAmount", "giroOtherRemarks", "giroFormNo"], isIx],
     ["Case", ["state", "requestedBy", "assignedTo", "opened", "details"]]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],

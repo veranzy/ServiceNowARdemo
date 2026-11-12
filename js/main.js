@@ -2,7 +2,7 @@
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { custDetailsOf, itemCalc, targetContract, completeGiro, giroTarget, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { custDetailsOf, itemCalc, targetContract, completeGiro, giroTarget, giroTypesFor, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -129,6 +129,8 @@ function contractChanged(d) {
     // AR-ix: the applicant is prefilled from the contract's bill-to (cleared again when the contract changes)
     if (d.applicantPrefilled) { Object.assign(d, { applicantName: "", applicantEmail: "", applicantMobile: "" }); delete d.applicantPrefilled; }
     const k = giroTarget(d);
+    // AR-ix decision 14: the contract decides the type (Add only, or Remove only when GIRO is active)
+    const types = giroTypesFor(d); d.giroType = types.length === 1 ? types[0] : "";
     if (k?.billToName && !d.applicantName && !d.applicantEmail) Object.assign(d, { applicantName: k.billToName, applicantEmail: k.billToEmail || "", applicantMobile: k.billToPhone || "", applicantPrefilled: true });
     const now = validateARi(d); for (const key of Object.keys(P().errors)) if (!now[key]) delete P().errors[key];
     return;

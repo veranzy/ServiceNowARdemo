@@ -278,7 +278,7 @@ export function loadSample() {
   const mer = S.customers.find(c => c.name.startsWith("Meridian"));
   S.requests.push(ix({ id: "r10", number: "ARQ0001010", requestedBy: "u_pm2", requesterName: pm2.name, requesterEmail: pm2.email, ccList: pm1.email, department: "Logistics",
     customerId: mer.id, contractId: null, contractOption: "new", newCtrRef: "TA-2026-118", applicantName: "Meridian Foods Pte Ltd", applicantEmail: "ap@meridianfoods.example", applicantMobile: "+65 6862 4400",
-    giroPurpose: "rental", giroType: "add", giroStart: shiftDate("2026-12-01"), giroEnd: shiftDate("2028-11-30"), giroLocation: "Cold store bay 3, 9 Senoko Way", giroAmount: "SGD 5,600.00", amount: 0,
+    giroPurpose: "rental", giroType: "add", giroStart: shiftDate("2026-12-01"), giroEnd: shiftDate("2028-11-30"), giroLocation: "Cold store bay 3, 9 Senoko Way", giroTenancy: "TA-2026-118", giroAmount: "SGD 5,600.00", amount: 0,
     title: "Add GIRO · Rental · Cold store bay 3, 9 Senoko Way", opened: shiftDate("2026-10-22"), updated: shiftDate("2026-10-22"), attachments: ["Meridian - tenancy agreement TA-2026-118.pdf", "Meridian - GIRO form.pdf"],
     activity: [{ at: shiftDate("2026-10-22") + "T15:20:00", by: "u_pm2", kind: "system", text: "Submitted from AR-ix on the portal: Add GIRO · Rental for contract TA-2026-118 (not on file yet; AR links it after processing its AR-i)." }] }));
 
@@ -293,14 +293,14 @@ export function loadSample() {
   const fin = d => jr("u_ar1", d, "15:00:01", "system", "State changed to Completed.");
   const rental = "#01-23, 3 Jurong Gateway Road";
   S.requests.push(
-    tCase({ id: "r11", number: "ARQ0001011", giroPurpose: "rental", giroType: "add", giroLocation: rental, giroStart: shiftDate("2025-12-01"), giroEnd: shiftDate("2027-11-30"),
+    tCase({ id: "r11", number: "ARQ0001011", giroPurpose: "rental", giroType: "add", giroLocation: rental, giroTenancy: "TA/JG/0123", giroStart: shiftDate("2025-12-01"), giroEnd: shiftDate("2027-11-30"),
       giroAmount: "SGD 4,500.00", amount: 0, title: `Add GIRO · Rental · ${rental}`, attachments: ["Tanjong - GIRO form (rent) signed.pdf"], opened: shiftDate("2025-11-18"), updated: shiftDate("2026-07-31"),
       activity: [subm("2025-11-18", "Add GIRO · Rental"), asg("2025-11-18"), jr("u_ar1", "2025-11-24", "15:00:00", "comment", "GIRO is now active on contract TR-TA-2025-14."), fin("2025-11-24"),
         jr("u_ar1", "2026-07-31", "14:00:00", "system", "GIRO ended on TR-TA-2025-14 by ARQ0001012.")] }),
     tCase({ id: "r12", number: "ARQ0001012", giroPurpose: "rental", giroType: "remove", giroLocation: rental, giroEnd: shiftDate("2026-07-31"), giroAmount: "", amount: 0,
       title: `Remove GIRO · Rental · ${rental}`, details: "Rent revised from 1 Aug; the new GIRO at the new rate is on ARQ0001013.", opened: shiftDate("2026-07-20"), updated: shiftDate("2026-07-31"),
       activity: [subm("2026-07-20", "Remove GIRO · Rental"), asg("2026-07-20"), jr("u_ar1", "2026-07-31", "14:00:00", "comment", "GIRO removed on contract TR-TA-2025-14; it was active from ARQ0001011."), fin("2026-07-31")] }),
-    tCase({ id: "r13", number: "ARQ0001013", giroPurpose: "rental", giroType: "add", giroLocation: rental, giroStart: shiftDate("2026-08-01"), giroEnd: shiftDate("2027-11-30"),
+    tCase({ id: "r13", number: "ARQ0001013", giroPurpose: "rental", giroType: "add", giroLocation: rental, giroTenancy: "TA/JG/0123", giroStart: shiftDate("2026-08-01"), giroEnd: shiftDate("2027-11-30"),
       giroAmount: "SGD 4,800.00", amount: 0, title: `Add GIRO · Rental · ${rental}`, attachments: ["Tanjong - GIRO form (revised rent) signed.pdf"], opened: shiftDate("2026-07-20"), updated: shiftDate("2026-07-31"),
       activity: [subm("2026-07-20", "Add GIRO · Rental"), asg("2026-07-20"), jr("u_ar1", "2026-07-31", "15:00:00", "comment", "GIRO is now active on contract TR-TA-2025-14."), fin("2026-07-31")] }),
     tCase({ id: "r14", number: "ARQ0001014", state: "in_progress", giroPurpose: "carpark", giroType: "add", carplate: "SJK 7720 R", parkStart: shiftDate("2026-11-01"), parkEnd: shiftDate("2027-11-30"),

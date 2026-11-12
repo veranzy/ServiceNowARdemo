@@ -44,6 +44,9 @@ export const CONTRACT_TYPES = [["contract", "Contract"], ["shell", "No-contract 
 export const AGENCY_TYPES = [["M", "M"], ["SB", "SB"], ["PV", "PV"]];
 const YES_NO = [["yes", "Yes"], ["no", "No"]];
 const BILLING_KINDS = ["A", "B", "C", "D", "E"].map(x => [x, x]);
+export const CONTRACT_CATEGORIES = [["recurring", "Recurring"], ["ad_hoc", "Ad-hoc"]];
+export const BILLING_CYCLES = [["first", "1st of the month"], ["fifteenth", "15th of the month"], ["others", "Others"]];
+export const PAYMENT_TERM_CHOICES = [["30", "30 days"], ["others", "Others"]];
 const CONTRACT_LOCATIONS = [["attached", "Attached to this form"], ["on_file", "Already with AR"], ["repository", "Document repository link"], ["physical", "Physical file"]];
 
 export const TABLES = {
@@ -67,12 +70,23 @@ export const TABLES = {
       { key: "newCustAddress", name: "new_customer_address", label: "Registered address", type: "String (1000)", wide: true },
       { key: "contractOption", name: "contract_option", label: "Contract", type: "Choice", choices: CONTRACT_OPTIONS, mandatory: true, help: "Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15)" },
       { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", dependsOn: "customerId", help: "Existing contract; for a new contract or No contract required, set by Link to customer" },
-      { key: "newCtrRef", name: "new_contract_ref", label: "Contract reference", type: "String", help: "Mandatory for a new contract, e.g. the customer's agreement or PO number" },
+      // New contract (AR-i, contract option = new). Link to customer creates the contract from these (D22: AR changes master data).
+      { key: "newCtrType", name: "new_contract_type", label: "Contract type", type: "Choice", choices: CONTRACT_CATEGORIES, help: "Mandatory for a new contract" },
+      { key: "newCtrNumber", name: "new_contract_number", label: "Contract number", type: "String", help: "Mandatory for a new contract" },
+      { key: "newCtrRef", name: "new_contract_ref", label: "Contract reference number", type: "String", help: "Optional for a new contract (AR-ix: the reference to link)" },
+      { key: "newCtrPo", name: "new_contract_po", label: "Contract PO number", type: "String", help: "Optional" },
       { key: "newCtrTitle", name: "new_contract_title", label: "Contract title", type: "String", wide: true, help: "Mandatory for a new contract" },
-      { key: "newCtrStart", name: "new_contract_start", label: "Contract start", type: "Date", help: "Mandatory for a new contract" },
-      { key: "newCtrEnd", name: "new_contract_end", label: "Contract end", type: "Date" },
-      { key: "newCtrValue", name: "new_contract_value", label: "Contract value", type: "Currency", help: "Mandatory for a new contract" },
-      { key: "updateBillTo", name: "update_bill_to", label: "Change the bill-to person on this contract", type: "True/False" },
+      { key: "newCtrStart", name: "new_contract_start", label: "Contract start date", type: "Date", help: "Mandatory for a new contract" },
+      { key: "newCtrEnd", name: "new_contract_end", label: "Contract end date", type: "Date" },
+      { key: "newCtrValue", name: "new_contract_value", label: "Contract value (SGD)", type: "Currency", help: "Mandatory for a new contract" },
+      { key: "newCtrCycle", name: "new_contract_billing_cycle", label: "Contract billing cycle", type: "Choice", choices: BILLING_CYCLES, help: "Optional" },
+      { key: "newCtrCycleOther", name: "new_contract_billing_cycle_other", label: "Suggested billing cycle", type: "String", showIf: { key: "newCtrCycle", eq: "others" }, help: "Mandatory when the billing cycle is Others" },
+      { key: "newCtrInvDate", name: "new_contract_invoice_date", label: "Preferred invoice billing date", type: "Date", help: "Optional" },
+      { key: "newCtrTerms", name: "new_contract_payment_terms", label: "Payment terms", type: "Choice", choices: PAYMENT_TERM_CHOICES, help: "Default 30 days" },
+      { key: "newCtrTermsOther", name: "new_contract_payment_terms_other", label: "Other payment terms", type: "String", showIf: { key: "newCtrTerms", eq: "others" }, help: "Mandatory when payment terms is Others" },
+      { key: "newCtrProrate", name: "new_contract_proration", label: "Proration", type: "Choice", choices: YES_NO, help: "Default No" },
+      { key: "newCtrProFirst", name: "new_contract_proration_first", label: "Proration for 1st month", type: "Currency", showIf: { key: "newCtrProrate", eq: "yes" }, help: "Mandatory when proration is Yes" },
+      { key: "newCtrProLast", name: "new_contract_proration_last", label: "Proration for last month", type: "Currency", showIf: { key: "newCtrProrate", eq: "yes" }, help: "Mandatory when proration is Yes" },
       { key: "billToName", name: "bill_to_name", label: "Bill-to person", type: "String", help: "Mandatory when the contract (or shell) has no bill-to person yet; Link to customer writes it to the contract" },
       { key: "billToEmail", name: "bill_to_email", label: "Bill-to email", type: "String" },
       { key: "billToPhone", name: "bill_to_phone", label: "Bill-to phone", type: "String" },
@@ -90,7 +104,7 @@ export const TABLES = {
       { key: "agencyType", name: "agency_type", label: "Agency type", type: "Choice", choices: AGENCY_TYPES, help: "AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master" },
       { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "agencyType", in: ["SB", "PV"] }, help: "AR-i customer details, optional. Found customer: read-only from the customer master" },
       { key: "subBu", name: "sub_bu", label: "V@G sub-BU", type: "String", showIf: { key: "vag", eq: "yes" }, help: "Optional, free text" },
-      { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, showIf: { key: "agencyType", in: ["M", "SB", "PV"] }, help: "Optional" },
+      { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, help: "Contract level: entered for a new contract (copied to the contract by Link to customer); read-only copy of the contract's value for an existing one" },
       { key: "docBulk", name: "bulk_supporting_docs", label: "Supporting documents (bulk upload)", type: "Attachment", multiple: true, showIf: { key: "typeOfBilling", in: ["C", "D", "E"] }, help: "Optional; several files at once" },
       { key: "invoiceBreakdown", name: "invoice_breakdown", label: "Invoice breakdown", type: "String (4000)", wide: true, help: "Optional, free text: how the invoice should be broken down" },
       { key: "giroOnContract", name: "giro_on_contract", label: "GIRO on this contract", type: "Choice", choices: YES_NO, readonly: true, help: "Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21)", tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." },
@@ -211,9 +225,6 @@ export const TABLES = {
       { key: "startDate", name: "start_date", label: "From", type: "Date", help: "Recurring only: first billing date" },
       { key: "endDate", name: "end_date", label: "To", type: "Date", help: "Recurring only: last billing date" },
       { key: "remarks", name: "remarks", label: "Remarks", type: "String", wide: true, help: "Recurring only, optional" },
-      { key: "prorate", name: "prorate", label: "Prorate first and last month", type: "True/False", help: "Recurring only" },
-      { key: "firstAmount", name: "first_period_amount", label: "First month amount", type: "Currency", showIf: { key: "prorate", eq: true }, help: "Mandatory when prorated" },
-      { key: "lastAmount", name: "last_period_amount", label: "Last month amount", type: "Currency", showIf: { key: "prorate", eq: true }, help: "Mandatory when prorated" },
       { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices", readonly: true },
       { key: "scheduleId", name: "billing_schedule", label: "Billing schedule", type: "Reference", ref: "schedules", readonly: true }
     ],
@@ -291,9 +302,12 @@ export const TABLES = {
     note: "Custom contract table (not ast_contract). GIRO is a contract status set from the approved AR-ix case (D21). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.",
     fields: [
       { key: "number", name: "number", label: "Contract number", type: "String", mandatory: true },
-      { key: "contractType", name: "contract_type", label: "Type", type: "Choice", choices: CONTRACT_TYPES, mandatory: true },
+      { key: "contractType", name: "contract_type", label: "Record type", type: "Choice", choices: CONTRACT_TYPES, mandatory: true, help: "Contract, or the customer's no-contract shell (D15)" },
+      { key: "category", name: "contract_category", label: "Contract type", type: "Choice", choices: CONTRACT_CATEGORIES, help: "Recurring or Ad-hoc" },
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
       { key: "department", name: "department", label: "Department", type: "Choice", choices: DEPT_CHOICES, help: "Owning department; a shell is unique per customer + department" },
+      { key: "reference", name: "reference_number", label: "Contract reference number", type: "String" },
+      { key: "poNumber", name: "po_number", label: "Contract PO number", type: "String" },
       { key: "title", name: "short_description", label: "Title", type: "String", mandatory: true, wide: true },
       { key: "billing", name: "billing_type", label: "Billing", type: "Choice", choices: ["Monthly", "Milestone", "Annual", "Time & materials", "Per PO"].map(x => [x, x]) },
       { key: "value", name: "contract_value", label: "Contract value", type: "Currency" },
@@ -307,6 +321,16 @@ export const TABLES = {
       { key: "lpiRate", name: "lpi_rate", label: "LPI rate (%)", type: "Decimal", help: "Mandatory when LPI applicable. % per annum" },
       { key: "contractLocation", name: "contract_location", label: "Where the signed contract is kept", type: "Choice", choices: CONTRACT_LOCATIONS },
       { key: "contractLocationRef", name: "contract_location_ref", label: "Link or file location", type: "String", wide: true },
+      { key: "billingCycle", name: "billing_cycle", label: "Contract billing cycle", type: "Choice", choices: BILLING_CYCLES },
+      { key: "billingCycleOther", name: "billing_cycle_other", label: "Suggested billing cycle", type: "String", showIf: { key: "billingCycle", eq: "others" } },
+      { key: "invoiceDate", name: "preferred_invoice_date", label: "Preferred invoice billing date", type: "Date" },
+      { key: "paymentTerms", name: "payment_terms_choice", label: "Payment terms", type: "Choice", choices: PAYMENT_TERM_CHOICES, help: "30 days sets terms (days) = 30" },
+      { key: "paymentTermsOther", name: "payment_terms_other", label: "Other payment terms", type: "String", showIf: { key: "paymentTerms", eq: "others" } },
+      { key: "prorate", name: "proration", label: "Proration", type: "Choice", choices: YES_NO, help: "Yes: the first and last period of each recurring billing schedule use the proration amounts" },
+      { key: "prorateFirst", name: "proration_first", label: "Proration for 1st month", type: "Currency", showIf: { key: "prorate", eq: "yes" } },
+      { key: "prorateLast", name: "proration_last", label: "Proration for last month", type: "Currency", showIf: { key: "prorate", eq: "yes" } },
+      { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS },
+      { key: "bulkDocs", name: "bulk_supporting_docs", label: "Supporting documents (bulk upload)", type: "Attachment", multiple: true, showIf: { key: "typeOfBilling", in: ["C", "D", "E"] } },
       { key: "giroStatus", name: "giro_status", label: "GIRO status", type: "Choice", choices: GIRO_STATUS, readonly: true, help: "Set by Activate GIRO / Remove GIRO on an AR-ix case. At most one active GIRO per contract (D21)" },
       { key: "giroCaseId", name: "giro_case", label: "Active GIRO case", type: "Reference", ref: "requests", readonly: true, help: "The approved AR-ix case whose GIRO is active; empty when GIRO is not active" },
       { key: "billToName", name: "bill_to_name", label: "Bill-to person", type: "String" },
@@ -367,8 +391,9 @@ export const RECORD_PRODUCER = {
   name: "AR-i New AR request",
   table: "requests",
   variables: [...GENERAL_INFO, "customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress",
-    "contractOption", "contractId", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "contractLocation", "contractLocationRef",
-    "updateBillTo", "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "poNumber",
+    "contractOption", "contractId", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther",
+    "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast", "contractLocation", "contractLocationRef",
+    "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "poNumber",
     "pocName", "pocEmail", "invoiceBreakdown", "costCenter", "accountCode", "agentName", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "lines",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;"

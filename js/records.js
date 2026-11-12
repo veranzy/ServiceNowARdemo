@@ -1,7 +1,7 @@
 // Record lifecycle: AR request cases, invoices, journal entries, numbering, generic save.
 // Each function mirrors a ServiceNow UI action or business rule (named in the comments).
 import { ctrById, custById, invoiceUse } from "./ledger.js";
-import { DOC_TYPES, FREQUENCIES, GIRO_PURPOSES, GIRO_TYPES, TABLES, clearHidden } from "./schema.js";
+import { CONTRACT_CATEGORIES, DOC_TYPES, FREQUENCIES, GIRO_PURPOSES, GIRO_TYPES, TABLES, clearHidden } from "./schema.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, today, uid } from "./util.js";
 
@@ -56,9 +56,14 @@ export function targetContract(d) {
   return null;
 }
 /** Bill-to lives on the contract (D16): ask for it when the contract/shell has none yet, or the requester changes it. */
-export const needBillTo = d => !!d.contractOption && (!targetContract(d)?.billToName || !!d.updateBillTo);
+export const needBillTo = d => d.contractOption === "new" || (d.contractOption === "none" && !targetContract(d)?.billToName);
 /** Contract location is asked for a new contract, or an existing contract with none recorded. */
-export const needLocation = d => d.contractOption === "new" || (d.contractOption === "existing" && !!d.contractId && !ctrById(d.contractId)?.contractLocation);
+export const needLocation = d => d.contractOption === "new";
+/** Contract-level proration amounts (first / last month), or null. */
+export const contractPro = k => k?.prorate === "yes" ? { firstAmount: k.prorateFirst || 0, lastAmount: k.prorateLast || 0 } : null;
+/** Proration that applies to an AR-i draft / request: the new contract's fields, or the existing contract's. */
+export const draftPro = d => d.contractOption === "new" ? (d.newCtrProrate === "yes" ? { firstAmount: d.newCtrProFirst || 0, lastAmount: d.newCtrProLast || 0 } : null)
+  : d.contractOption === "existing" && d.contractId ? contractPro(ctrById(d.contractId)) : null;
 /** Prefill an empty bill-to from the department's usual billing contact. */
 export function prefillBillTo(d) {
   if (!needBillTo(d) || d.billToName) return;
@@ -89,6 +94,7 @@ function generalInfoErrors(d, e) {
 export const canViewReq = (r, u = me()) => r.requestedBy === u.id || ccEmails(r.ccList).map(x => x.toLowerCase()).includes(String(u.email || "").toLowerCase());
 
 // ---------- AR-ix GIRO authorisation (GIR module) ----------
+export const CONTRACT_CATEGORY = Object.fromEntries(CONTRACT_CATEGORIES);
 export const GIRO_PURPOSE = Object.fromEntries(GIRO_PURPOSES), GIRO_TYPE = Object.fromEntries(GIRO_TYPES);
 export function validateARix(d) {
   const e = {}, need = (k, msg) => { const v = d[k]; if (v === undefined || v === null || v === "" || v === false) e[k] = msg; };
@@ -176,9 +182,12 @@ export function validateARi(d) {
     need("contractOption", "Choose an existing contract, a new contract, or No contract required.");
     if (d.contractOption === "existing") need("contractId", "Choose the contract.");
     if (d.contractOption === "new") {
-      need("newCtrRef", "Enter the contract reference."); need("newCtrTitle", "Give the contract a title."); need("newCtrStart", "Enter the contract start date.");
+      need("newCtrType", "Choose Recurring or Ad-hoc."); need("newCtrNumber", "Enter the contract number."); need("newCtrTitle", "Give the contract a title."); need("newCtrStart", "Enter the contract start date.");
       if (!(d.newCtrValue > 0)) e.newCtrValue = "Enter the contract value.";
       if (d.newCtrStart && d.newCtrEnd && d.newCtrEnd < d.newCtrStart) e.newCtrEnd = "Must be on or after the start date.";
+      if (d.newCtrCycle === "others") need("newCtrCycleOther", "Suggest the billing cycle.");
+      if (d.newCtrTerms === "others") need("newCtrTermsOther", "Describe the payment terms.");
+      if (d.newCtrProrate === "yes") { if (!(d.newCtrProFirst > 0)) e.newCtrProFirst = "Enter the 1st month amount."; if (!(d.newCtrProLast > 0)) e.newCtrProLast = "Enter the last month amount."; }
     }
     if (needBillTo(d)) { need("billToName", "Enter who to bill for this contract."); need("billToEmail", "Enter the bill-to email."); }
     if (d.billToEmail && needBillTo(d) && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.billToEmail)) e.billToEmail = "Enter a valid email address.";
@@ -209,10 +218,6 @@ export function lineErrors(l) {
     if (!l.startDate) e.startDate = "Enter the first billing date.";
     if (!l.endDate) e.endDate = "Enter the last billing date.";
     if (l.startDate && l.endDate && l.endDate < l.startDate) e.endDate = "Must be on or after the From date.";
-    if (l.prorate) {
-      if (!(l.firstAmount > 0)) e.firstAmount = "Enter the first month amount.";
-      if (!(l.lastAmount > 0) && periodDates(l.frequency || "monthly", l.startDate, l.endDate).length !== 1) e.lastAmount = "Enter the last month amount.";
-    }
   }
   return e;
 }
@@ -228,15 +233,17 @@ export function periodDates(freq, start, end, cap = 120) {
 export function periodAmounts(x, dates) {
   return dates.map((d, i) => x.prorate !== false && x.firstAmount && i === 0 ? x.firstAmount : x.prorate !== false && x.lastAmount && i === dates.length - 1 && i > 0 ? x.lastAmount : x.amount || 0);
 }
-export function lineValue(l) {
+/** Line value. Recurring lines use the contract's proration (first / last month) when it has one. */
+export function lineValue(l, pro = l.contractId ? contractPro(ctrById(l.contractId)) : null) {
   if (l.lineType !== "recurring") return l.amount || 0;
   const dates = periodDates(l.frequency || "monthly", l.startDate, l.endDate);
-  return periodAmounts(l.prorate ? l : { amount: l.amount }, dates).reduce((s, a) => s + a, 0);
+  return periodAmounts({ amount: l.amount, ...(pro || {}) }, dates).reduce((s, a) => s + a, 0);
 }
-export function linesSummary(lines) {
+export function linesSummary(lines, pro) {
   const one = lines.filter(l => l.lineType !== "recurring"), rec = lines.filter(l => l.lineType === "recurring");
-  return { oneOffTotal: one.reduce((s, l) => s + (l.amount || 0), 0), recurringValue: rec.reduce((s, l) => s + lineValue(l), 0),
-    total: lines.reduce((s, l) => s + lineValue(l), 0), nOne: one.length, nRec: rec.length };
+  const v = l => pro === undefined ? lineValue(l) : lineValue(l, pro);
+  return { oneOffTotal: one.reduce((s, l) => s + (l.amount || 0), 0), recurringValue: rec.reduce((s, l) => s + v(l), 0),
+    total: lines.reduce((s, l) => s + v(l), 0), nOne: one.length, nRec: rec.length };
 }
 export const reqLines = r => S.lines.filter(l => l.requestId === r.id);
 /** Short label like "2 one-off · 1 recurring". */
@@ -294,10 +301,16 @@ export function linkCustomer(id, existingId) {
   let ctr = r.contractId ? ctrById(r.contractId) : null;
   if (ctr && ctr.customerId !== r.customerId) ctr = null;
   if (!ctr && r.contractOption === "new") {
-    ctr = S.contracts.find(k => k.customerId === r.customerId && !isShell(k) && k.number.toLowerCase() === String(r.newCtrRef || "").trim().toLowerCase());
+    const no = String(r.newCtrNumber || r.newCtrRef || "").trim();
+    ctr = S.contracts.find(k => k.customerId === r.customerId && !isShell(k) && k.number.toLowerCase() === no.toLowerCase());
     if (ctr) notes.push(`linked to existing contract ${ctr.number}`);
-    else { ctr = { id: uid("k"), contractType: "contract", customerId: r.customerId, department: r.department, number: String(r.newCtrRef || "").trim() || `NEW-${r.number}`, title: r.newCtrTitle || r.title,
-        start: r.newCtrStart || "", end: r.newCtrEnd || "", value: r.newCtrValue || 0, billing: "", terms: custById(r.customerId)?.terms || 30, discPct: 0, discDays: 0, notes: `Created from ${r.number}.` };
+    else { ctr = { id: uid("k"), contractType: "contract", customerId: r.customerId, department: r.department, number: no || `NEW-${r.number}`, title: r.newCtrTitle || r.title,
+        category: r.newCtrType || "", reference: r.newCtrRef || "", poNumber: r.newCtrPo || "",
+        start: r.newCtrStart || "", end: r.newCtrEnd || "", value: r.newCtrValue || 0, billing: CONTRACT_CATEGORY[r.newCtrType] || "",
+        billingCycle: r.newCtrCycle || "", billingCycleOther: r.newCtrCycleOther || "", invoiceDate: r.newCtrInvDate || "",
+        paymentTerms: r.newCtrTerms || "30", paymentTermsOther: r.newCtrTermsOther || "", terms: r.newCtrTerms === "others" ? custById(r.customerId)?.terms || 30 : 30,
+        prorate: r.newCtrProrate || "no", prorateFirst: r.newCtrProFirst || 0, prorateLast: r.newCtrProLast || 0,
+        typeOfBilling: r.typeOfBilling || "", bulkDocs: r.docBulk || [], discPct: 0, discDays: 0, giroStatus: "none", giroCaseId: null, notes: `Created from ${r.number}.` };
       S.contracts.push(ctr); notes.push(`created contract ${ctr.number}`); }
   }
   if (!ctr && (r.contractOption === "none" || !r.contractOption)) {
@@ -361,7 +374,7 @@ export function setupSchedule(lineId) {
   if (l.scheduleId) return "This line already has a billing schedule.";
   const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: l.contractId, department: r.department, desc: l.desc,
     frequency: l.frequency || "monthly", amount: l.amount, firstDate: l.startDate, lastDate: l.endDate, requestId: r.id, lineId: l.id,
-    firstAmount: l.prorate ? l.firstAmount || 0 : 0, lastAmount: l.prorate ? l.lastAmount || 0 : 0 };
+    firstAmount: contractPro(ctrById(l.contractId))?.firstAmount || 0, lastAmount: contractPro(ctrById(l.contractId))?.lastAmount || 0 };
   S.schedules.push(sch); l.scheduleId = sch.id; if (r.state === "new") r.state = "in_progress"; if (!r.assignedTo) r.assignedTo = me().id;
   const n = periodDates(sch.frequency, sch.firstDate, sch.lastDate).length;
   journal(r, "comment", `Recurring line "${l.desc}" set up as billing schedule ${sch.number}: ${n} ${freqLabel(sch.frequency).toLowerCase()} invoice${n === 1 ? "" : "s"} of SGD ${(sch.amount / 100).toFixed(2)}${sch.firstAmount || sch.lastAmount ? ` (prorated: first SGD ${((sch.firstAmount || sch.amount) / 100).toFixed(2)}, last SGD ${((sch.lastAmount || sch.amount) / 100).toFixed(2)})` : ""} from ${sch.firstDate} to ${sch.lastDate}. AR raises each invoice; no further AR forms are needed for this line.`);
@@ -419,15 +432,15 @@ export function createRequest(vals) {
     journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : `for contract ${req.newCtrRef} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
     return req;
   }
-  req.amount = linesSummary(lines).total;
+  req.amount = linesSummary(lines, draftPro(req)).total;
   req.giroOnContract = giroOnContractOf(req);
+  if (req.contractOption === "existing") { const k = ctrById(req.contractId); req.typeOfBilling = k?.typeOfBilling || ""; req.docBulk = []; }
   S.requests.push(req);
   for (const l of lines) S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, contractId: req.contractOption === "existing" ? req.contractId || null : null, lineType: l.lineType, desc: l.desc.trim(), amount: l.amount,
     invoiceDate: l.lineType === "one_off" ? l.invoiceDate || "" : "", frequency: l.lineType === "recurring" ? l.frequency || "monthly" : "",
     startDate: l.lineType === "recurring" ? l.startDate : "", endDate: l.lineType === "recurring" ? l.endDate : "", invoiceId: null, scheduleId: null,
-    remarks: l.lineType === "recurring" ? l.remarks || "" : "", prorate: l.lineType === "recurring" && !!l.prorate,
-    firstAmount: l.lineType === "recurring" && l.prorate ? l.firstAmount || 0 : 0, lastAmount: l.lineType === "recurring" && l.prorate ? l.lastAmount || 0 : 0 });
-  const ctrText = req.contractOption === "existing" ? `under contract ${ctrById(req.contractId)?.number}` : req.contractOption === "new" ? `under new contract ${req.newCtrRef}` : "with no contract";
+    remarks: l.lineType === "recurring" ? l.remarks || "" : "" });
+  const ctrText = req.contractOption === "existing" ? `under contract ${ctrById(req.contractId)?.number}` : req.contractOption === "new" ? `under new contract ${req.newCtrNumber}` : "with no contract";
   journal(req, "system", `Submitted from ${req.form || "AR-i"} on the portal${req.newCustomer ? " for a new customer" : ""} ${ctrText}, with ${linesLabel(req)}.`, req.requestedBy);
   return req;
 }

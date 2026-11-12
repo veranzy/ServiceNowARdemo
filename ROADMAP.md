@@ -15,6 +15,9 @@ still open for the client live in `SERVICENOW_MAPPING.md` → Open questions.
 
 ## Done
 
+- 2026-11-12 **ARF**: AR-i contract details revamp: existing contract read-only; new contract fields (contract type first,
+  billing cycle, payment terms, proration, type of billing); proration and type of billing moved to the contract;
+  GIRO is a subsection of Contract (existing DDA, greyed for new / no contract) (ARF 27–30, D24).
 - 2026-11-12 **ARF**: AR-i Customer section revamp (read-only customer details for a found customer, replicated to the
   customer master, D23); finance coding moved into Invoice details; Billing type renamed Agency type.
 - 2026-11-12 **ARF**: AR-i change request: GIRO section (read-only from AR-ix), department Sub-BU, finance coding logic

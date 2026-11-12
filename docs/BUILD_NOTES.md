@@ -95,7 +95,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-06` | RETIRED 2026-11-10: replaced by the General information variable set (PT-30, REQ.requester_name / REQ.requester_email) |
 | `PT-38` | RETIRED 2026-11-12: Customer point of contact block; POC name / email are now part of the customer details (PT-39) |
 | `PT-39` | AR-i Customer section, found customer (D23): read-only customer details in this order: name, UEN, address (from x_ar_customer), agency type, V@G, V@G sub-BU, POC name, POC email (copied from x_ar_customer into the request variables by a catalog client script; variables read-only via UI policy). New customer: the same fields are editable and Link to customer replicates them to the customer |
-| `PT-36` | AR-i variable set GIRO (D22): read-only Yes / No (variable giro_on_contract) set by a catalog client script from the chosen contract's giro_status (GlideAjax); No for a new contract or no-contract shell. Tooltip: raise an AR-ix if the contract needs GIRO |
+| `PT-36` | AR-i GIRO subsection inside Contract (D22): 'Is there an existing DDA?' read-only Yes / No (variable giro_on_contract) from the chosen contract's giro_status (GlideAjax), plus the active AR-ix case number when Yes. Greyed out with a tooltip for a new contract or no-contract billing: raise an AR-ix once AR has set up the contract |
+| `PT-40` | AR-i new contract variables, in order: new_contract_type (Recurring / Ad-hoc), new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle (+ suggested billing cycle when Others), new_contract_invoice_date, new_contract_payment_terms (+ other terms when Others), new_contract_proration (+ 1st / last month amounts when Yes), type_of_billing (+ bulk upload when C / D / E). Link to customer creates x_ar_contract from them |
+| `PT-41` | AR-i existing contract: every contract detail read-only from x_ar_contract, in the same order as a new contract (catalog client script / read-only HTML widget) |
 | `PT-37` | AR-i variable set Invoice details: invoice_breakdown (multi-line text, optional) and the finance coding block (PT-29) |
 | `PT-30` | Variable set General information (D19), first section of every AR form record producer: requester_name (default current user's name), requester_email (from SSO, read-only), department, cc_list (emails; copied to the case watch_list so they can view it on the portal) |
 | `PT-31` | Record producer "AR-ix GIRO authorisation" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; |
@@ -112,13 +114,13 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-14` | Service catalog category "AR forms": 16 record producers AR-i … AR-xvi (D9) |
 | `PT-15` | Catalog item AR-i New AR request (active record producer) |
 | `PT-16` | Catalog item placeholder AR-ii … AR-xvi (inactive until defined) |
-| `PT-19` | Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one, prefilled from the department's x_ar_billing_contact; update_bill_to to change it |
+| `PT-19` | Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one (new contract, or a shell without one), prefilled from the department's x_ar_billing_contact. An existing contract's bill-to is read-only (PT-41); AR changes it in the workspace (D22) |
 | `PT-20` | Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, contract location, bill-to. UI policies per option |
 | `PT-28` | No contract required: info message (UI policy on contract_option = none). Link to customer files the lines under the customer's no-contract shell for the department (x_ar_contract, contract_type = shell) |
 | `PT-25` | Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer) |
 | `PT-26` | Variable set What to bill: request summary, PO, and multi-row variable set Billing lines (x_ar_request_line); totals by catalog client script |
 | `PT-27` | Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden |
-| `PT-29` | Finance coding block inside the AR-i Invoice details section (request level, all optional): cost_center (tooltip: to be filled by GA), account_code, agent_name, type_of_billing (shown when the customer's agency type is set), bulk_supporting_docs (when type of billing is C, D or E). Hidden variables are cleared |
+| `PT-29` | Finance coding block inside the AR-i Invoice details section (request level, all optional): cost_center (tooltip: to be filled by GA), account_code, agent_name. Type of billing and the bulk upload moved to the contract (PT-40, ARF decision 29) |
 | `PT-23` | Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10) |
 
 ## AR request
@@ -150,12 +152,22 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.new_customer_address` | x_ar_request.new_customer_address · String (1000) |
 | `REQ.contract_option` | x_ar_request.contract_option · Choice · mandatory · Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15) |
 | `REQ.contract` | x_ar_request.contract · Reference → x_ar_contract · Existing contract; for a new contract or No contract required, set by Link to customer |
-| `REQ.new_contract_ref` | x_ar_request.new_contract_ref · String · Mandatory for a new contract, e.g. the customer's agreement or PO number |
+| `REQ.new_contract_type` | x_ar_request.new_contract_type · Choice · Mandatory for a new contract |
+| `REQ.new_contract_number` | x_ar_request.new_contract_number · String · Mandatory for a new contract |
+| `REQ.new_contract_ref` | x_ar_request.new_contract_ref · String · Optional for a new contract (AR-ix: the reference to link) |
+| `REQ.new_contract_po` | x_ar_request.new_contract_po · String · Optional |
 | `REQ.new_contract_title` | x_ar_request.new_contract_title · String · Mandatory for a new contract |
 | `REQ.new_contract_start` | x_ar_request.new_contract_start · Date · Mandatory for a new contract |
 | `REQ.new_contract_end` | x_ar_request.new_contract_end · Date |
 | `REQ.new_contract_value` | x_ar_request.new_contract_value · Currency · Mandatory for a new contract |
-| `REQ.update_bill_to` | x_ar_request.update_bill_to · True/False |
+| `REQ.new_contract_billing_cycle` | x_ar_request.new_contract_billing_cycle · Choice · Optional |
+| `REQ.new_contract_billing_cycle_other` | x_ar_request.new_contract_billing_cycle_other · String · Mandatory when the billing cycle is Others |
+| `REQ.new_contract_invoice_date` | x_ar_request.new_contract_invoice_date · Date · Optional |
+| `REQ.new_contract_payment_terms` | x_ar_request.new_contract_payment_terms · Choice · Default 30 days |
+| `REQ.new_contract_payment_terms_other` | x_ar_request.new_contract_payment_terms_other · String · Mandatory when payment terms is Others |
+| `REQ.new_contract_proration` | x_ar_request.new_contract_proration · Choice · Default No |
+| `REQ.new_contract_proration_first` | x_ar_request.new_contract_proration_first · Currency · Mandatory when proration is Yes |
+| `REQ.new_contract_proration_last` | x_ar_request.new_contract_proration_last · Currency · Mandatory when proration is Yes |
 | `REQ.bill_to_name` | x_ar_request.bill_to_name · String · Mandatory when the contract (or shell) has no bill-to person yet; Link to customer writes it to the contract |
 | `REQ.bill_to_email` | x_ar_request.bill_to_email · String |
 | `REQ.bill_to_phone` | x_ar_request.bill_to_phone · String |
@@ -173,7 +185,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.agency_type` | x_ar_request.agency_type · Choice · AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master |
 | `REQ.vag` | x_ar_request.vag · Choice · AR-i customer details, optional. Found customer: read-only from the customer master |
 | `REQ.sub_bu` | x_ar_request.sub_bu · String · Optional, free text |
-| `REQ.type_of_billing` | x_ar_request.type_of_billing · Choice · Optional |
+| `REQ.type_of_billing` | x_ar_request.type_of_billing · Choice · Contract level: entered for a new contract (copied to the contract by Link to customer); read-only copy of the contract's value for an existing one |
 | `REQ.bulk_supporting_docs` | x_ar_request.bulk_supporting_docs · Attachment · Optional; several files at once |
 | `REQ.invoice_breakdown` | x_ar_request.invoice_breakdown · String (4000) · Optional, free text: how the invoice should be broken down |
 | `REQ.giro_on_contract` | x_ar_request.giro_on_contract · Choice · read-only · Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21) |
@@ -341,9 +353,12 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `CON.number` | x_ar_contract.number · String · mandatory |
-| `CON.contract_type` | x_ar_contract.contract_type · Choice · mandatory |
+| `CON.contract_type` | x_ar_contract.contract_type · Choice · mandatory · Contract, or the customer's no-contract shell (D15) |
+| `CON.contract_category` | x_ar_contract.contract_category · Choice · Recurring or Ad-hoc |
 | `CON.customer` | x_ar_contract.customer · Reference → x_ar_customer · mandatory |
 | `CON.department` | x_ar_contract.department · Choice · Owning department; a shell is unique per customer + department |
+| `CON.reference_number` | x_ar_contract.reference_number · String |
+| `CON.po_number` | x_ar_contract.po_number · String |
 | `CON.short_description` | x_ar_contract.short_description · String · mandatory |
 | `CON.billing_type` | x_ar_contract.billing_type · Choice |
 | `CON.contract_value` | x_ar_contract.contract_value · Currency |
@@ -357,6 +372,16 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON.lpi_rate` | x_ar_contract.lpi_rate · Decimal · Mandatory when LPI applicable. % per annum |
 | `CON.contract_location` | x_ar_contract.contract_location · Choice |
 | `CON.contract_location_ref` | x_ar_contract.contract_location_ref · String |
+| `CON.billing_cycle` | x_ar_contract.billing_cycle · Choice |
+| `CON.billing_cycle_other` | x_ar_contract.billing_cycle_other · String |
+| `CON.preferred_invoice_date` | x_ar_contract.preferred_invoice_date · Date |
+| `CON.payment_terms_choice` | x_ar_contract.payment_terms_choice · Choice · 30 days sets terms (days) = 30 |
+| `CON.payment_terms_other` | x_ar_contract.payment_terms_other · String |
+| `CON.proration` | x_ar_contract.proration · Choice · Yes: the first and last period of each recurring billing schedule use the proration amounts |
+| `CON.proration_first` | x_ar_contract.proration_first · Currency |
+| `CON.proration_last` | x_ar_contract.proration_last · Currency |
+| `CON.type_of_billing` | x_ar_contract.type_of_billing · Choice |
+| `CON.bulk_supporting_docs` | x_ar_contract.bulk_supporting_docs · Attachment |
 | `CON.giro_status` | x_ar_contract.giro_status · Choice · read-only · Set by Activate GIRO / Remove GIRO on an AR-ix case. At most one active GIRO per contract (D21) |
 | `CON.giro_case` | x_ar_contract.giro_case · Reference → x_ar_request · read-only · The approved AR-ix case whose GIRO is active; empty when GIRO is not active |
 | `CON.bill_to_name` | x_ar_contract.bill_to_name · String |
@@ -459,9 +484,6 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RQL.start_date` | x_ar_request_line.start_date · Date · Recurring only: first billing date |
 | `RQL.end_date` | x_ar_request_line.end_date · Date · Recurring only: last billing date |
 | `RQL.remarks` | x_ar_request_line.remarks · String · Recurring only, optional |
-| `RQL.prorate` | x_ar_request_line.prorate · True/False · Recurring only |
-| `RQL.first_period_amount` | x_ar_request_line.first_period_amount · Currency · Mandatory when prorated |
-| `RQL.last_period_amount` | x_ar_request_line.last_period_amount · Currency · Mandatory when prorated |
 | `RQL.invoice` | x_ar_request_line.invoice · Reference → x_ar_invoice · read-only |
 | `RQL.billing_schedule` | x_ar_request_line.billing_schedule · Reference → x_ar_billing_schedule · read-only |
 

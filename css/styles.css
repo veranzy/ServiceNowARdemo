@@ -648,3 +648,6 @@ button.ws-tab[aria-selected="true"],.ws-tab.rec.on{background:transparent;color:
 /* ARF: read-only GIRO Yes / No on AR-i (set by AR-ix) */
 .seg.giro-ro button[disabled]{cursor:not-allowed;opacity:.55}
 .seg.giro-ro button[disabled][aria-pressed="true"]{opacity:.8}
+.psub{display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:12px;margin-top:4px}
+.psub h3{margin:0}
+.psub.greyed{opacity:.6}

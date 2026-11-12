@@ -159,7 +159,7 @@ export function loadSample() {
   // A new customer's first AR-i, waiting for AR to link it to the customer master
   S.requests.push({ id: "r8", number: "ARQ0001008", form: "AR-i", requestType: "first", department: "Digital", requestedBy: "u_pm1", customerId: null, contractId: null,
     newCustomer: true, newCustName: "Zephyr Data Centres Pte Ltd", newCustUen: "201912345K", newCustAddress: "8 Tampines Industrial Ave 5, #04-01, Singapore 528763",
-    contractOption: "new", newCtrRef: "ZDC-SA-2026-01", newCtrTitle: "Data hall cooling services agreement", newCtrStart: shiftDate("2026-11-01"), newCtrEnd: shiftDate("2027-11-30"), newCtrValue: cents(42000),
+    contractOption: "new", newCtrType: "recurring", newCtrNumber: "ZDC-SA-2026-01", newCtrRef: "ZDC/MSA/2026", newCtrPo: "ZDC-PO-0091", newCtrCycle: "first", newCtrTerms: "30", newCtrProrate: "no", newCtrTitle: "Data hall cooling services agreement", newCtrStart: shiftDate("2026-11-01"), newCtrEnd: shiftDate("2027-11-30"), newCtrValue: cents(42000),
     billToName: "Alicia Koh", billToEmail: "finance@zephyrdc.example", billToPhone: "+65 6123 4567", billToAddress: "Accounts Payable, 8 Tampines Industrial Ave 5, Singapore 528763",
     contractLocation: "attached", contractLocationRef: "", title: "Data hall cooling: design and monitoring", amount: 0, poNumber: "ZDC-PO-0042",
     docContract: "Zephyr - signed services agreement.pdf", docAcra: "Zephyr - ACRA business profile.pdf", docBillingForm: "Zephyr - billing contact form (Digital).pdf",
@@ -245,6 +245,12 @@ export function loadSample() {
   // GIRO (GIR module, D21): GIRO is a contract status set from the approved AR-ix case; at most one active per contract.
   const kOf = no => S.contracts.find(k => k.number === no);
   for (const k of S.contracts) Object.assign(k, { giroStatus: "none", giroCaseId: null });
+  // Contract billing terms (ARF decision 27): sample values on a few contracts, the rest left blank.
+  const kb = (n, o) => kid[n] && Object.assign(kid[n], o);
+  kb("TR-TA-2025-14", { category: "recurring", reference: "TA/JG/0123", poNumber: "", billingCycle: "first", invoiceDate: shiftDate("2025-12-01"), paymentTerms: "30", prorate: "no", typeOfBilling: "A" });
+  kb("HL-2026-01", { category: "recurring", reference: "HL-WMS-26", poNumber: "HL-PO-4410", billingCycle: "fifteenth", invoiceDate: shiftDate("2026-04-15"), paymentTerms: "30", prorate: "yes", prorateFirst: cents(6240), prorateLast: cents(6240), typeOfBilling: "C", bulkDocs: ["HL-usage-breakdown-template.xlsx"] });
+  kb("KE-2026-03", { category: "ad_hoc", reference: "KE-RFQ-2026-011", poNumber: "KE-PO-7781", paymentTerms: "30", prorate: "no", typeOfBilling: "B" });
+  kb("NB-2026-05", { category: "ad_hoc", poNumber: "NB-PO-2210", paymentTerms: "others", paymentTermsOther: "45 days from acceptance", prorate: "no" });
   const hl = kOf("HL-2026-01"), nb = kOf("NB-2026-05"), ta = kOf("TR-TA-2025-14");
   const pm1 = S.users.find(u => u.id === "u_pm1"), pm2 = S.users.find(u => u.id === "u_pm2");
   const ix = (o) => ({ form: "AR-ix", state: "new", assignedTo: null, attachments: [], newCustomer: false, newCustName: "", details: "",

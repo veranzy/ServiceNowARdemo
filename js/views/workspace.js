@@ -280,10 +280,12 @@ const LAYOUT = {
     ["Customer", ["customerId"], r => !isIx(r) && !r.newCustomer], ["New customer (to verify)", ["newCustName", "newCustUen", "newCustAddress"], r => !isIx(r) && r.newCustomer],
     ["Customer details (from the request)", ["agencyType", "vag", "subBu", "pocName", "pocEmail"], r => !isIx(r)],
     ["Contract", ["contractOption", "contractId", "contractLocation", "contractLocationRef"], r => !isIx(r)],
-    ["New contract (to create)", ["newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue"], r => !isIx(r) && r.contractOption === "new"],
+    ["New contract (to create)", ["newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther",
+      "newCtrProrate", "newCtrProFirst", "newCtrProLast", "typeOfBilling", "docBulk"], r => !isIx(r) && r.contractOption === "new"],
+    ["Contract billing (from the contract at submit)", ["typeOfBilling"], r => !isIx(r) && r.contractOption === "existing"],
     ["Customer PO", ["poNumber"], r => !isIx(r)],
     ["GIRO (from the contract at submit)", ["giroOnContract"], r => !isIx(r) && !!r.giroOnContract],
-    ["Invoice details", ["invoiceBreakdown", "costCenter", "accountCode", "agentName", "typeOfBilling", "docBulk"], r => !isIx(r)],
+    ["Invoice details", ["invoiceBreakdown", "costCenter", "accountCode", "agentName"], r => !isIx(r)],
     ["Bill-to for the contract (from the request)", ["billToName", "billToEmail", "billToPhone", "billToAddress"], r => !isIx(r) && r.billToName],
     ["Documents supplied", ["docContract", "docAcra", "docBillingForm"], r => !isIx(r) && (r.docContract || r.docAcra || r.docBillingForm)],
     // AR-ix (GIR module)
@@ -299,7 +301,8 @@ const LAYOUT = {
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
   customers: [["Customer", ["name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]],
     ["Agency and point of contact", ["agencyType", "vag", "vagSubBu", "pocName", "pocEmail"]]],
-  contracts: [["Contract", ["number", "contractType", "customerId", "department", "title", "billing", "value", "start", "end", "terms", "discPct", "discDays", "contractLocation", "contractLocationRef", "notes"]],
+  contracts: [["Contract", ["category", "number", "reference", "poNumber", "contractType", "customerId", "department", "title", "start", "end", "value", "billing", "contractLocation", "contractLocationRef", "notes"]],
+    ["Billing terms", ["billingCycle", "billingCycleOther", "invoiceDate", "paymentTerms", "paymentTermsOther", "terms", "discPct", "discDays", "prorate", "prorateFirst", "prorateLast", "typeOfBilling", "bulkDocs"]],
     ["Late payment interest (LPI)", ["lpiApplicable", "lpiMinRate", "lpiRate"]],
     ["GIRO", ["giroStatus", "giroCaseId"], k => !isShell(k)],
     ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
@@ -308,7 +311,7 @@ const LAYOUT = {
   schedules: [["Billing schedule", ["number", "customerId", "contractId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "firstAmount", "lastAmount", "requestId"]]],
 };
 /** Fields AR can't edit on the workspace form (set by the portal or by UI actions). */
-const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrRef", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "giroType"], lines: ["lineType"] };
+const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast", "giroType"], lines: ["lineType"] };
 
 function editable(table, rec) {
   if (table === "requests") return REQ_OPEN.includes(rec.state);
@@ -326,7 +329,7 @@ const btn = (html, ovf = false) => ({ html, ovf });
 function headerFields(table, rec) {
   const hf = (k, v) => `<div class="hf"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
   if (table === "requests") return [hf("State", reqChip(rec)), hf("Form", `${esc(rec.form || "AR-i")} · ${esc(linesLabel(rec))}`), hf("Customer", rec.customerId ? refLink("customers", rec.customerId) : `${esc(rec.newCustName || "—")} <span class="chip c-warn">New</span>`),
-    hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : rec.contractOption === "new" ? `${esc(rec.newCtrRef || "—")} <span class="chip c-warn">${isIx(rec) ? "Not linked" : "New"}</span>` : rec.contractOption === "none" ? `<span class="chip c-warn">No contract</span>` : "—"), hf("Department", esc(rec.department || "—")),
+    hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : rec.contractOption === "new" ? `${esc((isIx(rec) ? rec.newCtrRef : rec.newCtrNumber) || "—")} <span class="chip c-warn">${isIx(rec) ? "Not linked" : "New"}</span>` : rec.contractOption === "none" ? `<span class="chip c-warn">No contract</span>` : "—"), hf("Department", esc(rec.department || "—")),
     hf("Assigned to", esc(userById(rec.assignedTo)?.name || "Unassigned")), hf("Requested by", esc(userById(rec.requestedBy)?.name || "—")), hf("Opened", esc(rec.opened))];
   if (table === "invoices") return [hf("Status", invChip(rec)), hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)), hf("AR request", refLink("requests", rec.requestId)), hf("Invoice date", esc(rec.date || "—"))];
   if (table === "deposits") { const a = acctById(rec.bankAccountId); return [hf("Match", depositChip(rec)), hf("Value date", esc(rec.date)), hf("Bank account", refLink("bankAccounts", rec.bankAccountId)), hf("Department", esc(a?.department || "—")), hf("Account type", esc(a ? acctType(a) : "—"))]; }
@@ -436,12 +439,12 @@ function setupPanel(r, tab) {
   const item = (ok, label, detail) => `<li class="${ok === true ? "ok" : ok === false ? "todo" : "na"}"><span class="tick" aria-hidden="true">${ok === true ? "✓" : ok === false ? "!" : "–"}</span><div><b>${label}</b>${detail ? `<span class="desc">${detail}</span>` : ""}</div></li>`;
   const similar = r.newCustomer ? S.customers.filter(c => nameSim(r.newCustName || "", c.name) >= .5) : [];
   const ctr = st.ctr;
-  const ctrText = r.contractOption === "new" ? `new contract ${esc(r.newCtrRef || "")}` : r.contractOption === "none" ? `the ${esc(r.department)} no-contract shell` : "the contract";
+  const ctrText = r.contractOption === "new" ? `new contract ${esc(r.newCtrNumber || "")}` : r.contractOption === "none" ? `the ${esc(r.department)} no-contract shell` : "the contract";
   return `<section class="setup"${sn("REQ-SETUP")}>
     <header><h2>Customer setup</h2><span class="muted small">${esc(r.form || "AR-i")}${r.newCustomer ? " · new customer (first request)" : ""}</span></header>
     <ul class="checklist">
       ${item(st.linked, st.linked ? `Customer: ${esc(custName(r.customerId))}` : `New customer to verify: ${esc(r.newCustName)}`, st.linked ? "" : `UEN ${esc(r.newCustUen || "not given")}. Link to customer creates it, or pick an existing customer below.`)}
-      ${item(st.contractDone, st.contractDone ? `${isShell(ctr) ? "No-contract shell" : "Contract"}: ${esc(ctr.number)}` : `Contract: ${ctrText}`, st.contractDone ? `${isShell(ctr) ? "No contract required; " : ""}all billing lines are filed under it` : r.contractOption === "new" ? `Link to customer creates ${esc(r.newCtrRef)} · ${esc(r.newCtrTitle || "")} and files the billing lines under it` : r.contractOption === "none" ? "Link to customer files the billing lines under the customer's no-contract shell for the department (created if needed)" : "Link to customer files the billing lines under the contract")}
+      ${item(st.contractDone, st.contractDone ? `${isShell(ctr) ? "No-contract shell" : "Contract"}: ${esc(ctr.number)}` : `Contract: ${ctrText}`, st.contractDone ? `${isShell(ctr) ? "No contract required; " : ""}all billing lines are filed under it` : r.contractOption === "new" ? `Link to customer creates ${esc(r.newCtrNumber)} · ${esc(r.newCtrTitle || "")} and files the billing lines under it` : r.contractOption === "none" ? "Link to customer files the billing lines under the customer's no-contract shell for the department (created if needed)" : "Link to customer files the billing lines under the contract")}
       ${item(st.billToOk ? true : false, `Bill-to on ${ctr ? esc(ctr.number) : "the contract"}`, st.billToOk ? `${esc(ctr.billToName)} · ${esc(ctr.billToEmail)}` : r.billToName ? `Will be ${ctr?.billToName ? "updated" : "set"} from this request: ${esc(r.billToName)} · ${esc(r.billToEmail)}` : "No bill-to on the contract and none on the request. Ask the requester.")}
       ${st.docsGiven.length ? item(st.docsDone, "Documents filed on the customer", st.docsGiven.map(t => `${esc(DOC_LABEL[t])}${st.filed.includes(t) ? " ✓" : ""}`).join(" · ")) : item(null, "Documents", "All already on file; nothing new supplied")}
       ${ctr && !isShell(ctr) ? item(st.location !== false, `Contract location on ${esc(ctr.number)}`, ctr.contractLocation ? esc(ctr.contractLocationRef || ctr.contractLocation) : "Will be recorded from this request") : ""}

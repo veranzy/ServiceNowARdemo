@@ -1,7 +1,7 @@
 // Project team experience: Service Portal / Employee Center with the AR forms catalogue (AR-i … AR-xvi),
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, canViewReq, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineErrors, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, needLocation, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
+import { DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, canViewReq, draftPro, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineErrors, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, needLocation, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
 import { AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, LINE_TYPES, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
@@ -58,7 +58,7 @@ export function contractBox(d) {
     <dl><div><dt>Contract value</dt><dd class="mono">${fmt(k.value || 0)}</dd></div><div><dt>Invoiced so far</dt><dd class="mono">${fmt(r.billed)}</dd></div>
       <div><dt>Requested, not yet invoiced</dt><dd class="mono">${fmt(pending)}</dd></div><div><dt>Remaining to bill</dt><dd class="mono${left < 0 ? " bad" : ""}">${fmt(left)}</dd></div>
       <div><dt>Billing</dt><dd>${esc(k.billing)} · Net ${esc(k.terms)}</dd></div></dl>
-    ${(() => { const amt = d.lines ? linesSummary(d.lines).total : d.amount || 0; return amt && left - amt < 0 && k.value ? `<p class="bad small">This request takes billing over the contract value by SGD ${fmt(amt - left)}. AR may ask for a change order.</p>` : ""; })()}
+    ${(() => { const amt = d.lines ? linesSummary(d.lines, draftPro(d)).total : d.amount || 0; return amt && left - amt < 0 && k.value ? `<p class="bad small">This request takes billing over the contract value by SGD ${fmt(amt - left)}. AR may ask for a change order.</p>` : ""; })()}
   </div>`;
 }
 
@@ -81,7 +81,7 @@ export const FIN_KEYS = ["costCenter", "accountCode", "agentName", "agencyType",
 /** AR-i customer details (D23), in form order after name / UEN / address. */
 const CUST_KEYS = ["agencyType", "vag", "subBu", "pocName", "pocEmail"];
 /** Finance coding fields that sit in Invoice details. */
-const INV_KEYS = ["costCenter", "accountCode", "agentName", "typeOfBilling", "docBulk"];
+const INV_KEYS = ["costCenter", "accountCode", "agentName"];
 const finText = r => FIN_KEYS.filter(k => (Array.isArray(r[k]) ? r[k].length : r[k]) && fieldVisible("requests", reqField(k), r)).map(k => { const fl = reqField(k); return `${fl.label}: ${Array.isArray(r[k]) ? `${r[k].length} file(s)` : (fl.choices?.find(c => c[0] === r[k]) || [, r[k]])[1]}`; }).join(" · ");
 
 function docRow(t, d, onFile) {
@@ -140,20 +140,43 @@ function contractStep(d, e, f) {
   let body = "";
   if (d.contractOption === "existing") body = `<div class="fgrid"><label class="ffield wide${e.contractId ? " has-err" : ""}" for="pf-contractId"${sn("REQ.contract")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Contract</span>
       <select id="pf-contractId" name="contractId"${e.contractId ? ` aria-invalid="true"` : ""}><option value="">-- Choose the contract --</option>${ctrs.map(k => `<option value="${k.id}"${k.id === d.contractId ? " selected" : ""}>${esc(k.number)} · ${esc(k.title)}${k.department ? ` (${esc(k.department)})` : ""}</option>`).join("")}</select>
-      ${e.contractId ? `<span class="ferr">${esc(e.contractId)}</span>` : ""}</label></div>${contractBox(d)}`;
-  else if (d.contractOption === "new") body = `<p class="pt-hint">AR creates the contract under ${esc(d.newCustomer ? d.newCustName || "the new customer" : custName(d.customerId))} when it links the request.</p>
-      <div class="fgrid">${f("newCtrRef", { mandatory: true, help: "The customer's agreement or PO number" })}${f("newCtrTitle", { mandatory: true, help: null })}${f("newCtrStart", { mandatory: true, help: null })}${f("newCtrEnd")}${f("newCtrValue", { mandatory: true, help: null })}</div>`;
+      ${e.contractId ? `<span class="ferr">${esc(e.contractId)}</span>` : ""}</label></div>
+      ${d.contractId ? `<p class="pt-hint">Contract details come from AR's contract record and can't be changed here.</p>${contractRo(ctrById(d.contractId))}` : ""}${contractBox(d)}`;
+  else if (d.contractOption === "new") {
+    const show = k => fieldVisible("requests", reqField(k), d);
+    const fl = (k, o = {}) => show(k) ? f(k, { help: null, ...o }) : "";
+    body = `<p class="pt-hint">AR creates the contract under ${esc(d.newCustomer ? d.newCustName || "the new customer" : custName(d.customerId))} from these details when it links the request.</p>
+      <div class="fgrid"${sn("PT-40")}>${fl("newCtrType", { mandatory: true })}${fl("newCtrNumber", { mandatory: true })}${fl("newCtrRef")}${fl("newCtrPo")}${fl("newCtrTitle", { mandatory: true })}
+        ${fl("newCtrStart", { mandatory: true })}${fl("newCtrEnd")}${fl("newCtrValue", { mandatory: true })}
+        ${f("billToName", { mandatory: true, help: d.billToPrefilled ? `Prefilled from the ${d.department} department's usual bill-to person` : null, label: "Contract bill-to person" })}${f("billToEmail", { mandatory: true, label: "Contract bill-to email" })}${f("billToPhone", { label: "Contract bill-to phone number" })}
+        ${fl("newCtrCycle")}${fl("newCtrCycleOther", { mandatory: true })}${fl("newCtrInvDate")}${fl("newCtrTerms")}${fl("newCtrTermsOther", { mandatory: true })}
+        ${fl("newCtrProrate")}${fl("newCtrProFirst", { mandatory: true })}${fl("newCtrProLast", { mandatory: true })}
+        ${f("typeOfBilling", { help: null })}</div>
+      ${["C", "D", "E"].includes(d.typeOfBilling) ? `<div class="ffield wide"${sn("REQ.bulk_supporting_docs")}><span class="flabel">Supporting documents (bulk upload)</span>
+        <div><label class="btn small" for="pfBulk">${icon("clip", 15)} Upload files</label><input type="file" id="pfBulk" multiple hidden></div>
+        ${d.docBulk?.length ? `<ul class="attlist">${d.docBulk.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unbulk="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Type of billing ${esc(d.typeOfBilling)}: you can upload several supporting files at once.</span>`}</div>` : ""}`;
+  }
   else if (d.contractOption === "none") body = `<div class="pt-info"${sn("PT-28")}><b>No contract required</b><p class="small">AR files these billing lines under ${shell ? `the customer's no-contract shell <b class="mono">${esc(shell.number)}</b>` : `a new no-contract shell for ${esc(d.department || "your department")}`}, so the customer › contract › billing lines › invoices hierarchy stays complete.</p></div>`;
-  const loc = needLocation(d) ? `<div class="fgrid">${f("contractLocation", { mandatory: true, help: null })}${["repository", "physical"].includes(d.contractLocation) ? f("contractLocationRef", { mandatory: true, label: d.contractLocation === "repository" ? "Link to the contract" : "Where the physical file is", help: null }) : ""}</div>`
-    : tgt && !isShell(tgt) && tgt.contractLocation ? `<p class="pt-hint">Signed contract: ${esc(tgt.contractLocationRef || "with AR")}.</p>` : "";
-  const bt = !d.contractOption ? "" : `<div class="pbill"${sn("PT-19")}><h3 class="small">Bill-to person${tgt ? ` on ${esc(tgt.number)}` : d.contractOption === "new" ? " for the new contract" : ""}</h3>
-      ${tgt?.billToName && !d.updateBillTo ? `<div class="pt-info"><b>Invoices under ${esc(isShell(tgt) ? "this shell" : "this contract")} go to</b><p class="small">${esc(tgt.billToName)} · ${esc(tgt.billToEmail)}${tgt.billToPhone ? ` · ${esc(tgt.billToPhone)}` : ""}<br>${esc(tgt.billToAddress || "")}</p></div>` : ""}
-      ${tgt?.billToName ? `<div class="fgrid">${f("updateBillTo")}</div>` : `<p class="pt-hint">${d.billToPrefilled ? `Prefilled from the ${esc(d.department)} department's usual bill-to person. Change it if this contract bills someone else.` : "Tell AR who to bill for this contract."}</p>`}
-      ${needBillTo(d) ? `<div class="fgrid">${f("billToName", { mandatory: true, help: null })}${f("billToEmail", { mandatory: true })}${f("billToPhone")}${f("billToAddress")}</div>` : ""}</div>`;
+  const loc = needLocation(d) ? `<div class="fgrid">${f("contractLocation", { mandatory: true, help: null })}${["repository", "physical"].includes(d.contractLocation) ? f("contractLocationRef", { mandatory: true, label: d.contractLocation === "repository" ? "Link to the contract" : "Where the physical file is", help: null }) : ""}</div>` : "";
+  const bt = d.contractOption !== "none" ? "" : `<div class="pbill"${sn("PT-19")}><h3 class="small">Bill-to person${tgt ? ` on ${esc(tgt.number)}` : " for the no-contract shell"}</h3>
+      ${tgt?.billToName ? `<div class="pt-info"><b>Invoices under this shell go to</b><p class="small">${esc(tgt.billToName)} · ${esc(tgt.billToEmail)}${tgt.billToPhone ? ` · ${esc(tgt.billToPhone)}` : ""}</p></div>`
+        : `<p class="pt-hint">${d.billToPrefilled ? `Prefilled from the ${esc(d.department)} department's usual bill-to person.` : "Tell AR who to bill."}</p><div class="fgrid">${f("billToName", { mandatory: true, help: null })}${f("billToEmail", { mandatory: true })}${f("billToPhone")}</div>`}</div>`;
   return `<div class="ffield wide${optErr ? " has-err" : ""}"${sn("REQ.contract_option")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Which contract does this bill under?</span>
       <div class="optcards" role="group" aria-label="Contract">${opts.map(([k, l]) => `<button type="button" class="optcard" data-ctropt="${k}" aria-pressed="${d.contractOption === k}">${esc(l)}<span>${k === "existing" ? `${ctrs.length} on file` : k === "new" ? "AR creates it" : "Ad-hoc billing"}</span></button>`).join("")}</div>
       ${optErr ? `<span class="ferr">${esc(optErr)}</span>` : ""}</div>
-    ${body}${loc}${bt}`;
+    ${body}${loc}${bt}${d.contractOption ? giroSub(d) : ""}`;
+}
+
+/** Existing contract: every contract detail read-only, in the owner's order (D22). */
+function contractRo(k) {
+  const F = key => TABLES.contracts.fields.find(x => x.key === key);
+  const val = key => { const f = F(key), v = k[key]; if (v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length)) return "";
+    return f.type === "Currency" ? `SGD ${fmt(v)}` : f.choices ? (f.choices.find(c => c[0] === v) || [, v])[1] : Array.isArray(v) ? `${v.length} file(s): ${v.join(", ")}` : v; };
+  const vis = key => fieldVisible("contracts", F(key), k);
+  const ro = (key, label) => vis(key) ? `<div class="ffield${["title", "bulkDocs"].includes(key) ? " wide" : ""}"${sn(`CON.${F(key).name}`)}><span class="flabel">${esc(label || F(key).label)}</span><div class="fro">${val(key) ? esc(val(key)) : `<span class="muted">Not on file</span>`}</div></div>` : "";
+  return `<div class="fgrid custro"${sn("PT-41")}>${ro("category")}${ro("number", "Contract number")}${ro("reference")}${ro("poNumber")}${ro("title", "Contract title")}${ro("start", "Contract start date")}${ro("end", "Contract end date")}${ro("value", "Contract value (SGD)")}
+    ${ro("billToName", "Contract bill-to person")}${ro("billToEmail", "Contract bill-to email")}${ro("billToPhone", "Contract bill-to phone number")}${ro("billingCycle")}${ro("billingCycleOther")}${ro("invoiceDate")}${ro("paymentTerms")}${ro("paymentTermsOther")}
+    ${ro("prorate")}${ro("prorateFirst")}${ro("prorateLast")}${ro("typeOfBilling")}${ro("bulkDocs")}</div>`;
 }
 
 /** One billing line card (D13). */
@@ -169,8 +192,7 @@ function lineCard(l, i, e) {
       ${lf("desc", { label: rec ? "What is billed each period" : "What is billed" })}
       ${lf("amount", { label: rec ? "Amount per period" : "Amount", help: null })}
       ${rec ? `${lf("frequency", { help: null })}${lf("startDate", { label: "From (first invoice)", mandatory: true, help: null })}${lf("endDate", { label: "To (last invoice)", mandatory: true, help: null })}
-        ${lf("remarks", { help: "Optional" })}${lf("prorate", { help: "Different amounts for the first and last month" })}
-        ${l.prorate ? `${lf("firstAmount", { mandatory: true, help: null })}${lf("lastAmount", { mandatory: true, help: null })}` : ""}`
+        ${lf("remarks", { help: "Optional" })}`
         : lf("invoiceDate", { help: null })}
     </div>
     ${lineSum(l, i)}
@@ -178,23 +200,25 @@ function lineCard(l, i, e) {
 }
 export function lineSum(l, i) {
   if (l.lineType !== "recurring") return `<p class="lsum" id="pfLineSum-${i}">${l.amount > 0 ? `One invoice of SGD ${fmt(l.amount)}${l.invoiceDate ? ` around ${esc(l.invoiceDate)}` : ""}.` : ""}</p>`;
-  const n = periodDates(l.frequency || "monthly", l.startDate, l.endDate).length, pr = l.prorate && (l.firstAmount || l.lastAmount);
-  return `<p class="lsum" id="pfLineSum-${i}">${n && l.amount > 0 ? `${n} ${esc(freqLabel(l.frequency || "monthly").toLowerCase())} invoice${n === 1 ? "" : "s"}${pr ? `: first SGD ${fmt(l.firstAmount || l.amount)}${n > 2 ? `, ${n - 2} × SGD ${fmt(l.amount)}` : ""}${n > 1 ? `, last SGD ${fmt(l.lastAmount || l.amount)}` : ""}` : ` × SGD ${fmt(l.amount)}`} = <b>SGD ${fmt(lineValue(l))}</b>. Submit once; AR raises each invoice.` : "Enter the amount and the date range to see the number of invoices."}</p>`;
+  const pro = draftPro(P().draft || {}), n = periodDates(l.frequency || "monthly", l.startDate, l.endDate).length, pr = pro && (pro.firstAmount || pro.lastAmount);
+  return `<p class="lsum" id="pfLineSum-${i}">${n && l.amount > 0 ? `${n} ${esc(freqLabel(l.frequency || "monthly").toLowerCase())} invoice${n === 1 ? "" : "s"}${pr ? `: first SGD ${fmt(pro.firstAmount || l.amount)}${n > 2 ? `, ${n - 2} × SGD ${fmt(l.amount)}` : ""}${n > 1 ? `, last SGD ${fmt(pro.lastAmount || l.amount)}` : ""} (contract proration)` : ` × SGD ${fmt(l.amount)}`} = <b>SGD ${fmt(lineValue(l, pro))}</b>. Submit once; AR raises each invoice.` : "Enter the amount and the date range to see the number of invoices."}</p>`;
 }
 export function linesTotals(d) {
-  const t = linesSummary(d.lines || []);
+  const t = linesSummary(d.lines || [], draftPro(d));
   return `<dl class="ltotals" id="pfTotals"><div><dt>One-off</dt><dd class="mono">${fmt(t.oneOffTotal)}</dd></div><div><dt>Recurring (all periods)</dt><dd class="mono">${fmt(t.recurringValue)}</dd></div><div><dt>Request value</dt><dd class="mono"><b>SGD ${fmt(t.total)}</b></dd></div></dl>`;
 }
 
-/** AR-i GIRO section (D22): read-only Yes / No from the contract's GIRO status, which only an AR-ix changes. */
-function giroSection(d, no) {
+/** AR-i GIRO subsection inside Contract (D22): existing DDA? read-only, from the contract's GIRO status (set only by an AR-ix). */
+function giroSub(d) {
   const v = giroOnContractOf(d), k = d.contractOption === "existing" && d.contractId ? ctrById(d.contractId) : null, cur = activeGiroCase(k);
-  const tip = "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO.";
-  return `<fieldset class="psec"${sn("PT-36")}><legend>${no}. GIRO</legend>
-    <div class="fgrid"><div class="ffield"${sn("REQ.giro_on_contract")}><span class="flabel">GIRO on this contract <span class="ftip" tabindex="0" role="img" aria-label="${esc(tip)}" data-tip="${esc(tip)}">i</span></span>
-      <div class="seg giro-ro" role="group" aria-label="GIRO on this contract (read-only)" title="${esc(tip)}"><button type="button" disabled aria-pressed="${v === "yes"}">Yes</button><button type="button" disabled aria-pressed="${v === "no"}">No</button></div>
-      <span class="fhelp">${!d.contractOption ? "Shown once the contract is chosen." : cur ? `Active on ${esc(k.number)} from ${esc(cur.number)} (${esc(giroLabel(cur))}).` : `No GIRO on ${k ? esc(k.number) : d.contractOption === "new" ? "a new contract" : "the no-contract shell"}. Raise an AR-ix (GIRO authorisation) from AR forms if it needs GIRO.`}</span></div></div>
-  </fieldset>`;
+  const grey = d.contractOption !== "existing";
+  const tip = grey ? "This contract isn't set up yet. Once AR has created it, raise an AR-ix (GIRO authorisation) if it needs GIRO." : "GIRO (DDA) is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO.";
+  return `<div class="psub${grey ? " greyed" : ""}"${sn("PT-36")} title="${esc(tip)}"><h3 class="small">GIRO</h3>
+    <div class="fgrid"><div class="ffield"${sn("REQ.giro_on_contract")}><span class="flabel">Is there an existing DDA? <span class="ftip" tabindex="0" role="img" aria-label="${esc(tip)}" data-tip="${esc(tip)}">i</span></span>
+      <div class="seg giro-ro" role="group" aria-label="Existing DDA (read-only)"><button type="button" disabled aria-pressed="${v === "yes"}">Yes</button><button type="button" disabled aria-pressed="${v === "no" && !grey}">No</button></div></div>
+      ${cur ? `<div class="ffield"><span class="flabel">AR-ix case</span><div class="fro mono">${esc(cur.number)}</div><span class="fhelp">${esc(giroLabel(cur))}</span></div>` : ""}</div>
+    <p class="fhelp">${grey ? "Not available for a new contract or no-contract billing. After AR sets up the contract, raise an AR-ix if it needs GIRO." : cur ? "" : "No DDA on this contract. Raise an AR-ix (GIRO authorisation) from AR forms if it needs GIRO."}</p>
+  </div>`;
 }
 
 /** Variable set "General information" (D19): first section of every AR form. */
@@ -239,10 +263,8 @@ function formPage() {
           ${contractStep(d, e, f)}
         </fieldset>` : ""}
 
-        ${haveCust ? giroSection(d, n()) : ""}
-
         <fieldset class="psec"${sn("PT-26")}><legend>${n()}. What to bill</legend>
-          ${(() => { const k = targetContract(d); return d.contractOption ? `<p class="pt-hint">Billing lines are filed under ${d.contractOption === "new" ? `new contract ${esc(d.newCtrRef || "")}` : k ? esc(ctrLabel(k)) : d.contractOption === "none" ? "the no-contract shell" : "the chosen contract"}.</p>` : ""; })()}
+          ${(() => { const k = targetContract(d); return d.contractOption ? `<p class="pt-hint">Billing lines are filed under ${d.contractOption === "new" ? `new contract ${esc(d.newCtrNumber || "")}` : k ? esc(ctrLabel(k)) : d.contractOption === "none" ? "the no-contract shell" : "the chosen contract"}.</p>` : ""; })()}
           <div class="fgrid">${f("title")}${f("poNumber")}</div>
           <div class="lines${e.lines ? " has-err" : ""}" id="pfLines"${sn("RL-REQ-RQL")}>${(d.lines || []).map((l, i) => lineCard(l, i, e)).join("")}</div>
           ${e.lines ? `<span class="ferr">${esc(e.lines)}</span>` : ""}
@@ -255,10 +277,6 @@ function formPage() {
           <div${sn("PT-29")}><h3 class="small">Finance coding</h3>
             <p class="pt-hint">Optional. Fill in what you know; AR can complete it.</p>
             <div class="fgrid">${INV_KEYS.filter(k => k !== "docBulk" && fieldVisible("requests", reqField(k), d)).map(k => f(k, { help: null })).join("")}</div>
-            ${d.agencyType ? "" : `<p class="fhelp">Type of billing appears once the customer's agency type is known.</p>`}
-            ${fieldVisible("requests", reqField("docBulk"), d) ? `<div class="ffield wide"${sn("REQ.bulk_supporting_docs")}><span class="flabel">Supporting documents (bulk upload)</span>
-              <div><label class="btn small" for="pfBulk">${icon("clip", 15)} Upload files</label><input type="file" id="pfBulk" multiple hidden></div>
-              ${d.docBulk?.length ? `<ul class="attlist">${d.docBulk.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unbulk="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Type of billing ${esc(d.typeOfBilling)}: you can upload several supporting files at once.</span>`}</div>` : ""}
           </div>
         </fieldset>
 
@@ -329,7 +347,7 @@ function giroFormPage() {
 }
 
 const ctrSummary = d => d.contractOption === "existing" ? (d.contractId ? `Contract ${ctrById(d.contractId)?.number}` : "Existing contract (choose one)")
-  : d.contractOption === "new" ? `New contract ${d.newCtrRef || ""}`.trim() : d.contractOption === "none" ? "No contract required" : d.contractId ? ctrLabel(ctrById(d.contractId)) : "Contract not chosen yet";
+  : d.contractOption === "new" ? `New contract ${d.newCtrNumber || ""}`.trim() : d.contractOption === "none" ? "No contract required" : d.contractId ? ctrLabel(ctrById(d.contractId)) : "Contract not chosen yet";
 export const formAlert = n => n ? `<div class="pt-alert err" role="alert">Please fix ${n} field${n === 1 ? "" : "s"} below.</div>` : "";
 
 export function formSide(d) {

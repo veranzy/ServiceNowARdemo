@@ -135,7 +135,7 @@ function contractChanged(d) {
     return;
   }
   if (d.billToPrefilled) { Object.assign(d, { billToName: "", billToEmail: "", billToPhone: "", billToAddress: "" }); delete d.billToPrefilled; }
-  d.updateBillTo = false; prefillBillTo(d);
+  prefillBillTo(d);
   const now = validateARi(d); for (const k of Object.keys(P().errors)) if (!now[k]) delete P().errors[k];
 }
 const resetContract = d => { Object.assign(d, { contractOption: "", contractId: null }); contractChanged(d); };
@@ -199,8 +199,10 @@ document.addEventListener("click", e => {
   if (d.newcust !== undefined) { const dr = P().draft; Object.assign(dr, { newCustomer: true, newCustName: dr.custQ || "", customerId: null }, dr.form === "AR-i" ? custDetailsOf(null) : {}); resetContract(dr); delete P().errors.customerId; render(); return $("pf-newCustUen")?.focus(); }
   if (d.custclear !== undefined) { Object.assign(P().draft, { customerId: null, newCustomer: false }, P().draft.form === "AR-i" ? custDetailsOf(null) : {}); resetContract(P().draft); render(); return $("pfCustQ")?.focus(); }
   // AR-i contract step (D15)
-  if (d.ctropt) { const dr = P().draft; dr.contractOption = d.ctropt; if (d.ctropt !== "existing") dr.contractId = null; contractChanged(dr); delete P().errors.contractOption; render();
-    return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? $("pf-newCtrRef") : null)?.focus(); }
+  if (d.ctropt) { const dr = P().draft; dr.contractOption = d.ctropt; if (d.ctropt !== "existing") dr.contractId = null;
+    if (d.ctropt === "new" && dr.form !== "AR-ix") { dr.newCtrTerms ||= "30"; dr.newCtrProrate ||= "no"; }
+    contractChanged(dr); delete P().errors.contractOption; render();
+    return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? $(dr.form === "AR-ix" ? "pf-newCtrRef" : "pf-newCtrType") : null)?.focus(); }
   // AR-i billing lines (D13)
   if (d.ladd) { P().draft.lines.push({ lineType: d.ladd, desc: "", amount: 0, invoiceDate: "", frequency: "monthly", startDate: "", endDate: "" }); delete P().errors.lines; render(); return $(`pl${P().draft.lines.length - 1}-desc`)?.focus(); }
   if (d.lremove !== undefined) { P().draft.lines.splice(+d.lremove, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith("line:"))); return render(); }
@@ -286,7 +288,6 @@ document.addEventListener("change", e => {
   // portal AR form: billing line fields
   if (el.closest("#arForm") && el.name?.startsWith("line:")) {
     const d = P().draft, [, i, k] = el.name.split(":"); d.lines[+i][k] = coerce("lines", k, el);
-    if (k === "prorate" && !el.checked) Object.assign(d.lines[+i], { firstAmount: 0, lastAmount: 0 });
     if (el.tagName === "SELECT" || el.type === "checkbox") return render();
     return lineUpdated(el, +i);
   }
@@ -355,8 +356,9 @@ document.addEventListener("submit", e => {
       render(); return window.scrollTo(0, 0);
     }
     const { custQ, billToPrefilled, ...vals } = d;
-    if (!needBillTo(vals)) Object.assign(vals, { billToName: "", billToEmail: "", billToPhone: "", billToAddress: "", updateBillTo: false });
-    if (vals.contractOption !== "new") Object.assign(vals, { newCtrRef: "", newCtrTitle: "", newCtrStart: "", newCtrEnd: "", newCtrValue: 0 });
+    if (!needBillTo(vals)) Object.assign(vals, { billToName: "", billToEmail: "", billToPhone: "", billToAddress: "" });
+    if (vals.contractOption !== "new") Object.assign(vals, { newCtrType: "", newCtrNumber: "", newCtrRef: "", newCtrPo: "", newCtrTitle: "", newCtrStart: "", newCtrEnd: "", newCtrValue: 0, newCtrCycle: "", newCtrCycleOther: "",
+      newCtrInvDate: "", newCtrTerms: "", newCtrTermsOther: "", newCtrProrate: "", newCtrProFirst: 0, newCtrProLast: 0, typeOfBilling: "", docBulk: [] });
     if (vals.contractOption !== "existing") vals.contractId = null;
     if (!needLocation(vals)) Object.assign(vals, { contractLocation: "", contractLocationRef: "" });
     if (vals.newCustomer) vals.customerId = null; else { vals.newCustName = ""; vals.newCustUen = ""; vals.newCustAddress = ""; }

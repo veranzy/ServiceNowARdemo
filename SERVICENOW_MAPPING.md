@@ -42,9 +42,12 @@ Custom contract table (not ast_contract). GIRO is a contract status set from the
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `number` | Contract number | String | Mandatory |
-| `contract_type` | Type | Choice | Choices: Contract (`contract`), No-contract shell (`shell`). Mandatory |
+| `contract_type` | Record type | Choice | Choices: Contract (`contract`), No-contract shell (`shell`). Mandatory. Contract, or the customer's no-contract shell (D15) |
+| `contract_category` | Contract type | Choice | Choices: Recurring (`recurring`), Ad-hoc (`ad_hoc`). Recurring or Ad-hoc |
 | `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
 | `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Owning department; a shell is unique per customer + department |
+| `reference_number` | Contract reference number | String |  |
+| `po_number` | Contract PO number | String |  |
 | `short_description` | Title | String | Mandatory |
 | `billing_type` | Billing | Choice | Choices: Monthly, Milestone, Annual, Time & materials, Per PO |
 | `contract_value` | Contract value | Currency |  |
@@ -58,6 +61,16 @@ Custom contract table (not ast_contract). GIRO is a contract status set from the
 | `lpi_rate` | LPI rate (%) | Decimal | Mandatory when LPI applicable. % per annum |
 | `contract_location` | Where the signed contract is kept | Choice | Choices: Attached to this form (`attached`), Already with AR (`on_file`), Document repository link (`repository`), Physical file (`physical`) |
 | `contract_location_ref` | Link or file location | String |  |
+| `billing_cycle` | Contract billing cycle | Choice | Choices: 1st of the month (`first`), 15th of the month (`fifteenth`), Others (`others`) |
+| `billing_cycle_other` | Suggested billing cycle | String | Shown when Contract billing cycle = Others (UI policy) |
+| `preferred_invoice_date` | Preferred invoice billing date | Date |  |
+| `payment_terms_choice` | Payment terms | Choice | Choices: 30 days (`30`), Others (`others`). 30 days sets terms (days) = 30 |
+| `payment_terms_other` | Other payment terms | String | Shown when Payment terms = Others (UI policy) |
+| `proration` | Proration | Choice | Choices: Yes (`yes`), No (`no`). Yes: the first and last period of each recurring billing schedule use the proration amounts |
+| `proration_first` | Proration for 1st month | Currency | Shown when Proration = Yes (UI policy) |
+| `proration_last` | Proration for last month | Currency | Shown when Proration = Yes (UI policy) |
+| `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E |
+| `bulk_supporting_docs` | Supporting documents (bulk upload) | Attachment | Shown when Type of billing is C, D, E (UI policy) |
 | `giro_status` | GIRO status | Choice | Choices: Active (`active`), Not active (`none`). Read-only on form. Set by Activate GIRO / Remove GIRO on an AR-ix case. At most one active GIRO per contract (D21) |
 | `giro_case` | Active GIRO case | Reference | → `x_ar_request`. Read-only on form. The approved AR-ix case whose GIRO is active; empty when GIRO is not active |
 | `bill_to_name` | Bill-to person | String |  |
@@ -88,12 +101,22 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `new_customer_address` | Registered address | String (1000) |  |
 | `contract_option` | Contract | Choice | Choices: Existing contract (`existing`), New contract (`new`), No contract required (`none`). Mandatory. Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15) |
 | `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer. Existing contract; for a new contract or No contract required, set by Link to customer |
-| `new_contract_ref` | Contract reference | String | Mandatory for a new contract, e.g. the customer's agreement or PO number |
+| `new_contract_type` | Contract type | Choice | Choices: Recurring (`recurring`), Ad-hoc (`ad_hoc`). Mandatory for a new contract |
+| `new_contract_number` | Contract number | String | Mandatory for a new contract |
+| `new_contract_ref` | Contract reference number | String | Optional for a new contract (AR-ix: the reference to link) |
+| `new_contract_po` | Contract PO number | String | Optional |
 | `new_contract_title` | Contract title | String | Mandatory for a new contract |
-| `new_contract_start` | Contract start | Date | Mandatory for a new contract |
-| `new_contract_end` | Contract end | Date |  |
-| `new_contract_value` | Contract value | Currency | Mandatory for a new contract |
-| `update_bill_to` | Change the bill-to person on this contract | True/False |  |
+| `new_contract_start` | Contract start date | Date | Mandatory for a new contract |
+| `new_contract_end` | Contract end date | Date |  |
+| `new_contract_value` | Contract value (SGD) | Currency | Mandatory for a new contract |
+| `new_contract_billing_cycle` | Contract billing cycle | Choice | Choices: 1st of the month (`first`), 15th of the month (`fifteenth`), Others (`others`). Optional |
+| `new_contract_billing_cycle_other` | Suggested billing cycle | String | Shown when Contract billing cycle = Others (UI policy). Mandatory when the billing cycle is Others |
+| `new_contract_invoice_date` | Preferred invoice billing date | Date | Optional |
+| `new_contract_payment_terms` | Payment terms | Choice | Choices: 30 days (`30`), Others (`others`). Default 30 days |
+| `new_contract_payment_terms_other` | Other payment terms | String | Shown when Payment terms = Others (UI policy). Mandatory when payment terms is Others |
+| `new_contract_proration` | Proration | Choice | Choices: Yes (`yes`), No (`no`). Default No |
+| `new_contract_proration_first` | Proration for 1st month | Currency | Shown when Proration = Yes (UI policy). Mandatory when proration is Yes |
+| `new_contract_proration_last` | Proration for last month | Currency | Shown when Proration = Yes (UI policy). Mandatory when proration is Yes |
 | `bill_to_name` | Bill-to person | String | Mandatory when the contract (or shell) has no bill-to person yet; Link to customer writes it to the contract |
 | `bill_to_email` | Bill-to email | String |  |
 | `bill_to_phone` | Bill-to phone | String |  |
@@ -111,7 +134,7 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `agency_type` | Agency type | Choice | Choices: M, SB, PV. AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master |
 | `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type is SB, PV (UI policy). AR-i customer details, optional. Found customer: read-only from the customer master |
 | `sub_bu` | V@G sub-BU | String | Shown when V@G = Yes (UI policy). Optional, free text |
-| `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Shown when Agency type is M, SB, PV (UI policy). Optional |
+| `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Contract level: entered for a new contract (copied to the contract by Link to customer); read-only copy of the contract's value for an existing one |
 | `bulk_supporting_docs` | Supporting documents (bulk upload) | Attachment | Shown when Type of billing is C, D, E (UI policy). Optional; several files at once |
 | `invoice_breakdown` | Invoice breakdown | String (4000) | Optional, free text: how the invoice should be broken down |
 | `giro_on_contract` | GIRO on this contract | Choice | Choices: Yes (`yes`), No (`no`). Read-only on form. Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21). Tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." |
@@ -219,7 +242,7 @@ Applies part or all of a BSU deposit to an invoice. Always created manually by t
 
 ## Portal (project team)
 
-- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_ref`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `contract_location`, `contract_location_ref`, `update_bill_to`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `po_number`, `customer_poc_name`, `customer_poc_email`, `invoice_breakdown`, `cost_center`, `account_code`, `agent_name`, `agency_type`, `vag`, `sub_bu`, `type_of_billing`, `bulk_supporting_docs`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
+- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_type`, `new_contract_number`, `new_contract_ref`, `new_contract_po`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `new_contract_billing_cycle`, `new_contract_billing_cycle_other`, `new_contract_invoice_date`, `new_contract_payment_terms`, `new_contract_payment_terms_other`, `new_contract_proration`, `new_contract_proration_first`, `new_contract_proration_last`, `contract_location`, `contract_location_ref`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `po_number`, `customer_poc_name`, `customer_poc_email`, `invoice_breakdown`, `cost_center`, `account_code`, `agent_name`, `agency_type`, `vag`, `sub_bu`, `type_of_billing`, `bulk_supporting_docs`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
   - Producer script: `current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>;`
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.

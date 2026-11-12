@@ -15,3 +15,4 @@
 | 2026-11-12 | Correction (owner): the previous relabel went on the wrong field. `giro_type` (Add / Remove GIRO) is now **Type of request**; `giro_purpose` (Rental / Carpark / Others) is now **Purpose of GIRO/DDA request**. Choices and logic unchanged. No IDs added or retired. |
 | 2026-11-12 | Owner change: GIRO history tab (`CON-GIRO`, `REQ-GIROHIST`) column **Type** → **Type of request**. No IDs added or retired. |
 | 2026-11-12 | Owner change: GIRO history tab column **Purpose** → **Purpose of GIRO/DDA request**, to match the form. No IDs added or retired. |
+| 2026-11-12 | Open question 6 closed with the owner: GitHub issue #2 closed (answered by decision 14). D21 and decision 9 notes updated. No IDs added or retired. |

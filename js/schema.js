@@ -46,7 +46,7 @@ const YES_NO = [["yes", "Yes"], ["no", "No"]];
 const BILLING_KINDS = ["A", "B", "C", "D", "E"].map(x => [x, x]);
 export const CONTRACT_CATEGORIES = [["recurring", "Recurring"], ["ad_hoc", "Ad-hoc"]];
 /** AR-i invoice timing for one-invoice requests (AR-i decision 38). */
-export const INVOICE_TIMING = [["per_cycle", "Per billing cycle"], ["expedited", "Expedited"]];
+export const INVOICE_TIMING = [["per_cycle", "Per Billing Cycle"], ["expedited", "Expedited"]];
 export const BILLING_CYCLES = [["first", "1st of the month"], ["fifteenth", "15th of the month"], ["others", "Others"]];
 /** GST rate (%) for billing line items (AR-i decision 33). Build: a system property, e.g. x_ar.gst_rate. */
 export const GST_RATE = 9;
@@ -98,8 +98,8 @@ export const TABLES = {
       { key: "attnName", name: "attention_name", label: "Attention to name", type: "String", help: "Optional. Prefilled from the contract's bill-to person" },
       { key: "attnEmail", name: "attention_email", label: "Attention to email", type: "String", help: "Optional; must be a valid email. Prefilled from the contract's bill-to email" },
       { key: "perPeriod", name: "amount_per_period", label: "Amount billed per period", type: "Currency", mandatory: true, help: "Before GST. Recurring contract: billed every period; ad-hoc or no contract: one invoice of this amount" },
-      { key: "invoiceTiming", name: "invoice_timing", label: "Invoice timing", type: "Choice", choices: INVOICE_TIMING, help: "One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Mandatory when shown; defaults to Per billing cycle (AR-i decision 38)" },
-      { key: "expediteReason", name: "expedite_justification", label: "Justification for expedited or off billing cycle request", type: "String (1000)", wide: true, showIf: { key: "invoiceTiming", eq: "expedited" }, help: "Mandatory when invoice timing is Expedited" },
+      { key: "invoiceTiming", name: "invoice_timing", label: "Preferred invoice date", type: "Choice", choices: INVOICE_TIMING, help: "One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Optional (AR-i decision 38)" },
+      { key: "expediteReason", name: "expedite_justification", label: "Provide Justification for expedited or Off billing cycle request", type: "String (1000)", wide: true, showIf: { key: "invoiceTiming", eq: "expedited" }, help: "Shown when Expedited; optional" },
       { key: "needItems", name: "billing_line_items_required", label: "Require billing line item?", type: "Choice", choices: YES_NO, help: "Yes shows the billing line items table (multi-row variable set)" },
       { key: "amount", name: "amount", label: "Request value", type: "Currency", readonly: true, help: "Calculated: one-off lines + recurring amount × number of periods" },
       { key: "poNumber", name: "po_number", label: "Customer PO number", type: "String" },

@@ -58,7 +58,7 @@ export function contractBox(d) {
     <dl><div><dt>Contract value</dt><dd class="mono">${fmt(k.value || 0)}</dd></div><div><dt>Invoiced so far</dt><dd class="mono">${fmt(r.billed)}</dd></div>
       <div><dt>Requested, not yet invoiced</dt><dd class="mono">${fmt(pending)}</dd></div><div><dt>Remaining to bill</dt><dd class="mono${left < 0 ? " bad" : ""}">${fmt(left)}</dd></div>
       <div><dt>Billing</dt><dd>${esc(k.billing)} · Net ${esc(k.terms)}</dd></div></dl>
-    ${(() => { const dl = draftLine(d); if (!d.id && dl.lineType === "recurring") return ""; /* schedule start not on the form yet (AR-i open question 25) */ const amt = d.id ? d.amount || 0 : lineValue(dl, draftPro(d)); return amt && left - amt < 0 && k.value ? `<p class="bad small">This request takes billing over the contract value by SGD ${fmt(amt - left)}. AR may ask for a change order.</p>` : ""; })()}
+    ${(() => { const amt = d.id ? d.amount || 0 : lineValue(draftLine(d), draftPro(d)); return amt && left - amt < 0 && k.value ? `<p class="bad small">This request takes billing over the contract value by SGD ${fmt(amt - left)}. AR may ask for a change order.</p>` : ""; })()}
   </div>`;
 }
 
@@ -240,7 +240,7 @@ function formPage() {
   if (!p.draft || p.draft.form !== code) {
     const gen = { form: code, requesterName: me().name, requesterEmail: me().email || "", ccList: "", department: me().department || "", newCustomer: false, custQ: "", attachments: [] };
     p.draft = code === "AR-ix" ? { ...gen, contractOption: "", giroPurpose: "", giroType: "add" }
-      : { ...gen, needItems: "no", items: [], invoiceTiming: "per_cycle" };
+      : { ...gen, needItems: "no", items: [] };
     p.errors = {};
   }
   if (code === "AR-ix") return giroFormPage();
@@ -272,7 +272,7 @@ function formPage() {
           ${(() => { const bm = billingMode(d), k = targetContract(d); return d.contractOption ? `<p class="pt-hint">Billed under ${d.contractOption === "new" ? `new contract ${esc(d.newCtrNumber || "")}` : k ? esc(ctrLabel(k)) : d.contractOption === "none" ? "the no-contract shell" : "the chosen contract"}: ${bm.recurring ? "<b>recurring contract</b>, so the amount below is billed every month until the contract ends" : "<b>one invoice</b>"}.</p>` : ""; })()}
           <div class="fgrid">${f("title", { help: null })}${f("attnName", { help: d.attnPrefilled ? "Prefilled from the contract's bill-to person" : null })}${f("attnEmail", { help: null })}
             ${f("perPeriod", { label: billingMode(d).recurring ? "Amount billed per period (SGD, before GST)" : "Amount billed (SGD, before GST)", help: null })}
-            ${billingMode(d).recurring ? "" : `${f("invoiceTiming", { mandatory: true, help: null })}${d.invoiceTiming === "expedited" ? f("expediteReason", { mandatory: true, help: null }) : ""}`}
+            ${billingMode(d).recurring ? "" : `${f("invoiceTiming", { help: null })}${d.invoiceTiming === "expedited" ? f("expediteReason", { help: null }) : ""}`}
             ${f("needItems", { help: null })}</div>
           ${invSum(d)}
           ${d.needItems === "yes" ? itemsTable(d, e) : ""}
@@ -372,7 +372,7 @@ export function formSide(d) {
     <span class="ft-code">AR-i</span>
     <h2>Submit request</h2>
     <p class="small muted">Goes to the Accounts Receivable team as a case. You'll get updates on My requests.</p>
-    <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "New customer"} (new)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(ctrSummary(d))}<br>${l.lineType === "recurring" ? `Recurring, monthly · SGD ${fmt(d.perPeriod || 0)} per month` : `One invoice · SGD ${fmt(val)}`}</p>
+    <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "New customer"} (new)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(ctrSummary(d))}<br>${esc(l.lineType === "recurring" ? "Recurring, monthly" : "One invoice")} · SGD ${fmt(val)}</p>
     ${labels.length ? `<p class="small"><b>Still needed</b><br>${labels.map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
     </div><button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
   </div>`;
@@ -435,7 +435,7 @@ function ticketPage() {
         <h2>Details</h2>
         <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${kv("Customer", esc(reqCustName(r)))}${r.pocName || r.pocEmail ? kv("Customer POC", esc([r.pocName, r.pocEmail].filter(Boolean).join(" · "))) : ""}${kv("Department", esc([r.department || "—", reqField("deptSubBu").choices.find(c => c[0] === r.deptSubBu)?.[1]].filter(Boolean).join(" · ")))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
           ${giro ? `${kv("Applicant", esc([r.applicantName, r.applicantEmail, r.applicantMobile].filter(Boolean).join(" · ")))}${r.giroInvoiceRef ? kv("Invoice reference", esc(r.giroInvoiceRef)) : ""}${kv("GIRO", esc(giroLabel(r)))}${r.giroAmount ? kv("Amount", `<span class="mono">SGD ${fmt(r.giroAmount)}</span>`) : ""}`
-          : `${kv("Billing", esc(linesLabel(r)))}${r.attnName || r.attnEmail ? kv("Attention to", esc([r.attnName, r.attnEmail].filter(Boolean).join(" · "))) : ""}${r.perPeriod ? kv("Amount per period", `<span class="mono">SGD ${fmt(r.perPeriod)}</span> before GST`) : ""}${r.invoiceTiming ? kv("Invoice timing", `${esc(reqField("invoiceTiming").choices.find(c => c[0] === r.invoiceTiming)?.[1] || r.invoiceTiming)}${r.expediteReason ? `<br><span class="small">${esc(r.expediteReason)}</span>` : ""}`) : ""}${reqItems(r).length ? kv("Billing line items", reqItems(r).map(it => `Item ${esc(it.seq)}: SGD ${fmt(it.total)} incl. GST`).join("<br>")) : ""}${r.giroOnContract ? kv("GIRO on contract", r.giroOnContract === "yes" ? "Yes" : "No") : ""}${r.invoiceBreakdown ? kv("Invoice breakdown", esc(r.invoiceBreakdown)) : ""}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
+          : `${kv("Billing", esc(linesLabel(r)))}${r.attnName || r.attnEmail ? kv("Attention to", esc([r.attnName, r.attnEmail].filter(Boolean).join(" · "))) : ""}${r.perPeriod ? kv("Amount per period", `<span class="mono">SGD ${fmt(r.perPeriod)}</span> before GST`) : ""}${r.invoiceTiming ? kv("Preferred invoice date", `${esc(reqField("invoiceTiming").choices.find(c => c[0] === r.invoiceTiming)?.[1] || r.invoiceTiming)}${r.expediteReason ? `<br><span class="small">${esc(r.expediteReason)}</span>` : ""}`) : ""}${reqItems(r).length ? kv("Billing line items", reqItems(r).map(it => `Item ${esc(it.seq)}: SGD ${fmt(it.total)} incl. GST`).join("<br>")) : ""}${r.giroOnContract ? kv("GIRO on contract", r.giroOnContract === "yes" ? "Yes" : "No") : ""}${r.invoiceBreakdown ? kv("Invoice breakdown", esc(r.invoiceBreakdown)) : ""}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
 ${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>
         ${r.details ? `<p class="small">${esc(r.details)}</p>` : ""}
         ${(() => { const docs = [["docContract", "Contract / PO"], ["docAcra", "ACRA"], ["docBillingForm", "Billing form"]].filter(([k]) => r[k]).map(([k, l]) => `${l}: ${r[k]}`).concat(r.attachments || []);

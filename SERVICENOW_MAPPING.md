@@ -132,8 +132,8 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `attention_name` | Attention to name | String | Optional. Prefilled from the contract's bill-to person |
 | `attention_email` | Attention to email | String | Optional; must be a valid email. Prefilled from the contract's bill-to email |
 | `amount_per_period` | Amount billed per period | Currency | Mandatory. Before GST. Recurring contract: billed every period; ad-hoc or no contract: one invoice of this amount |
-| `invoice_timing` | Invoice timing | Choice | Choices: Per billing cycle (`per_cycle`), Expedited (`expedited`). One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Mandatory when shown; defaults to Per billing cycle (AR-i decision 38) |
-| `expedite_justification` | Justification for expedited or off billing cycle request | String (1000) | Shown when Invoice timing = Expedited (UI policy). Mandatory when invoice timing is Expedited |
+| `invoice_timing` | Preferred invoice date | Choice | Choices: Per Billing Cycle (`per_cycle`), Expedited (`expedited`). One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Optional (AR-i decision 38) |
+| `expedite_justification` | Provide Justification for expedited or Off billing cycle request | String (1000) | Shown when Preferred invoice date = Expedited (UI policy). Shown when Expedited; optional |
 | `billing_line_items_required` | Require billing line item? | Choice | Choices: Yes (`yes`), No (`no`). Yes shows the billing line items table (multi-row variable set) |
 | `amount` | Request value | Currency | Read-only on form. Calculated: one-off lines + recurring amount × number of periods |
 | `po_number` | Customer PO number | String |  |

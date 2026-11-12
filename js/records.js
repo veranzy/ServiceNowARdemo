@@ -196,13 +196,9 @@ export function validateARi(d) {
   if (d.attnEmail && !EMAIL_RE.test(d.attnEmail)) e.attnEmail = "Enter a valid email address.";
   if (!(d.perPeriod > 0)) e.perPeriod = "Enter the amount billed per period (before GST).";
   const bm = billingMode(d);
-  if (bm.recurring) {
-    // AR-i decision 38: no invoice date or timing for a recurring contract; it still needs an end date
-    if (!contractEnd(d)) { if (d.contractOption === "new") e.newCtrEnd = "A recurring contract needs an end date."; else e.contractId = "This recurring contract has no end date, so it can't be billed monthly. Ask AR to set it."; }
-  } else {
-    if (!d.invoiceTiming) e.invoiceTiming = "Choose the invoice timing.";
-    if (d.invoiceTiming === "expedited") need("expediteReason", "Explain why this invoice is expedited or off the billing cycle.");
-  }
+  // AR-i decision 38: no date asked for a recurring contract (a new one still needs an end date); the
+  // one-invoice Preferred invoice date choice and its justification are optional
+  if (bm.recurring && !contractEnd(d) && d.contractOption === "new") e.newCtrEnd = "A recurring contract needs an end date.";
   if (d.needItems === "yes") {
     const items = d.items || [];
     if (!items.length) e.items = "Add at least one billing line item, or choose No.";

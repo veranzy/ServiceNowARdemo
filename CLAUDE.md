@@ -43,6 +43,15 @@ read-only, and only an AR-ix changes GIRO). Expect, and design for, scenarios th
 If a request conflicts with a recorded decision, point out the conflict and ask. Never override a
 decision silently; a changed decision is recorded as a new or amended entry with its date.
 
+**Labels and logic: confirm first.** Do not change a label name or any logic unless the owner asked
+for that exact change or confirmed it.
+- *Labels*: field, section, column, button, choice, status, tooltip, help, hint and error text. Use the
+  owner's wording exactly as given; don't shorten, reword or "tidy" it.
+- *Logic*: validation, mandatory rules, defaults, calculations, show / hide rules, state changes, what a
+  screen shows or hides, and interim workarounds to keep the demo running.
+- If a requested change seems to need another label or logic change, list each one and ask before
+  building. Changes made without confirmation are reverted unless the owner keeps them.
+
 **Quality bar for requirements.**
 - Every screen element maps to a ServiceNow artefact (table, field, UI action, business rule, ACL,
   widget, flow) and carries a registered Build notes ID.
@@ -68,6 +77,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-12 | Standing decision D1 amended: customer name dot-walked from `core_company` (D26). | Owner |
 | 2026-11-12 | Brief lives only in git: the Claude project copy is decommissioned and CLAUDE.md is no longer exported. | Owner |
 | 2026-11-12 | Module map changed (D27): one module per AR form (AR-00 shared, AR-i, AR-ix, …), CCI, BSU (with cash application), UIX; one folder per module; git rules in `docs/GIT_WORKFLOW.md` with `node tools/check.mjs` before every push. | Owner |
+| 2026-11-12 | Labels and logic: confirm first. No label name or logic change unless the owner asked for it or confirmed it; use the owner's wording exactly. | Owner |
 
 ## How we work: modules, one at a time
 
@@ -113,7 +123,8 @@ separate layer (`js/views/devnotes.js`, `#snLayer`) so nothing clips them; click
    line in the module's `CHANGELOG.md` saying the ID was retired.
 4. Record the request in the owning module's `CHANGELOG.md` (quote the ID), run `node tools/check.mjs`
    (it regenerates `docs/BUILD_NOTES.md` and `SERVICENOW_MAPPING.md`), commit with the module code prefix, push.
-5. If the request is ambiguous or changes a decision, ask before building.
+5. If the request is ambiguous, changes a decision, or needs any label or logic change beyond the exact
+   request, ask before building (*Labels and logic: confirm first*).
 
 "App 1" was an earlier Claude-hosted prototype with Claude-powered matching. It is frozen and will be
 rebuilt later from this codebase. Do not add Claude/LLM calls here unless the owner asks.

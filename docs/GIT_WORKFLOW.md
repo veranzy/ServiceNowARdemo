@@ -55,7 +55,9 @@ AR-i: preferred invoice date becomes a day of the month
 1. `node tools/check.mjs`: JS syntax, unregistered build-note IDs, generated docs in sync, module
    folders complete, no broken links in the docs. It regenerates the generated docs; commit them if they
    changed. Fix every error before pushing.
-2. For a UI change, click through the affected flow (CLAUDE.md → *Checking changes*), including 400 px
+2. Read the diff for any label or logic change the owner didn't ask for or confirm (CLAUDE.md → *Labels and
+   logic: confirm first*). Undo it, or ask before pushing.
+3. For a UI change, click through the affected flow (CLAUDE.md → *Checking changes*), including 400 px
    wide in dark mode, with no console errors.
 
 ## 5. Push and confirm

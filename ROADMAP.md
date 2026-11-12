@@ -16,6 +16,7 @@ shipped. Requirement questions still open for the client live in each module's
 
 ## Done
 
+- 2026-11-12 **TOOLS**: ServiceNow notes developer view removed (Show IDs stays); demo bar pinned to the top.
 - 2026-11-12 **DOCS / TOOLS**: module map D27 (AR-00, AR-i, AR-ix, CCI, BSU, UIX), one folder per module;
   git rules in `docs/GIT_WORKFLOW.md`; `tools/check.mjs` and the Check workflow; `.gitignore`.
 - 2026-11-12 **ARF**: contract location removed everywhere (ARF 35); bulk upload hint removed; open questions 20–24

@@ -7,8 +7,7 @@ import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
 import { cents, fmt, uid } from "./util.js";
-import { render, setStatus, toast } from "./views/app.js";
-import { initDevNotes } from "./views/devnotes.js";
+import { render, setStatus, syncBarHeight, toast } from "./views/app.js";
 import { refreshPicker } from "./views/finder.js";
 import { contractBox, custResults, formAlert, formSide, invSum, itemTotals } from "./views/portal.js";
 import { listRows } from "./views/workspace.js";
@@ -188,7 +187,7 @@ function itemUpdated(el, i) {
 // ---------- events ----------
 // Build notes: Alt/Option+click an outlined element copies "<ID> - " so the owner can paste a change request.
 document.addEventListener("click", e => {
-  if (!(S.ui.notes || S.ui.dev) || !e.altKey) return;
+  if (!S.ui.notes || !e.altKey) return;
   const n = e.target.closest("[data-snid]"); if (!n) return;
   e.preventDefault(); e.stopPropagation();
   const id = n.dataset.snid;
@@ -200,7 +199,6 @@ document.addEventListener("click", e => {
   if (!t) return;
   const d = t.dataset;
   if (d.persona) { S.ui.persona = d.persona; return render(); }
-  if (t.id === "devRestore") { S.ui.devDismissed.clear(); return render(); }
   if (t.id === "resetDemo") { loadSample(); toast("Demo data reset."); return render(); }
   // portal
   if (d.pnav) { if (d.pnav === "form") P().formCode = d.form || "AR-i"; P().page = d.pnav; if (d.pnav !== "form") P().errors = {}; render(); return window.scrollTo(0, 0); }
@@ -284,7 +282,6 @@ document.addEventListener("keydown", e => {
 document.addEventListener("change", e => {
   const el = e.target;
   if (el.id === "notesToggle") { S.ui.notes = el.checked; return render(); }
-  if (el.id === "devToggle") { S.ui.dev = el.checked; return render(); }
   if (el.dataset.linkctr) { const tab = W().tabs.find(x => x.key === el.dataset.linkctr); if (tab) tab.linkCtr = el.value || null; return; }
   if (el.dataset.linkto) { const tab = W().tabs.find(x => x.key === el.dataset.linkto); if (tab) tab.linkTo = el.value || null; return render(); }
   if (el.dataset.linkco) { const tab = W().tabs.find(x => x.key === el.dataset.linkco); if (tab) tab.linkCo = el.value || null; return; }
@@ -377,5 +374,4 @@ document.addEventListener("submit", e => {
 
 // boot
 loadSample();
-initDevNotes();
-document.addEventListener("sn:dismissed", () => render());
+window.addEventListener("resize", syncBarHeight);

@@ -28,9 +28,7 @@ function demoBar() {
     <span class="db-who">Signed in as <b>${esc(u?.name || "")}</b> <span class="db-role mono">${esc(ROLES[p].role)}</span></span>
     <span class="sp"></span>
     <label class="switch" title="Purple ID tags for change requests: write '<ID> - <change>'"><input type="checkbox" id="notesToggle"${S.ui.notes ? " checked" : ""}><span>Show IDs</span></label>
-    <label class="switch" title="Developer view: every element labelled with its ServiceNow table, field, UI action or widget"><input type="checkbox" id="devToggle"${S.ui.dev ? " checked" : ""}><span>ServiceNow notes</span></label>
-    ${S.ui.dev && S.ui.devDismissed.size ? `<button type="button" class="btn small ghost" id="devRestore">Restore ${S.ui.devDismissed.size} dismissed note${S.ui.devDismissed.size === 1 ? "" : "s"}</button>` : ""}
-    ${S.ui.dev ? `<span class="db-hint">Click a note to expand · × to dismiss</span>` : S.ui.notes ? `<span class="db-hint">Alt/Option+click an element to copy its ID</span>` : ""}
+    ${S.ui.notes ? `<span class="db-hint">Alt/Option+click an element to copy its ID</span>` : ""}
     <button type="button" class="btn small ghost" id="resetDemo">Reset demo</button>
   </div>`;
 }
@@ -41,10 +39,16 @@ export function render() {
   // keep window scroll stable across re-renders
   const y = window.scrollY, focusId = document.activeElement?.id;
   document.body.classList.toggle("sn-notes", S.ui.notes);
-  document.body.classList.toggle("sn-dev", S.ui.dev);
   document.body.dataset.persona = S.ui.persona;
   root.innerHTML = demoBar() + (S.ui.persona === "ar" ? workspaceView() : portalView()) +
     `<div class="toast" id="toast" role="status" aria-live="polite"${S.ui.toast ? "" : " hidden"}>${esc(S.ui.toast || "")}</div>`;
+  syncBarHeight();
   window.scrollTo(0, y);
   if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
+}
+
+/** The demo bar is pinned (position: sticky); other sticky elements sit below it via --db-h. */
+export function syncBarHeight() {
+  const bar = document.querySelector(".demobar");
+  if (bar) document.documentElement.style.setProperty("--db-h", `${bar.offsetHeight}px`);
 }

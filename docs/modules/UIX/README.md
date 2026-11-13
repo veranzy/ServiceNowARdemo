@@ -48,6 +48,13 @@ Horizon Design System workspace guidance at https://horizon.servicenow.com/works
 - To add or change a demo case, edit the CSV (Excel works) and push; the live demo reads it on load and on Reset demo. Cases raised on the portal during a demo are kept in memory only.
 - Build: the same layout works as an import set for `x_ar_request` (transform map on field names, references by display value) if the client wants to load test cases.
 
+## AR request lists (decision 15)
+
+- List menu *AR requests*: **Open AR-i** (`#/ws/list/requests/open_ari`) and **Open AR-ix** (`#/ws/list/requests/open_arix`): cases of that form in New, In progress or Awaiting info.
+- ServiceNow: one workspace list per form, condition `ar_form = <form>` and state open, each with its own list view (`ar_i_open`, `ar_ix_open`), so each form's columns can differ.
+- Columns are set per form in `REQ_FORM_LISTS` (`js/views/workspace.js`): column keys in display order. Today both lists use Number, Form, Request, Customer, Department, Value, State, Assigned to, Requested by, Opened.
+- A new AR form gets its open list by adding one entry to `REQ_FORM_LISTS` when the form is built.
+
 ## Page URLs (decision 14)
 
 | URL | Screen |

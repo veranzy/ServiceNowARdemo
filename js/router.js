@@ -71,7 +71,7 @@ export function applyRoute(hash) {
       if (!w.tabs.some(t => t.key === key)) w.tabs.push({ key, table: a, id: r.id });
       w.active = key; return null;
     }
-    w.active = "main"; w.main = a === "requests" ? { kind: "list", table: "requests", filter: "open" } : { kind: "list", table: a, filter: "all" };
+    w.active = "main"; w.main = a === "requests" ? { kind: "list", table: "requests", filter: "open_ari" } : { kind: "list", table: a, filter: "all" };
     return a === "requests" ? `Case ${b} isn't here. Cases raised during a demo last only until the page reloads.` : `Record ${b} wasn't found.`;
   }
   w.active = "main"; return b === "new" ? null : "That page doesn't exist; showing the workspace home.";

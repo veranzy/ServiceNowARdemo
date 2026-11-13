@@ -224,7 +224,7 @@ document.addEventListener("click", e => {
   if (d.unbulk !== undefined) { P().draft.docBulk.splice(+d.unbulk, 1); return render(); }
   // workspace navigation
   if (d.rail) {
-    if (d.rail === "list") { if (W().main.kind === "list") { W().active = "main"; return render(); } return showMain({ kind: "list", table: "requests", filter: "open" }); }
+    if (d.rail === "list") { if (W().main.kind === "list") { W().active = "main"; return render(); } return showMain({ kind: "list", table: "requests", filter: "open_ari" }); }
     return showMain({ kind: d.rail });
   }
   // Horizon list page: list menu beside the list

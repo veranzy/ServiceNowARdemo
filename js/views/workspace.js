@@ -24,13 +24,15 @@ export const LISTS = {
       mine: ["Assigned to me", r => mine(r) && REQ_OPEN.includes(r.state)],
       awaiting: ["Awaiting info", r => r.state === "awaiting_info"],
       setup: ["Customer setup pending", r => REQ_OPEN.includes(r.state) && r.form !== "AR-ix" && (!!r.newCustomer || !setupStatus(r).docsDone)],
-      giro: ["AR-ix GIRO requests (open)", r => r.form === "AR-ix" && REQ_OPEN.includes(r.state)],
       giroall: ["All AR-ix GIRO cases", r => r.form === "AR-ix"],
       all: ["All", () => true]
     },
     cols: [["Number", r => refLink("requests", r.id, r.number), "", "number"], ["Form", r => `${esc(r.form || "AR-i")}<span class="desc">${esc(linesLabel(r))}</span>`, "", "form"], ["Request", r => esc(r.title), "wrap", "title"], ["Customer", r => `${esc(reqCustName(r))}${r.newCustomer ? ` <span class="chip c-warn">New</span>` : ""}`, "", "customerId"], ["Department", r => esc(r.department || "—"), "", "department"],
       ["Value", r => fmt(r.amount), "num", "amount"], ["State", r => reqChip(r), "", "state"], ["Assigned to", r => esc(userById(r.assignedTo)?.name || "—"), "", "assignedTo"],
       ["Requested by", r => esc(userById(r.requestedBy)?.name || "—"), "", "requestedBy"], ["Opened", r => esc(r.opened), "", "opened"]],
+    // UIX decision 15: one open list per AR form, each with its own columns (REQ_FORM_LISTS)
+    colsFor: f => { const l = REQ_FORM_LISTS.find(x => x.filter === f); return l ? l.cols.map(k => LISTS.requests.cols.find(c => c[3] === k)).filter(Boolean) : LISTS.requests.cols; },
+    menuOnly: true,
     sort: (a, b) => String(b.opened).localeCompare(String(a.opened)),
     text: r => [r.number, r.form, linesLabel(r), r.title, reqCustName(r), r.department, userById(r.requestedBy)?.name].join(" ")
   },
@@ -127,12 +129,21 @@ const ctrTypeChip = k => isShell(k) ? `<span class="chip c-warn">No contract</sp
 const ctrStatusChip = k => { const s = isShell(k) ? ["Open", "c-ok"] : ctrStatus(k); return `<span class="chip ${s[1]}">${s[0]}</span>`; };
 const issuedOf = custId => S.invoices.filter(i => i.customerId === custId && i.state === "issued");
 
+/** UIX decision 15: AR request open lists, one per AR form. A form gets its list when the form is built: add one entry here.
+ *  `cols` = column keys of LISTS.requests.cols, in display order (the same set for every form for now; edit per form to customise). */
+export const REQ_COLS_DEFAULT = ["number", "form", "title", "customerId", "department", "amount", "state", "assignedTo", "requestedBy", "opened"];
+export const REQ_FORM_LISTS = [
+  { form: "AR-i", filter: "open_ari", label: "Open AR-i", note: "LST-REQ-ARI", cols: [...REQ_COLS_DEFAULT] },
+  { form: "AR-ix", filter: "open_arix", label: "Open AR-ix", note: "LST-REQ-ARIX", cols: [...REQ_COLS_DEFAULT] }
+];
+for (const l of REQ_FORM_LISTS) LISTS.requests.filters[l.filter] = [l.label, r => (r.form || "AR-i") === l.form && REQ_OPEN.includes(r.state)];
+
 const MENU = [
-  ["AR requests", [["requests", "open"]]],   // UIX decision 13: open cases only for now; more lists later
+  ["AR requests", REQ_FORM_LISTS.map(l => ["requests", l.filter])],   // UIX decision 15: one open list per AR form
   ["Recurring billing", [["schedules", "due"], ["schedules", "active"], ["schedules", "all"]]],
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
   ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"]]],
-  ["GIRO", [["requests", "giro"], ["requests", "giroall"], ["contracts", "giro"]]],
+  ["GIRO", [["requests", "giroall"], ["contracts", "giro"]]],
   ["Master data", [["customers", "all"], ["contracts", "all"], ["contracts", "shell"], ["contacts", "all"], ["documents", "all"]]]
 ];
 
@@ -234,11 +245,12 @@ function homePage() {
 // ---------- list page ----------
 export function listRows(table, filter) {
   const def = LISTS[table], q = W().q.trim().toLowerCase();
+  const cols = def.colsFor ? def.colsFor(filter) : def.cols;
   let rows = S[table].filter(def.filters[filter][1]);
   if (q) rows = rows.filter(r => def.text(r).toLowerCase().includes(q));
   rows = rows.slice().sort(def.sort);
-  return { rows, html: rows.length ? rows.map(r => `<tr data-open="${table}:${r.id}" tabindex="0">${def.cols.map(c => `<td class="${c[2]}">${c[1](r)}</td>`).join("")}</tr>`).join("")
-    : `<tr><td colspan="${def.cols.length}" class="empty">No records match.</td></tr>` };
+  return { rows, html: rows.length ? rows.map(r => `<tr data-open="${table}:${r.id}" tabindex="0">${cols.map(c => `<td class="${c[2]}">${c[1](r)}</td>`).join("")}</tr>`).join("")
+    : `<tr><td colspan="${cols.length}" class="empty">No records match.</td></tr>` };
 }
 
 function listMenu() {
@@ -259,14 +271,17 @@ function listPage(table, filter) {
 function listView(table, filter, menuOpen) {
   const def = LISTS[table], t = TABLES[table];
   const { rows, html } = listRows(table, filter);
+  const cols = def.colsFor ? def.colsFor(filter) : def.cols, formList = table === "requests" ? REQ_FORM_LISTS.find(l => l.filter === filter) : null;
+  // AR requests: the filter bar shows only the menu's lists (owner 2026-11-12: other AR request categories removed)
+  const segFilters = def.menuOnly ? Object.entries(def.filters).filter(([k]) => k === filter || REQ_FORM_LISTS.some(l => l.filter === k)) : Object.entries(def.filters);
   return `<div class="page">
     <div class="pagehead"><div class="ph-l">${menuOpen ? "" : `<button type="button" class="btn small" data-lmtoggle>${icon("list", 15)} Lists</button>`}<div><h1 class="pt">${esc(t.plural)}</h1><p class="psub">${esc(def.filters[filter][0])} · <span id="listCount">${rows.length}</span> record${rows.length === 1 ? "" : "s"}</p></div></div>
       ${def.newable ? `<button type="button" class="btn primary" data-new="${table}"${sn(`UA-${CODE[table]}-new`)}>New</button>` : ""}</div>
     <div class="listbar">
-      <div class="seg" role="group" aria-label="Filter">${Object.entries(def.filters).map(([k, [l]]) => `<button type="button" data-list="${table}:${k}" aria-pressed="${k === filter}">${esc(l)}</button>`).join("")}</div>
+      <div class="seg" role="group" aria-label="Filter">${segFilters.map(([k, [l]]) => `<button type="button" data-list="${table}:${k}" aria-pressed="${k === filter}">${esc(l)}</button>`).join("")}</div>
       <label class="listq">${icon("search", 15)}<input type="search" id="listQ" value="${esc(W().q)}" placeholder="Search in list" aria-label="Search in list"></label>
     </div>
-    <div class="panel"${sn(`LST-${CODE[table]}`)}><div class="tablewrap"><table class="list"><thead><tr>${def.cols.map(c => `<th class="${c[2]}"${c[3] ? sn(c[3].startsWith("=") ? c[3].slice(1) : `${CODE[table]}.${t.fields.find(f => f.key === c[3])?.name}`) : ""}>${esc(c[0])}</th>`).join("")}</tr></thead>
+    <div class="panel"${sn(formList ? formList.note : `LST-${CODE[table]}`)}><div class="tablewrap"><table class="list"><thead><tr>${cols.map(c => `<th class="${c[2]}"${c[3] ? sn(c[3].startsWith("=") ? c[3].slice(1) : `${CODE[table]}.${t.fields.find(f => f.key === c[3])?.name}`) : ""}>${esc(c[0])}</th>`).join("")}</tr></thead>
       <tbody id="listBody">${html}</tbody></table></div></div>
   </div>`;
 }

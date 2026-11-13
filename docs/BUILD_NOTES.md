@@ -40,6 +40,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `WS-15` | Form record presence: avatars of users viewing the record (out-of-box on the Horizon Record page template) |
 | `WS-17` | Record history tab (out-of-box on the Record page template): sys_audit / sys_history_line for the record. Turn on Audit in the dictionary of every x_ar table; shows when, who, field, old and new value |
 | `WS-16` | List page template (Horizon): list menu on the left, list on the right; the menu selection drives the list. Menu can be hidden |
+| `LST-REQ-ARI` | Workspace list Open AR-i (UIX decision 15): x_ar_request, condition ar_form = AR-i AND state IN (new, in_progress, awaiting_info); list view ar_i_open with its own columns (for now: number, ar_form, short_description, customer, department, amount, state, assigned_to, opened_by, opened_at); list menu category AR requests |
+| `LST-REQ-ARIX` | Workspace list Open AR-ix (UIX decision 15): x_ar_request, condition ar_form = AR-ix AND state IN (new, in_progress, awaiting_info); list view ar_ix_open with its own columns (for now the same as Open AR-i); list menu category AR requests. Replaces the GIRO category list AR-ix GIRO requests (open) |
 | `CON-GIRO` | Tab GIRO history on the contract (and on no-contract shells): related list x_ar_request where contract = this contract and ar_form = AR-ix; columns AR-ix case, Type of request, Purpose of GIRO/DDA request, Amount, Requested by, Updated, GIRO (Active = contract.giro_case, Completed, Open, Contract to link, Rejected) |
 | `SCH-PER` | Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming |
 

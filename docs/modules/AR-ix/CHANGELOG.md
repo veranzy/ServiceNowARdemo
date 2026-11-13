@@ -19,3 +19,4 @@
 | 2026-11-12 | **Owner:** AR-ix **portal form locked** (everything the requester sees and does on the AR-ix form, as for AR-i). Open questions 1, 7 and 8 deferred: not needed for this release. No IDs added or retired. |
 | 2026-11-12 | Workspace case page now follows the AR-ix form (UIX decision 12, `REQ-FV-ARIX`); all sample AR-ix cases removed, so no contract has GIRO active in the demo. |
 | 2026-11-12 | Demo AR-ix cases now come from `data/AR_form.csv` (UIX decision 13): ARQ0001004–0001008; HL-2026-01 has GIRO active from ARQ0001007. |
+| 2026-11-13 | Workspace list **Open AR-ix** (UIX decision 15, `LST-REQ-ARIX`) replaces the GIRO category list *AR-ix GIRO requests (open)*. |

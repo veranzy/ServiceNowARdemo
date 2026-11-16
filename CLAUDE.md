@@ -92,6 +92,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-16 | Core flow and domain model: new case states, State dropdown, substates, assignment group; case actions Assign to me and Save (AR-00 decision 4). | Owner |
 | 2026-11-16 | Core flow and domain model: Contract category and Contract ID, schedules under contracts, daily invoice check replaces Raise invoice (D12, D15 amended; CCI 4–7). | Owner |
 | 2026-11-16 | Checking changes: the daily invoice check is mock data (ARQ0001009), no demo button. | Owner |
+| 2026-11-16 | Core flow: Closed complete generates the AR-i's 1st invoice; the schedule (created by AR on the contract) covers the 2nd invoice onwards (CCI decision 8). | Owner |
 
 ## How we work: modules, one at a time
 
@@ -156,9 +157,10 @@ Expedited, optional justification), optional billing line items numbered 1, 2, 3
 Recurring, else one-off), documents only if not on file → `x_ar_request` case
 (New) in the workspace → AR **Link to customer** (creates/links the customer, links/creates the contract
 or shell and sets it on every line, writes the bill-to to the contract, files documents on the customer) → AR assigns,
-sets the **State** dropdown (AR-00 decision 4; portal reply on Awaiting requestor information returns it to Work in progress) → per **billing line**: one-off →
-*Create invoice* (draft) → *Issue invoice*; recurring → *Set up billing schedule* under the contract; a daily job creates each period's
-**draft** invoice 5 working days before its date, linked to the AR-i case, and AR issues it (D12 amended). AR closes the case by hand (Closed complete); the requester sees each line's invoice or schedule on the ticket page. Each morning AR
+sets the **State** dropdown (AR-00 decision 4; portal reply on Awaiting requestor information returns it to Work in progress) → **Closed complete** generates
+the **1st invoice** as a draft from the AR-i (CCI decision 8; AR sets its *Approval date* and issues it) → recurring: AR creates the **billing schedule on the
+contract** for the 2nd invoice onwards and picks the case; a daily job drafts each later period 5 working days ahead, shown under the case and the contract,
+and AR issues it (D12 amended). The requester sees each line's invoice or schedule on the ticket page. Each morning AR
 uploads yesterday's CSV statement per bank account (**BSU**) → deposits saved to the **Bank statements**
 table with a Deposit ID → AR matches deposits to issued invoices **manually** on the Cash application page.
 **There is no auto-matching anywhere (D5); don't add it.** The app is the **system of record** for
@@ -254,9 +256,7 @@ docs/GIT_WORKFLOW.md    git rules for every session
 Serve with `python3 -m http.server` (modules don't load from `file://`). Click through: portal AR form
 AR-i with each contract option (new contract, existing contract with bill-to, no contract with existing /
 new shell); (search → add new customer with a new recurring contract; existing ad-hoc contract → one invoice;
-existing recurring contract with billing line items, GST calculated; Expedited shows the justification; recurring shows no preferred invoice date) → workspace Link to customer (contract / shell created, lines filed) → customer
-billing hierarchy → per line Create invoice / Set up billing
-schedule → ARQ0001009 shows the daily job's draft on its Invoices tab (mock data) → State dropdown Closed complete → portal ticket shows each line's invoice / schedule; BSU upload
+existing recurring contract with billing line items, GST calculated; Expedited shows the justification; recurring shows no preferred invoice date) → workspace Link to customer (contract / shell created, lines filed) → State dropdown Closed complete (1st invoice draft on the Invoices tab) → ARQ0001009: Billing schedule tab, issued 1st invoice and the daily job's draft (mock data) → portal ticket shows each line's invoice / schedule; BSU upload
 (sample file and a real CSV file, wrong-bank error); cash application Find invoice → Apply, Remove match;
 ID tags visible and unclipped; 400px wide in dark mode.
 No console errors.

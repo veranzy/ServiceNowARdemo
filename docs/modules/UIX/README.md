@@ -44,7 +44,7 @@ Horizon Design System workspace guidance at https://horizon.servicenow.com/works
 
 ## Case data (decision 13)
 
-- `data/AR_form.csv` holds the demo cases: one row per case, AR-i and AR-ix together, headers = `x_ar_request` field names (79 columns: every case field except the calculated `amount` and `giro_on_contract`, plus `attachments`). Choice columns hold values (`add`, `rental`, `existing`); reference columns hold display values (customer name, contract number, user name); dates are `YYYY-MM-DD`; amounts in SGD.
+- `data/AR_form.csv` holds the demo cases: one row per case, AR-i and AR-ix together, headers = `x_ar_request` field names (columns: every case field except the calculated `amount` and `giro_on_contract`, plus `attachments`). Choice columns hold values (`add`, `rental`, `existing`); reference columns hold display values (customer name, contract number, user name); dates are `YYYY-MM-DD`; amounts in SGD.
 - To add or change a demo case, edit the CSV (Excel works) and push; the live demo reads it on load and on Reset demo. Cases raised on the portal during a demo are kept in memory only.
 - Build: the same layout works as an import set for `x_ar_request` (transform map on field names, references by display value) if the client wants to load test cases.
 
@@ -68,7 +68,7 @@ Horizon Design System workspace guidance at https://horizon.servicenow.com/works
 | `#/portal/forms`, `#/portal/form/AR-i`, `#/portal/form/AR-ix` | AR forms catalogue, an AR form |
 | `#/portal/requests`, `#/portal/ticket/<number>` | My requests, a ticket page (also shown after submitting) |
 
-Links to the CSV cases (ARQ0001001–0001008) always work. A case raised during a demo (ARQ0001009 on) lasts until the page reloads; after that its link opens the list with a message. Form drafts are not in the URL.
+Links to the CSV cases (ARQ0001001–0001009) always work. A case raised during a demo (ARQ0001010 on) lasts until the page reloads; after that its link opens the list with a message. Form drafts are not in the URL.
 
 ## Out of scope / later
 

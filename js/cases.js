@@ -4,14 +4,36 @@
 // Each row goes through the same record-producer logic as a portal submission (createRequest), so a CSV case and a
 // portal case open on the same reusable Record page.
 import { parseCSV } from "./io.js";
-import { createRequest, journal } from "./records.js";
+import { createRequest, draftDate, journal, nextNumber, periodAmounts, periodDates, setupSchedule } from "./records.js";
 import { TABLES } from "./schema.js";
 import { S } from "./state.js";
-import { cents } from "./util.js";
+import { addDays, cents, isoToday, uid } from "./util.js";
 
 export const CASES_CSV = "data/AR_form.csv";
 /** Demo setup: contracts on which AR has already set GIRO by hand from a completed AR-ix case (AR-ix decision 11). */
 const GIRO_SET_BY_AR = [["HL-2026-01", "ARQ0001007"]];
+/** Demo setup (CCI, 2026-11-16): AR-i cases whose recurring line AR has already set up as a billing schedule. The first
+ *  period is placed 3 working days from today, so "Run daily invoice check" creates its first draft, linked to the case. */
+const SCHEDULE_SET_BY_AR = ["ARQ0001009"];
+
+const ymd = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+function addWorkingDays(iso, n) { const d = new Date(iso + "T00:00:00"); while (n > 0) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n--; } return ymd(d); }
+
+/** Demo history for the sample billing schedules: every period whose draft date has passed was drafted by the daily job and
+ *  issued by AR, so the daily check only picks up new work. */
+function scheduleHistory() {
+  const t = isoToday();
+  for (const sch of S.schedules) {
+    const dates = periodDates(sch.frequency, sch.firstDate, sch.lastDate), amounts = periodAmounts(sch, dates);
+    dates.forEach((date, ix) => {
+      if (draftDate(date) > t || S.invoices.some(i => i.scheduleId === sch.id && i.periodDate === date && i.state !== "cancelled")) return;
+      const k = S.contracts.find(x => x.id === sch.contractId), c = S.customers.find(x => x.id === (sch.customerId || k?.customerId));
+      const label = new Date(date + "T00:00:00").toLocaleDateString("en-SG", { month: "short", year: "numeric" });
+      S.invoices.push({ id: uid("i"), number: nextNumber("invoices"), state: "issued", customerId: c?.id, contractId: sch.contractId, requestId: sch.requestId || null, lineId: sch.lineId || null,
+        scheduleId: sch.id, periodDate: date, customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount: amounts[ix] ?? sch.amount, date, due: addDays(date, k?.terms || c?.terms || 30), currency: "SGD" });
+    });
+  }
+}
 
 let cached = null;
 /** Fetch the CSV once per page load and add its cases to S.requests (after the sample master data is loaded). */
@@ -52,6 +74,14 @@ export function addCases(text) {
     r.activity.forEach(e => { e.at = at; }); r.updated = r.opened;
     S.history.push({ table: "requests", id: r.id, at, by: r.requestedBy, kind: "created" });
     n++;
+  }
+  scheduleHistory();
+  for (const num of SCHEDULE_SET_BY_AR) {
+    const r = S.requests.find(x => x.number === num), l = r && S.lines.find(x => x.requestId === r.id && x.lineType === "recurring");
+    if (!l) continue;
+    l.startDate = addWorkingDays(isoToday(), 3);
+    const res = setupSchedule(l.id);
+    if (res?.opened) { res.opened.firstDate = l.startDate; r.activity.forEach(e => { e.at = (r.opened || "") + "T09:00:00"; }); }
   }
   for (const [ctr, num] of GIRO_SET_BY_AR) {
     const k = S.contracts.find(x => x.number === ctr), r = S.requests.find(x => x.number === num);

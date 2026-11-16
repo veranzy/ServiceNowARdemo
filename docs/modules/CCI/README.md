@@ -92,3 +92,13 @@ The prototype records the terms only. Nothing calculates or charges interest yet
 ## Changes 2026-11-16 (decisions 4–7)
 
 - See CHANGELOG 2026-11-16 and decisions 4–7.
+
+## 1st invoice, approval date and billing schedule (decisions 8–9)
+
+1. AR-i case set to **Closed complete** (State dropdown + Save) → a business rule inserts the **1st invoice** as a **draft** for each billing line without one (one-off: its only invoice; recurring: the first period), linked to the case, line, contract and customer, with a work note. Closing is blocked with *Link to customer before Closed complete: the 1st invoice needs the customer and contract.* until both are linked.
+2. The 1st invoice is **always reviewed by hand**. Its **Invoice date** is suggested from the AR-i's indicated start (recurring: line start; one-off: preferred invoice date; else today) and kept even if earlier than today. AR sets the separate **Approval date** (`approval_date`, manual; may be earlier or later than the invoice date).
+3. *Issue invoice* is blocked on **every** invoice until the Approval date is set (*Set the Approval date before issuing.*). The button saves the form first.
+4. Recurring AR-i: AR opens the contract → **New billing schedule** (`UA-CON-newschedule`): contract, customer, department, Monthly and last billing date (contract end) prefilled; **first billing date** defaults to the next cycle day of the contract **billing cycle** (1st or 15th of the month) and is the **2nd invoice's** date. On a 1st / 15th contract the first billing date must be on that day; for *Others* AR picks it. AR picks the AR-i case in **From AR request** (`source_request`; qualifier: AR-i cases with a recurring line on the contract; `source_line` set from it).
+5. The daily job drafts each later period 5 working days ahead; the drafts appear on the case's **Invoices** tab and the contract's Invoices tab, and AR issues them (Approval date first).
+6. Recurring AR-i cases show a read-only **Billing schedule** tab: the case contract's schedules (one schedule per contract or several: open question 16, issue #7).
+7. *Create invoice* and *Set up billing schedule* on billing lines are retired.

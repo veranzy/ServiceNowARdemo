@@ -31,7 +31,7 @@ CLAUDE.md**: the brief has a single copy, in git.
 - The app is the system of record for invoices (D2).
 - Project team uses the portal only; AR team uses the workspace only (D3).
 - **No auto-matching, ever** (D5). Money received is only ever a BSU deposit (D7).
-- Billing is contract level: customer › contract (or no-contract shell) › billing lines › invoices (D15);
+- Billing is contract level: customer › contract (Contract category Contract or No contract) › billing lines › invoices (D15);
   bill-to sits on the contract (D16).
 
 **Context: forms vs master data (D22).** AR forms and customer / contract updates are separate **on
@@ -90,6 +90,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-12 | Code layout: demo AR request cases now live in `data/AR_form.csv`, loaded by `js/cases.js` (UIX decision 13). | Owner |
 | 2026-11-12 | Code layout: `js/router.js` gives every page its own URL (UIX decision 14). | Owner |
 | 2026-11-16 | Core flow and domain model: new case states, State dropdown, substates, assignment group; case actions Assign to me and Save (AR-00 decision 4). | Owner |
+| 2026-11-16 | Core flow and domain model: Contract category and Contract ID, schedules under contracts, daily invoice check replaces Raise invoice (D12, D15 amended; CCI 4–7). | Owner |
 
 ## How we work: modules, one at a time
 
@@ -155,8 +156,8 @@ Recurring, else one-off), documents only if not on file → `x_ar_request` case
 (New) in the workspace → AR **Link to customer** (creates/links the customer, links/creates the contract
 or shell and sets it on every line, writes the bill-to to the contract, files documents on the customer) → AR assigns,
 sets the **State** dropdown (AR-00 decision 4; portal reply on Awaiting requestor information returns it to Work in progress) → per **billing line**: one-off →
-*Create invoice* (draft) → *Issue invoice*; recurring → *Set up billing schedule*, then **Raise invoice**
-per due period (never automatic, D12). AR closes the case by hand (Closed complete); the requester sees each line's invoice or schedule on the ticket page. Each morning AR
+*Create invoice* (draft) → *Issue invoice*; recurring → *Set up billing schedule* under the contract; a daily job creates each period's
+**draft** invoice 5 working days before its date, linked to the AR-i case, and AR issues it (D12 amended). AR closes the case by hand (Closed complete); the requester sees each line's invoice or schedule on the ticket page. Each morning AR
 uploads yesterday's CSV statement per bank account (**BSU**) → deposits saved to the **Bank statements**
 table with a Deposit ID → AR matches deposits to issued invoices **manually** on the Cash application page.
 **There is no auto-matching anywhere (D5); don't add it.** The app is the **system of record** for
@@ -164,9 +165,9 @@ invoices. Automation after AR form submission is still to be defined by the owne
 
 ## Domain model (all custom tables, see `js/schema.js`)
 
-customer → contracts (incl. no-contract shells, `contract_type = shell`, D15) → billing lines → invoices ← allocations ← deposits (Bank statements) ← BSU uploads ← bank accounts
+customer → contracts (system Contract ID; Contract category Contract or No contract, `contract_type = shell`, several per customer, D15) → billing lines → invoices ← allocations ← deposits (Bank statements) ← BSU uploads ← bank accounts
 AR request → billing line (`x_ar_request_line`, code key `lines`, one per AR-i, with `contract`) → invoice (one-off) or billing schedule (recurring) · AR request → billing line items (`x_ar_request_item`, code key `items`, GST calculated)
-contract → GIRO status + active AR-ix case (`giro_status`, `giro_case`; max one active GIRO per contract, D21) · contract → bill-to person (D16) · customer → billing contacts (department default for prefill, D11) · customer documents (given once, D10) · billing schedules → invoices (per period)
+contract → GIRO status + active AR-ix case (`giro_status`, `giro_case`; max one active GIRO per contract, D21) · contract → bill-to person (D16) · customer → billing contacts (department default for prefill, D11) · customer documents (given once, D10) · contract → billing schedules → invoices (per period, drafts from the daily invoice check)
 
 **Departments:** 11 operational departments in `DEPARTMENTS` (`js/schema.js`); bank accounts may also be Finance.
 
@@ -254,7 +255,7 @@ AR-i with each contract option (new contract, existing contract with bill-to, no
 new shell); (search → add new customer with a new recurring contract; existing ad-hoc contract → one invoice;
 existing recurring contract with billing line items, GST calculated; Expedited shows the justification; recurring shows no preferred invoice date) → workspace Link to customer (contract / shell created, lines filed) → customer
 billing hierarchy → per line Create invoice / Set up billing
-schedule → State dropdown Closed complete → Raise invoice → portal ticket shows each line's invoice / schedule; BSU upload
+schedule → Run daily invoice check (demo bar) → draft on the case's Invoices tab → State dropdown Closed complete → portal ticket shows each line's invoice / schedule; BSU upload
 (sample file and a real CSV file, wrong-bank error); cash application Find invoice → Apply, Remove match;
 ID tags visible and unclipped; 400px wide in dark mode.
 No console errors.

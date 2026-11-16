@@ -71,12 +71,16 @@ AR-i never changes master data by itself (D22, see [AR-00 → Context](../AR-00/
      contract, or finds / creates the department's no-contract shell, and sets it on every billing line;
      writes the bill-to to the contract (and the department default contact if there is none); files the
      documents on the customer. Lines can only be billed once they have a contract.
-   - **Billing lines** related list: per line **Create invoice** (one-off → draft invoice) or **Set up
-     billing schedule** (recurring → schedule over the line's date range). The ribbon shows billing progress;
-     AR closes the case by hand (State = Closed complete) once every line is billed (AR-00 decision 4; *Billed* retired).
-2. Billing schedule record → periods with status (Due / Upcoming / Invoiced) and **Raise invoice** (never
-   automatic, D12).
-3. List menu → *Recurring billing*: Billing schedules, Billing periods due.
+   - **Billing lines** related list: read-only (CCI decision 8).
+   - **State = Closed complete** (dropdown + Save, AR-00 decision 4) generates the **1st invoice** as a draft from
+     the AR-i (one-off: its only invoice; recurring: the first period), blocked until the case is linked. AR reviews it,
+     sets the **Approval date** and issues it (CCI decisions 8–9).
+   - Recurring cases: read-only **Billing schedule** tab (the contract's schedules) and an **Invoices** tab with every
+     invoice linked to the case.
+2. Recurring: AR creates the **billing schedule on the contract** (*New billing schedule*) for the 2nd invoice
+   onwards, on the contract billing cycle day, and picks this case; a daily job drafts each period 5 working days
+   ahead (D12 amended, CCI decisions 7–9). Periods show Due / Upcoming / Invoiced.
+3. List menu → *AR requests*: All AR-i (UIX decision 15); *Recurring billing*: Billing schedules, Billing periods due.
 
 ## ServiceNow mapping
 
@@ -89,7 +93,7 @@ AR-i never changes master data by itself (D22, see [AR-00 → Context](../AR-00/
 | `x_ar_request_item` | Billing line items (multi-row variable set, copied to this table by the producer script): `ar_request`, `item_number` (Integer, read-only: 1, 2, 3… in row order, set by the producer script), `amount_excl_gst`, `gst_amount` (= amount × `x_ar.gst_rate`, 9), `total_amount`, `late_payment_interest` (rate %), `account_code`. Related list *Billing line items* on the AR request. |
 | `x_ar_billing_schedule` | Customer, contract, department, description, frequency, amount per period, first / last billing date, source AR request; periods computed (or a child table `x_ar_billing_period` in the build). |
 | Contract fields written by AR-i | The new-contract and bill-to fields land on `x_ar_contract` through *Link to customer*; the contract table itself is specified in [CCI](../CCI/README.md). |
-| UI actions | *Link to customer* on AR request; *Create invoice* / *Set up billing schedule* on each billing line; *Raise invoice* on billing period. |
+| UI actions | *Assign to me*, *Save* and *Link to customer* on the AR request (AR-00 decision 4). Closed complete → business rule creates the 1st invoice (CCI decision 8). Retired: *Create invoice*, *Set up billing schedule*, *Raise invoice*. |
 
 ## Out of scope / later
 

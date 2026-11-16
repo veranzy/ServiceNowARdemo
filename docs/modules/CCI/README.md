@@ -10,19 +10,20 @@ Formerly two modules: MDM (customers and contracts) and INV (invoicing).
 
 ## Purpose
 
-Customers, contracts and invoices are the billing hierarchy customer › contract (or no-contract
-shell) › billing lines › invoices (D15). AR maintains customers and contracts in the workspace; forms
+Billing runs customer › contract (Contract category Contract or No contract) › billing lines ›
+invoices (D15). AR maintains customers and contracts in the workspace; forms
 only read them (D22). The contract holds the billing terms that apply to its invoices: contract type,
 billing cycle, payment terms, proration, type of billing, late payment interest (LPI), GIRO status and
-the bill-to person (D16, D24). The app is the **system of record for invoices** (D2): AR creates them
-from AR-i billing lines or billing schedule periods, issues them, and BSU deposits are matched to issued
+the bill-to person (D16, D24). The app is the **system of record for invoices** (D2): the 1st invoice of an AR-i
+comes from Closed complete, later recurring invoices from the daily job on the contract's billing schedule;
+AR issues them, and BSU deposits are matched to issued
 invoices ([BSU](../BSU/README.md)).
 
 ## User stories
 
-- As an AR team member, I want one customer record with its contracts, billing hierarchy, invoices,
+- As an AR team member, I want one customer record with its contracts, invoices,
   billing contacts and documents, so that I see the whole relationship in one place.
-- As an AR team member, I want every contract (or the no-contract shell) to carry its billing terms and
+- As an AR team member, I want every contract (Contract or No contract) to carry its billing terms and
   bill-to person, so that invoices under it are raised consistently.
 - As an AR team member, I want to create, issue and cancel invoices with a clear state, so that the app
   is the reliable record of what was billed.
@@ -31,21 +32,21 @@ invoices ([BSU](../BSU/README.md)).
 
 ## Screens and flow
 
-1. **Customer record** → header (customer name from `core_company`, UEN), **Billing hierarchy** tab
-   (`CUS-TREE`: customer › contract / shell › billing lines › invoices or schedule; requests not yet
-   linked shown as *Not filed*), then related lists **AR requests**, **Contracts** (type, bill-to, lines,
-   billed), **Invoices**, **Billing contacts**, **Customer documents**, **Billing schedules**.
-2. **Contract record** → record type (Contract / No-contract shell), contract type (Recurring / Ad-hoc),
-   department, bill-to; form sections *Billing terms*, *Late payment interest (LPI)*, *GIRO* (status and
-   active AR-ix case, set only by AR-ix actions); related lists **Billing lines**, **Billing schedules**,
-   **Invoices**, **AR requests**, tab **GIRO history** (`CON-GIRO`). List menu → Master data →
-   *No-contract shells*.
+1. **Customer record** → header (customer name from `core_company`, UEN), tabs **AR requests**,
+   **Contracts**, **Invoices**, **Billing contacts**, **Customer documents**, all shown (decision 4; Billing
+   hierarchy removed, issue #6).
+2. **Contract record** → **Contract ID**, **Contract category** (Contract / No contract), contract type
+   (Recurring / Ad-hoc), department, bill-to; form sections *Billing terms*, *Late payment interest (LPI)*,
+   *GIRO* (status and active AR-ix case, updated by AR by hand from the AR-ix case); all tabs shown: **Billing
+   lines**, **GIRO history** (`CON-GIRO`), **Billing schedules**, **Invoices**, **AR requests**. Action
+   **New billing schedule**. List menu → Master data → filter *No contract* (decisions 5, 8).
 3. **Invoice record** → state Draft / Issued / Cancelled; amount, amount due, payment status (Unpaid /
    Part paid / Paid / Overdue, calculated); allocations related list (`RL-INV-ALC`). UI actions **Issue
    invoice** (Draft → Issued; AR closes the AR request by hand, AR-00 decision 4) and
    **Cancel invoice** (overflow menu; only when nothing is allocated; the line opens again).
-4. Invoices are created only by *Create invoice* on an AR-i billing line or *Raise invoice* on a billing
-   period ([AR-i](../AR-i/README.md)); never automatically (D12).
+4. Invoices are created by **Closed complete** on an AR-i (the 1st invoice, decision 8) and by the **daily
+   invoice check** on a billing schedule (2nd invoice onwards, D12 amended, decision 7), always as drafts.
+   *Issue invoice* needs the **Approval date** (decision 9).
 
 ## ServiceNow mapping (summary)
 

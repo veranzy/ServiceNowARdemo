@@ -38,7 +38,7 @@ Fields are free text unless stated. `*` = mandatory.
 
 ## Workspace (AR team)
 
-- List menu *AR requests*: Open AR-ix (UIX decision 15). List menu *GIRO*: All AR-ix GIRO cases, Contracts with GIRO active.
+- List menu *AR requests*: All AR-ix (UIX decision 15, amended). List menu *GIRO*: All AR-ix GIRO cases, Contracts with GIRO active.
 - AR-ix case: Details tab (General information, Customer and contract, GIRO details, Others); ribbon (GIRO, amount, contract and its GIRO status); tab **GIRO history** (AR-ix cases on the same contract).
 - Side panel **GIRO setup** (`REQ-GIRO`): contract set? (if not: for a new contract *process the AR-i that sets up this contract first, then set it as Contract on this case and Save*; for No contract required, the customer's no-contract shell for the department) → the contract's GIRO status and active case → reminder: *Update GIRO on the contract*, then set State to Closed complete.
 - Case actions (AR-00 decision 4): **Assign to me** and **Save** only. AR sets **Contract** on the case and saves (the customer follows the contract; replaces *Link contract*), and closes the case with the **State dropdown** (Closed complete / Closed incomplete / Cancelled). *Link contract*, *Complete*, *Request info* and *Reject* are retired; ~~Activate GIRO~~ / ~~Remove GIRO~~ retired 2026-11-12.

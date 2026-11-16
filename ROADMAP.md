@@ -15,6 +15,15 @@ shipped. Requirement questions still open for the client live in each module's
 
 ## Next
 
+- **CCI** Invoice forecast on the billing schedule: proration for part months, first / last period amounts (open question 11; the billing cycle day is settled, decision 9).
+- **CCI** One recurring billing schedule per contract? ([issue #7](https://github.com/veranzy/ServiceNowARdemo/issues/7), open question 16).
+- **CCI** Daily invoice check: skip Singapore public holidays as well as weekends? (open question 12).
+- **CCI** Invoice PDF on Issue invoice; template and delivery (open questions 7, 13).
+- **CCI** Demo: ARQ0001009's 1st invoice shows *Overdue* (no BSU deposit matched); match a sample deposit if the owner wants it shown as paid.
+- **CCI** Billing hierarchy: usage and purpose ([issue #6](https://github.com/veranzy/ServiceNowARdemo/issues/6)).
+- **UIX** Landing page cards still use old wording (*Recurring invoices to raise*, combined AR request lists): part of the workspace clean-up in the Inbox.
+- **AR-ix** Reconcile D21 / D22 wording with manual GIRO updates; automation of the contract update (next major release, [issue #4](https://github.com/veranzy/ServiceNowARdemo/issues/4)).
+
 ## Done
 
 - 2026-11-16 **UIX**: AR request lists show All AR-i / All AR-ix (open and closed) instead of Open.

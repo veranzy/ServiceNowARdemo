@@ -91,6 +91,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-12 | Code layout: `js/router.js` gives every page its own URL (UIX decision 14). | Owner |
 | 2026-11-16 | Core flow and domain model: new case states, State dropdown, substates, assignment group; case actions Assign to me and Save (AR-00 decision 4). | Owner |
 | 2026-11-16 | Core flow and domain model: Contract category and Contract ID, schedules under contracts, daily invoice check replaces Raise invoice (D12, D15 amended; CCI 4–7). | Owner |
+| 2026-11-16 | Checking changes: the daily invoice check is mock data (ARQ0001009), no demo button. | Owner |
 
 ## How we work: modules, one at a time
 
@@ -255,7 +256,7 @@ AR-i with each contract option (new contract, existing contract with bill-to, no
 new shell); (search → add new customer with a new recurring contract; existing ad-hoc contract → one invoice;
 existing recurring contract with billing line items, GST calculated; Expedited shows the justification; recurring shows no preferred invoice date) → workspace Link to customer (contract / shell created, lines filed) → customer
 billing hierarchy → per line Create invoice / Set up billing
-schedule → Run daily invoice check (demo bar) → draft on the case's Invoices tab → State dropdown Closed complete → portal ticket shows each line's invoice / schedule; BSU upload
+schedule → ARQ0001009 shows the daily job's draft on its Invoices tab (mock data) → State dropdown Closed complete → portal ticket shows each line's invoice / schedule; BSU upload
 (sample file and a real CSV file, wrong-bank error); cash application Find invoice → Apply, Remove match;
 ID tags visible and unclipped; 400px wide in dark mode.
 No console errors.

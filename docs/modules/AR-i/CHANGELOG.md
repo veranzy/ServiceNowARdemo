@@ -26,3 +26,4 @@
 | 2026-11-12 | Workspace case page now follows the AR-i form (UIX decision 12, `REQ-FV-ARI`): sections 1–6 as on the portal, every field shown. All sample AR-i cases, billing lines and line items removed; invoices and schedules kept without a source case. Portal form unchanged (locked). |
 | 2026-11-12 | Demo AR-i cases now come from `data/AR_form.csv` (UIX decision 13): ARQ0001001 existing ad-hoc contract (Kestrel KE-2026-03), ARQ0001002 new customer with a new recurring contract (Seastar SA-2026-01), ARQ0001003 no contract (Meridian, Logistics shell). Portal form unchanged (locked). |
 | 2026-11-13 | Workspace list **Open AR-i** (UIX decision 15, `LST-REQ-ARI`). Portal form unchanged (locked). |
+| 2026-11-16 | Case states and actions changed by AR-00 decision 4: the case is no longer set to *Billed* automatically; AR sets Closed complete by hand. *Link to customer* kept (owner); *Request info* and *Reject* retired. Portal form unchanged (locked). |

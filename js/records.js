@@ -35,7 +35,7 @@ export function nextNumber(table) {
 }
 
 export const REQ_STATE = Object.fromEntries(TABLES.requests.fields.find(f => f.key === "state").choices);
-export const REQ_OPEN = ["new", "in_progress", "awaiting_info"];
+export const REQ_OPEN = ["new", "work_in_progress", "awaiting_requestor_info"];
 export const LINE_TYPE = { one_off: "One-off", recurring: "Recurring" };
 export const DOC_LABEL = Object.fromEntries(DOC_TYPES);
 const DOC_KEY = { contract: "docContract", acra: "docAcra", billing_form: "docBillingForm" };
@@ -151,14 +151,7 @@ export function linkContract(reqId, contractId) {
   if (!r || !k) return "Choose the contract to link.";
   Object.assign(r, { contractId: k.id, customerId: k.customerId, newCustomer: false, updated: isoToday() });
   journal(r, "system", `Linked to contract ${k.number} (${custById(k.customerId)?.name}).`);
-  if (r.state === "new") r.state = "in_progress";
-  return null;
-}
-/** UI action: Complete (AR-ix decision 11). Closes the case only; AR updates the contract's GIRO status and active case on the contract record by hand. */
-export function completeGiro(reqId) {
-  const r = reqById(reqId); if (!r) return "Record not found.";
-  r.state = "completed"; r.updated = isoToday();
-  journal(r, "system", "State changed to Completed.");
+  if (r.state === "new") r.state = "work_in_progress";
   return null;
 }
 /** AR-ix: the contract a draft or case points at. Existing contract, or for No contract required the customer's shell for the department when it exists. */
@@ -278,13 +271,8 @@ export function lineStatus(l) {
   const inv = l.invoiceId ? S.invoices.find(i => i.id === l.invoiceId) : null;
   return !inv || inv.state === "cancelled" ? "open" : inv.state === "issued" ? "invoiced" : "draft";
 }
-/** Business rule: request becomes Billed when every line is invoiced or scheduled. */
-function updateBilled(r) {
-  const ls = reqLines(r);
-  if (ls.length && ls.every(l => ["invoiced", "scheduled"].includes(lineStatus(l)))) {
-    if (r.state !== "invoiced") { r.state = "invoiced"; journal(r, "system", "All billing lines are invoiced or scheduled; state changed to Billed."); }
-  } else if (r.state === "invoiced") r.state = "in_progress";
-}
+/** Billed is no longer a state (AR-00, 2026-11-16): AR closes the case by hand; nothing automatic. */
+function updateBilled() {}   // kept as a no-op hook: callers below are unchanged
 
 /** Setup checklist for an AR-i on the workspace record. */
 export function setupStatus(r) {
@@ -360,7 +348,7 @@ export function linkCustomer(id, existingId, companyId) {
       department: t === "billing_form" ? r.department : "", requestId: r.id, received: isoToday() });
     notes.push(`filed ${DOC_LABEL[t].toLowerCase()}`);
   }
-  if (r.state === "new") { r.state = "in_progress"; if (!r.assignedTo) r.assignedTo = me().id; }
+  if (r.state === "new") { r.state = "work_in_progress"; if (!r.assignedTo) r.assignedTo = me().id; }
   journal(r, "work_note", `Link to customer: ${notes.join("; ")}.`);
   return null;
 }
@@ -401,7 +389,7 @@ export function setupSchedule(lineId) {
   const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: l.contractId, department: r.department, desc: l.desc,
     frequency: l.frequency || "monthly", amount: l.amount, firstDate: l.startDate, lastDate: l.endDate, requestId: r.id, lineId: l.id,
     firstAmount: contractPro(ctrById(l.contractId))?.firstAmount || 0, lastAmount: contractPro(ctrById(l.contractId))?.lastAmount || 0 };
-  S.schedules.push(sch); l.scheduleId = sch.id; if (r.state === "new") r.state = "in_progress"; if (!r.assignedTo) r.assignedTo = me().id;
+  S.schedules.push(sch); l.scheduleId = sch.id; if (r.state === "new") r.state = "work_in_progress"; if (!r.assignedTo) r.assignedTo = me().id;
   const n = periodDates(sch.frequency, sch.firstDate, sch.lastDate).length;
   journal(r, "comment", `Recurring line "${l.desc}" set up as billing schedule ${sch.number}: ${n} ${freqLabel(sch.frequency).toLowerCase()} invoice${n === 1 ? "" : "s"} of SGD ${(sch.amount / 100).toFixed(2)}${sch.firstAmount || sch.lastAmount ? ` (prorated: first SGD ${((sch.firstAmount || sch.amount) / 100).toFixed(2)}, last SGD ${((sch.lastAmount || sch.amount) / 100).toFixed(2)})` : ""} from ${sch.firstDate} to ${sch.lastDate}. AR raises each invoice; no further AR forms are needed for this line.`);
   updateBilled(r);
@@ -419,7 +407,7 @@ export function lineInvoice(lineId) {
   const date = l.invoiceDate && l.invoiceDate > isoToday() ? l.invoiceDate : isoToday();
   const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: l.contractId, requestId: r.id, lineId: l.id,
     customer: c?.name || "", desc: l.desc, amount: l.amount, date, due: addDays(date, k?.terms || c?.terms || 30), currency: "SGD" };
-  S.invoices.push(inv); l.invoiceId = inv.id; if (r.state === "new") r.state = "in_progress";
+  S.invoices.push(inv); l.invoiceId = inv.id; if (r.state === "new") r.state = "work_in_progress";
   if (!r.assignedTo) r.assignedTo = me().id;
   journal(r, "work_note", `Draft invoice ${inv.number} created for line "${l.desc}".`);
   return { opened: inv };
@@ -450,7 +438,7 @@ export function createRequest(vals, o = {}) {
   const { lines, items = [], ...rest } = vals;
   clearHidden("requests", rest);
   const by = o.requestedBy || me().id;
-  const req = { id: uid("r"), number: o.number || nextNumber("requests"), state: "new", requestedBy: by, assignedTo: null,
+  const req = { id: uid("r"), number: o.number || nextNumber("requests"), state: "new", substate: "", requestedBy: by, assignmentGroup: "g_ar", assignedTo: null,
     opened: o.opened || isoToday(), updated: o.opened || isoToday(), activity: [], attachments: rest.attachments || [], ...rest,
     requesterEmail: o.requestedBy ? rest.requesterEmail || "" : me().email || "" };
   if (req.form === "AR-ix") {
@@ -492,28 +480,22 @@ export function validate(table, vals) {
   return err;
 }
 
-/** Workspace UI actions on an AR request. Returns an error string or null. */
-export function requestAction(id, action, text) {
+/** Workspace UI action on an AR request: Assign to me (AR-00, 2026-11-16: the only case action besides Save; Request info, Reject and Complete are retired, AR uses the State dropdown). */
+export function requestAction(id, action) {
   const r = reqById(id); if (!r) return "Record not found.";
-  const t = String(text || "").trim();
-  if (action === "assign") {                       // UI action: Assign to me
-    r.assignedTo = me().id; if (r.state === "new") r.state = "in_progress";
-    journal(r, "system", `Assigned to ${me().name}.`);
-  } else if (action === "info") {                  // UI action: Request info
-    if (!t) return "Write the question for the requester in the composer first.";
-    r.state = "awaiting_info"; journal(r, "comment", t); S.ui.ws.composer[id] = { kind: "comment", text: "" };
-  } else if (action === "reject") {                // UI action: Reject
-    if (!t) return "Add a customer-visible comment explaining the rejection first.";
-    r.state = "rejected"; journal(r, "comment", t); journal(r, "system", "State changed to Rejected."); S.ui.ws.composer[id] = { kind: "comment", text: "" };
+  if (action === "assign") {
+    r.assignedTo = me().id; r.assignmentGroup = r.assignmentGroup || "g_ar";
+    if (r.state === "new") { r.state = "work_in_progress"; journal(r, "system", `Assigned to ${me().name}; state changed to Work in progress.`); }
+    else journal(r, "system", `Assigned to ${me().name}.`);
   }
   return null;
 }
 
-/** Portal: requester adds a comment. Business rule: reply on Awaiting info moves the case back to In progress. */
+/** Portal: requester adds a comment. Business rule: reply on Awaiting requestor information moves the case back to Work in progress (substate cleared). */
 export function portalComment(id, text) {
   const r = reqById(id), t = String(text || "").trim(); if (!r || !t) return "Write a message first.";
   journal(r, "comment", t);
-  if (r.state === "awaiting_info") { r.state = "in_progress"; journal(r, "system", "Requester replied; state changed to In progress."); }
+  if (r.state === "awaiting_requestor_info") { r.state = "work_in_progress"; r.substate = ""; journal(r, "system", "Requester replied; state changed to Work in progress."); }
   return null;
 }
 
@@ -565,6 +547,16 @@ export function saveRecord(table, id, raw) {
   if (table === "contracts" && merged.contractType === "shell" && S.contracts.some(k => k.id !== merged.id && isShell(k) && k.customerId === merged.customerId && k.department === merged.department)) errors.department = `This customer already has a ${merged.department} no-contract shell.`;
   if (table === "customers" && merged.companyId && S.customers.some(c => c.id !== merged.id && c.companyId === merged.companyId)) errors.companyId = `${companyById(merged.companyId)?.name} already has a customer record. One customer per company (D26).`;
   if (Object.keys(errors).length) return { errors };
+  // AR-00 2026-11-16: State dropdown. Substate only for Awaiting requestor information; a state change is journalled.
+  // AR-ix: setting Contract on the case replaces the retired Link contract (the customer follows the contract).
+  if (table === "requests" && existing) {
+    if (merged.state !== "awaiting_requestor_info") vals.substate = "";
+    if ("state" in vals && vals.state !== existing.state) journal(existing, "system", `State changed to ${def.fields.find(f => f.key === "state").choices.find(c => c[0] === vals.state)?.[1] || vals.state}.`);
+    if (existing.form === "AR-ix" && vals.contractId && vals.contractId !== existing.contractId) {
+      const k = ctrById(vals.contractId);
+      if (k) { Object.assign(vals, { customerId: k.customerId, newCustomer: false }); journal(existing, "system", `Contract set to ${k.number} (${custById(k.customerId)?.name}).`); }
+    }
+  }
   if (existing) {
     Object.assign(existing, vals);
     if (table === "customers") S.invoices.forEach(i => { if (i.customerId === existing.id) i.customer = existing.name; });

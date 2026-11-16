@@ -72,8 +72,8 @@ AR-i never changes master data by itself (D22, see [AR-00 → Context](../AR-00/
      writes the bill-to to the contract (and the department default contact if there is none); files the
      documents on the customer. Lines can only be billed once they have a contract.
    - **Billing lines** related list: per line **Create invoice** (one-off → draft invoice) or **Set up
-     billing schedule** (recurring → schedule over the line's date range). The request is **Billed** when
-     every one-off line has an issued invoice and every recurring line has a schedule.
+     billing schedule** (recurring → schedule over the line's date range). The ribbon shows billing progress;
+     AR closes the case by hand (State = Closed complete) once every line is billed (AR-00 decision 4; *Billed* retired).
 2. Billing schedule record → periods with status (Due / Upcoming / Invoiced) and **Raise invoice** (never
    automatic, D12).
 3. List menu → *Recurring billing*: Billing schedules, Billing periods due.

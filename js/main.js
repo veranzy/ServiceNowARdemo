@@ -3,7 +3,7 @@ import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { custDetailsOf, itemCalc, targetContract, completeGiro, giroTarget, giroTypesFor, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -59,31 +59,20 @@ function uiAction(name) {
     toast(c.kind === "comment" ? "Comment posted. The requester can see it on the portal." : "Work note posted."); return render();
   }
   if (!saveActive(tab, { quiet: true })) return render();
-  if (tab.table === "requests" && name === "linkctr") {
-    const err = linkContract(tab.id, tab.linkCtr || null); tab.linkCtr = null;
-    if (err) { tab.msg = { kind: "err", text: err }; return render(); }
-    toast("GIRO request linked to the contract."); return render();
-  }
-  if (tab.table === "requests" && name === "girocomplete") {
-    const err = completeGiro(tab.id);
-    if (err) { tab.msg = { kind: "err", text: err }; return render(); }
-    toast("Case completed."); return render();
-  }
   if (tab.table === "requests" && name === "link") {
     const err = linkCustomer(tab.id, tab.linkTo || null, tab.linkCo || null); if (!err) { tab.linkTo = null; tab.linkCo = null; }
     if (err) { tab.msg = { kind: "err", text: err }; return render(); }
     toast("Linked to the customer: billing contact and documents filed on the customer record."); return render();
   }
   if (tab.table === "requests") {
-    const text = W().composer[tab.id]?.kind === "comment" ? W().composer[tab.id].text : "";
-    const res = requestAction(tab.id, name, text);
-    if (typeof res === "string") { tab.msg = { kind: "err", text: res + (name === "info" || name === "reject" ? " (Switch the composer to Additional comment.)" : "") }; return render(); }
-    toast({ assign: "Assigned to you.", info: "Sent to the requester. State is now Awaiting info.", reject: "Request rejected." }[name] || "Done.");
+    const res = requestAction(tab.id, name);
+    if (typeof res === "string") { tab.msg = { kind: "err", text: res }; return render(); }
+    toast(name === "assign" ? "Assigned to you." : "Done.");
   }
   if (tab.table === "invoices") {
     const err = name === "issue" ? issueInvoice(tab.id) : name === "cancel" ? cancelInvoice(tab.id) : null;
     if (err) { tab.msg = { kind: "err", text: err }; return render(); }
-    toast(name === "issue" ? "Invoice issued. The AR request is now Invoiced." : "Invoice cancelled.");
+    toast(name === "issue" ? "Invoice issued." : "Invoice cancelled.");
   }
   render();
 }

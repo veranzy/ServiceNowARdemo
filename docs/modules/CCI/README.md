@@ -42,7 +42,7 @@ invoices ([BSU](../BSU/README.md)).
    *No-contract shells*.
 3. **Invoice record** → state Draft / Issued / Cancelled; amount, amount due, payment status (Unpaid /
    Part paid / Paid / Overdue, calculated); allocations related list (`RL-INV-ALC`). UI actions **Issue
-   invoice** (Draft → Issued; the AR request becomes Billed when every line is invoiced or scheduled) and
+   invoice** (Draft → Issued; AR closes the AR request by hand, AR-00 decision 4) and
    **Cancel invoice** (overflow menu; only when nothing is allocated; the line opens again).
 4. Invoices are created only by *Create invoice* on an AR-i billing line or *Raise invoice* on a billing
    period ([AR-i](../AR-i/README.md)); never automatically (D12).

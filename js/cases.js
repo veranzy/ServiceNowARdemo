@@ -38,6 +38,7 @@ export function addCases(text) {
       else if (f.type === "True/False") v = raw.toLowerCase() === "true";
       else if (f.key === "customerId") v = S.customers.find(x => x.name === raw)?.id || null;
       else if (f.key === "contractId") v = S.contracts.find(x => x.number === raw)?.id || null;
+      else if (f.ref === "groups") v = S.groups.find(g => g.name === raw)?.id || "g_ar";
       else if (f.type === "Reference") v = raw ? user(raw) : null;
       vals[f.key] = v;
     }
@@ -46,7 +47,7 @@ export function addCases(text) {
     const at = (r.opened || "") + "T09:00:00";
     r.activity.forEach(e => { e.at = at; });
     const ar = user(c.assigned_to);
-    if (ar) { r.assignedTo = ar; r.state = "in_progress"; journal(r, "system", `Assigned to ${S.users.find(u => u.id === ar).name}.`, ar); }
+    if (ar) { r.assignedTo = ar; r.state = "work_in_progress"; journal(r, "system", `Assigned to ${S.users.find(u => u.id === ar).name}.`, ar); }
     if (c.state && c.state !== r.state) { r.state = c.state; journal(r, "system", `State changed to ${TABLES.requests.fields.find(f => f.key === "state").choices.find(x => x[0] === c.state)?.[1] || c.state}.`, ar || by); }
     r.activity.forEach(e => { e.at = at; }); r.updated = r.opened;
     S.history.push({ table: "requests", id: r.id, at, by: r.requestedBy, kind: "created" });

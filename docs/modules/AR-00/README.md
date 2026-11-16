@@ -19,7 +19,7 @@ authorisation; AR-ii … AR-xvi get a module each when the owner defines them.
 
 AR forms (AR-i, AR-ix, …) and customer / contract updates are **deliberately separate**. A form is a
 request; it never changes customer or contract data by itself. AR changes the master data in the
-workspace (Link to customer, Link contract, Activate / Remove GIRO). Each form only *reads* what the
+workspace (Link to customer on AR-i cases; customer and contract records, including GIRO on the contract). Each form only *reads* what the
 master data says. This creates some scenarios the build must handle:
 
 | Scenario | What happens |
@@ -52,13 +52,20 @@ master data says. This creates some scenarios the build must handle:
 3. Submit (`PT-09`) creates one `x_ar_request` case (state New) and shows a confirmation.
 4. **My requests** (`PT-10`): cases the user raised **or is CC'd on** (tagged *CC*).
 5. **Ticket page** (`PT-11`, `PT-13`): read-only field summary, attachments and the conversation
-   (comments only). A requester reply while *Awaiting info* sets the case back to *In progress*. Each form
+   (comments only). A requester reply while *Awaiting requestor information* sets the case back to *Work in progress* (substate cleared). The portal shows the state only, never the substate. Each form
    adds its own block (AR-i: lines with their invoice / schedule; AR-ix: GIRO outcome `PT-35`).
 
 **Workspace** (case basics shared by every form; form-specific actions are in each form's module)
-- AR request case states: New, In progress, Awaiting info, Billed (AR-i), Completed (non-billing forms such
-  as AR-ix), Rejected. Actions *Assign to me*, *Request info*, *Reject*; activity stream with comments
-  (visible on the portal), work notes (AR only) and system entries.
+- AR request case states (decision 4): **New**, **Work in progress**, **Awaiting requestor information**,
+  **Closed complete**, **Closed incomplete**, **Cancelled**. AR sets the state with the **State dropdown** on
+  the Details tab and **Save**; each change is journalled. **Substate** (only for Awaiting requestor
+  information, optional): **Awaiting input**, **Awaiting comment**; cleared when the state changes; read-only
+  for other states; AR only.
+- **Assignment group** above *Assigned to*: one group, **Accounts Receivable**, set on every new case.
+- Case actions: **Assign to me** (New → Work in progress) and **Save** only, on every form. Exception: AR-i
+  keeps **Link to customer**. *Request info*, *Reject*, *Link contract* and *Complete* are retired; AR posts
+  the message to the requester as an additional comment. Nothing sets a closed state automatically.
+- Activity stream with comments (visible on the portal), work notes (AR only) and system entries.
 
 ## ServiceNow mapping
 
@@ -66,9 +73,9 @@ master data says. This creates some scenarios the build must handle:
 |---|---|
 | Portal catalogue | Service catalog category "AR forms" (`PT-14`) with 16 record producers (AR-i … AR-xvi) on `x_ar_request`; AR-ii … AR-xvi inactive until defined. Each producer sets `ar_form`. |
 | General information | Variable set (`PT-30`) on every AR form producer: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`. The producer script copies `cc_list` to the case `watch_list`. |
-| Case table | `x_ar_request`, field `ar_form` says which form raised it; `state` choices New / In progress / Awaiting info / Billed (`invoiced`) / Completed / Rejected; journal fields `comments`, `work_notes`. |
+| Case table | `x_ar_request`, field `ar_form` says which form raised it; `state` choices `new` New / `work_in_progress` Work in progress / `awaiting_requestor_info` Awaiting requestor information / `closed_complete` Closed complete / `closed_incomplete` Closed incomplete / `cancelled` Cancelled (State dropdown, editable by AR on open cases); `substate` (`awaiting_input` Awaiting input / `awaiting_comment` Awaiting comment; dependent on state = Awaiting requestor information); `assignment_group` → `sys_user_group` (Accounts Receivable, default); `assigned_to` (members of the group); journal fields `comments`, `work_notes`. Before-update business rule: journal a state change; clear `substate` unless state = Awaiting requestor information. |
 | My requests | Portal list widget on `x_ar_request` where `opened_by = me` or `watch_list` contains me; CC'd cases tagged *CC*. |
-| Ticket page | Standard ticket conversation widget (comments only), ticket fields widget, attachments. Business rule: requester comment while *Awaiting info* → *In progress*. |
+| Ticket page | Standard ticket conversation widget (comments only), ticket fields widget, attachments. Business rule: requester comment while *Awaiting requestor information* → *Work in progress*, substate cleared. |
 | ACL | Project team reads own cases; CC'd users (watch list) read the case and its comments; only the requester and AR edit. |
 | Departments | 11 operational departments (`DEPARTMENTS` in `js/schema.js`); sub-BU list per department (mock until the client supplies it). |
 

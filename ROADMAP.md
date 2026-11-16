@@ -17,6 +17,7 @@ shipped. Requirement questions still open for the client live in each module's
 
 ## Done
 
+- 2026-11-16 **AR-00**: new case states (New … Cancelled) set by a State dropdown, Substate for Awaiting requestor information, Assignment group; case actions Assign to me and Save (AR-i keeps Link to customer) (decision 4).
 - 2026-11-13 **UIX**: list menu AR requests has one open list per form (Open AR-i, Open AR-ix), each with its own column set (decision 15).
 - 2026-11-12 **UIX**: every page has its own URL (`#/ws/…`, `#/portal/…`); Back / Forward, refresh and shared links work (decision 14).
 - 2026-11-12 **UIX**: demo cases read from `data/AR_form.csv` (8 rows, every AR-i / AR-ix path) on one reusable case page; list menu *AR requests* shows only *Open requests* (decision 13).

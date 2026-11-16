@@ -11,7 +11,9 @@ export const ROLES = {
     can: "Submit AR forms (record producers AR-i … AR-xvi) and read/comment on their own AR requests. Read customers, contracts, billing contacts and which customer documents are on file. No workspace access." }
 };
 
-const STATE_REQ = [["new", "New"], ["in_progress", "In progress"], ["awaiting_info", "Awaiting info"], ["invoiced", "Billed"], ["completed", "Completed"], ["rejected", "Rejected"]];
+// AR-00 decision (2026-11-16): case states and substates, owner's wording. AR sets them with the State dropdown on the case.
+const STATE_REQ = [["new", "New"], ["work_in_progress", "Work in progress"], ["awaiting_requestor_info", "Awaiting requestor information"], ["closed_complete", "Closed complete"], ["closed_incomplete", "Closed incomplete"], ["cancelled", "Cancelled"]];
+const SUBSTATE_REQ = [["awaiting_input", "Awaiting input"], ["awaiting_comment", "Awaiting comment"]];
 
 /** The 11 operational departments (D11). Bank accounts may also belong to Finance. */
 export const DEPARTMENTS = ["Engineering", "Marine", "Digital", "Infrastructure", "Energy", "Facilities", "Logistics", "Healthcare", "Environmental", "Rail", "Advisory"];
@@ -58,7 +60,8 @@ export const TABLES = {
     note: "Case raised by the project team through an AR form record producer (AR-i … AR-xvi). Extends Task for assignment, SLAs and the activity stream.",
     fields: [
       { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "ARQ0001000" },
-      { key: "state", name: "state", label: "State", type: "Choice", choices: STATE_REQ, readonly: true },
+      { key: "state", name: "state", label: "State", type: "Choice", choices: STATE_REQ, mandatory: true, help: "Set by AR with the dropdown on the case and Save (AR-00 decision, 2026-11-16). Assign to me moves New to Work in progress; a portal reply moves Awaiting requestor information to Work in progress" },
+      { key: "substate", name: "substate", label: "Substate", type: "Choice", choices: SUBSTATE_REQ, showIf: { key: "state", eq: "awaiting_requestor_info" }, help: "Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal)" },
       { key: "requestedBy", name: "opened_by", label: "Requested by", type: "Reference", ref: "users", readonly: true },
       { key: "form", name: "ar_form", label: "AR form", type: "Choice", choices: AR_FORMS.map(f => [f.code, `${f.code} ${f.name}`]), readonly: true },
       { key: "requesterName", name: "requester_name", label: "Requester name", type: "String", help: "General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name", default: "gs.getUser().getFullName()" },
@@ -138,7 +141,8 @@ export const TABLES = {
       { key: "docAcra", name: "doc_acra", label: "Company registration (ACRA / UEN)", type: "Attachment", help: "Only when not already on file" },
       { key: "docBillingForm", name: "doc_billing_form", label: "Billing contact & address form", type: "Attachment", help: "Only when not already on file for this department" },
       { key: "details", name: "description", label: "Additional details", type: "String (4000)", wide: true },
-      { key: "assignedTo", name: "assigned_to", label: "Assigned to", type: "Reference", ref: "users", refFilter: "ar" },
+      { key: "assignmentGroup", name: "assignment_group", label: "Assignment group", type: "Reference", ref: "groups", help: "Platform sys_user_group. One group for now: Accounts Receivable, set on every new case (record producer script)" },
+      { key: "assignedTo", name: "assigned_to", label: "Assigned to", type: "Reference", ref: "users", refFilter: "ar", help: "Reference qualifier: members of the assignment group" },
       { key: "opened", name: "opened_at", label: "Opened", type: "Date", readonly: true }
     ]
   },
@@ -410,7 +414,7 @@ export function showIfText(tableKey, f) {
 export function fieldNote(tableKey, key) {
   const t = TABLES[tableKey], f = fieldOf(tableKey, key);
   if (!f) return t.table;
-  const ref = f.ref ? ` → ${f.ref === "users" ? "sys_user" : TABLES[f.ref].table}` : "";
+  const ref = f.ref ? ` → ${f.ref === "users" ? "sys_user" : f.ref === "groups" ? "sys_user_group" : TABLES[f.ref].table}` : "";
   return `${t.table}.${f.name} · ${f.type}${ref}${f.mandatory ? " · mandatory" : ""}`;
 }
 

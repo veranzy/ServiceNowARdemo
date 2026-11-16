@@ -22,7 +22,7 @@ export const LISTS = {
       open: ["Open requests", r => REQ_OPEN.includes(r.state)],
       new: ["New, unassigned", r => r.state === "new" && !r.assignedTo],
       mine: ["Assigned to me", r => mine(r) && REQ_OPEN.includes(r.state)],
-      awaiting: ["Awaiting info", r => r.state === "awaiting_info"],
+      awaiting: ["Awaiting requestor information", r => r.state === "awaiting_requestor_info"],
       setup: ["Customer setup pending", r => REQ_OPEN.includes(r.state) && r.form !== "AR-ix" && (!!r.newCustomer || !setupStatus(r).docsDone)],
       giroall: ["All AR-ix GIRO cases", r => r.form === "AR-ix"],
       all: ["All", () => true]
@@ -122,9 +122,9 @@ export const LISTS = {
 };
 const giroChip = k => { const c = activeGiroCase(k); return c ? `<span class="chip c-ok">GIRO active</span> ${refLink("requests", c.id, c.number)}` : `<span class="chip c-neutral">Not active</span>`; };
 const giroCaseChip = r => { const k = r.contractId ? ctrById(r.contractId) : null, cur = activeGiroCase(k);
-  if (r.state === "rejected") return `<span class="chip c-bad">Rejected</span>`;
-  if (r.state !== "completed") return r.contractId ? `<span class="chip c-neutral">Open</span>` : `<span class="chip c-warn">Contract to link</span>`;
-  return cur?.id === r.id ? `<span class="chip c-ok">Active</span>` : `<span class="chip c-neutral">Completed</span>`; };
+  if (r.state === "closed_incomplete" || r.state === "cancelled") return reqChip(r);
+  if (r.state !== "closed_complete") return r.contractId ? `<span class="chip c-neutral">Open</span>` : `<span class="chip c-warn">Contract to link</span>`;
+  return cur?.id === r.id ? `<span class="chip c-ok">Active</span>` : reqChip(r); };
 const ctrTypeChip = k => isShell(k) ? `<span class="chip c-warn">No contract</span>` : `<span class="chip c-neutral">Contract</span>`;
 const ctrStatusChip = k => { const s = isShell(k) ? ["Open", "c-ok"] : ctrStatus(k); return `<span class="chip ${s[1]}">${s[0]}</span>`; };
 const issuedOf = custId => S.invoices.filter(i => i.customerId === custId && i.state === "issued");
@@ -204,7 +204,7 @@ function homePage() {
   const cards = [
     ["New AR requests", S.requests.filter(f.new[1]).length, "Unassigned cases from the portal", "list", "requests:new"],
     ["Assigned to me", S.requests.filter(f.mine[1]).length, "Open cases you own", "list", "requests:mine"],
-    ["Awaiting info", S.requests.filter(f.awaiting[1]).length, "Waiting on the project team", "list", "requests:awaiting"],
+    ["Awaiting requestor information", S.requests.filter(f.awaiting[1]).length, "Waiting on the project team", "list", "requests:awaiting"],
     ["Customer setup pending", S.requests.filter(f.setup[1]).length, "AR-i to link to the customer master", "list", "requests:setup"],
     ["Billing periods due", S.schedules.reduce((n, x) => n + periodsDue(x).length, 0), "Recurring invoices to raise", "list", "schedules:due"],
     ["Draft invoices", S.invoices.filter(fi.draft[1]).length, "Created, not yet issued", "list", "invoices:draft"],
@@ -290,8 +290,9 @@ function listView(table, filter, menuOpen) {
 const has = k => r => !!r[k], not = k => r => !r[k], isIx = r => r.form === "AR-ix", isI = r => !isIx(r);
 const LAYOUT = {
   // Case page Details = one form view per AR form (UIX decision 12): the portal form's sections, same names and order, every field shown (empty when not answered)
-  requests: [["Case", ["form", "state", "requestedBy", "assignedTo", "opened", "amount"], isI],
-    ["Case", ["form", "state", "requestedBy", "assignedTo", "opened"], isIx],
+  // AR-00 2026-11-16: State is a dropdown with Substate under it; Assignment group above Assigned to
+  requests: [["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened", "amount"], isI],
+    ["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened"], isIx],
     ["1. General information", ["requesterName", "requesterEmail", "department", "deptSubBu", "ccList"]],
     // AR-i form view (portal: PT-25, PT-20, PT-37, PT-23, PT-42)
     ["2. Customer", ["customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "agencyType", "vag", "subBu", "pocName", "pocEmail"], isI],
@@ -403,15 +404,10 @@ function actionsFor(table, rec, isNew, canEdit) {
   if (table === "requests") {
     if (REQ_OPEN.includes(rec.state)) {
       const st = setupStatus(rec);
+      // AR-00 2026-11-16: case actions are Assign to me and Save only; state changes go through the State dropdown.
+      // Exception (owner): AR-i keeps Link to customer. Link contract, Complete, Request info and Reject are retired.
       if (!mine(rec)) a.push(action(table, "Assign to me", "assign"));
-      if (isIx(rec)) {
-        // AR-ix decision 11: the case doesn't change the contract; AR updates the contract's GIRO by hand, then completes the case (no check)
-        if (!rec.contractId) a.push(action(table, "Link contract", "linkctr", { primary: true }));
-        a.push(action(table, "Complete", "girocomplete", { primary: !!rec.contractId, ovf: !rec.contractId }));
-      } else if (setupPending(rec, st)) a.push(action(table, rec.newCustomer ? "Create customer & link" : "Link to customer", "link", { primary: true }));
-      /* billing is done per line in the Billing lines list once the request is linked to a customer */
-      a.push(action(table, "Request info", "info", { ovf: true }));
-      a.push(action(table, "Reject", "reject", { danger: true, ovf: true }));
+      if (!isIx(rec) && setupPending(rec, st)) a.push(action(table, rec.newCustomer ? "Create customer & link" : "Link to customer", "link", { primary: true }));
     }
 
   }
@@ -604,7 +600,7 @@ function recordPage(tab) {
   const vals = tab.vals || null;
   const shown = vals ? { ...rec, ...vals } : rec;
   const ro = RO[table] || [];
-  const sections = LAYOUT[table].filter(([, , when]) => !when || isNew || when(shown)).map(([title, keys]) => keys[0] === "@attachments" ? `<fieldset class="fsec"><legend>${esc(title)}</legend>${attList(rec)}</fieldset>` : `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).filter(f => table === "requests" || fieldVisible(table, f, shown)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit || ro.includes(f.key), errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
+  const sections = LAYOUT[table].filter(([, , when]) => !when || isNew || when(shown)).map(([title, keys]) => keys[0] === "@attachments" ? `<fieldset class="fsec"><legend>${esc(title)}</legend>${attList(rec)}</fieldset>` : `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).filter(f => table === "requests" || fieldVisible(table, f, shown)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit || ro.includes(f.key) || (f.key === "substate" && shown.state !== "awaiting_requestor_info"), errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
   const title = isNew ? `New ${def.label.toLowerCase()}` : displayOf(table, rec);
   const sub = table === "requests" ? rec.title : table === "invoices" ? rec.desc : table === "contracts" ? rec.title : table === "deposits" ? `${rec.payer} · ${acctLabel(acctById(rec.bankAccountId))}`
     : table === "uploads" ? `${acctLabel(acctById(rec.bankAccountId))} · statement ${rec.statementDate}` : table === "bankAccounts" ? rec.name
@@ -648,7 +644,7 @@ function historyTab(table, rec) {
   const hs = historyOf(table, rec.id), def = TABLES[table];
   const val = (f, v) => { if (v === null || v === "" || v === undefined || (Array.isArray(v) && !v.length)) return `<span class="muted">(empty)</span>`;
     if (!f) return esc(String(v));
-    if (f.type === "Reference") return esc(f.ref === "users" ? userById(v)?.name || v : displayOf(f.ref, recById(f.ref, v)) || v);
+    if (f.type === "Reference") return esc(f.ref === "groups" ? S.groups.find(g => g.id === v)?.name || v : f.ref === "users" ? userById(v)?.name || v : displayOf(f.ref, recById(f.ref, v)) || v);
     if (f.type === "Choice") return esc((f.choices.find(c => c[0] === v) || [, v])[1]);
     if (f.type === "Currency") return `<span class="mono">SGD ${fmt(v)}</span>`;
     if (f.type === "True/False") return v ? "Yes" : "No";
@@ -678,16 +674,13 @@ function giroPanel(r, tab) {
   const ref = String(r.newCtrRef || "").trim().toLowerCase(), none = r.contractOption === "none";
   // No contract required: the no-contract shells are offered, the customer's own and the request's department first (AR-ix decision 12)
   const cands = S.contracts.filter(c => none ? isShell(c) : !isShell(c)).sort((a, b) => (b.number.toLowerCase() === ref) - (a.number.toLowerCase() === ref) || (b.customerId === r.customerId) - (a.customerId === r.customerId) || (none ? (b.department === r.department) - (a.department === r.department) : 0) || a.number.localeCompare(b.number));
-  const done = r.state === "completed", cur = activeGiroCase(k);
+  const done = r.state === "closed_complete", cur = activeGiroCase(k);
   return `<section class="setup"${sn("REQ-GIRO")}>
     <header><h2>GIRO setup</h2></header>
     <ul class="checklist">
-      ${item(!!k, k ? `Contract: ${esc(k.number)}` : `Contract not linked: ${esc(none ? "No contract required" : r.newCtrRef || "no reference")}`, k ? `${esc(custName(k.customerId))} · ${esc(isShell(k) ? `No-contract shell (${k.department})` : k.title)}` : none ? "Set up the customer's no-contract shell for the department first if needed, then link it below." : "Process the AR-i that sets up this contract first, then link it below.")}
+      ${item(!!k, k ? `Contract: ${esc(k.number)}` : `Contract not linked: ${esc(none ? "No contract required" : r.newCtrRef || "no reference")}`, k ? `${esc(custName(k.customerId))} · ${esc(isShell(k) ? `No-contract shell (${k.department})` : k.title)}` : none ? "Set up the customer's no-contract shell for the department first if needed, then set it as Contract on this case and Save." : "Process the AR-i that sets up this contract first, then set it as Contract on this case and Save.")}
       ${k ? item(cur ? true : null, `GIRO on ${esc(k.number)}: ${cur ? "Active" : "Not active"}`, cur ? `From ${refLink("requests", cur.id, cur.number)}${cur.id === r.id ? " (this case)" : ""} · ${esc(giroLabel(cur))}` : "No AR-ix case is active on this contract") : ""}
-      ${item(done ? true : k ? false : null, "Update GIRO on the contract", done ? "Case completed" : k ? `Open ${refLink("contracts", k.id, k.number)} and set GIRO status and Active GIRO case for this request (${esc(giroLabel(r))}), then use Complete.` : "Available once the contract is linked")}
+      ${item(done ? true : k ? false : null, "Update GIRO on the contract", done ? "Case closed complete" : k ? `Open ${refLink("contracts", k.id, k.number)} and set GIRO status and Active GIRO case for this request (${esc(giroLabel(r))}), then set State to Closed complete and Save.` : "Available once the contract is set on the case")}
     </ul>
-    ${open && !k ? `<label class="ffield linkto"${sn("REQ-LINKCTR")}><span class="flabel">Contract to link</span>
-      <select id="linkCtr-${r.id}" data-linkctr="${esc(tab.key)}"><option value="">-- Choose the contract --</option>${cands.map(c => `<option value="${c.id}"${tab.linkCtr === c.id ? " selected" : ""}>${esc(c.number)} · ${esc(custName(c.customerId))}${isShell(c) ? ` (${esc(c.department)})` : ""}${c.number.toLowerCase() === ref ? " (matches the reference)" : ""}</option>`).join("")}</select>
-      <span class="fhelp">Then use Link contract in the header.</span></label>` : ""}
   </section>`;
 }

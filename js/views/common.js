@@ -13,7 +13,7 @@ export const sn = id => {
   return ` data-snid="${esc(id)}" data-sn="${esc(text ?? "")}"${S.ui.notes ? ` title="${esc(`${id}: ${text ?? ""}`)}"` : ""}`;
 };
 
-const REQ_CHIP = { new: "c-accent", in_progress: "c-neutral", awaiting_info: "c-warn", invoiced: "c-ok", rejected: "c-bad" };
+const REQ_CHIP = { new: "c-accent", work_in_progress: "c-neutral", awaiting_requestor_info: "c-warn", closed_complete: "c-ok", closed_incomplete: "c-bad", cancelled: "c-neutral" };
 export const reqChip = r => `<span class="chip ${REQ_CHIP[r.state] || "c-neutral"}">${esc(REQ_STATE[r.state] || r.state)}</span>`;
 
 export function invMoney(i) {
@@ -56,6 +56,7 @@ export function refLink(table, id, label) {
 
 function refOptions(f, rec, formVals) {
   if (f.ref === "bankAccounts") return S.bankAccounts.map(a => [a.id, `${BANKS[a.bank].name} · ${a.number} · ${a.name}`]);
+  if (f.ref === "groups") return S.groups.map(g => [g.id, g.name]);
   if (f.ref === "users") return S.users.filter(u => !f.refFilter || u.team === f.refFilter).map(u => [u.id, u.name]);
   if (f.ref === "companies") return S.companies.filter(co => co.id === rec.companyId || !S.customers.some(c => c.companyId === co.id)).sort((a, b) => a.name.localeCompare(b.name)).map(co => [co.id, co.name]);
   // Active GIRO case (contract): AR-ix cases on this contract (AR-ix decision 11)
@@ -69,7 +70,7 @@ function refOptions(f, rec, formVals) {
 
 function readValue(table, f, rec) {
   const v = rec[f.key];
-  if (f.type === "Reference") return f.ref === "users" ? esc(userById(v)?.name || "—") : f.ref === "companies" ? esc(S.companies.find(co => co.id === v)?.name || "—") : refLink(f.ref, v);
+  if (f.type === "Reference") return f.ref === "groups" ? esc(S.groups.find(g => g.id === v)?.name || "—") : f.ref === "users" ? esc(userById(v)?.name || "—") : f.ref === "companies" ? esc(S.companies.find(co => co.id === v)?.name || "—") : refLink(f.ref, v);
   if (f.type === "Choice") return esc((f.choices.find(c => c[0] === v) || [, v || "—"])[1]);
   if (f.type === "Currency") return v ? `<span class="mono">SGD ${fmt(v)}</span>` : "—";
   if (f.key === "aliases") return (v || []).length ? v.map(a => `<span class="ref">${esc(a)}</span>`).join(" ") : "—";

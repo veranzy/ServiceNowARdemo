@@ -122,7 +122,8 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `number` | Number | String | Read-only on form |
-| `state` | State | Choice | Choices: New (`new`), In progress (`in_progress`), Awaiting info (`awaiting_info`), Billed (`invoiced`), Completed (`completed`), Rejected (`rejected`). Read-only on form |
+| `state` | State | Choice | Choices: New (`new`), Work in progress (`work_in_progress`), Awaiting requestor information (`awaiting_requestor_info`), Closed complete (`closed_complete`), Closed incomplete (`closed_incomplete`), Cancelled (`cancelled`). Mandatory. Set by AR with the dropdown on the case and Save (AR-00 decision, 2026-11-16). Assign to me moves New to Work in progress; a portal reply moves Awaiting requestor information to Work in progress |
+| `substate` | Substate | Choice | Choices: Awaiting input (`awaiting_input`), Awaiting comment (`awaiting_comment`). Shown when State = Awaiting requestor information (UI policy). Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal) |
 | `opened_by` | Requested by | Reference | → `sys_user`. Read-only on form |
 | `ar_form` | AR form | Choice | Choices: AR-i New AR request (`AR-i`), AR-ii To be defined (`AR-ii`), AR-iii To be defined (`AR-iii`), AR-iv To be defined (`AR-iv`), AR-v To be defined (`AR-v`), AR-vi To be defined (`AR-vi`), AR-vii To be defined (`AR-vii`), AR-viii To be defined (`AR-viii`), AR-ix GIRO authorisation (`AR-ix`), AR-x To be defined (`AR-x`), AR-xi To be defined (`AR-xi`), AR-xii To be defined (`AR-xii`), AR-xiii To be defined (`AR-xiii`), AR-xiv To be defined (`AR-xiv`), AR-xv To be defined (`AR-xv`), AR-xvi To be defined (`AR-xvi`). Read-only on form |
 | `requester_name` | Requester name | String | General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name. Default: gs.getUser().getFullName() |
@@ -199,7 +200,8 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `doc_acra` | Company registration (ACRA / UEN) | Attachment | Only when not already on file |
 | `doc_billing_form` | Billing contact & address form | Attachment | Only when not already on file for this department |
 | `description` | Additional details | String (4000) |  |
-| `assigned_to` | Assigned to | Reference | → `sys_user` (users with x_ar.ar_team) |
+| `assignment_group` | Assignment group | Reference | → `sys_user_group`. Platform sys_user_group. One group for now: Accounts Receivable, set on every new case (record producer script) |
+| `assigned_to` | Assigned to | Reference | → `sys_user` (users with x_ar.ar_team). Reference qualifier: members of the assignment group |
 | `opened_at` | Opened | Date | Read-only on form |
 | `comments` / `work_notes` | Additional comments / Work notes | Journal (inherited from task) | Comments visible on portal; work notes AR team only |
 

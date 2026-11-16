@@ -38,16 +38,12 @@ Fields are free text unless stated. `*` = mandatory.
 
 ## Workspace (AR team)
 
-- List menu *GIRO*: AR-ix GIRO requests (open), All AR-ix GIRO cases, Contracts with GIRO active.
+- List menu *AR requests*: Open AR-ix (UIX decision 15). List menu *GIRO*: All AR-ix GIRO cases, Contracts with GIRO active.
 - AR-ix case: Details tab (General information, Customer and contract, GIRO details, Others); ribbon (GIRO, amount, contract and its GIRO status); tab **GIRO history** (AR-ix cases on the same contract).
-- Side panel **GIRO setup** (`REQ-GIRO`): contract linked? (if not: for a new contract *process the AR-i that sets up this contract first, then link it*; for No contract required, link the customer's no-contract shell; the picker lists the matching reference, the customer and the department first) → the contract's GIRO status and active case → reminder: *Update GIRO on the contract*, then Complete.
-- UI actions:
-  - **Link contract** (while contract is empty) → sets contract and customer; New → In progress.
-  - **Complete** (`UA-REQ-girocomplete`, any open AR-ix case; primary once the contract is linked) → case **Completed** with a system note. **No check** on the contract (decision 11).
-  - ~~Activate GIRO~~ / ~~Remove GIRO~~: retired 2026-11-12.
-  - Request info, Reject, Assign to me as for AR-i.
+- Side panel **GIRO setup** (`REQ-GIRO`): contract set? (if not: for a new contract *process the AR-i that sets up this contract first, then set it as Contract on this case and Save*; for No contract required, the customer's no-contract shell for the department) → the contract's GIRO status and active case → reminder: *Update GIRO on the contract*, then set State to Closed complete.
+- Case actions (AR-00 decision 4): **Assign to me** and **Save** only. AR sets **Contract** on the case and saves (the customer follows the contract; replaces *Link contract*), and closes the case with the **State dropdown** (Closed complete / Closed incomplete / Cancelled). *Link contract*, *Complete*, *Request info* and *Reject* are retired; ~~Activate GIRO~~ / ~~Remove GIRO~~ retired 2026-11-12.
 - **Updating GIRO (manual, decision 11):** on the contract record AR sets **GIRO status** (Active / Not active) and **Active GIRO case** (choice of the Add GIRO AR-ix cases on that contract). Active needs a case; Not active clears it. Record history (audit) keeps every change; the GIRO history tab lists the cases.
-- Contract record: header *GIRO* (Active + case link, or Not active), ribbon widget, section **GIRO** on the form, tab **GIRO history** (`CON-GIRO`) with each case marked Active / Completed / Open / Contract to link / Rejected. GIRO also shows on no-contract shells.
+- Contract record: header *GIRO* (Active + case link, or Not active), ribbon widget, section **GIRO** on the form, tab **GIRO history** (`CON-GIRO`) with each case marked Active / Open / Contract to link / or its closed state (Closed complete, Closed incomplete, Cancelled). GIRO also shows on no-contract shells.
 
 ## ServiceNow mapping
 
@@ -57,7 +53,7 @@ Fields are free text unless stated. `*` = mandatory.
 | Case fields | `x_ar_request`: `requester_name`, `requester_email`, `cc_list`, `giro_type`, `giro_purpose`, `giro_purpose_other`, `giro_applicant_name/_email/_mobile`, `giro_remarks`, `giro_location`, `giro_tenancy_agreement`, `giro_start_date`, `giro_end_date`, `giro_contract_ref`, `giro_invoice_ref`, `giro_others_remarks`, `giro_form_number`, `giro_carplate`, `giro_parking_start`, `giro_parking_end`, `giro_amount` (String, free text). New state **Completed** (`completed`). |
 | Contract fields | `x_ar_contract.giro_status` (Choice: Active / Not active) and `x_ar_contract.giro_case` (Reference → `x_ar_request`, reference qualifier `ar_form = AR-ix`, `giro_type = add`, `contract = current`), **editable by `x_ar.ar_team`** (decision 11). Audit on, so Record history shows every change. |
 | UI policy / business rule | `giro_case` mandatory when `giro_status` = Active; before update: clear `giro_case` when `giro_status` = Not active. One active GIRO per contract is guaranteed by the single `giro_case` field. |
-| UI actions | `UA-REQ-linkctr`, `UA-REQ-girocomplete` (condition: `ar_form = AR-ix`, state open). Retired: `UA-REQ-giroadd`, `UA-REQ-giroremove`. |
+| UI actions | Assign to me and Save only (AR-00 decision 4). Retired: `UA-REQ-giroadd`, `UA-REQ-giroremove` (2026-11-12), `UA-REQ-linkctr`, `UA-REQ-girocomplete` (2026-11-16). Before-update business rule: when `contract` changes on an AR-ix case, set `customer` from the contract. |
 | Related list | `CON-GIRO` / `REQ-GIROHIST`: `x_ar_request` where `contract` = the contract and `ar_form = AR-ix`. |
 | Portal | Ticket page block `PT-35` (GIRO request summary and outcome). My requests, CC visibility and the ticket page itself: [AR-00](../AR-00/README.md). |
 

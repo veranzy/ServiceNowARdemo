@@ -30,14 +30,14 @@ export const NOTES = {
   "REQ-ACT": "Activity stream: comments (visible to requester) + work_notes (AR only) + field changes",
   "REQ-SETUP": "Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, billing lines done",
   "CUS-TREE": "Billing hierarchy on the customer record (D15): customer › contract / no-contract shell (x_ar_contract) › billing lines (x_ar_request_line.contract) › invoices / billing schedule. UI Builder component over related lists, or a hierarchical list",
-  "REQ-GIRO": "GIRO setup panel (AR-ix case, contextual side bar): contract linked? (for No contract required: the customer's no-contract shell for the department); the contract's GIRO status and active case; reminder to update GIRO status and Active GIRO case on the contract record, then Complete (AR-ix decision 11)",
+  "REQ-GIRO": "GIRO setup panel (AR-ix case, contextual side bar): contract set? (for No contract required: the customer's no-contract shell for the department, set as Contract on the case); the contract's GIRO status and active case; reminder to update GIRO status and Active GIRO case on the contract record, then set State = Closed complete (AR-ix decision 11, AR-00 2026-11-16)",
   "REQ-GIROHIST": "Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix)",
   "REQ-FV-ARI": "Form view ar_i on x_ar_request (view rule: ar_form = AR-i), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Customer, 3. Contract and bill-to, 4. Invoice details, 5. Customer documents, 6. Others, in the AR-i portal order; every field of each section on the form, empty when not answered; editable while the case is open",
   "REQ-FV-ARIX": "Form view ar_ix on x_ar_request (view rule: ar_form = AR-ix), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Select Customer, 3. Select Contract, 4. GIRO details, 5. Attachments (attachment list), 6. Others, in the AR-ix portal order; every field shown, empty when not answered; editable while the case is open",
-  "LST-REQ-ARI": "Workspace list Open AR-i (UIX decision 15): x_ar_request, condition ar_form = AR-i AND state IN (new, in_progress, awaiting_info); list view ar_i_open with its own columns (for now: number, ar_form, short_description, customer, department, amount, state, assigned_to, opened_by, opened_at); list menu category AR requests",
-  "LST-REQ-ARIX": "Workspace list Open AR-ix (UIX decision 15): x_ar_request, condition ar_form = AR-ix AND state IN (new, in_progress, awaiting_info); list view ar_ix_open with its own columns (for now the same as Open AR-i); list menu category AR requests. Replaces the GIRO category list AR-ix GIRO requests (open)",
+  "LST-REQ-ARI": "Workspace list Open AR-i (UIX decision 15): x_ar_request, condition ar_form = AR-i AND state IN (new, work_in_progress, awaiting_requestor_info); list view ar_i_open with its own columns (for now: number, ar_form, short_description, customer, department, amount, state, assigned_to, opened_by, opened_at); list menu category AR requests",
+  "LST-REQ-ARIX": "Workspace list Open AR-ix (UIX decision 15): x_ar_request, condition ar_form = AR-ix AND state IN (new, work_in_progress, awaiting_requestor_info); list view ar_ix_open with its own columns (for now the same as Open AR-i); list menu category AR requests. Replaces the GIRO category list AR-ix GIRO requests (open)",
   "CON-GIRO": "Tab GIRO history on the contract (and on no-contract shells): related list x_ar_request where contract = this contract and ar_form = AR-ix; columns AR-ix case, Type of request, Purpose of GIRO/DDA request, Amount, Requested by, Updated, GIRO (Active = contract.giro_case, Completed, Open, Contract to link, Rejected)",
-  "REQ-LINKCTR": "Contract to link (AR-ix): reference to x_ar_contract, matching contract number listed first. Used by Link contract; for a contract not on file AR processes its AR-i first",
+  "REQ-LINKCTR": "RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Contract to link picker in the AR-ix GIRO setup panel (Link contract retired)",
   "REQ-LINKCO": "Company (core_company) for the new customer; mandatory when Link to customer creates a new x_ar_customer. Lists companies with no customer yet, closest name first (D26)",
   "REQ-LINKTO": "Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check)",
   "SCH-PER": "Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming",
@@ -101,13 +101,13 @@ export const NOTES = {
 
 /** UI actions per table: "UA-<CODE>-<action>". */
 export const UI_ACTIONS = {
-  "UA-REQ-assign": "Assign to me → assigned_to = current user, state = In progress",
-  "UA-REQ-info": "Request info → state = Awaiting info; requires an additional comment (visible on portal)",
-  "UA-REQ-reject": "Reject → state = Rejected; requires an additional comment",
-  "UA-REQ-linkctr": "Link contract (AR-ix, shown while contract is empty) → sets contract and customer from the chosen x_ar_contract; New → In progress",
+  "UA-REQ-assign": "Assign to me → assigned_to = current user (assignment_group kept, default Accounts Receivable); New → Work in progress. One of only two case actions with Save (AR-00, 2026-11-16)",
+  "UA-REQ-info": "RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Request info. AR sets State = Awaiting requestor information (optional Substate) and posts an additional comment",
+  "UA-REQ-reject": "RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Reject. AR sets State = Closed incomplete or Cancelled and posts an additional comment",
+  "UA-REQ-linkctr": "RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Link contract (AR-ix). AR sets Contract on the case and Saves; a before-update business rule sets customer from the contract",
   "UA-REQ-giroadd": "RETIRED 2026-11-12 (AR-ix decision 11): Activate GIRO. AR now updates GIRO on the contract record and uses Complete (UA-REQ-girocomplete)",
   "UA-REQ-giroremove": "RETIRED 2026-11-12 (AR-ix decision 11): Remove GIRO. AR now updates GIRO on the contract record and uses Complete (UA-REQ-girocomplete)",
-  "UA-REQ-girocomplete": "Complete (AR-ix, open case) → state = Completed with a system note. No check on the contract: AR updates x_ar_contract.giro_status / giro_case by hand first (AR-ix decision 11). Primary once the contract is linked, overflow before",
+  "UA-REQ-girocomplete": "RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Complete (AR-ix). AR sets State = Closed complete",
   "UA-REQ-link": "Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document (D10, D15, D16)",
   "UA-SCH-raise": "Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12)",
   "UA-SCH-save": "Save (update)",
@@ -120,7 +120,7 @@ export const UI_ACTIONS = {
   "UA-PT-additem": "Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row",
   "UA-PT-addline": "RETIRED 2026-11-12: Add one-off / recurring line; the request has one billing event from the invoice details (PT-37)",
   "UA-REQ-post": "Post work note / additional comment to the activity stream",
-  "UA-REQ-save": "Save (update)",
+  "UA-REQ-save": "Save (update). On x_ar_request also: state change journalled (system note); substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract",
   "UA-INV-issue": "Issue invoice → state = Issued; BR sets AR request to Invoiced and posts a comment to the requester",
   "UA-INV-cancel": "Cancel invoice → only when no BSU deposit is matched",
   "UA-INV-save": "Save (update, draft only)",
@@ -167,7 +167,7 @@ export const CALC_COLS = {
 };
 
 function fieldText(table, f) {
-  const ref = f.ref ? ` → ${f.ref === "users" ? "sys_user" : TABLES[f.ref].table}` : "";
+  const ref = f.ref ? ` → ${f.ref === "users" ? "sys_user" : f.ref === "groups" ? "sys_user_group" : TABLES[f.ref].table}` : "";
   return `${TABLES[table].table}.${f.name} · ${f.type}${ref}${f.mandatory ? " · mandatory" : ""}${f.readonly ? " · read-only" : ""}${f.help ? ` · ${f.help}` : ""}`;
 }
 

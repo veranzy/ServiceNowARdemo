@@ -20,3 +20,4 @@
 | 2026-11-12 | Workspace case page now follows the AR-ix form (UIX decision 12, `REQ-FV-ARIX`); all sample AR-ix cases removed, so no contract has GIRO active in the demo. |
 | 2026-11-12 | Demo AR-ix cases now come from `data/AR_form.csv` (UIX decision 13): ARQ0001004–0001008; HL-2026-01 has GIRO active from ARQ0001007. |
 | 2026-11-13 | Workspace list **Open AR-ix** (UIX decision 15, `LST-REQ-ARIX`) replaces the GIRO category list *AR-ix GIRO requests (open)*. |
+| 2026-11-16 | AR-00 decision 4: **Link contract** and **Complete** retired. AR sets Contract on the case and Saves (customer follows the contract), and closes the case with the State dropdown. GIRO setup panel reminders reworded to match; its contract picker (`REQ-LINKCTR`) retired. GIRO history shows the case's closed state. Portal form unchanged (locked). |

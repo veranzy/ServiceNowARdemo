@@ -1,7 +1,7 @@
 // Single in-memory app state shared by every module, plus a DOM lookup helper.
 export const S = {
   // data (tables)
-  users: [], companies: [], customers: [], contracts: [], requests: [], invoices: [], deposits: [], matches: {}, bankAccounts: [], uploads: [], contacts: [], documents: [], schedules: [], lines: [], items: [], history: [],
+  users: [], groups: [{ id: "g_ar", name: "Accounts Receivable" }], companies: [], customers: [], contracts: [], requests: [], invoices: [], deposits: [], matches: {}, bankAccounts: [], uploads: [], contacts: [], documents: [], schedules: [], lines: [], items: [], history: [],
   // cash application UI
   pick: {}, filter: "open", status: null,
   // BSU upload page draft

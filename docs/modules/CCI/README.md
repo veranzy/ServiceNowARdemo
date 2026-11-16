@@ -110,3 +110,5 @@ The prototype records the terms only. Nothing calculates or charges interest yet
 5. The daily job drafts each later period 5 working days ahead; the drafts appear on the case's **Invoices** tab and the contract's Invoices tab, and AR issues them (Approval date first).
 6. Recurring AR-i cases show a read-only **Billing schedule** tab: the case contract's schedules (one schedule per contract or several: open question 16, issue #7).
 7. *Create invoice* and *Set up billing schedule* on billing lines are retired.
+
+**Demo data:** **ARQ0001009** (AR-i, Tanjong Retail Group, recurring contract TR-TA-2025-14, billing cycle 1st of the month, monthly rent SGD 4,800) is Closed complete: 1st invoice two cycle days back (issued; approval date earlier than the invoice date), billing schedule from the 2nd invoice (last cycle day, issued), 3rd invoice drafted by the daily job once it is 5 working days away. ARQ0001001 (one-off) shows the 1st invoice being generated when AR sets Closed complete. ARQ0001002 is a new customer, not linked. Sample schedule SCH0001001 has its past periods already issued.

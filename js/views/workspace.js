@@ -311,7 +311,7 @@ const LAYOUT = {
     ["6. Others", ["giroFormNo"], isIx]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
-  invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
+  invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
   deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "bankRef", "payer", "reference"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
@@ -418,8 +418,8 @@ function actionsFor(table, rec, isNew, canEdit) {
   if (table === "deposits" && depositMoney(rec).unapplied > 0) a.push(btn(`<button type="button" class="btn primary" data-matchdep="${rec.id}"${sn("UA-DEP-match")}>Match to invoice</button>`));
   if (table === "uploads") a.push(btn(`<button type="button" class="btn" data-rail="bsu">Upload another</button>`));
   if (table === "bankAccounts") a.push(btn(`<button type="button" class="btn" data-bsu-acct="${rec.id}"${sn("UA-BNK-upload")}>Upload statement</button>`));
-  if (table === "lines") { const r = recById("requests", rec.requestId), ok = r && REQ_OPEN.includes(r.state) && r.customerId && !r.newCustomer && rec.contractId;
-    if (ok && lineStatus(rec) === "open") a.push(btn(rec.lineType === "recurring" ? `<button type="button" class="btn primary" data-lineact="schedule:${rec.id}"${sn("UA-RQL-schedule")}>Set up billing schedule</button>` : `<button type="button" class="btn primary" data-lineact="invoice:${rec.id}"${sn("UA-RQL-invoice")}>Create invoice</button>`)); }
+  // CCI decision 8: Create invoice / Set up billing schedule retired on billing lines
+  if (table === "contracts") a.push(btn(`<button type="button" class="btn" data-new="schedules" data-prefill-contract="${rec.id}"${sn("UA-CON-newschedule")}>New billing schedule</button>`));   // CCI decision 8
   if (table === "customers") { a.push(btn(`<button type="button" class="btn" data-new="contracts" data-prefill-customer="${rec.id}"${sn("UA-CUS-newcontract")}>New contract</button>`));
     a.push(btn(`<button type="button" class="btn" data-new="contacts" data-prefill-customer="${rec.id}"${sn("UA-CUS-newcontact")}>Add billing contact</button>`, true)); }
   if (canEdit) a.splice(Math.min(a.filter(x => !x.ovf).length, a.length), 0, action(table, "Save", "save"));
@@ -515,12 +515,15 @@ function related(table, rec) {
       ["Amount", l => `${fmt(l.amount)}${l.lineType === "recurring" ? `<span class="desc">per period</span>` : ""}`, "num"], ["Value", l => fmt(lineValue(l)), "num"],
       ["Status", l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId);
         return `${lineChip(l)}${inv ? ` ${refLink("invoices", inv.id, inv.number)}` : ""}${sch ? ` ${refLink("schedules", sch.id, sch.number)}` : ""}`; }],
-      ["", l => !ok || lineStatus(l) !== "open" ? "" : l.lineType === "recurring" ? `<button type="button" class="btn small primary" data-lineact="schedule:${l.id}"${sn("UA-RQL-schedule")}>Set up billing schedule</button>` : `<button type="button" class="btn small primary" data-lineact="invoice:${l.id}"${sn("UA-RQL-invoice")}>Create invoice</button>`]
-    ], { id: "RL-REQ-RQL", actions: ok ? "" : `<span class="muted small">${REQ_OPEN.includes(r.state) ? "Link to customer files the lines under the contract; then bill each line" : ""}</span>` }),
+    ], { id: "RL-REQ-RQL" }),   // CCI decision 8: read-only; Closed complete generates the 1st invoice
     ...(r.needItems === "yes" || reqItems(r).length ? [rt("Billing line items", "items", reqItems(r), [
       ["Item number", q => esc(q.seq)], ["Amount (w/o GST)", q => fmt(q.amount), "num"], ["GST amount", q => fmt(q.gst), "num"], ["Total amount", q => fmt(q.total), "num"],
       ["Late payment interest", q => q.lpiRate ? `${esc(q.lpiRate)}%` : "—"], ["Account code", q => esc(q.accountCode || "—")]
     ], { id: "RL-REQ-RQI" })] : []),
+    // CCI decision 8: recurring AR-i cases show the contract's billing schedules, read-only (edited on the contract)
+    ...(reqLines(r).some(l => l.lineType === "recurring") ? [rt("Billing schedule", "schedules", r.contractId ? S.schedules.filter(x => x.contractId === r.contractId) : [], [
+      ["Number", x => refLink("schedules", x.id, x.number)], ["What is billed", x => esc(x.desc), "wrap"], ["Frequency", x => esc(freqLabel(x.frequency))], ["Amount per period", x => fmt(x.amount), "num"],
+      ["First billing date", x => esc(x.firstDate)], ["Last billing date", x => esc(x.lastDate)], ["Next billing", x => esc(nextBilling(x) || "Ended")], ["From AR request", x => x.requestId ? refLink("requests", x.requestId) : "—"]], { id: "RL-REQ-SCH" })] : []),
     // CCI 2026-11-16: invoices linked to this AR-i case, including drafts made by the daily invoice check
     rt("Invoices", "invoices", S.invoices.filter(i => i.requestId === r.id).sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"],
       ["Invoice date", i => esc(i.date)], ["Amount", i => fmt(i.amount), "num"], ["State", i => invChip(i)], ["Schedule", i => i.scheduleId ? refLink("schedules", i.scheduleId) : "—"]], { id: "RL-REQ-INV" })];

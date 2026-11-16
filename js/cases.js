@@ -4,7 +4,7 @@
 // Each row goes through the same record-producer logic as a portal submission (createRequest), so a CSV case and a
 // portal case open on the same reusable Record page.
 import { parseCSV } from "./io.js";
-import { createRequest, draftDate, journal, nextNumber, periodAmounts, periodDates, runDailyInvoiceCheck, setupSchedule } from "./records.js";
+import { createRequest, draftDate, firstInvoices, journal, nextNumber, periodAmounts, periodDates, runDailyInvoiceCheck } from "./records.js";
 import { TABLES } from "./schema.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, uid } from "./util.js";
@@ -12,12 +12,13 @@ import { addDays, cents, isoToday, uid } from "./util.js";
 export const CASES_CSV = "data/AR_form.csv";
 /** Demo setup: contracts on which AR has already set GIRO by hand from a completed AR-ix case (AR-ix decision 11). */
 const GIRO_SET_BY_AR = [["HL-2026-01", "ARQ0001007"]];
-/** Demo setup (CCI, 2026-11-16): AR-i cases whose recurring line AR has already set up as a billing schedule. The first
- *  period is placed 3 working days from today and the daily job's draft for it is already in the mock data (owner: no demo
- *  button, mock data only), linked to the case. */
-const SCHEDULE_SET_BY_AR = ["ARQ0001009"];
+/** Demo setup (CCI decision 8): recurring AR-i cases already closed complete. Closing generated the 1st invoice from the AR-i
+ *  (AR set its approval date and issued it); AR then created the billing schedule on the contract for the 2nd invoice onwards
+ *  and picked the case on it; last night's daily job drafted the 2nd invoice (period 3 working days from today). */
+const CLOSED_RECURRING = ["ARQ0001009"];
 
 const ymd = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+const addMonths = (iso, n) => { const d = new Date(iso + "T00:00:00"), day = d.getDate(); d.setMonth(d.getMonth() + n); if (d.getDate() !== day) d.setDate(0); return ymd(d); };
 function addWorkingDays(iso, n) { const d = new Date(iso + "T00:00:00"); while (n > 0) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n--; } return ymd(d); }
 
 /** Demo history for the sample billing schedules: every period whose draft date has passed was drafted by the daily job and
@@ -77,12 +78,18 @@ export function addCases(text) {
     n++;
   }
   scheduleHistory();
-  for (const num of SCHEDULE_SET_BY_AR) {
+  for (const num of CLOSED_RECURRING) {
     const r = S.requests.find(x => x.number === num), l = r && S.lines.find(x => x.requestId === r.id && x.lineType === "recurring");
     if (!l) continue;
-    l.startDate = addWorkingDays(isoToday(), 3);
-    const res = setupSchedule(l.id);
-    if (res?.opened) { res.opened.firstDate = l.startDate; r.activity.forEach(e => { e.at = (r.opened || "") + "T09:00:00"; }); }
+    const second = addWorkingDays(isoToday(), 3), first = addMonths(second, -1), at = first + "T10:00:00";
+    l.startDate = first;
+    r.state = "closed_complete"; journal(r, "system", "State changed to Closed complete.", r.assignedTo);
+    for (const inv of [].concat(firstInvoices(r) || [])) if (inv?.id) Object.assign(inv, { state: "issued", approvalDate: addDays(first, -2), date: first, due: addDays(first, 30) });
+    const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: r.contractId, department: r.department, desc: l.desc, frequency: "monthly",
+      amount: l.amount, firstDate: second, lastDate: l.endDate, firstAmount: 0, lastAmount: 0, requestId: r.id, lineId: l.id };
+    S.schedules.push(sch); l.scheduleId = sch.id;
+    journal(r, "work_note", `Billing schedule ${sch.number} set up on the contract for the 2nd invoice onwards.`, r.assignedTo);
+    r.opened = addDays(first, -10); r.activity.forEach(e => { e.at = at; }); r.updated = first;
   }
   runDailyInvoiceCheck();   // mock data: the drafts last night's daily invoice check would have created
   for (const [ctr, num] of GIRO_SET_BY_AR) {

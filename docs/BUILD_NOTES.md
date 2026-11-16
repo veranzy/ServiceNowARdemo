@@ -254,6 +254,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `INV.short_description` | x_ar_invoice.short_description · String · mandatory |
 | `INV.amount` | x_ar_invoice.amount · Currency · mandatory |
 | `INV.invoice_date` | x_ar_invoice.invoice_date · Date |
+| `INV.approval_date` | x_ar_invoice.approval_date · Date · Set manually by the AR team (CCI decision 8) |
 | `INV.due_date` | x_ar_invoice.due_date · Date · Defaults to invoice date + contract payment terms |
 
 ## BSU deposit
@@ -492,8 +493,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `SCH.last_billing_date` | x_ar_billing_schedule.last_billing_date · Date · mandatory |
 | `SCH.first_period_amount` | x_ar_billing_schedule.first_period_amount · Currency · Empty = amount per period |
 | `SCH.last_period_amount` | x_ar_billing_schedule.last_period_amount · Currency · Empty = amount per period |
-| `SCH.source_request` | x_ar_billing_schedule.source_request · Reference → x_ar_request · read-only |
-| `SCH.source_line` | x_ar_billing_schedule.source_line · Reference → x_ar_request_line · read-only |
+| `SCH.source_request` | x_ar_billing_schedule.source_request · Reference → x_ar_request · AR picks the recurring AR-i case (reference qualifier: AR-i cases with a recurring line on this contract). Invoices from this schedule are linked to that case (CCI decision 8) |
+| `SCH.source_line` | x_ar_billing_schedule.source_line · Reference → x_ar_request_line · read-only · Set from the AR request's recurring line |
 
 ## Billing line
 
@@ -569,6 +570,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RL-REQ-RQL` | Related list: x_ar_request_line where ar_request = this ar request |
 | `RL-REQ-RQI` | Related list: x_ar_request_item where ar_request = this ar request |
 | `RL-REQ-INV` | Related list: x_ar_invoice where ar_request = this ar request |
+| `RL-REQ-SCH` | Related list: x_ar_billing_schedule where contract (the case's contract; read-only on the case) = this ar request |
 | `RL-CUS-BCT` | Related list: x_ar_billing_contact where customer = this customer |
 | `RL-CUS-DOC` | Related list: x_ar_customer_document where customer = this customer |
 | `RL-CUS-SCH` | Related list: x_ar_billing_schedule where customer = this customer |
@@ -604,14 +606,14 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-BCT-new` | UI action: New (list action) |
 | `UA-BCT-insert` | UI action: Submit (insert); unique per customer + department |
 | `UA-CUS-newcontact` | UI action: Add billing contact → new billing contact form with customer prefilled |
-| `UA-RQL-invoice` | UI action: Create invoice (one-off line) → inserts draft x_ar_invoice for the line (request_line set) |
-| `UA-RQL-schedule` | UI action: Set up billing schedule (recurring line) → inserts x_ar_billing_schedule over the line's date range; comment to requester (D12, D13) |
+| `UA-RQL-invoice` | UI action: RETIRED 2026-11-16 (CCI decision 8): Create invoice on a one-off line. The 1st invoice is generated when the AR-i case is set to Closed complete |
+| `UA-RQL-schedule` | UI action: RETIRED 2026-11-16 (CCI decision 8): Set up billing schedule on a recurring line. AR creates the schedule on the contract (New billing schedule) and picks the AR-i case |
 | `UA-RQL-save` | UI action: Save (update, while the line is open) |
 | `UA-PT-newcust` | UI action: Portal: Add as new customer (sets new_customer = true, copies the search text into the name) |
 | `UA-PT-additem` | UI action: Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row |
 | `UA-PT-addline` | UI action: RETIRED 2026-11-12: Add one-off / recurring line; the request has one billing event from the invoice details (PT-37) |
 | `UA-REQ-post` | UI action: Post work note / additional comment to the activity stream |
-| `UA-REQ-save` | UI action: Save (update). On x_ar_request also: state change journalled (system note); substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract |
+| `UA-REQ-save` | UI action: Save (update). On x_ar_request also: state change journalled (system note); substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract; AR-i set to Closed complete generates the 1st invoice as a draft for each line without one (blocked until customer and contract are linked; CCI decision 8) |
 | `UA-INV-issue` | UI action: Issue invoice → state = Issued; BR sets AR request to Invoiced and posts a comment to the requester |
 | `UA-INV-cancel` | UI action: Cancel invoice → only when no BSU deposit is matched |
 | `UA-INV-save` | UI action: Save (update, draft only) |
@@ -631,6 +633,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-BNK-new` | UI action: New (list action) |
 | `UA-CUS-insert` | UI action: Submit (insert) |
 | `UA-CON-insert` | UI action: Submit (insert) |
+| `UA-SCH-insert` | UI action: Submit (insert) of a billing schedule created from the contract (CCI decision 8) |
 | `UA-BNK-insert` | UI action: Submit (insert) |
+| `UA-CON-newschedule` | UI action: New billing schedule (contract record, CCI decision 8) → new x_ar_billing_schedule form with contract (and customer) prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case (source_request) |
 | `UA-CUS-newcontract` | UI action: New contract → new contract form with customer prefilled |
 

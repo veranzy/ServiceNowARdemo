@@ -228,7 +228,7 @@ document.addEventListener("click", e => {
   if (d.open) { const [table, id] = d.open.split(":"); return openTab(table, id); }
   if (d.tab) { W().active = d.tab; render(); return window.scrollTo(0, 0); }
   if (d.closetab) return closeTab(d.closetab);
-  if (d.new) return newTab(d.new, d.prefillCustomer ? { customerId: d.prefillCustomer } : null);
+  if (d.new) return newTab(d.new, d.prefillContract ? { contractId: d.prefillContract, customerId: S.contracts.find(k => k.id === d.prefillContract)?.customerId } : d.prefillCustomer ? { customerId: d.prefillCustomer } : null);
   if (d.ui) return uiAction(d.ui);
   if (d.ckind) { const tab = activeTab(); const c = W().composer[tab.id] ||= { kind: "work_note", text: "" }; c.kind = d.ckind; c.text = $("composer-" + tab.id)?.value || c.text; return render(); }
   // BSU

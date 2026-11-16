@@ -244,7 +244,7 @@ Breakdown of an AR request's invoice (AR-i decision 32). Portal: multi-row varia
 
 ### Billing schedule — `x_ar_billing_schedule`
 
-Recurring billing set up once from a recurring billing line (D12 amended, D13), under a contract: from–to date range and frequency. A daily scheduled job creates each period's draft invoice 5 working days before its invoice date; AR issues it. Number prefix: `SCH`.
+Recurring billing from the 2nd invoice onwards (CCI decision 8): AR creates the schedule by hand on the contract and picks the AR-i case; D12 amended, D13. Under a contract: from–to date range and frequency. A daily scheduled job creates each period's draft invoice 5 working days before its invoice date; AR issues it. Number prefix: `SCH`.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
@@ -259,8 +259,8 @@ Recurring billing set up once from a recurring billing line (D12 amended, D13), 
 | `last_billing_date` | Last billing date | Date | Mandatory |
 | `first_period_amount` | First period amount (prorated) | Currency | Empty = amount per period |
 | `last_period_amount` | Last period amount (prorated) | Currency | Empty = amount per period |
-| `source_request` | From AR request | Reference | → `x_ar_request`. Read-only on form |
-| `source_line` | From billing line | Reference | → `x_ar_request_line`. Read-only on form |
+| `source_request` | From AR request | Reference | → `x_ar_request`. AR picks the recurring AR-i case (reference qualifier: AR-i cases with a recurring line on this contract). Invoices from this schedule are linked to that case (CCI decision 8) |
+| `source_line` | From billing line | Reference | → `x_ar_request_line`. Read-only on form. Set from the AR request's recurring line |
 | `next_billing_date` | Next billing date | Date | Calculated: first period on or after today without an invoice |
 
 ### Invoice — `x_ar_invoice`
@@ -280,6 +280,7 @@ System of record for customer invoices. Created by the AR team from an AR reques
 | `short_description` | Description | String | Mandatory |
 | `amount` | Amount | Currency | Mandatory |
 | `invoice_date` | Invoice date | Date |  |
+| `approval_date` | Approval date | Date | Set manually by the AR team (CCI decision 8) |
 | `due_date` | Due date | Date | Defaults to invoice date + contract payment terms |
 | `amount_due` | Amount due | Currency | Calculated: amount − accepted allocations (business rule on allocation insert/update) |
 | `payment_status` | Payment status | Choice | Calculated: Unpaid / Part paid / Paid, set with amount_due |

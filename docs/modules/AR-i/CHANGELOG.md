@@ -28,3 +28,4 @@
 | 2026-11-13 | Workspace list **Open AR-i** (UIX decision 15, `LST-REQ-ARI`). Portal form unchanged (locked). |
 | 2026-11-16 | Case states and actions changed by AR-00 decision 4: the case is no longer set to *Billed* automatically; AR sets Closed complete by hand. *Link to customer* kept (owner); *Request info* and *Reject* retired. Portal form unchanged (locked). |
 | 2026-11-16 | AR-i case gets an **Invoices** tab (`RL-REQ-INV`): invoices linked to the case, including drafts made by the daily invoice check for its recurring line (CCI decision 7). *Raise invoice* retired. Portal form unchanged (locked). |
+| 2026-11-16 | CCI decision 8: Closed complete generates the 1st invoice (draft) from the AR-i; recurring cases get a read-only **Billing schedule** tab (the contract's schedules); Billing lines tab and line record lose *Create invoice* / *Set up billing schedule*. Portal form unchanged (locked). |

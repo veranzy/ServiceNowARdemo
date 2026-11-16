@@ -17,6 +17,7 @@ shipped. Requirement questions still open for the client live in each module's
 
 ## Done
 
+- 2026-11-16 **CCI**: Closed complete generates the AR-i's 1st invoice; Approval date on invoices; AR creates the schedule on the contract for the 2nd invoice onwards; Billing schedule tab on recurring AR-i cases (decision 8).
 - 2026-11-16 **CCI**: daily invoice check shown as mock data only (no demo button).
 - 2026-11-16 **CCI**: demo case ARQ0001009 (existing customer, recurring contract, schedule set up) for the daily invoice check.
 - 2026-11-16 **CCI**: customer and contract pages show all tabs; billing hierarchy removed (issue #6); Contract category (Contract / No contract) and system Contract ID; schedules under contracts; daily invoice check creates drafts 5 working days ahead, linked to the AR-i case (D12, D15 amended).

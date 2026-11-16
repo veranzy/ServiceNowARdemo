@@ -60,6 +60,8 @@ function refOptions(f, rec, formVals) {
   if (f.ref === "users") return S.users.filter(u => !f.refFilter || u.team === f.refFilter).map(u => [u.id, u.name]);
   if (f.ref === "companies") return S.companies.filter(co => co.id === rec.companyId || !S.customers.some(c => c.companyId === co.id)).sort((a, b) => a.name.localeCompare(b.name)).map(co => [co.id, co.name]);
   // Active GIRO case (contract): AR-ix cases on this contract (AR-ix decision 11)
+  // Billing schedule "From AR request" (CCI decision 8): AR-i cases with a recurring line on the schedule's contract
+  if (f.name === "source_request") { const c = formVals?.contractId || rec.contractId; return S.requests.filter(r => r.form !== "AR-ix" && (!c || r.contractId === c) && S.lines.some(l => l.requestId === r.id && l.lineType === "recurring")).map(r => [r.id, `${r.number} · ${r.title}`]); }
   if (f.key === "giroCaseId") return S.requests.filter(r => r.form === "AR-ix" && r.giroType === "add" && r.contractId === rec.id).map(r => [r.id, `${r.number} · ${r.title}`]);
   if (f.ref === "contracts") {
     const cust = formVals?.customerId ?? rec.customerId;

@@ -114,14 +114,14 @@ export const UI_ACTIONS = {
   "UA-SCH-save": "Save (update)",
   "UA-BCT-save": "Save (update)", "UA-BCT-new": "New (list action)", "UA-BCT-insert": "Submit (insert); unique per customer + department",
   "UA-CUS-newcontact": "Add billing contact → new billing contact form with customer prefilled",
-  "UA-RQL-invoice": "Create invoice (one-off line) → inserts draft x_ar_invoice for the line (request_line set)",
-  "UA-RQL-schedule": "Set up billing schedule (recurring line) → inserts x_ar_billing_schedule over the line's date range; comment to requester (D12, D13)",
+  "UA-RQL-invoice": "RETIRED 2026-11-16 (CCI decision 8): Create invoice on a one-off line. The 1st invoice is generated when the AR-i case is set to Closed complete",
+  "UA-RQL-schedule": "RETIRED 2026-11-16 (CCI decision 8): Set up billing schedule on a recurring line. AR creates the schedule on the contract (New billing schedule) and picks the AR-i case",
   "UA-RQL-save": "Save (update, while the line is open)",
   "UA-PT-newcust": "Portal: Add as new customer (sets new_customer = true, copies the search text into the name)",
   "UA-PT-additem": "Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row",
   "UA-PT-addline": "RETIRED 2026-11-12: Add one-off / recurring line; the request has one billing event from the invoice details (PT-37)",
   "UA-REQ-post": "Post work note / additional comment to the activity stream",
-  "UA-REQ-save": "Save (update). On x_ar_request also: state change journalled (system note); substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract",
+  "UA-REQ-save": "Save (update). On x_ar_request also: state change journalled (system note); substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract; AR-i set to Closed complete generates the 1st invoice as a draft for each line without one (blocked until customer and contract are linked; CCI decision 8)",
   "UA-INV-issue": "Issue invoice → state = Issued; BR sets AR request to Invoiced and posts a comment to the requester",
   "UA-INV-cancel": "Cancel invoice → only when no BSU deposit is matched",
   "UA-INV-save": "Save (update, draft only)",
@@ -135,13 +135,14 @@ export const UI_ACTIONS = {
   "UA-BNK-upload": "Upload statement → opens the BSU page for this account",
   "UA-CUS-save": "Save (update)", "UA-CON-save": "Save (update)", "UA-BNK-save": "Save (update)",
   "UA-CUS-new": "New (list action)", "UA-CON-new": "New (list action)", "UA-BNK-new": "New (list action)",
-  "UA-CUS-insert": "Submit (insert)", "UA-CON-insert": "Submit (insert)", "UA-BNK-insert": "Submit (insert)",
+  "UA-CUS-insert": "Submit (insert)", "UA-CON-insert": "Submit (insert)", "UA-SCH-insert": "Submit (insert) of a billing schedule created from the contract (CCI decision 8)", "UA-BNK-insert": "Submit (insert)",
+  "UA-CON-newschedule": "New billing schedule (contract record, CCI decision 8) → new x_ar_billing_schedule form with contract (and customer) prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case (source_request)",
   "UA-CUS-newcontract": "New contract → new contract form with customer prefilled"
 };
 
 /** Related lists: "RL-<PARENT>-<CHILD>" with the reference field that links them. */
 export const RELATED = {
-  "RL-REQ-RQL": "ar_request", "RL-REQ-RQI": "ar_request", "RL-REQ-INV": "ar_request",
+  "RL-REQ-RQL": "ar_request", "RL-REQ-RQI": "ar_request", "RL-REQ-INV": "ar_request", "RL-REQ-SCH": "contract (the case's contract; read-only on the case)",
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",

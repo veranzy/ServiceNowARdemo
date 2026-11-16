@@ -162,6 +162,7 @@ export const TABLES = {
       { key: "desc", name: "short_description", label: "Description", type: "String", wide: true, mandatory: true },
       { key: "amount", name: "amount", label: "Amount", type: "Currency", mandatory: true },
       { key: "date", name: "invoice_date", label: "Invoice date", type: "Date" },
+      { key: "approvalDate", name: "approval_date", label: "Approval date", type: "Date", help: "Set manually by the AR team (CCI decision 8)" },
       { key: "due", name: "due_date", label: "Due date", type: "Date", help: "Defaults to invoice date + contract payment terms" }
     ],
     calculated: [
@@ -289,7 +290,7 @@ export const TABLES = {
   },
   schedules: {
     table: `${SCOPE}_billing_schedule`, label: "Billing schedule", plural: "Billing schedules", display: "number", prefix: "SCH",
-    note: "Recurring billing set up once from a recurring billing line (D12 amended, D13), under a contract: from–to date range and frequency. A daily scheduled job creates each period's draft invoice 5 working days before its invoice date; AR issues it.",
+    note: "Recurring billing from the 2nd invoice onwards (CCI decision 8): AR creates the schedule by hand on the contract and picks the AR-i case; D12 amended, D13. Under a contract: from–to date range and frequency. A daily scheduled job creates each period's draft invoice 5 working days before its invoice date; AR issues it.",
     fields: [
       { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "SCH0001000" },
       // CCI 2026-11-16: a billing schedule sits under a contract (Contract or No contract); the customer follows the contract
@@ -303,8 +304,8 @@ export const TABLES = {
       { key: "lastDate", name: "last_billing_date", label: "Last billing date", type: "Date", mandatory: true },
       { key: "firstAmount", name: "first_period_amount", label: "First period amount (prorated)", type: "Currency", help: "Empty = amount per period" },
       { key: "lastAmount", name: "last_period_amount", label: "Last period amount (prorated)", type: "Currency", help: "Empty = amount per period" },
-      { key: "requestId", name: "source_request", label: "From AR request", type: "Reference", ref: "requests", readonly: true },
-      { key: "lineId", name: "source_line", label: "From billing line", type: "Reference", ref: "lines", readonly: true }
+      { key: "requestId", name: "source_request", label: "From AR request", type: "Reference", ref: "requests", help: "AR picks the recurring AR-i case (reference qualifier: AR-i cases with a recurring line on this contract). Invoices from this schedule are linked to that case (CCI decision 8)" },
+      { key: "lineId", name: "source_line", label: "From billing line", type: "Reference", ref: "lines", readonly: true, help: "Set from the AR request's recurring line" }
     ],
     calculated: [{ name: "next_billing_date", label: "Next billing date", type: "Date", how: "first period on or after today without an invoice" }]
   },

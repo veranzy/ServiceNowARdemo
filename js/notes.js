@@ -21,7 +21,7 @@ export const NOTES = {
   "WS-09": "Landing page list: overdue invoices",
   "WS-11": "Record header UI action bar (Horizon Record page template): primary UI actions as buttons, the rest in the overflow menu. Visible vs overflow is set per UI action in the workspace action configuration",
   "WS-12": "Record ribbon (Horizon Record page template): collapsible row of up to 12 widgets with key metrics; configured per table in UI Builder (data resources over the record and its related tables)",
-  "WS-13": "Record tabs in the resizable pane (Horizon Record page template): Details (form) first, then related items, then one tab per related list; extra tabs move to the More menu",
+  "WS-13": "Record tabs in the resizable pane (Horizon Record page template): Details (form) first, then related items, then one tab per related list; extra tabs move to the More menu, except on customer and contract records, which show every tab (CCI 2026-11-16)",
   "WS-14": "Contextual side bar (Horizon pattern): vertical icon tabs on the right of the record tab, open by default, collapsible and resizable; holds Customer setup, Activity stream and Attachments for AR requests",
   "WS-15": "Form record presence: avatars of users viewing the record (out-of-box on the Horizon Record page template)",
   "WS-17": "Record history tab (out-of-box on the Record page template): sys_audit / sys_history_line for the record. Turn on Audit in the dictionary of every x_ar table; shows when, who, field, old and new value",
@@ -29,7 +29,7 @@ export const NOTES = {
   // AR request record page extras
   "REQ-ACT": "Activity stream: comments (visible to requester) + work_notes (AR only) + field changes",
   "REQ-SETUP": "Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, billing lines done",
-  "CUS-TREE": "Billing hierarchy on the customer record (D15): customer › contract / no-contract shell (x_ar_contract) › billing lines (x_ar_request_line.contract) › invoices / billing schedule. UI Builder component over related lists, or a hierarchical list",
+  "CUS-TREE": "RETIRED 2026-11-16 (CCI): Billing hierarchy tab removed from the customer record; usage and purpose to revisit (GitHub issue #6)",
   "REQ-GIRO": "GIRO setup panel (AR-ix case, contextual side bar): contract set? (for No contract required: the customer's no-contract shell for the department, set as Contract on the case); the contract's GIRO status and active case; reminder to update GIRO status and Active GIRO case on the contract record, then set State = Closed complete (AR-ix decision 11, AR-00 2026-11-16)",
   "REQ-GIROHIST": "Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix)",
   "REQ-FV-ARI": "Form view ar_i on x_ar_request (view rule: ar_form = AR-i), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Customer, 3. Contract and bill-to, 4. Invoice details, 5. Customer documents, 6. Others, in the AR-i portal order; every field of each section on the form, empty when not answered; editable while the case is open",
@@ -40,7 +40,8 @@ export const NOTES = {
   "REQ-LINKCTR": "RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Contract to link picker in the AR-ix GIRO setup panel (Link contract retired)",
   "REQ-LINKCO": "Company (core_company) for the new customer; mandatory when Link to customer creates a new x_ar_customer. Lists companies with no customer yet, closest name first (D26)",
   "REQ-LINKTO": "Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check)",
-  "SCH-PER": "Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming",
+  "SCH-PER": "Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming; no action column (drafts come from JOB-DAILYINV)",
+  "JOB-DAILYINV": "Scheduled job Daily invoice check (daily, D12 amended 2026-11-16): for each x_ar_billing_schedule period with no non-cancelled invoice and invoice date within 5 working days (Mon–Fri) of today, insert a draft x_ar_invoice (billing_schedule, billing_period, contract, customer, ar_request and request_line from the schedule) and add a work note on the AR-i case. Issuing stays manual (Issue invoice). Demo: Run daily invoice check in the demo bar",
   "REQ-ATT": `Attachments: sys_attachment on ${TABLES.requests.table} (added on the portal form)`,
   // cash application
   "CSH-01": `Cash application page (UI Builder custom page)`,
@@ -109,7 +110,7 @@ export const UI_ACTIONS = {
   "UA-REQ-giroremove": "RETIRED 2026-11-12 (AR-ix decision 11): Remove GIRO. AR now updates GIRO on the contract record and uses Complete (UA-REQ-girocomplete)",
   "UA-REQ-girocomplete": "RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Complete (AR-ix). AR sets State = Closed complete",
   "UA-REQ-link": "Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document (D10, D15, D16)",
-  "UA-SCH-raise": "Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12)",
+  "UA-SCH-raise": "RETIRED 2026-11-16 (D12 amended): Raise invoice. Draft invoices now come from the daily scheduled job JOB-DAILYINV",
   "UA-SCH-save": "Save (update)",
   "UA-BCT-save": "Save (update)", "UA-BCT-new": "New (list action)", "UA-BCT-insert": "Submit (insert); unique per customer + department",
   "UA-CUS-newcontact": "Add billing contact → new billing contact form with customer prefilled",
@@ -140,7 +141,7 @@ export const UI_ACTIONS = {
 
 /** Related lists: "RL-<PARENT>-<CHILD>" with the reference field that links them. */
 export const RELATED = {
-  "RL-REQ-RQL": "ar_request", "RL-REQ-RQI": "ar_request",
+  "RL-REQ-RQL": "ar_request", "RL-REQ-RQI": "ar_request", "RL-REQ-INV": "ar_request",
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",

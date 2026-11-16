@@ -3,7 +3,7 @@ import { loadCases } from "./cases.js";
 import { S } from "./state.js";
 import { DAY, cents, today, uid } from "./util.js";
 import { depositId } from "./bsu.js";
-import { itemCalc, resetAudit } from "./records.js";
+import { assignContractIds, itemCalc, resetAudit } from "./records.js";
 import { withCompany } from "./ledger.js";
 import { render } from "./views/app.js";
 
@@ -355,5 +355,6 @@ export function loadSample() {
   S.status = null;
   render();
   // AR form cases come from data/AR_form.csv (UIX decision 13); redraw once they are in
+  assignContractIds();   // CCI 2026-11-16: system Contract ID on every contract and No contract record
   return loadCases().then(n => { if (n) render(); });
 }

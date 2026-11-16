@@ -46,15 +46,16 @@ Custom customer master (not CSM customer_account). Each customer references one 
 
 ### Contract — `x_ar_contract`
 
-Custom contract table (not ast_contract). GIRO is a contract status that AR updates manually from the AR-ix case (D21, AR-ix decision 11). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.
+Custom contract table (not ast_contract). Every record has a system Contract ID (CTR…); Contract category Contract or No contract (D15 amended). GIRO is a contract status that AR updates manually from the AR-ix case (D21, AR-ix decision 11). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
-| `number` | Contract number | String | Mandatory |
-| `contract_type` | Record type | Choice | Choices: Contract (`contract`), No-contract shell (`shell`). Mandatory. Contract, or the customer's no-contract shell (D15) |
+| `contract_id` | Contract ID | String | Read-only on form. System contract ID, auto-numbered for every record, Contract or No contract (CCI, 2026-11-16) |
+| `contract_type` | Contract category | Choice | Choices: Contract (`contract`), No contract (`shell`). Mandatory. Contract or No contract (D15 amended 2026-11-16: a customer can have several No contract records) |
+| `number` | Contract number | String | The customer's contract number. Mandatory when Contract category = Contract |
 | `contract_category` | Contract type | Choice | Choices: Recurring (`recurring`), Ad-hoc (`ad_hoc`). Recurring or Ad-hoc |
 | `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
-| `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Owning department; a shell is unique per customer + department |
+| `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Owning department |
 | `reference_number` | Contract reference number | String |  |
 | `po_number` | Contract PO number | String |  |
 | `short_description` | Title | String | Mandatory |
@@ -243,13 +244,13 @@ Breakdown of an AR request's invoice (AR-i decision 32). Portal: multi-row varia
 
 ### Billing schedule — `x_ar_billing_schedule`
 
-Recurring billing set up once from a recurring billing line (D12, D13): from–to date range and frequency. Periods are listed; AR raises each invoice manually. Number prefix: `SCH`.
+Recurring billing set up once from a recurring billing line (D12 amended, D13), under a contract: from–to date range and frequency. A daily scheduled job creates each period's draft invoice 5 working days before its invoice date; AR issues it. Number prefix: `SCH`.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `number` | Number | String | Read-only on form |
-| `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
-| `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer |
+| `contract` | Contract | Reference | → `x_ar_contract`. Mandatory |
+| `customer` | Customer | Reference | → `x_ar_customer`. Read-only on form. From the contract |
 | `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory |
 | `short_description` | What is billed | String | Mandatory |
 | `frequency` | Frequency | Choice | Choices: Monthly (`monthly`), Quarterly (`quarterly`), Half-yearly (`half_yearly`), Annually (`annually`). Mandatory |

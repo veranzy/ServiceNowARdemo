@@ -112,11 +112,11 @@ export const LISTS = {
     newable: true
   },
   contracts: {
-    filters: { all: ["Contracts", () => true], active: ["Active", k => !isShell(k) && ctrStatus(k)[0] === "Active"], shell: ["No-contract shells", k => isShell(k)], giro: ["Contracts with GIRO active", k => k.giroStatus === "active"] },
-    cols: [["Number", k => refLink("contracts", k.id, k.number), "", "number"], ["Type", k => ctrTypeChip(k), "", "contractType"], ["Title", k => esc(k.title), "wrap", "title"], ["Customer", k => esc(custName(k.customerId)), "", "customerId"], ["Department", k => esc(k.department || "—"), "", "department"],
+    filters: { all: ["Contracts", () => true], active: ["Active", k => !isShell(k) && ctrStatus(k)[0] === "Active"], shell: ["No contract", k => isShell(k)], giro: ["Contracts with GIRO active", k => k.giroStatus === "active"] },
+    cols: [["Contract ID", k => refLink("contracts", k.id, k.ctrId || "—"), "", "ctrId"], ["Number", k => isShell(k) && k.number === k.ctrId ? "—" : esc(k.number), "", "number"], ["Contract category", k => ctrTypeChip(k), "", "contractType"], ["Title", k => esc(k.title), "wrap", "title"], ["Customer", k => esc(custName(k.customerId)), "", "customerId"], ["Department", k => esc(k.department || "—"), "", "department"],
       ["Bill-to", k => esc(k.billToName || "—"), "", "billToName"], ["Value", k => isShell(k) ? "—" : fmt(k.value || 0), "num", "value"], ["Lines", k => String(S.lines.filter(l => l.contractId === k.id).length), "num", "=CON.line_count"], ["Status", k => ctrStatusChip(k), "", "=CON.status"]],
     sort: (a, b) => custName(a.customerId).localeCompare(custName(b.customerId)) || (isShell(a) - isShell(b)) || a.number.localeCompare(b.number),
-    text: k => [k.number, k.title, custName(k.customerId), k.department, k.billToName, isShell(k) ? "no contract shell" : ""].join(" "),
+    text: k => [k.number, k.title, custName(k.customerId), k.department, k.billToName, k.ctrId, isShell(k) ? "no contract" : ""].join(" "),
     newable: true
   }
 };
@@ -317,14 +317,14 @@ const LAYOUT = {
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
   customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]],
     ["Agency and point of contact", ["agencyType", "vag", "vagSubBu", "pocName", "pocEmail"]]],
-  contracts: [["Contract", ["category", "number", "reference", "poNumber", "contractType", "customerId", "department", "title", "start", "end", "value", "billing", "notes"]],
+  contracts: [["Contract", ["ctrId", "contractType", "category", "number", "reference", "poNumber", "customerId", "department", "title", "start", "end", "value", "billing", "notes"]],
     ["Billing terms", ["billingCycle", "billingCycleOther", "invoiceDate", "paymentTerms", "paymentTermsOther", "terms", "discPct", "discDays", "prorate", "prorateFirst", "prorateLast", "typeOfBilling", "bulkDocs"]],
     ["Late payment interest (LPI)", ["lpiApplicable", "lpiMinRate", "lpiRate"]],
     ["GIRO", ["giroStatus", "giroCaseId"]],
     ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
   contacts: [["Billing contact", ["customerId", "department", "name", "email", "phone", "address", "requestId"]]],
   documents: [["Customer document", ["number", "customerId", "docType", "fileName", "contractId", "department", "requestId", "received"]]],
-  schedules: [["Billing schedule", ["number", "customerId", "contractId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "firstAmount", "lastAmount", "requestId"]]],
+  schedules: [["Billing schedule", ["number", "contractId", "customerId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "firstAmount", "lastAmount", "requestId"]]],
 };
 /** Fields AR can't edit on the workspace form (set by the portal or by UI actions). */
 const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast", "giroType"], lines: ["lineType"] };
@@ -520,24 +520,27 @@ function related(table, rec) {
     ...(r.needItems === "yes" || reqItems(r).length ? [rt("Billing line items", "items", reqItems(r), [
       ["Item number", q => esc(q.seq)], ["Amount (w/o GST)", q => fmt(q.amount), "num"], ["GST amount", q => fmt(q.gst), "num"], ["Total amount", q => fmt(q.total), "num"],
       ["Late payment interest", q => q.lpiRate ? `${esc(q.lpiRate)}%` : "—"], ["Account code", q => esc(q.accountCode || "—")]
-    ], { id: "RL-REQ-RQI" })] : [])];
+    ], { id: "RL-REQ-RQI" })] : []),
+    // CCI 2026-11-16: invoices linked to this AR-i case, including drafts made by the daily invoice check
+    rt("Invoices", "invoices", S.invoices.filter(i => i.requestId === r.id).sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"],
+      ["Invoice date", i => esc(i.date)], ["Amount", i => fmt(i.amount), "num"], ["State", i => invChip(i)], ["Schedule", i => i.scheduleId ? refLink("schedules", i.scheduleId) : "—"]], { id: "RL-REQ-INV" })];
   }
   if (table === "schedules") {
     const per = schedulePeriods(rec);
-    return [sec("SCH-PER", "Billing periods", per.filter(p => !p.more).length, `<section class="rel"${sn("SCH-PER")}><header><h3>Billing periods <span class="count">${per.filter(p => !p.more).length}</span></h3><span class="muted small">Raise each invoice when its period is due (no automatic invoicing)</span></header>
-      <div class="tablewrap"><table><thead><tr><th>Period</th><th>Status</th><th>Invoice</th><th class="num">Amount</th><th></th></tr></thead><tbody>
-      ${per.map(p => p.more ? `<tr><td colspan="5" class="muted small">${p.remaining} more ${esc(freqLabel(rec.frequency).toLowerCase())} period${p.remaining === 1 ? "" : "s"} until ${esc(rec.lastDate)}.</td></tr>`
+    return [sec("SCH-PER", "Billing periods", per.filter(p => !p.more).length, `<section class="rel"${sn("SCH-PER")}><header><h3>Billing periods <span class="count">${per.filter(p => !p.more).length}</span></h3><span class="muted small">The daily invoice check creates each period's draft invoice 5 working days before its date; AR issues it</span></header>
+      <div class="tablewrap"><table><thead><tr><th>Period</th><th>Status</th><th>Invoice</th><th class="num">Amount</th></tr></thead><tbody>
+      ${per.map(p => p.more ? `<tr><td colspan="4" class="muted small">${p.remaining} more ${esc(freqLabel(rec.frequency).toLowerCase())} period${p.remaining === 1 ? "" : "s"} until ${esc(rec.lastDate)}.</td></tr>`
         : `<tr><td>${esc(p.date)}</td><td><span class="chip ${p.status === "Invoiced" ? "c-ok" : p.status === "Due" ? "c-warn" : "c-neutral"}">${p.status}</span></td><td>${p.inv ? `${refLink("invoices", p.inv.id, p.inv.number)} ${invChip(p.inv)}` : "—"}</td><td class="num">${fmt(p.inv ? p.inv.amount : (() => { const ds = periodDates(rec.frequency, rec.firstDate, rec.lastDate); return periodAmounts(rec, ds)[ds.indexOf(p.date)] ?? rec.amount; })())}</td>
-          <td>${p.inv ? "" : `<button type="button" class="btn small${p.status === "Due" ? " primary" : ""}" data-raise="${rec.id}|${p.date}"${sn("UA-SCH-raise")}>Raise invoice</button>`}</td></tr>`).join("")}
+          </tr>`).join("")}
       </tbody></table></div></section>`),
       rt("Invoices", "invoices", S.invoices.filter(i => i.scheduleId === rec.id).sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Status", i => invChip(i)]], { id: "RL-SCH-INV" })];
   }
   if (table === "customers") {
     const ks = S.contracts.filter(k => k.customerId === rec.id), is = S.invoices.filter(i => i.customerId === rec.id), rs = S.requests.filter(r => r.customerId === rec.id);
     const extra = [rt("Billing contacts", "contacts", S.contacts.filter(c => c.customerId === rec.id).sort(LISTS.contacts.sort), [["Department", c => esc(c.department)], ["Bill-to person", c => refLink("contacts", c.id, c.name)], ["Email", c => esc(c.email)], ["Billing address", c => esc(c.address || "—"), "wrap"]], { id: "RL-CUS-BCT" }),
-      rt("Customer documents", "documents", S.documents.filter(d => d.customerId === rec.id).sort(LISTS.documents.sort), [["Type", d => esc(DOC_LABEL[d.docType])], ["File", d => refLink("documents", d.id, d.fileName), "wrap"], ["For", d => esc(d.contractId ? ctrNo(d.contractId) : d.department || "—")], ["Received", d => esc(d.received)]], { id: "RL-CUS-DOC" }),
-      rt("Billing schedules", "schedules", S.schedules.filter(x => x.customerId === rec.id), [["Number", x => refLink("schedules", x.id, x.number)], ["What is billed", x => esc(x.desc), "wrap"], ["Frequency", x => esc(freqLabel(x.frequency))], ["Next billing", x => esc(nextBilling(x) || "Ended")]], { id: "RL-CUS-SCH" })];
-    return [sec("CUS-TREE", "Billing hierarchy", ks.length, hierarchy(rec)),
+      rt("Customer documents", "documents", S.documents.filter(d => d.customerId === rec.id).sort(LISTS.documents.sort), [["Type", d => esc(DOC_LABEL[d.docType])], ["File", d => refLink("documents", d.id, d.fileName), "wrap"], ["For", d => esc(d.contractId ? ctrNo(d.contractId) : d.department || "—")], ["Received", d => esc(d.received)]], { id: "RL-CUS-DOC" })];
+    // CCI 2026-11-16: Billing hierarchy removed (issue #6, revisit later); billing schedules sit under contracts only
+    return [
       rt("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Contract", r => r.contractId ? refLink("contracts", r.contractId) : r.contractOption === "new" ? `${esc(r.newCtrRef || "")} <span class="chip c-warn">New</span>` : "—"], ["Value", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CUS-REQ" }),
       rt("Contracts", "contracts", ks.sort(LISTS.contracts.sort), [["Number", k => refLink("contracts", k.id, k.number)], ["Type", k => ctrTypeChip(k)], ["Title", k => esc(k.title), "wrap"], ["Bill-to", k => esc(k.billToName || "—")], ["Lines", k => String(S.lines.filter(l => l.contractId === k.id).length), "num"], ["Billed", k => fmt(rollup(S.invoices.filter(i => i.contractId === k.id && i.state === "issued")).billed), "num"]], { id: "RL-CUS-CON" }),
       rt("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Contract", i => esc(ctrNo(i.contractId))], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CUS-INV" }), ...extra];
@@ -571,24 +574,6 @@ function related(table, rec) {
 }
 
 /** Billing hierarchy on the customer (D15): customer › contract / shell › billing lines › invoices or schedule. Invoices not raised from a line are listed under their contract. */
-function hierarchy(c) {
-  const ks = S.contracts.filter(k => k.customerId === c.id).sort(LISTS.contracts.sort);
-  const invLink = i => `${refLink("invoices", i.id, i.number)} ${invChip(i)}`;
-  const node = k => {
-    const ls = S.lines.filter(l => l.contractId === k.id), lineInv = new Set(ls.map(l => l.invoiceId).filter(Boolean)), schIds = new Set(ls.map(l => l.scheduleId).filter(Boolean));
-    const loose = S.invoices.filter(i => i.contractId === k.id && !lineInv.has(i.id) && !(i.scheduleId && schIds.has(i.scheduleId)) && i.state !== "cancelled");
-    const schOnly = S.schedules.filter(x => x.contractId === k.id && !schIds.has(x.id));
-    const lineRow = l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId), sInv = sch ? S.invoices.filter(i => i.scheduleId === sch.id && i.state !== "cancelled") : [];
-      return `<li><span class="hl">${refLink("lines", l.id, l.number)} ${esc(l.desc)} <span class="desc">${esc(LINE_TYPE[l.lineType])} · SGD ${fmt(lineValue(l))} · ${refLink("requests", l.requestId)}</span></span>
-        ${inv || sch ? `<ul>${inv ? `<li>${invLink(inv)}</li>` : ""}${sch ? `<li>${refLink("schedules", sch.id, sch.number)} <span class="desc">${sInv.length} invoice${sInv.length === 1 ? "" : "s"} raised</span>${sInv.length ? `<ul>${sInv.map(i => `<li>${invLink(i)}</li>`).join("")}</ul>` : ""}</li>` : ""}</ul>` : ""}</li>`; };
-    const other = [...schOnly.map(x => `<li>${refLink("schedules", x.id, x.number)} <span class="desc">${esc(x.desc)} (not from a billing line)</span></li>`), ...loose.map(i => `<li>${invLink(i)} <span class="desc">${esc(i.desc)} (not from a billing line)</span></li>`)];
-    return `<li><span class="hl">${ctrTypeChip(k)} ${refLink("contracts", k.id, k.number)} ${esc(isShell(k) ? "" : k.title)}${k.department ? ` <span class="desc">${esc(k.department)}${k.billToName ? ` · bill to ${esc(k.billToName)}` : ""}</span>` : ""}</span>
-      ${ls.length || other.length ? `<ul>${ls.map(lineRow).join("")}${other.join("")}</ul>` : `<ul><li class="muted small">Nothing billed yet</li></ul>`}</li>`;
-  };
-  const pending = S.requests.filter(r => r.customerId === c.id && !r.contractId && REQ_OPEN.includes(r.state));
-  return `<section class="rel"${sn("CUS-TREE")}><header><h3>Billing hierarchy</h3><span class="muted small">Customer › contract or no-contract shell › billing lines › invoices</span></header>
-    <ul class="htree"><li><span class="hl"><b>${esc(c.name)}</b></span><ul>${ks.map(node).join("")}${pending.map(r => `<li><span class="hl"><span class="chip c-warn">Not filed</span> ${refLink("requests", r.id)} <span class="desc">waiting for Link to customer</span></span></li>`).join("")}</ul></li></ul></section>`;
-}
 
 function recordPage(tab) {
   if (!tab) return `<div class="page empty">This record is no longer available.</div>`;
@@ -610,7 +595,8 @@ function recordPage(tab) {
   const cur = tabs.find(x => x.key === tab.sub) || tabs[0];
   const view = table === "requests" ? `<div${sn(isIx(rec) ? "REQ-FV-ARIX" : "REQ-FV-ARI")}>${sections}</div>` : sections;
   const form = `<form class="rform" data-rform="${esc(tab.key)}" novalidate${sn(`FRM-${CODE[table]}`)}>${view}</form>`;
-  const MAXT = window.innerWidth < 760 ? 2 : 5, shownT = tabs.slice(0, MAXT), moreT = tabs.slice(MAXT), curMore = moreT.includes(cur);
+  // CCI 2026-11-16: customer and contract pages show every tab (no More menu)
+  const MAXT = table === "customers" || table === "contracts" ? Infinity : window.innerWidth < 760 ? 2 : 5, shownT = tabs.slice(0, MAXT), moreT = tabs.slice(MAXT), curMore = moreT.includes(cur);
   const tabBtn = x => `<button type="button" role="tab" class="rtab" data-rtab="${esc(x.key)}" aria-selected="${x === cur}">${esc(x.label)}${x.n !== undefined ? ` <span class="count">${x.n}</span>` : ""}</button>`;
   const side = isNew ? [] : sidePanels(table, rec, tab);
   const sp = W().side, sOpen = sp.open && side.length, sCur = side.find(x => x.key === tab.side) || side.find(x => x.key === sideDefault(table, rec)) || side[0];

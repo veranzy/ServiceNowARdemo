@@ -12,3 +12,6 @@
 | 8 | Credit notes: separate table or negative invoice? How do SLA credits on contracts flow in? (Invoicing; also in `SERVICENOW_MAPPING.md`.) | Owner |
 | 9 | Multi-currency: SGD only, or currency per contract? (Invoicing; also in `SERVICENOW_MAPPING.md`.) | Owner |
 | 10 | Who maintains customers and contracts: AR team only, or also project team via portal? D22 says forms never change them. (Also in `SERVICENOW_MAPPING.md`.) | Owner |
+| 11 | **Invoice forecast** on a billing schedule: how is it generated? Factors named by the owner: contract start and end dates, contract billing cycle, proration, and the AR-i deciding the first invoice. The daily invoice check uses the schedule's period dates until then. | Owner (to describe) |
+| 12 | Working days for the daily invoice check: Mon–Fri only, or also skip Singapore public holidays? Built as Mon–Fri. | Owner |
+| 13 | Invoice PDF: generated when AR issues the draft (Issue invoice)? Template and delivery are open question 7. | Owner |

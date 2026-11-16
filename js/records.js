@@ -22,6 +22,11 @@ export function displayOf(table, rec) {
 }
 
 /** Auto-number like ServiceNow number maintenance: prefix + zero-padded counter. */
+/** System Contract ID (CCI 2026-11-16): CTR0001001, CTR0001002 … on every contract and No contract record, in creation order. */
+export function assignContractIds() {
+  let max = S.contracts.reduce((m, k) => Math.max(m, +(String(k.ctrId || "").replace(/\D/g, "")) || 0), 1000);
+  for (const k of S.contracts) if (!k.ctrId) k.ctrId = "CTR" + String(++max).padStart(7, "0");
+}
 export function nextNumber(table) {
   const list = S[table];
   if (table === "invoices") {
@@ -326,14 +331,14 @@ export function linkCustomer(id, existingId, companyId) {
         paymentTerms: r.newCtrTerms || "30", paymentTermsOther: r.newCtrTermsOther || "", terms: r.newCtrTerms === "others" ? custById(r.customerId)?.terms || 30 : 30,
         prorate: r.newCtrProrate || "no", prorateFirst: r.newCtrProFirst || 0, prorateLast: r.newCtrProLast || 0,
         typeOfBilling: r.typeOfBilling || "", bulkDocs: r.docBulk || [], discPct: 0, discDays: 0, giroStatus: "none", giroCaseId: null, notes: `Created from ${r.number}.` };
-      S.contracts.push(ctr); notes.push(`created contract ${ctr.number}`); }
+      S.contracts.push(ctr); assignContractIds(); notes.push(`created contract ${ctr.number}`); }
   }
   if (!ctr && (r.contractOption === "none" || !r.contractOption)) {
     ctr = shellFor(r.customerId, r.department);
     if (ctr) notes.push(`filed under no-contract shell ${ctr.number}`);
     else { ctr = { id: uid("k"), contractType: "shell", customerId: r.customerId, department: r.department, number: nextShellNumber(r.department), title: `No contract – ${r.department}`,
         start: "", end: "", value: 0, billing: "", terms: custById(r.customerId)?.terms || 30, discPct: 0, discDays: 0, notes: "Holds billing for this customer and department that has no contract (D15)." };
-      S.contracts.push(ctr); notes.push(`created no-contract shell ${ctr.number}`); }
+      S.contracts.push(ctr); assignContractIds(); notes.push(`created No contract ${ctr.number}`); }
   }
   if (ctr) { r.contractId = ctr.id; for (const l of reqLines(r)) l.contractId = ctr.id; }
   if (r.billToName && ctr) {
@@ -413,18 +418,34 @@ export function lineInvoice(lineId) {
   return { opened: inv };
 }
 
-/** UI action "Raise invoice" on a billing period: draft invoice for that period. */
-export function raiseInvoice(scheduleId, date) {
-  const sch = S.schedules.find(x => x.id === scheduleId); if (!sch) return "Schedule not found.";
-  if (S.invoices.some(i => i.scheduleId === sch.id && i.periodDate === date && i.state !== "cancelled")) return "This period already has an invoice.";
-  const k = ctrById(sch.contractId), c = custById(sch.customerId);
-  const label = new Date(date + "T00:00:00").toLocaleDateString("en-SG", { month: "short", year: "numeric" });
-  const invDate = date > isoToday() ? date : isoToday();
-  const dates = periodDates(sch.frequency, sch.firstDate, sch.lastDate), amount = periodAmounts(sch, dates)[dates.indexOf(date)] ?? sch.amount;
-  const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: sch.customerId, contractId: sch.contractId, requestId: sch.requestId || null, scheduleId: sch.id, periodDate: date,
-    customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount, date: invDate, due: addDays(invDate, k?.terms || c?.terms || 30), currency: "SGD" };
-  S.invoices.push(inv);
-  return { opened: inv };
+/** Working days (Mon–Fri) before a date: the day the daily job creates the draft. */
+export function draftDate(iso, n = 5) {
+  const d = new Date(iso + "T00:00:00");
+  while (n > 0) { d.setDate(d.getDate() - 1); if (d.getDay() !== 0 && d.getDay() !== 6) n--; }
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+/** Scheduled job "Daily invoice check" (D12 amended 2026-11-16): for every billing schedule, each period without an invoice whose
+ *  invoice date is 5 working days away or less gets a DRAFT invoice, linked to the schedule and to the original AR-i case and line.
+ *  AR issues drafts by hand (Issue invoice). Returns the invoices created. */
+export function runDailyInvoiceCheck() {
+  const made = [], t = isoToday();
+  for (const sch of S.schedules) {
+    const dates = periodDates(sch.frequency, sch.firstDate, sch.lastDate), amounts = periodAmounts(sch, dates);
+    dates.forEach((date, ix) => {
+      if (draftDate(date) > t) return;
+      if (S.invoices.some(i => i.scheduleId === sch.id && i.periodDate === date && i.state !== "cancelled")) return;
+      const k = ctrById(sch.contractId), c = custById(sch.customerId || k?.customerId);
+      const label = new Date(date + "T00:00:00").toLocaleDateString("en-SG", { month: "short", year: "numeric" });
+      const invDate = date > t ? date : t;
+      const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: c?.id || sch.customerId, contractId: sch.contractId, requestId: sch.requestId || null,
+        lineId: sch.lineId || null, scheduleId: sch.id, periodDate: date, customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount: amounts[ix] ?? sch.amount,
+        date: invDate, due: addDays(invDate, k?.terms || c?.terms || 30), currency: "SGD" };
+      S.invoices.push(inv); made.push(inv);
+      const r = sch.requestId && reqById(sch.requestId);
+      if (r) journal(r, "work_note", `Daily invoice check: draft invoice ${inv.number} created for ${label} (${sch.number}).`, null);
+    });
+  }
+  return made;
 }
 
 /** Journal entry. kind: "comment" (visible to requester), "work_note" (AR only), "system". */
@@ -541,6 +562,8 @@ export function saveRecord(table, id, raw) {
   const errors = validate(table, merged);
   if (table === "contacts" && S.contacts.some(c => c.id !== merged.id && c.customerId === merged.customerId && c.department === merged.department)) errors.department = `This customer already has a ${merged.department} billing contact. Edit that one instead.`;
   if (table === "contracts" && S.contracts.some(k => k.id !== merged.id && k.number && k.number.toLowerCase() === String(merged.number || "").toLowerCase())) errors.number = `Contract ${merged.number} already exists.`;
+  if (table === "contracts" && merged.contractType === "contract" && !String(merged.number || "").trim()) errors.number = "Enter the contract number.";
+  if (table === "schedules" && merged.contractId) vals.customerId = ctrById(merged.contractId)?.customerId || merged.customerId;
   if (table === "contracts" && merged.giroStatus !== "active" && merged.giroCaseId) merged.giroCaseId = vals.giroCaseId = null;   // AR-ix decision 11
   if (table === "contracts" && merged.giroStatus === "active" && !merged.giroCaseId) errors.giroCaseId = "Choose the AR-ix case whose GIRO is active.";
   if (table === "contracts" && merged.contractType === "shell" && !merged.department) errors.department = "A no-contract shell needs a department.";
@@ -557,6 +580,7 @@ export function saveRecord(table, id, raw) {
       if (k) { Object.assign(vals, { customerId: k.customerId, newCustomer: false }); journal(existing, "system", `Contract set to ${k.number} (${custById(k.customerId)?.name}).`); }
     }
   }
+  if (table === "contracts" && existing && !String(merged.number || "").trim()) vals.number = existing.ctrId;
   if (existing) {
     Object.assign(existing, vals);
     if (table === "customers") S.invoices.forEach(i => { if (i.customerId === existing.id) i.customer = existing.name; });
@@ -570,6 +594,7 @@ export function saveRecord(table, id, raw) {
   if (table === "contracts") Object.assign(rec, { terms: rec.terms || custById(rec.customerId)?.terms || 30 });
   if (table === "bankAccounts") rec.currency = "SGD";
   S[table].push(rec);
+  if (table === "contracts") { assignContractIds(); if (!rec.number) rec.number = rec.ctrId; }   // No contract without a number shows its Contract ID
   return { rec };
 }
 

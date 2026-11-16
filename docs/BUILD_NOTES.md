@@ -35,7 +35,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `WS-09` | Landing page list: overdue invoices |
 | `WS-11` | Record header UI action bar (Horizon Record page template): primary UI actions as buttons, the rest in the overflow menu. Visible vs overflow is set per UI action in the workspace action configuration |
 | `WS-12` | Record ribbon (Horizon Record page template): collapsible row of up to 12 widgets with key metrics; configured per table in UI Builder (data resources over the record and its related tables) |
-| `WS-13` | Record tabs in the resizable pane (Horizon Record page template): Details (form) first, then related items, then one tab per related list; extra tabs move to the More menu |
+| `WS-13` | Record tabs in the resizable pane (Horizon Record page template): Details (form) first, then related items, then one tab per related list; extra tabs move to the More menu, except on customer and contract records, which show every tab (CCI 2026-11-16) |
 | `WS-14` | Contextual side bar (Horizon pattern): vertical icon tabs on the right of the record tab, open by default, collapsible and resizable; holds Customer setup, Activity stream and Attachments for AR requests |
 | `WS-15` | Form record presence: avatars of users viewing the record (out-of-box on the Horizon Record page template) |
 | `WS-17` | Record history tab (out-of-box on the Record page template): sys_audit / sys_history_line for the record. Turn on Audit in the dictionary of every x_ar table; shows when, who, field, old and new value |
@@ -43,7 +43,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `LST-REQ-ARI` | Workspace list Open AR-i (UIX decision 15): x_ar_request, condition ar_form = AR-i AND state IN (new, work_in_progress, awaiting_requestor_info); list view ar_i_open with its own columns (for now: number, ar_form, short_description, customer, department, amount, state, assigned_to, opened_by, opened_at); list menu category AR requests |
 | `LST-REQ-ARIX` | Workspace list Open AR-ix (UIX decision 15): x_ar_request, condition ar_form = AR-ix AND state IN (new, work_in_progress, awaiting_requestor_info); list view ar_ix_open with its own columns (for now the same as Open AR-i); list menu category AR requests. Replaces the GIRO category list AR-ix GIRO requests (open) |
 | `CON-GIRO` | Tab GIRO history on the contract (and on no-contract shells): related list x_ar_request where contract = this contract and ar_form = AR-ix; columns AR-ix case, Type of request, Purpose of GIRO/DDA request, Amount, Requested by, Updated, GIRO (Active = contract.giro_case, Completed, Open, Contract to link, Rejected) |
-| `SCH-PER` | Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming |
+| `SCH-PER` | Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming; no action column (drafts come from JOB-DAILYINV) |
+| `JOB-DAILYINV` | Scheduled job Daily invoice check (daily, D12 amended 2026-11-16): for each x_ar_billing_schedule period with no non-cancelled invoice and invoice date within 5 working days (Mon–Fri) of today, insert a draft x_ar_invoice (billing_schedule, billing_period, contract, customer, ar_request and request_line from the schedule) and add a work note on the AR-i case. Issuing stays manual (Issue invoice). Demo: Run daily invoice check in the demo bar |
 
 ## AR request record
 
@@ -64,7 +65,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 
 | ID | ServiceNow |
 |---|---|
-| `CUS-TREE` | Billing hierarchy on the customer record (D15): customer › contract / no-contract shell (x_ar_contract) › billing lines (x_ar_request_line.contract) › invoices / billing schedule. UI Builder component over related lists, or a hierarchical list |
+| `CUS-TREE` | RETIRED 2026-11-16 (CCI): Billing hierarchy tab removed from the customer record; usage and purpose to revisit (GitHub issue #6) |
 
 ## Cash application
 
@@ -387,11 +388,12 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 
 | ID | ServiceNow |
 |---|---|
-| `CON.number` | x_ar_contract.number · String · mandatory |
-| `CON.contract_type` | x_ar_contract.contract_type · Choice · mandatory · Contract, or the customer's no-contract shell (D15) |
+| `CON.contract_id` | x_ar_contract.contract_id · String · read-only · System contract ID, auto-numbered for every record, Contract or No contract (CCI, 2026-11-16) |
+| `CON.contract_type` | x_ar_contract.contract_type · Choice · mandatory · Contract or No contract (D15 amended 2026-11-16: a customer can have several No contract records) |
+| `CON.number` | x_ar_contract.number · String · The customer's contract number. Mandatory when Contract category = Contract |
 | `CON.contract_category` | x_ar_contract.contract_category · Choice · Recurring or Ad-hoc |
 | `CON.customer` | x_ar_contract.customer · Reference → x_ar_customer · mandatory |
-| `CON.department` | x_ar_contract.department · Choice · Owning department; a shell is unique per customer + department |
+| `CON.department` | x_ar_contract.department · Choice · Owning department |
 | `CON.reference_number` | x_ar_contract.reference_number · String |
 | `CON.po_number` | x_ar_contract.po_number · String |
 | `CON.short_description` | x_ar_contract.short_description · String · mandatory |
@@ -480,8 +482,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `SCH.number` | x_ar_billing_schedule.number · String · read-only |
-| `SCH.customer` | x_ar_billing_schedule.customer · Reference → x_ar_customer · mandatory |
-| `SCH.contract` | x_ar_billing_schedule.contract · Reference → x_ar_contract |
+| `SCH.contract` | x_ar_billing_schedule.contract · Reference → x_ar_contract · mandatory |
+| `SCH.customer` | x_ar_billing_schedule.customer · Reference → x_ar_customer · read-only · From the contract |
 | `SCH.department` | x_ar_billing_schedule.department · Choice · mandatory |
 | `SCH.short_description` | x_ar_billing_schedule.short_description · String · mandatory |
 | `SCH.frequency` | x_ar_billing_schedule.frequency · Choice · mandatory |
@@ -566,6 +568,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `RL-REQ-RQL` | Related list: x_ar_request_line where ar_request = this ar request |
 | `RL-REQ-RQI` | Related list: x_ar_request_item where ar_request = this ar request |
+| `RL-REQ-INV` | Related list: x_ar_invoice where ar_request = this ar request |
 | `RL-CUS-BCT` | Related list: x_ar_billing_contact where customer = this customer |
 | `RL-CUS-DOC` | Related list: x_ar_customer_document where customer = this customer |
 | `RL-CUS-SCH` | Related list: x_ar_billing_schedule where customer = this customer |
@@ -595,7 +598,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-REQ-giroremove` | UI action: RETIRED 2026-11-12 (AR-ix decision 11): Remove GIRO. AR now updates GIRO on the contract record and uses Complete (UA-REQ-girocomplete) |
 | `UA-REQ-girocomplete` | UI action: RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Complete (AR-ix). AR sets State = Closed complete |
 | `UA-REQ-link` | UI action: Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document (D10, D15, D16) |
-| `UA-SCH-raise` | UI action: Raise invoice → inserts a draft x_ar_invoice for the period (billing_schedule + billing_period set); never automatic (D12) |
+| `UA-SCH-raise` | UI action: RETIRED 2026-11-16 (D12 amended): Raise invoice. Draft invoices now come from the daily scheduled job JOB-DAILYINV |
 | `UA-SCH-save` | UI action: Save (update) |
 | `UA-BCT-save` | UI action: Save (update) |
 | `UA-BCT-new` | UI action: New (list action) |

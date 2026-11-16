@@ -3,7 +3,7 @@ import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, raiseInvoice, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, runDailyInvoiceCheck, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -192,6 +192,10 @@ document.addEventListener("click", e => {
   const d = t.dataset;
   if (d.persona) { S.ui.persona = d.persona; return render(); }
   if (t.id === "resetDemo") { loadSample(); toast("Demo data reset."); return render(); }
+  if (t.id === "dailyCheck") {   // D12 amended: the daily scheduled job, run on demand in the demo
+    const made = runDailyInvoiceCheck(); render();
+    return toast(made.length ? `Daily invoice check: ${made.length} draft invoice${made.length === 1 ? "" : "s"} created (${made.map(i => i.number).join(", ")}).` : "Daily invoice check: no billing period is due within 5 working days.");
+  }
   // portal
   if (d.pnav) { if (d.pnav === "form") P().formCode = d.form || "AR-i"; P().page = d.pnav; if (d.pnav !== "form") P().errors = {}; render(); return window.scrollTo(0, 0); }
   if (d.ticket) { P().page = "ticket"; P().id = d.ticket; render(); return window.scrollTo(0, 0); }
@@ -241,7 +245,6 @@ document.addEventListener("click", e => {
     toast(what === "schedule" ? `Billing schedule ${res.opened.number} set up. The requester can see it on the portal.` : `Draft invoice ${res.opened.number} created for this line.`);
     return openTab(what === "schedule" ? "schedules" : "invoices", res.opened.id);
   }
-  if (d.raise) { const [sid, date] = d.raise.split("|"); const res = raiseInvoice(sid, date); if (typeof res === "string") return toast(res); toast(`Draft invoice ${res.opened.number} raised for ${date}.`); return openTab("invoices", res.opened.id); }
   if (d.matchdep) { S.pick[d.matchdep] = { open: true, q: "", sel: [], note: "" }; S.filter = "open"; showMain({ kind: "cash" }); return document.querySelector(`[data-pickopen="${d.matchdep}"]`)?.scrollIntoView({ block: "start" }); }
   if (t.id === "exportBtn") return exportCSV();
   if (t.id === "dismissBtn") { setStatus(); return render(); }

@@ -17,6 +17,7 @@ shipped. Requirement questions still open for the client live in each module's
 
 ## Done
 
+- 2026-11-16 **CCI**: customer and contract pages show all tabs; billing hierarchy removed (issue #6); Contract category (Contract / No contract) and system Contract ID; schedules under contracts; daily invoice check creates drafts 5 working days ahead, linked to the AR-i case (D12, D15 amended).
 - 2026-11-16 **AR-00**: new case states (New … Cancelled) set by a State dropdown, Substate for Awaiting requestor information, Assignment group; case actions Assign to me and Save (AR-i keeps Link to customer) (decision 4).
 - 2026-11-13 **UIX**: list menu AR requests has one open list per form (Open AR-i, Open AR-ix), each with its own column set (decision 15).
 - 2026-11-12 **UIX**: every page has its own URL (`#/ws/…`, `#/portal/…`); Back / Forward, refresh and shared links work (decision 14).

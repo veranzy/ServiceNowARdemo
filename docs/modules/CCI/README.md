@@ -88,3 +88,7 @@ ServiceNow build:
 - Write access: `x_ar.ar_team` (same ACL as the rest of the contract).
 
 The prototype records the terms only. Nothing calculates or charges interest yet.
+
+## Changes 2026-11-16 (decisions 4–7)
+
+- See CHANGELOG 2026-11-16 and decisions 4–7.

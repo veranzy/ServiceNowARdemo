@@ -4,6 +4,7 @@ import { auditTick, me } from "../records.js";
 import { ROLES } from "../schema.js";
 import { $, S } from "../state.js";
 import { esc } from "../util.js";
+import { sn } from "./common.js";
 import { portalView } from "./portal.js";
 import { workspaceView } from "./workspace.js";
 
@@ -30,6 +31,7 @@ function demoBar() {
     <span class="sp"></span>
     <label class="switch" title="Purple ID tags for change requests: write '<ID> - <change>'"><input type="checkbox" id="notesToggle"${S.ui.notes ? " checked" : ""}><span>Show IDs</span></label>
     ${S.ui.notes ? `<span class="db-hint">Alt/Option+click an element to copy its ID</span>` : ""}
+    ${p === "ar" ? `<button type="button" class="btn small ghost" id="dailyCheck" title="Simulates the daily scheduled job: draft invoices for billing periods 5 working days ahead"${sn("JOB-DAILYINV")}>Run daily invoice check</button>` : ""}
     <button type="button" class="btn small ghost" id="resetDemo">Reset demo</button>
   </div>`;
 }

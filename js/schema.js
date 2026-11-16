@@ -42,7 +42,8 @@ export const LINE_TYPES = [["one_off", "One-off"], ["recurring", "Recurring"]];
 export const FREQUENCIES = [["monthly", "Monthly", 1], ["quarterly", "Quarterly", 3], ["half_yearly", "Half-yearly", 6], ["annually", "Annually", 12]];
 export const DOC_TYPES = [["contract", "Signed contract / PO"], ["acra", "Company registration (ACRA / UEN)"], ["billing_form", "Billing contact & address form"]];
 export const CONTRACT_OPTIONS = [["existing", "Existing contract"], ["new", "New contract"], ["none", "No contract required"]];
-export const CONTRACT_TYPES = [["contract", "Contract"], ["shell", "No-contract shell"]];
+// CCI decision (2026-11-16): field contract_type is labelled Contract category; "shell" records are labelled No contract.
+export const CONTRACT_TYPES = [["contract", "Contract"], ["shell", "No contract"]];
 export const AGENCY_TYPES = [["M", "M"], ["SB", "SB"], ["PV", "PV"]];
 const YES_NO = [["yes", "Yes"], ["no", "No"]];
 const BILLING_KINDS = ["A", "B", "C", "D", "E"].map(x => [x, x]);
@@ -288,11 +289,12 @@ export const TABLES = {
   },
   schedules: {
     table: `${SCOPE}_billing_schedule`, label: "Billing schedule", plural: "Billing schedules", display: "number", prefix: "SCH",
-    note: "Recurring billing set up once from a recurring billing line (D12, D13): from–to date range and frequency. Periods are listed; AR raises each invoice manually.",
+    note: "Recurring billing set up once from a recurring billing line (D12 amended, D13), under a contract: from–to date range and frequency. A daily scheduled job creates each period's draft invoice 5 working days before its invoice date; AR issues it.",
     fields: [
       { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "SCH0001000" },
-      { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
-      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", dependsOn: "customerId" },
+      // CCI 2026-11-16: a billing schedule sits under a contract (Contract or No contract); the customer follows the contract
+      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", mandatory: true },
+      { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", readonly: true, help: "From the contract" },
       { key: "department", name: "department", label: "Department", type: "Choice", choices: DEPT_CHOICES, mandatory: true },
       { key: "desc", name: "short_description", label: "What is billed", type: "String", mandatory: true, wide: true },
       { key: "frequency", name: "frequency", label: "Frequency", type: "Choice", choices: FREQUENCIES.map(f => [f[0], f[1]]), mandatory: true },
@@ -335,13 +337,14 @@ export const TABLES = {
   },
   contracts: {
     table: `${SCOPE}_contract`, label: "Contract", plural: "Contracts", display: "number",
-    note: "Custom contract table (not ast_contract). GIRO is a contract status that AR updates manually from the AR-ix case (D21, AR-ix decision 11). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.",
+    note: "Custom contract table (not ast_contract). Every record has a system Contract ID (CTR…); Contract category Contract or No contract (D15 amended). GIRO is a contract status that AR updates manually from the AR-ix case (D21, AR-ix decision 11). Middle of the billing hierarchy customer › contract › billing lines › invoices (D15). Holds the bill-to person (D16) and billing terms. A no-contract shell (contract_type = shell, one per customer + department) holds billing that has no contract.",
     fields: [
-      { key: "number", name: "number", label: "Contract number", type: "String", mandatory: true },
-      { key: "contractType", name: "contract_type", label: "Record type", type: "Choice", choices: CONTRACT_TYPES, mandatory: true, help: "Contract, or the customer's no-contract shell (D15)" },
+      { key: "ctrId", name: "contract_id", label: "Contract ID", type: "String", readonly: true, auto: "CTR0001001", help: "System contract ID, auto-numbered for every record, Contract or No contract (CCI, 2026-11-16)" },
+      { key: "contractType", name: "contract_type", label: "Contract category", type: "Choice", choices: CONTRACT_TYPES, mandatory: true, help: "Contract or No contract (D15 amended 2026-11-16: a customer can have several No contract records)" },
+      { key: "number", name: "number", label: "Contract number", type: "String", help: "The customer's contract number. Mandatory when Contract category = Contract" },
       { key: "category", name: "contract_category", label: "Contract type", type: "Choice", choices: CONTRACT_CATEGORIES, help: "Recurring or Ad-hoc" },
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
-      { key: "department", name: "department", label: "Department", type: "Choice", choices: DEPT_CHOICES, help: "Owning department; a shell is unique per customer + department" },
+      { key: "department", name: "department", label: "Department", type: "Choice", choices: DEPT_CHOICES, help: "Owning department" },
       { key: "reference", name: "reference_number", label: "Contract reference number", type: "String" },
       { key: "poNumber", name: "po_number", label: "Contract PO number", type: "String" },
       { key: "title", name: "short_description", label: "Title", type: "String", mandatory: true, wide: true },

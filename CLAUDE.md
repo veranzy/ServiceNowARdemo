@@ -93,6 +93,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-16 | Core flow and domain model: Contract category and Contract ID, schedules under contracts, daily invoice check replaces Raise invoice (D12, D15 amended; CCI 4–7). | Owner |
 | 2026-11-16 | Checking changes: the daily invoice check is mock data (ARQ0001009), no demo button. | Owner |
 | 2026-11-16 | Core flow: Closed complete generates the AR-i's 1st invoice; the schedule (created by AR on the contract) covers the 2nd invoice onwards (CCI decision 8). | Owner |
+| 2026-11-16 | Code layout updated to today's functions (firstInvoices, daily job, billing cycle helpers); retired ones marked. | Owner |
 
 ## How we work: modules, one at a time
 
@@ -202,17 +203,19 @@ css/styles.css          tokens (light/dark), workspace, portal, cash application
 js/main.js              delegated event handling (click/change/input/submit) and boot
 js/state.js             S: data tables + UI state (persona, workspace tabs, portal page, drafts)
 js/schema.js            ServiceNow tables/fields/roles/record producer (no DOM)
-js/records.js           lifecycle: createRequest, requestAction (assign/info/reject/invoice), issueInvoice,
-                        cancelInvoice, portalComment, saveRecord, validate, numbering, journal;
-                        AR-i: validateARi, lineErrors, docsOnFile, contactFor, setupStatus, linkCustomer;
-                        lines: periodDates, lineValue, linesSummary, lineStatus, lineInvoice, setupSchedule(lineId);
-                        schedules: schedulePeriods, periodsDue, nextBilling, raiseInvoice
+js/records.js           lifecycle: createRequest, requestAction (assign), issueInvoice (needs approval date),
+                        cancelInvoice, portalComment, saveRecord (state change; Closed complete → firstInvoices),
+                        validate, numbering, journal, assignContractIds;
+                        AR-i: validateARi, lineErrors, docsOnFile, contactFor, setupStatus, linkCustomer, firstInvoices;
+                        lines: periodDates, lineValue, linesSummary, lineStatus (lineInvoice / setupSchedule retired);
+                        schedules: schedulePeriods, periodsDue, nextBilling, cycleDay, nextCycleDate,
+                        draftDate, runDailyInvoiceCheck (the daily job)
 js/ledger.js            ledger reads: invoiceUse (applied/reserved), rollup, lookups
 js/matching.js          manual allocation (act: manual/remove), allocationPlan, finder ranking (signals)
 js/bsu.js               BSU: parse bank CSV by template, Deposit IDs, saveUpload, sample CSV per bank
 js/io.js                CSV parser, matches CSV export
 js/sample-data.js       users, customers, contracts, invoices, BSU data (dates shift to today); no AR requests
-js/cases.js             loads AR request cases from data/AR_form.csv (UIX decision 13)
+js/cases.js             loads AR request cases from data/AR_form.csv (UIX decision 13) + demo setup (ARQ0001009, schedule history, mock daily job)
 data/AR_form.csv        demo AR-i / AR-ix cases, one row per case, headers = x_ar_request field names
 js/views/app.js         render(): demo bar + active persona; toast; setStatus
 js/router.js            page URLs (#/ws/…, #/portal/…): URL → screen on load and Back / Forward, screen → URL after render (UIX decision 14)

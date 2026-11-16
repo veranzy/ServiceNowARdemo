@@ -17,3 +17,4 @@
 | 13 | Invoice PDF: generated when AR issues the draft (Issue invoice)? Template and delivery are open question 7. | Owner |
 | 14 | **Approval date** on the invoice: must it be set before *Issue invoice*? Is it a past date (when approved) or can it be future? Built as an optional date, no checks. | Owner |
 | 15 | 1st invoice from Closed complete: invoice date (built: recurring = line start or today if past; one-off = preferred invoice date if later, else today) and amount (built: amount per period, no proration). Part of the forecast logic (question 11)? | Owner |
+| 16 | Should one contract record (Contract or No contract) have **only one recurring billing schedule**? Owner: in theory yes, but uncertain. Today any number is allowed and the case's Billing schedule tab shows all of the contract's schedules. ([issue #7](https://github.com/veranzy/ServiceNowARdemo/issues/7)) | Owner |

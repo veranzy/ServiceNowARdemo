@@ -89,9 +89,17 @@ ServiceNow build:
 
 The prototype records the terms only. Nothing calculates or charges interest yet.
 
-## Changes 2026-11-16 (decisions 4–7)
+## Customer, contract and billing schedule records (decisions 4–7)
 
-- See CHANGELOG 2026-11-16 and decisions 4–7.
+- **Customer record:** tabs Details, AR requests, Contracts, Invoices, Billing contacts, Customer documents, Record history, all shown (no More menu). No Billing hierarchy (removed, [issue #6](https://github.com/veranzy/ServiceNowARdemo/issues/6)); billing schedules are not listed on the customer.
+- **Contract record:** all tabs shown: Details, Billing lines, GIRO history, Billing schedules, Invoices, AR requests, Record history. Top of the form:
+  - **Contract ID** (`contract_id`, String, read-only, auto-number CTR0001001 …, on every record).
+  - **Contract category** (`contract_type`, Choice, mandatory): `contract` Contract / `shell` No contract. A customer can have several No contract records (D15 amended); a No contract record needs a department.
+  - Contract type (`contract_category`: Recurring / Ad-hoc), **Contract number** (`number`: mandatory for Contract; for No contract optional, shows the Contract ID when empty).
+  - Contracts list: columns Contract ID, Number, Contract category, Title, Customer, Department, Bill-to, Value, Lines, Status; filter *No contract*.
+- **Billing schedule** (`x_ar_billing_schedule`): **Contract** mandatory; Customer read-only, set from the contract (before-insert/update business rule). Billing periods list has no action column.
+- **Daily invoice check** (scheduled job `JOB-DAILYINV`, daily): for each schedule period with no live invoice whose invoice date is 5 working days (Mon–Fri) away or less, insert a draft `x_ar_invoice` (schedule, period, contract, customer, AR request, request line) and add a work note on the AR-i case. AR issues drafts with *Issue invoice*. The demo shows the result as mock data only (no button).
+- Forecast logic, public holidays and invoice PDF: open questions 11–13.
 
 ## 1st invoice, approval date and billing schedule (decisions 8–9)
 

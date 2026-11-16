@@ -133,10 +133,11 @@ const issuedOf = custId => S.invoices.filter(i => i.customerId === custId && i.s
  *  `cols` = column keys of LISTS.requests.cols, in display order (the same set for every form for now; edit per form to customise). */
 export const REQ_COLS_DEFAULT = ["number", "form", "title", "customerId", "department", "amount", "state", "assignedTo", "requestedBy", "opened"];
 export const REQ_FORM_LISTS = [
-  { form: "AR-i", filter: "open_ari", label: "Open AR-i", note: "LST-REQ-ARI", cols: [...REQ_COLS_DEFAULT] },
-  { form: "AR-ix", filter: "open_arix", label: "Open AR-ix", note: "LST-REQ-ARIX", cols: [...REQ_COLS_DEFAULT] }
+  // Owner 2026-11-16: All (open and closed) instead of Open, so closed demo cases such as ARQ0001009 can be found
+  { form: "AR-i", filter: "all_ari", label: "All AR-i", note: "LST-REQ-ARI", cols: [...REQ_COLS_DEFAULT] },
+  { form: "AR-ix", filter: "all_arix", label: "All AR-ix", note: "LST-REQ-ARIX", cols: [...REQ_COLS_DEFAULT] }
 ];
-for (const l of REQ_FORM_LISTS) LISTS.requests.filters[l.filter] = [l.label, r => (r.form || "AR-i") === l.form && REQ_OPEN.includes(r.state)];
+for (const l of REQ_FORM_LISTS) LISTS.requests.filters[l.filter] = [l.label, r => (r.form || "AR-i") === l.form];
 
 const MENU = [
   ["AR requests", REQ_FORM_LISTS.map(l => ["requests", l.filter])],   // UIX decision 15: one open list per AR form

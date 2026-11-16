@@ -17,6 +17,7 @@ shipped. Requirement questions still open for the client live in each module's
 
 ## Done
 
+- 2026-11-16 **UIX**: AR request lists show All AR-i / All AR-ix (open and closed) instead of Open.
 - 2026-11-16 **CCI**: 1st invoice reviewed manually (suggested invoice date, manual approval date); approval date required to issue any invoice; schedules follow the contract billing cycle day (decision 9).
 - 2026-11-16 **CCI**: Closed complete generates the AR-i's 1st invoice; Approval date on invoices; AR creates the schedule on the contract for the 2nd invoice onwards; Billing schedule tab on recurring AR-i cases (decision 8).
 - 2026-11-16 **CCI**: daily invoice check shown as mock data only (no demo button).

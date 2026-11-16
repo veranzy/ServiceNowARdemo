@@ -89,6 +89,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-12 | Source of truth: the repo only; no exported copies in the Claude project. | Owner |
 | 2026-11-12 | Code layout: demo AR request cases now live in `data/AR_form.csv`, loaded by `js/cases.js` (UIX decision 13). | Owner |
 | 2026-11-12 | Code layout: `js/router.js` gives every page its own URL (UIX decision 14). | Owner |
+| 2026-11-16 | Core flow and domain model: new case states, State dropdown, substates, assignment group; case actions Assign to me and Save (AR-00 decision 4). | Owner |
 
 ## How we work: modules, one at a time
 
@@ -153,10 +154,9 @@ Expedited, optional justification), optional billing line items numbered 1, 2, 3
 Recurring, else one-off), documents only if not on file → `x_ar_request` case
 (New) in the workspace → AR **Link to customer** (creates/links the customer, links/creates the contract
 or shell and sets it on every line, writes the bill-to to the contract, files documents on the customer) → AR assigns,
-may *Request info* (portal reply returns it to In progress) or *Reject* → per **billing line**: one-off →
+sets the **State** dropdown (AR-00 decision 4; portal reply on Awaiting requestor information returns it to Work in progress) → per **billing line**: one-off →
 *Create invoice* (draft) → *Issue invoice*; recurring → *Set up billing schedule*, then **Raise invoice**
-per due period (never automatic, D12). The request becomes **Billed** when every line is invoiced
-(issued) or scheduled; the requester sees each line's invoice or schedule on the ticket page. Each morning AR
+per due period (never automatic, D12). AR closes the case by hand (Closed complete); the requester sees each line's invoice or schedule on the ticket page. Each morning AR
 uploads yesterday's CSV statement per bank account (**BSU**) → deposits saved to the **Bank statements**
 table with a Deposit ID → AR matches deposits to issued invoices **manually** on the Cash application page.
 **There is no auto-matching anywhere (D5); don't add it.** The app is the **system of record** for
@@ -180,7 +180,9 @@ concept: deposits come from BSU uploads, live in `x_ar_bank_statement` (code key
   After changing it run `node tools/mapping.mjs` to regenerate the mapping doc.
 - Invoice `state`: draft / issued / cancelled. Payment status (Unpaid / Part paid / Paid / Overdue) is
   calculated from accepted allocations. Only **issued** invoices can receive payments.
-- AR request `state`: new / in_progress / awaiting_info / invoiced (label **Billed**) / rejected. There is
+- AR request `state` (AR-00 decision 4): new / work_in_progress / awaiting_requestor_info / closed_complete /
+  closed_incomplete / cancelled, set by AR with a dropdown; `substate` (awaiting_input / awaiting_comment) only for
+  awaiting_requestor_info; `assignment_group` (Accounts Receivable). Case actions: Assign to me, Save (AR-i also Link to customer). There is
   no request type field; `amount` is the calculated request value (sum of line values). `activity` holds journal
   entries: `comment` (visible on portal), `work_note` (AR only), `system`.
 - Matches (`S.matches[<deposit id>]`) hold the deposit's allocations; `status: "accepted"` applies them.
@@ -252,7 +254,7 @@ AR-i with each contract option (new contract, existing contract with bill-to, no
 new shell); (search → add new customer with a new recurring contract; existing ad-hoc contract → one invoice;
 existing recurring contract with billing line items, GST calculated; Expedited shows the justification; recurring shows no preferred invoice date) → workspace Link to customer (contract / shell created, lines filed) → customer
 billing hierarchy → per line Create invoice / Set up billing
-schedule → request Billed → Raise invoice → portal ticket shows each line's invoice / schedule; BSU upload
+schedule → State dropdown Closed complete → Raise invoice → portal ticket shows each line's invoice / schedule; BSU upload
 (sample file and a real CSV file, wrong-bank error); cash application Find invoice → Apply, Remove match;
 ID tags visible and unclipped; 400px wide in dark mode.
 No console errors.

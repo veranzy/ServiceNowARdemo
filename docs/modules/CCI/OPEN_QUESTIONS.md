@@ -15,6 +15,6 @@
 | 11 | **Invoice forecast** on a billing schedule: how is it generated? Factors named by the owner: contract start and end dates, contract billing cycle, proration, and the AR-i deciding the first invoice. The daily invoice check uses the schedule's period dates until then. | Owner (to describe) |
 | 12 | Working days for the daily invoice check: Mon–Fri only, or also skip Singapore public holidays? Built as Mon–Fri. | Owner |
 | 13 | Invoice PDF: generated when AR issues the draft (Issue invoice)? Template and delivery are open question 7. | Owner |
-| 14 | **Approval date** on the invoice: must it be set before *Issue invoice*? Is it a past date (when approved) or can it be future? Built as an optional date, no checks. | Owner |
-| 15 | 1st invoice from Closed complete: invoice date (built: recurring = line start or today if past; one-off = preferred invoice date if later, else today) and amount (built: amount per period, no proration). Part of the forecast logic (question 11)? | Owner |
+| 14 | ~~Approval date: must it be set before Issue invoice?~~ Yes, for every invoice (decision 9). | Owner |
+| 15 | ~~1st invoice date and amount~~ The 1st invoice is reviewed manually: invoice date suggested from the AR-i's indicated start, approval date set by AR; amount from the AR-i, AR corrects it if needed (decision 9). | Owner |
 | 16 | Should one contract record (Contract or No contract) have **only one recurring billing schedule**? Owner: in theory yes, but uncertain. Today any number is allowed and the case's Billing schedule tab shows all of the contract's schedules. ([issue #7](https://github.com/veranzy/ServiceNowARdemo/issues/7)) | Owner |

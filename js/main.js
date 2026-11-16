@@ -3,7 +3,7 @@ import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -70,6 +70,7 @@ function uiAction(name) {
     toast(name === "assign" ? "Assigned to you." : "Done.");
   }
   if (tab.table === "invoices") {
+    if (name === "issue" && !saveActive(tab, { quiet: true })) return render();   // the form (e.g. Approval date) is saved first, as a ServiceNow UI action would
     const err = name === "issue" ? issueInvoice(tab.id) : name === "cancel" ? cancelInvoice(tab.id) : null;
     if (err) { tab.msg = { kind: "err", text: err }; return render(); }
     toast(name === "issue" ? "Invoice issued." : "Invoice cancelled.");
@@ -228,7 +229,11 @@ document.addEventListener("click", e => {
   if (d.open) { const [table, id] = d.open.split(":"); return openTab(table, id); }
   if (d.tab) { W().active = d.tab; render(); return window.scrollTo(0, 0); }
   if (d.closetab) return closeTab(d.closetab);
-  if (d.new) return newTab(d.new, d.prefillContract ? { contractId: d.prefillContract, customerId: S.contracts.find(k => k.id === d.prefillContract)?.customerId } : d.prefillCustomer ? { customerId: d.prefillCustomer } : null);
+  if (d.new && d.prefillContract) {   // New billing schedule (CCI decisions 8–9): contract, customer, monthly, first billing date on the next cycle day
+    const k = S.contracts.find(x => x.id === d.prefillContract);
+    return newTab(d.new, { contractId: k?.id, customerId: k?.customerId, department: k?.department || "", frequency: "monthly", firstDate: nextCycleDate(k), lastDate: k?.end || "" });
+  }
+  if (d.new) return newTab(d.new, d.prefillCustomer ? { customerId: d.prefillCustomer } : null);
   if (d.ui) return uiAction(d.ui);
   if (d.ckind) { const tab = activeTab(); const c = W().composer[tab.id] ||= { kind: "work_note", text: "" }; c.kind = d.ckind; c.text = $("composer-" + tab.id)?.value || c.text; return render(); }
   // BSU

@@ -122,7 +122,7 @@ export const UI_ACTIONS = {
   "UA-PT-addline": "RETIRED 2026-11-12: Add one-off / recurring line; the request has one billing event from the invoice details (PT-37)",
   "UA-REQ-post": "Post work note / additional comment to the activity stream",
   "UA-REQ-save": "Save (update). On x_ar_request also: state change journalled (system note); substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract; AR-i set to Closed complete generates the 1st invoice as a draft for each line without one (blocked until customer and contract are linked; CCI decision 8)",
-  "UA-INV-issue": "Issue invoice → state = Issued; BR sets AR request to Invoiced and posts a comment to the requester",
+  "UA-INV-issue": "Issue invoice (saves the form first) → state = Issued; blocked until approval_date is set (every invoice, CCI decision 9); posts a comment to the requester on the linked AR request",
   "UA-INV-cancel": "Cancel invoice → only when no BSU deposit is matched",
   "UA-INV-save": "Save (update, draft only)",
   "UA-DEP-match": "Match to invoice → opens the invoice finder for this deposit",

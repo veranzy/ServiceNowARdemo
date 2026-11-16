@@ -411,8 +411,8 @@ export function firstInvoices(r) {
   for (const l of reqLines(r)) {
     if (l.invoiceId || S.invoices.some(i => i.lineId === l.id && i.state !== "cancelled")) continue;
     const k = ctrById(l.contractId || r.contractId), c = custById(r.customerId);
-    const want = l.lineType === "recurring" ? l.startDate : l.invoiceDate;
-    const date = want && want > t ? want : t;
+    // CCI decision 9: invoice date suggested from the AR-i's indicated start (kept even if earlier than today); AR reviews it and sets the Approval date
+    const date = (l.lineType === "recurring" ? l.startDate : l.invoiceDate) || t;
     const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: k?.id || null, requestId: r.id, lineId: l.id,
       periodDate: l.lineType === "recurring" ? l.startDate || "" : "", customer: c?.name || "", desc: l.desc, amount: l.amount, date, approvalDate: "",
       due: addDays(date, k?.terms || c?.terms || 30), currency: "SGD" };
@@ -437,6 +437,16 @@ export function lineInvoice(lineId) {
   if (!r.assignedTo) r.assignedTo = me().id;
   journal(r, "work_note", `Draft invoice ${inv.number} created for line "${l.desc}".`);
   return { opened: inv };
+}
+
+/** CCI decision 9: the contract billing cycle's day of month (1st or 15th); null for Others / not set. */
+export const cycleDay = k => ({ first: 1, fifteenth: 15 })[k?.billingCycle] || null;
+/** Next date on the cycle day strictly after `from` (default today); "" when the contract has no fixed cycle day. */
+export function nextCycleDate(k, from = isoToday()) {
+  const day = cycleDay(k); if (!day) return "";
+  const d = new Date(from + "T00:00:00"); d.setDate(d.getDate() + 1);
+  while (d.getDate() !== day) d.setDate(d.getDate() + 1);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
 /** Working days (Mon–Fri) before a date: the day the daily job creates the draft. */
@@ -545,6 +555,7 @@ export function portalComment(id, text) {
 export function issueInvoice(id) {
   const i = S.invoices.find(x => x.id === id); if (!i || i.state !== "draft") return "Only draft invoices can be issued.";
   if (!(i.amount > 0) || !i.customerId || !i.desc) return "Customer, description and amount are required before issuing.";
+  if (!i.approvalDate) return "Set the Approval date before issuing.";   // CCI decision 9: every invoice
   i.state = "issued"; if (!i.date) i.date = isoToday();
   if (!i.due) { const k = ctrById(i.contractId), c = custById(i.customerId); i.due = addDays(i.date, k?.terms || c?.terms || 30); }
   const r = reqById(i.requestId);
@@ -594,6 +605,8 @@ export function saveRecord(table, id, raw) {
     const probe = { ...existing, ...vals };
     if (!probe.customerId || probe.newCustomer || !probe.contractId) errors.state = "Link to customer before Closed complete: the 1st invoice needs the customer and contract.";
   }
+  if (table === "schedules" && merged.firstDate && cycleDay(ctrById(merged.contractId)) && +merged.firstDate.slice(8, 10) !== cycleDay(ctrById(merged.contractId)))
+    errors.firstDate = `The contract billing cycle is the ${cycleDay(ctrById(merged.contractId)) === 1 ? "1st" : "15th"} of the month: choose a first billing date on that day.`;
   if (table === "schedules" && merged.requestId) {
     const r = reqById(merged.requestId), l = r && reqLines(r).find(x => x.lineType === "recurring");
     if (r && r.contractId !== merged.contractId) errors.requestId = "Choose an AR-i case on this contract.";

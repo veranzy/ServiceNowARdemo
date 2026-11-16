@@ -4,7 +4,7 @@
 // Each row goes through the same record-producer logic as a portal submission (createRequest), so a CSV case and a
 // portal case open on the same reusable Record page.
 import { parseCSV } from "./io.js";
-import { createRequest, draftDate, journal, nextNumber, periodAmounts, periodDates, setupSchedule } from "./records.js";
+import { createRequest, draftDate, journal, nextNumber, periodAmounts, periodDates, runDailyInvoiceCheck, setupSchedule } from "./records.js";
 import { TABLES } from "./schema.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, uid } from "./util.js";
@@ -13,7 +13,8 @@ export const CASES_CSV = "data/AR_form.csv";
 /** Demo setup: contracts on which AR has already set GIRO by hand from a completed AR-ix case (AR-ix decision 11). */
 const GIRO_SET_BY_AR = [["HL-2026-01", "ARQ0001007"]];
 /** Demo setup (CCI, 2026-11-16): AR-i cases whose recurring line AR has already set up as a billing schedule. The first
- *  period is placed 3 working days from today, so "Run daily invoice check" creates its first draft, linked to the case. */
+ *  period is placed 3 working days from today and the daily job's draft for it is already in the mock data (owner: no demo
+ *  button, mock data only), linked to the case. */
 const SCHEDULE_SET_BY_AR = ["ARQ0001009"];
 
 const ymd = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
@@ -83,6 +84,7 @@ export function addCases(text) {
     const res = setupSchedule(l.id);
     if (res?.opened) { res.opened.firstDate = l.startDate; r.activity.forEach(e => { e.at = (r.opened || "") + "T09:00:00"; }); }
   }
+  runDailyInvoiceCheck();   // mock data: the drafts last night's daily invoice check would have created
   for (const [ctr, num] of GIRO_SET_BY_AR) {
     const k = S.contracts.find(x => x.number === ctr), r = S.requests.find(x => x.number === num);
     if (k && r) Object.assign(k, { giroStatus: "active", giroCaseId: r.id });

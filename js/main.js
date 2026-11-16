@@ -3,7 +3,7 @@ import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, runDailyInvoiceCheck, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -192,10 +192,6 @@ document.addEventListener("click", e => {
   const d = t.dataset;
   if (d.persona) { S.ui.persona = d.persona; return render(); }
   if (t.id === "resetDemo") { loadSample(); toast("Demo data reset."); return render(); }
-  if (t.id === "dailyCheck") {   // D12 amended: the daily scheduled job, run on demand in the demo
-    const made = runDailyInvoiceCheck(); render();
-    return toast(made.length ? `Daily invoice check: ${made.length} draft invoice${made.length === 1 ? "" : "s"} created (${made.map(i => i.number).join(", ")}).` : "Daily invoice check: no billing period is due within 5 working days.");
-  }
   // portal
   if (d.pnav) { if (d.pnav === "form") P().formCode = d.form || "AR-i"; P().page = d.pnav; if (d.pnav !== "form") P().errors = {}; render(); return window.scrollTo(0, 0); }
   if (d.ticket) { P().page = "ticket"; P().id = d.ticket; render(); return window.scrollTo(0, 0); }

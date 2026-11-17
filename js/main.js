@@ -97,6 +97,7 @@ function coerce(table, key, el) {
   if (f.type === "Integer" || f.type === "Decimal") return el.value === "" ? 0 : Number(el.value);
   if (key === "aliases") return el.value.split(",").map(s => s.trim()).filter(Boolean);
   if (f.type === "Reference") return el.value || null;
+  if (f.type === "List") return [...el.selectedOptions].map(o => o.value);   // multi-select (e.g. Contract owner)
   return el.value;
 }
 

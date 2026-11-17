@@ -73,6 +73,7 @@ function refOptions(f, rec, formVals) {
 function readValue(table, f, rec) {
   const v = rec[f.key];
   if (f.type === "Reference") return f.ref === "groups" ? esc(S.groups.find(g => g.id === v)?.name || "—") : f.ref === "users" ? esc(userById(v)?.name || "—") : f.ref === "companies" ? esc(S.companies.find(co => co.id === v)?.name || "—") : refLink(f.ref, v);
+  if (f.type === "List") return (v || []).length ? (v || []).map(x => esc(f.ref === "users" ? userById(x)?.name || x : x)).join(", ") : "—";
   if (f.type === "Choice") return esc((f.choices.find(c => c[0] === v) || [, v || "—"])[1]);
   if (f.type === "Currency") return v ? `<span class="mono">SGD ${fmt(v)}</span>` : "—";
   if (f.key === "aliases") return (v || []).length ? v.map(a => `<span class="ref">${esc(a)}</span>`).join(" ") : "—";
@@ -97,7 +98,8 @@ export function fieldHtml(table, f, rec, ctx = {}) {
   else {
     const v = rec[f.key];
     const common = `id="${id}" name="${ctx.name || f.key}"${f.mandatory ? ` aria-required="true"` : ""}${err ? ` aria-invalid="true"` : ""}`;
-    if (f.type === "Reference") ctl = `<select ${common}><option value="">-- None --</option>${refOptions(f, rec, ctx.vals).map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+    if (f.type === "List") ctl = `<select ${common} multiple size="${Math.min(4, refOptions(f, rec, ctx.vals).length)}">${refOptions(f, rec, ctx.vals).map(([k, l]) => `<option value="${esc(k)}"${(v || []).includes(k) ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+    else if (f.type === "Reference") ctl = `<select ${common}><option value="">-- None --</option>${refOptions(f, rec, ctx.vals).map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     else if (f.type === "Choice") ctl = `<select ${common}>${f.mandatory ? "" : `<option value="">-- None --</option>`}${(f.choiceDependsOn ? f.choices.filter(c => c[2] === (ctx.vals || rec)[f.choiceDependsOn]) : f.choices).map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     else if (f.type.startsWith("String (")) ctl = `<textarea ${common} rows="3">${esc(f.key === "aliases" ? (v || []).join(", ") : v || "")}</textarea>`;
     else if (f.type === "Currency") ctl = `<div class="money-in"><span>SGD</span><input ${common} type="number" step="0.01" min="0" inputmode="decimal" value="${v ? (v / 100).toFixed(2) : ""}"></div>`;

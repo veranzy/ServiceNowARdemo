@@ -395,6 +395,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON.contract_category` | x_ar_contract.contract_category · Choice · Recurring or Ad-hoc |
 | `CON.customer` | x_ar_contract.customer · Reference → x_ar_customer · mandatory |
 | `CON.department` | x_ar_contract.department · Choice · Owning department |
+| `CON.contract_owners` | x_ar_contract.contract_owners · List → sys_user · Project team users who can pick this contract on an AR-ix even when it belongs to another department (List of sys_user, several owners; CCI decision 10, E8.5) |
 | `CON.reference_number` | x_ar_contract.reference_number · String |
 | `CON.po_number` | x_ar_contract.po_number · String |
 | `CON.short_description` | x_ar_contract.short_description · String · mandatory |

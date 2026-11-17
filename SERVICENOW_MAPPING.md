@@ -56,6 +56,7 @@ Custom contract table (not ast_contract). Every record has a system Contract ID 
 | `contract_category` | Contract type | Choice | Choices: Recurring (`recurring`), Ad-hoc (`ad_hoc`). Recurring or Ad-hoc |
 | `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
 | `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Owning department |
+| `contract_owners` | Contract owner | List | → `sys_user` (users with x_ar.project_team). Project team users who can pick this contract on an AR-ix even when it belongs to another department (List of sys_user, several owners; CCI decision 10, E8.5) |
 | `reference_number` | Contract reference number | String |  |
 | `po_number` | Contract PO number | String |  |
 | `short_description` | Title | String | Mandatory |

@@ -318,7 +318,7 @@ const LAYOUT = {
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
   customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]],
     ["Agency and point of contact", ["agencyType", "vag", "vagSubBu", "pocName", "pocEmail"]]],
-  contracts: [["Contract", ["ctrId", "contractType", "category", "number", "reference", "poNumber", "customerId", "department", "title", "start", "end", "value", "billing", "notes"]],
+  contracts: [["Contract", ["ctrId", "contractType", "category", "number", "reference", "poNumber", "customerId", "department", "owners", "title", "start", "end", "value", "billing", "notes"]],
     ["Billing terms", ["billingCycle", "billingCycleOther", "invoiceDate", "paymentTerms", "paymentTermsOther", "terms", "discPct", "discDays", "prorate", "prorateFirst", "prorateLast", "typeOfBilling", "bulkDocs"]],
     ["Late payment interest (LPI)", ["lpiApplicable", "lpiMinRate", "lpiRate"]],
     ["GIRO", ["giroStatus", "giroCaseId"]],

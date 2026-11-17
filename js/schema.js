@@ -346,6 +346,7 @@ export const TABLES = {
       { key: "category", name: "contract_category", label: "Contract type", type: "Choice", choices: CONTRACT_CATEGORIES, help: "Recurring or Ad-hoc" },
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
       { key: "department", name: "department", label: "Department", type: "Choice", choices: DEPT_CHOICES, help: "Owning department" },
+      { key: "owners", name: "contract_owners", label: "Contract owner", type: "List", ref: "users", refFilter: "project", help: "Project team users who can pick this contract on an AR-ix even when it belongs to another department (List of sys_user, several owners; CCI decision 10, E8.5)" },
       { key: "reference", name: "reference_number", label: "Contract reference number", type: "String" },
       { key: "poNumber", name: "po_number", label: "Contract PO number", type: "String" },
       { key: "title", name: "short_description", label: "Title", type: "String", mandatory: true, wide: true },

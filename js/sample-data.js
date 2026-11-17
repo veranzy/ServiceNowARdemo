@@ -220,8 +220,10 @@ export function loadSample() {
   // Contracts: owning department and bill-to person (D16). HL-2026-02 has no bill-to yet (the requester is asked for one).
   const ctrDept = { "HL-2026-01": "Logistics", "HL-2026-02": "Logistics", "MF-2025-07": "Logistics", "KE-2026-03": "Engineering", "TR-2026-02": "Digital", "OC-2026-01": "Healthcare",
     "NB-2026-05": "Digital", "BW-S-2026": "Facilities", "BW-O-2026": "Facilities", "LP-PO-0193": "Advisory", "PC-2026-02": "Marine", "TR-TA-2025-14": "Facilities" };
+  // Contract owners (CCI decision 10): project team users who can pick the contract on an AR-ix outside its department
+  const ctrOwners = { "HL-2026-01": ["u_pm2", "u_pm1"], "TR-TA-2025-14": ["u_pm1"], "TR-2026-02": ["u_pm1"], "NB-2026-05": ["u_pm1"] };
   for (const k of S.contracts) {
-    k.contractType = "contract"; k.department = ctrDept[k.number] || "";
+    k.contractType = "contract"; k.department = ctrDept[k.number] || ""; k.owners = ctrOwners[k.number] || [];
     const c = S.contacts.find(x => x.customerId === k.customerId && x.department === k.department);
     if (c && k.number !== "HL-2026-02") Object.assign(k, { billToName: c.name, billToEmail: c.email, billToPhone: c.phone, billToAddress: c.address });
   }

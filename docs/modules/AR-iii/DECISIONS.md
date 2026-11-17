@@ -22,3 +22,4 @@ it replaces, and the old row is struck through. Cross-module decisions go to `do
 | 15 | Review, drafts, documents | No separate Review and Submit step (the side summary stays); **no drafts** in this demo; documents are generic attachments as on AR-ix, with no size or type checks. | 2026-11-17 |
 | 16 | AR3 rows | Collection Type choices: Cashcard, Credit Card, NETS, NETS FlashPay, NETS Scan/QR; **duplicates allowed**. 1–99 rows; total transactions shown. | 2026-11-17 |
 | 17 | Currency | Default list SGD, USD, MYR, EUR, GBP, CNY, JPY, AUD until a currency master list is decided (open question 9). | 2026-11-17 |
+| 18 | Plan | Owner: **park the open questions** (6, 8–13) and stick to the plan: portal forms first; processing later. | 2026-11-18 |

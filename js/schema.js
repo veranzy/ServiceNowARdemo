@@ -225,8 +225,8 @@ export const TABLES = {
       { key: "payer", name: "payer_name", label: "Payer (as on statement)", type: "String", readonly: true, wide: true },
       { key: "reference", name: "bank_reference", label: "Reference / remittance", type: "String", readonly: true, wide: true },
       { key: "bankRef", name: "bank_transaction_ref", label: "Bank transaction ref", type: "String", readonly: true },
-      { key: "txnId", name: "transaction_id", label: "Transaction ID", type: "String", readonly: true, help: "From the bank's transaction-code column (BSU decision 18); matched to a payment mode of the bank account" },
-      { key: "paymentModeId", name: "payment_mode", label: "Payment mode", type: "Reference", ref: "paymentModes", readonly: true, help: "Payment mode whose Transaction ID equals the statement line's; empty when none matched (fallback Deposit ID)" }
+      { key: "txnId", name: "transaction_id", label: "Transaction ID", type: "String", readonly: true, help: "From the bank's transaction-code column (BSU decisions 18–19); matched to a payment mode of the bank account" },
+      { key: "paymentModeId", name: "payment_mode", label: "Payment mode", type: "Reference", ref: "paymentModes", readonly: true, help: "Payment mode equal to the statement line's transaction code (BSU decision 19); empty when none matched (fallback Deposit ID)" }
     ],
     calculated: [
       { name: "match_state", label: "Match state", type: "Choice", how: "Unmatched / Part matched / Matched, from accepted allocations" },
@@ -264,11 +264,10 @@ export const TABLES = {
   },
   paymentModes: {
     table: `${SCOPE}_payment_mode`, label: "Payment mode", plural: "Payment modes", display: "name",
-    note: "Payment modes per bank account (BSU decision 18), defined by AR. A statement line's transaction ID selects the payment mode, whose prefix and suffix build the Deposit ID: <Prefix>-<DDMMYY>-<Suffix>.",
+    note: "Payment modes per bank account (BSU decisions 18–19), defined by AR. A statement line's transaction code equals the payment mode, whose prefix and suffix build the Deposit ID: <Prefix>-<DDMMYY>-<Suffix>.",
     fields: [
       { key: "bankAccountId", name: "bank_account", label: "Bank account", type: "Reference", ref: "bankAccounts", mandatory: true },
-      { key: "name", name: "name", label: "Payment mode", type: "String", mandatory: true, help: "e.g. GIRO, FAST, Cheque, Telegraphic transfer" },
-      { key: "txnId", name: "transaction_id", label: "Transaction ID", type: "String", mandatory: true, help: "The value in the bank statement's transaction-code column for this payment mode (exact match, not case-sensitive)" },
+      { key: "name", name: "name", label: "Payment mode", type: "String", mandatory: true, help: "The code in the bank statement's transaction column for this payment mode, e.g. GIRO, FAST, CHQ, TT; a statement line matches it exactly, not case-sensitive (BSU decision 19)" },
       { key: "prefix", name: "prefix", label: "Prefix", type: "String", mandatory: true, help: "Start of the Deposit ID, e.g. AAA" },
       { key: "suffix", name: "suffix", label: "Suffix", type: "String", mandatory: true, help: "End of the Deposit ID" },
       { key: "active", name: "active", label: "Active", type: "True/False", default: true, help: "Inactive payment modes are not used for new uploads (CCI decision 12)" }

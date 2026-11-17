@@ -102,10 +102,10 @@ export const LISTS = {
     filters: { all: ["Payment modes", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
     // BSU decision 17 applied here too: bank name, bank account number and bank account name in their own columns
     cols: [["Payment mode", m => refLink("paymentModes", m.id, m.name), "", "name"], ["Bank name", m => esc(BANKS[acctById(m.bankAccountId)?.bank]?.name || "—"), "", "=PMD.bank_name"],
-      ["Bank account number", m => refLink("bankAccounts", m.bankAccountId, acctById(m.bankAccountId)?.number), "", "bankAccountId"], ["Bank account name", m => esc(acctById(m.bankAccountId)?.name || "—"), "", "=PMD.bank_account_name"], ["Transaction ID", m => `<span class="mono">${esc(m.txnId)}</span>`, "", "txnId"],
+      ["Bank account number", m => refLink("bankAccounts", m.bankAccountId, acctById(m.bankAccountId)?.number), "", "bankAccountId"], ["Bank account name", m => esc(acctById(m.bankAccountId)?.name || "—"), "", "=PMD.bank_account_name"],
       ["Deposit ID", m => `<span class="mono">${esc(m.prefix)}-DDMMYY-${esc(m.suffix)}</span>`, "", "=PMD.deposit_id_pattern"], ["Active", m => m.active !== false ? "Yes" : "No", "", "active"]],
     sort: (a, b) => String(acctLabel(acctById(a.bankAccountId))).localeCompare(acctLabel(acctById(b.bankAccountId))) || a.name.localeCompare(b.name),
-    text: m => [m.name, m.txnId, m.prefix, m.suffix, acctLabel(acctById(m.bankAccountId))].join(" "), newable: true
+    text: m => [m.name, m.prefix, m.suffix, acctLabel(acctById(m.bankAccountId))].join(" "), newable: true
   },
   // Master data for the Collections form (CCI decision 11, #9 §8)
   costCentres: {
@@ -346,7 +346,7 @@ const LAYOUT = {
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
   deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "txnId", "paymentModeId", "bankRef", "payer", "reference"]]],
-  paymentModes: [["Payment mode", ["bankAccountId", "name", "txnId", "prefix", "suffix", "active"]]],
+  paymentModes: [["Payment mode", ["bankAccountId", "name", "prefix", "suffix", "active"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency", "colTypes", "active"]]],
   customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes", "active"]],
@@ -606,7 +606,7 @@ function related(table, rec) {
     const deps = S.deposits.filter(p => table === "uploads" ? p.uploadId === rec.id : p.bankAccountId === rec.id).sort(LISTS.deposits.sort);
     const ups = table === "bankAccounts" ? [rt("Statement uploads", "uploads", S.uploads.filter(u => u.bankAccountId === rec.id).sort(LISTS.uploads.sort),
       [["Upload", u => refLink("uploads", u.id, u.number)], ["Statement date", u => esc(u.statementDate)], ["Deposits", u => String(u.depositCount), "num"], ["Total", u => fmt(u.depositTotal), "num"]], { id: "RL-BNK-BSU" })] : [];
-    const pms = table === "bankAccounts" ? [rt("Payment modes", "paymentModes", S.paymentModes.filter(m => m.bankAccountId === rec.id), [["Payment mode", m => refLink("paymentModes", m.id, m.name)], ["Transaction ID", m => `<span class="mono">${esc(m.txnId)}</span>`], ["Deposit ID", m => `<span class="mono">${esc(m.prefix)}-DDMMYY-${esc(m.suffix)}</span>`], ["Active", m => m.active !== false ? "Yes" : "No"]], { id: "RL-BNK-PMD" })] : [];
+    const pms = table === "bankAccounts" ? [rt("Payment modes", "paymentModes", S.paymentModes.filter(m => m.bankAccountId === rec.id), [["Payment mode", m => refLink("paymentModes", m.id, m.name)], ["Deposit ID", m => `<span class="mono">${esc(m.prefix)}-DDMMYY-${esc(m.suffix)}</span>`], ["Active", m => m.active !== false ? "Yes" : "No"]], { id: "RL-BNK-PMD" })] : [];
     return [...pms, ...ups, rt("BSU deposits", "deposits", deps, [["Deposit ID", p => refLink("deposits", p.id, p.number)], ["Payer", p => esc(p.payer)], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap"], ["Amount", p => fmt(p.amount), "num"], ["Match", p => depositChip(p)]], { id: table === "uploads" ? "RL-BSU-DEP" : "RL-BNK-DEP" })];
   }
   if (table === "invoices" || table === "deposits") {

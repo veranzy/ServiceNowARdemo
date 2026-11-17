@@ -29,7 +29,7 @@ export function parseBankDate(bank, text) {
 }
 
 /** BSU decision 18: the bank account's active payment mode whose Transaction ID equals the statement line's. */
-export const modeFor = (acct, txn) => S.paymentModes.find(m => m.bankAccountId === acct.id && m.active !== false && String(m.txnId).trim().toLowerCase() === String(txn || "").trim().toLowerCase()) || null;
+export const modeFor = (acct, txn) => S.paymentModes.find(m => m.bankAccountId === acct.id && m.active !== false && String(m.name).trim().toLowerCase() === String(txn || "").trim().toLowerCase()   /* BSU decision 19: the payment mode itself is the code */) || null;
 /** Deposit ID (BSU decision 18): <Prefix>-<DDMMYY>-<Suffix> from the payment mode and the deposit date; UNK-<DDMMYY>-XX when no mode matches. Not unique. */
 export function depositId(acct, iso, txn) {
   const m = modeFor(acct, txn), [y, mo, d] = iso.split("-");
@@ -86,7 +86,7 @@ export function sampleCSV(acct, iso) {
   const lines = [];
   const a = pick(1), b = pick(2);
   // transaction codes as the sample payment modes of the account use them (BSU decision 18); INT has no payment mode (fallback ID)
-  const codes = S.paymentModes.filter(m => m.bankAccountId === acct.id).map(m => m.txnId), code = k => codes.length ? codes[(seed + k) % codes.length] : "FAST";
+  const codes = S.paymentModes.filter(m => m.bankAccountId === acct.id).map(m => m.name), code = k => codes.length ? codes[(seed + k) % codes.length] : "FAST";
   if (a) lines.push({ txn: code(1), payer: (custOf(a)?.aliases?.[0] || a.customer).toUpperCase().slice(0, 34), ref: `INV ${a.number.replace("INV-", "")}`, credit: a.amount });
   if (b && b !== a) lines.push({ txn: code(2), payer: (custOf(b)?.name || b.customer).toUpperCase().replace(/ PTE LTD| SDN BHD/, "").slice(0, 34), ref: `PAYMENT ${b.number}`, credit: Math.round(b.amount / 2) });
   lines.push({ txn: code(3), payer: "FAST PAYMENT", ref: `OTHR ${1000 + (seed % 9000)}`, credit: 50000 + (seed % 40) * 2500 });

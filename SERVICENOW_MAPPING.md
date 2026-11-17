@@ -350,8 +350,8 @@ The only record of money received (D7): one row per deposit (credit) loaded by B
 | `payer_name` | Payer (as on statement) | String | Read-only on form |
 | `bank_reference` | Reference / remittance | String | Read-only on form |
 | `bank_transaction_ref` | Bank transaction ref | String | Read-only on form |
-| `transaction_id` | Transaction ID | String | Read-only on form. From the bank's transaction-code column (BSU decision 18); matched to a payment mode of the bank account |
-| `payment_mode` | Payment mode | Reference | → `x_ar_payment_mode`. Read-only on form. Payment mode whose Transaction ID equals the statement line's; empty when none matched (fallback Deposit ID) |
+| `transaction_id` | Transaction ID | String | Read-only on form. From the bank's transaction-code column (BSU decisions 18–19); matched to a payment mode of the bank account |
+| `payment_mode` | Payment mode | Reference | → `x_ar_payment_mode`. Read-only on form. Payment mode equal to the statement line's transaction code (BSU decision 19); empty when none matched (fallback Deposit ID) |
 | `match_state` | Match state | Choice | Calculated: Unmatched / Part matched / Matched, from accepted allocations |
 | `unmatched_amount` | Unmatched amount | Currency | Calculated: amount − accepted allocations |
 
@@ -371,13 +371,12 @@ Applies part or all of a BSU deposit to an invoice, or to an open Collections ca
 
 ### Payment mode — `x_ar_payment_mode`
 
-Payment modes per bank account (BSU decision 18), defined by AR. A statement line's transaction ID selects the payment mode, whose prefix and suffix build the Deposit ID: <Prefix>-<DDMMYY>-<Suffix>.
+Payment modes per bank account (BSU decisions 18–19), defined by AR. A statement line's transaction code equals the payment mode, whose prefix and suffix build the Deposit ID: <Prefix>-<DDMMYY>-<Suffix>.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `bank_account` | Bank account | Reference | → `x_ar_bank_account`. Mandatory |
-| `name` | Payment mode | String | Mandatory. e.g. GIRO, FAST, Cheque, Telegraphic transfer |
-| `transaction_id` | Transaction ID | String | Mandatory. The value in the bank statement's transaction-code column for this payment mode (exact match, not case-sensitive) |
+| `name` | Payment mode | String | Mandatory. The code in the bank statement's transaction column for this payment mode, e.g. GIRO, FAST, CHQ, TT; a statement line matches it exactly, not case-sensitive (BSU decision 19) |
 | `prefix` | Prefix | String | Mandatory. Start of the Deposit ID, e.g. AAA |
 | `suffix` | Suffix | String | Mandatory. End of the Deposit ID |
 | `active` | Active | True/False | Inactive payment modes are not used for new uploads (CCI decision 12). Default: true |

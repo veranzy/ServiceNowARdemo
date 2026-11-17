@@ -311,8 +311,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `DEP.payer_name` | x_ar_bank_statement.payer_name · String · read-only |
 | `DEP.bank_reference` | x_ar_bank_statement.bank_reference · String · read-only |
 | `DEP.bank_transaction_ref` | x_ar_bank_statement.bank_transaction_ref · String · read-only |
-| `DEP.transaction_id` | x_ar_bank_statement.transaction_id · String · read-only · From the bank's transaction-code column (BSU decision 18); matched to a payment mode of the bank account |
-| `DEP.payment_mode` | x_ar_bank_statement.payment_mode · Reference → x_ar_payment_mode · read-only · Payment mode whose Transaction ID equals the statement line's; empty when none matched (fallback Deposit ID) |
+| `DEP.transaction_id` | x_ar_bank_statement.transaction_id · String · read-only · From the bank's transaction-code column (BSU decisions 18–19); matched to a payment mode of the bank account |
+| `DEP.payment_mode` | x_ar_bank_statement.payment_mode · Reference → x_ar_payment_mode · read-only · Payment mode equal to the statement line's transaction code (BSU decision 19); empty when none matched (fallback Deposit ID) |
 
 ## Statement upload
 
@@ -668,8 +668,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `PMD.bank_account` | x_ar_payment_mode.bank_account · Reference → x_ar_bank_account · mandatory |
-| `PMD.name` | x_ar_payment_mode.name · String · mandatory · e.g. GIRO, FAST, Cheque, Telegraphic transfer |
-| `PMD.transaction_id` | x_ar_payment_mode.transaction_id · String · mandatory · The value in the bank statement's transaction-code column for this payment mode (exact match, not case-sensitive) |
+| `PMD.name` | x_ar_payment_mode.name · String · mandatory · The code in the bank statement's transaction column for this payment mode, e.g. GIRO, FAST, CHQ, TT; a statement line matches it exactly, not case-sensitive (BSU decision 19) |
 | `PMD.prefix` | x_ar_payment_mode.prefix · String · mandatory · Start of the Deposit ID, e.g. AAA |
 | `PMD.suffix` | x_ar_payment_mode.suffix · String · mandatory · End of the Deposit ID |
 | `PMD.active` | x_ar_payment_mode.active · True/False · Inactive payment modes are not used for new uploads (CCI decision 12) |

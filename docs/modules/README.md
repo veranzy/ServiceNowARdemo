@@ -40,12 +40,13 @@ for a module or a named part of it (e.g. *Portal form: Locked*) with the date.
 |---|---|---|---|---|
 | [AR-00](AR-00/README.md) | AR forms, shared parts: catalogue of 16 forms (AR-i … AR-xvi), General information, department sub-BU, CC list, My requests, ticket page, case states | Project team, AR team | In prototype | Open |
 | [AR-i](AR-i/README.md) | AR-i New AR request: the form, Link to customer, billing lines; Closed complete generates the 1st invoice; Billing schedule and Invoices tabs on the case | Project team, AR team | In prototype | **Portal form: Locked** (2026-11-12, Owner) |
+| [AR-iii](AR-iii/README.md) | AR-iii, first **Collections** form (D28: money collected without an invoice; AR-iii, AR-iv, AR-v); BSU deposit matched to the case (D29). Form to be defined | Project team, AR team | Being defined | Open |
 | [AR-ix](AR-ix/README.md) | AR-ix GIRO authorisation: a request to add / remove GIRO on a contract; AR updates the contract's GIRO status by hand, then completes the case (one active per contract) | Project team, AR team | In prototype | Portal form: **Locked** (2026-11-17, Owner, after #8; first locked 2026-11-12) |
 | [CCI](CCI/README.md) | Customers, contracts and invoices: master data, Contract ID and category (Contract / No contract), billing contacts, customer documents, billing schedules on contracts, daily invoice check, invoice lifecycle (draft → approval date → issued → cancelled) | AR team | In prototype | Open |
 | [BSU](BSU/README.md) | Bank statement upload and cash application: daily CSV upload, Deposit IDs, manual matching of deposits to invoices | AR team | In prototype | Open |
 | [UIX](UIX/README.md) | Workspace look and layout aligned to the Horizon Design System (app shell, list page, record page) | AR team | In prototype | Open |
 
-AR-ii … AR-xvi each get a module folder named after the form (e.g. `AR-ii/`) when the owner defines them.
+AR-ii, AR-iv … AR-viii and AR-x … AR-xvi each get a module folder named after the form (e.g. `AR-ii/`) when the owner defines them.
 
 ## Former module codes (before 2026-11-12)
 

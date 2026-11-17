@@ -3,7 +3,7 @@
 **Status:** In prototype
 **Persona(s):** Project team (portal) submits; AR team (workspace) processes
 **Demo:** Portal → *AR forms* → **AR-i New AR request**. Workspace → the AR request record
-(Link section, Billing lines), billing schedule records, list menu *Recurring billing*.
+(Link section, Billing lines), billing schedule records (on the contract).
 
 Files in this folder: this spec, [DECISIONS.md](DECISIONS.md) (numbers carried over from the old ARF
 module), [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md), [CHANGELOG.md](CHANGELOG.md).
@@ -81,7 +81,7 @@ AR-i never changes master data by itself (D22, see [AR-00 → Context](../AR-00/
 2. Recurring: AR creates the **billing schedule on the contract** (*New billing schedule*) for the 2nd invoice
    onwards, on the contract billing cycle day, and picks this case; a daily job drafts each period 5 working days
    ahead (D12 amended, CCI decisions 7–9). Periods show Due / Upcoming / Invoiced.
-3. List menu → *AR requests*: All AR-i (UIX decision 15); *Recurring billing*: Billing schedules, Billing periods due.
+3. List menu → *AR requests*: All AR-i (UIX decision 15). Billing schedules are on the contract's *Billing schedule* tab (no list menu group, UIX decision 17).
 
 ## ServiceNow mapping
 

@@ -14,3 +14,4 @@
 | 2026-11-17 | D31: AR-i side bar *Customer setup* (`REQ-SETUP`) retired; Activity is the AR-i side panel. |
 | 2026-11-18 | Decision 16: common case page. Collections cases no longer show Customer / Contract in the header; Activity is the default side panel on every case (AR-ix opened on GIRO setup before). No IDs added or retired. |
 | 2026-11-18 | Fix: with Show IDs on, the `WS-01` tag covered the bottom of the AR logo in the workspace header; it now sits on the header's bottom edge. |
+| 2026-11-18 | Decision 17: *Recurring billing* group removed from the list menu (Billing periods due, Active schedules, All schedules); schedules are under contracts. No IDs added or retired. |

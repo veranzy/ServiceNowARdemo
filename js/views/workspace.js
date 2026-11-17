@@ -167,7 +167,7 @@ for (const l of REQ_FORM_LISTS) LISTS.requests.filters[l.filter] = [l.label, r =
 
 const MENU = [
   ["AR requests", REQ_FORM_LISTS.map(l => ["requests", l.filter])],   // UIX decision 15: one open list per AR form
-  ["Recurring billing", [["schedules", "due"], ["schedules", "active"], ["schedules", "all"]]],
+  // UIX decision 17: no Recurring billing group; schedules are reached from the contract
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
   ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"], ["paymentModes", "all"]]],
   ["GIRO", [["requests", "giroall"], ["contracts", "giro"]]],

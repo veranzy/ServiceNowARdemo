@@ -12,7 +12,7 @@ const issued = () => S.invoices.filter(i => i.state === "issued");
 // D29: open Collections cases (AR-iii, AR-iv, AR-v) can be matched too, against their Request value (amount).
 // A case is shown to the finder in the shape of an invoice (kind "case"); its allocation records requestId instead of invoiceId.
 const caseTarget = r => ({ kind: "case", id: r.id, number: r.number, customer: custById(r.customerId)?.name || r.newCustName || "", customerId: r.customerId, contractId: r.contractId,
-  amount: r.amount || 0, date: r.opened, due: "", desc: r.title, form: r.form });
+  amount: r.amount || 0, date: r.opened, due: "", desc: r.title, form: r.colType || r.form });
 export const openCollections = () => S.requests.filter(r => COLLECTION_FORMS.includes(r.form) && REQ_OPEN.includes(r.state) && r.amount > 0).map(caseTarget);
 /** An invoice, or a Collections case in invoice shape. */
 export function targetById(id) { const i = invById(id); if (i) return i; const r = S.requests.find(x => x.id === id && COLLECTION_FORMS.includes(x.form)); return r ? caseTarget(r) : null; }

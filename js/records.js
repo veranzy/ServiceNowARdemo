@@ -99,6 +99,14 @@ export const canViewReq = (r, u = me()) => r.requestedBy === u.id || ccEmails(r.
 // ---------- AR-ix GIRO authorisation (AR-ix module) ----------
 export const CONTRACT_CATEGORY = Object.fromEntries(CONTRACT_CATEGORIES);
 export const GIRO_PURPOSE = Object.fromEntries(GIRO_PURPOSES), GIRO_TYPE = Object.fromEntries(GIRO_TYPES);
+/** AR-i cases (form AR-i, or blank on older data): only these have billing lines and generate the 1st invoice. */
+export const isARi = r => !r.form || r.form === "AR-i";
+/** Collections form (AR-iii module, D30): General information, then the collection type. Shell until the owner gives the fields. */
+export function validateCOL(d) {
+  const e = {}; generalInfoErrors(d, e);
+  if (!d.colType) e.colType = "Choose the collection type.";
+  return e;
+}
 /** AR-ix decision 22 (E8.5): the existing contracts a requester may pick. The customer's contracts (not No contract) whose
  *  department is the form's Department, or of which the requester is a contract owner (reference qualifier on REQ.contract). */
 export function giroContracts(d, u = me()) {
@@ -173,6 +181,7 @@ export const giroTarget = d => d.contractOption === "existing" ? (d.contractId ?
  *  Line errors are keyed "line:<index>:<field>"; "lines" when there are no lines. */
 export function validateARi(d) {
   if (d.form === "AR-ix") return validateARix(d);
+  if (d.form === "COL") return validateCOL(d);
   const e = {}, need = (k, msg) => { const v = d[k]; if (v === undefined || v === null || v === "" || v === false) e[k] = msg; };
   generalInfoErrors(d, e);
   if (d.newCustomer) need("newCustName", "Enter the new customer's name.");
@@ -273,6 +282,7 @@ export const reqLines = r => S.lines.filter(l => l.requestId === r.id);
 /** Short label like "2 one-off · 1 recurring". */
 export function linesLabel(r) {
   if (r.form === "AR-ix") return giroLabel(r);
+  if (r.form === "COL") return `Collections · ${r.colType || "type not set"}`;
   const ls = r.lines || reqLines(r), s = linesSummary(ls);
   return [s.nOne ? `${s.nOne} one-off` : "", s.nRec ? `${s.nRec} recurring` : ""].filter(Boolean).join(" · ") || "No lines";
 }
@@ -507,6 +517,13 @@ export function createRequest(vals, o = {}) {
     journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : req.contractOption === "none" ? (req.contractId ? `on no-contract shell ${ctrById(req.contractId)?.number}` : `with no contract (no ${req.department} no-contract shell on file yet; AR links it)`) : `for a new contract${req.giroReference ? ` ${req.giroReference}` : ""} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
     return req;
   }
+  if (req.form === "COL") {                           // Collections (D30): no billing lines; amount to collect comes with the form's fields
+    req.amount = req.amount || 0;
+    req.title = `Collections – ${req.colType || ""}`;
+    S.requests.push(req);
+    journal(req, "system", `Submitted from the Collections form (${req.colType}) on the portal.`, req.requestedBy);
+    return req;
+  }
   const line = draftLine(req);
   req.amount = lineValue(line, draftPro(req));
   req.giroOnContract = giroOnContractOf(req);
@@ -607,7 +624,7 @@ export function saveRecord(table, id, raw) {
   if (table === "contracts" && merged.contractType === "shell" && !merged.department) errors.department = "A No contract record needs a department.";
   if (table === "customers" && merged.companyId && S.customers.some(c => c.id !== merged.id && c.companyId === merged.companyId)) errors.companyId = `${companyById(merged.companyId)?.name} already has a customer record. One customer per company (D26).`;
   // CCI decision 8: Closed complete on an AR-i generates the 1st invoice (blocked until the case is linked)
-  if (table === "requests" && existing && existing.form !== "AR-ix" && vals.state === "closed_complete" && existing.state !== "closed_complete") {
+  if (table === "requests" && existing && isARi(existing) && vals.state === "closed_complete" && existing.state !== "closed_complete") {
     const probe = { ...existing, ...vals };
     if (!probe.customerId || probe.newCustomer || !probe.contractId) errors.state = "Link to customer before Closed complete: the 1st invoice needs the customer and contract.";
   }
@@ -633,7 +650,7 @@ export function saveRecord(table, id, raw) {
   const wasState = existing?.state;
   if (existing) {
     Object.assign(existing, vals);
-    if (table === "requests" && existing.form !== "AR-ix" && vals.state === "closed_complete" && wasState !== "closed_complete") firstInvoices(existing);
+    if (table === "requests" && isARi(existing) && vals.state === "closed_complete" && wasState !== "closed_complete") firstInvoices(existing);
     if (table === "customers") S.invoices.forEach(i => { if (i.customerId === existing.id) i.customer = existing.name; });
     if (table === "invoices") existing.customer = custById(existing.customerId)?.name || "";
     if (table === "requests") existing.updated = isoToday();

@@ -30,7 +30,7 @@ If two of these disagree, the code (`js/schema.js`, `js/notes.js`) is what the d
 |---|---|---|
 | [AR-00](modules/AR-00/README.md) | Shared parts of every AR form: catalogue, General information, My requests, ticket page, case states | [AR forms](https://veranzy.github.io/ServiceNowARdemo/#/portal/forms) |
 | [AR-i](modules/AR-i/README.md) | AR-i New AR request (billing with invoices) | [form](https://veranzy.github.io/ServiceNowARdemo/#/portal/form/AR-i) · [cases](https://veranzy.github.io/ServiceNowARdemo/#/ws/list/requests/all_ari) |
-| [AR-iii](modules/AR-iii/README.md) | First **Collections** form (money collected without an invoice; AR-iii, AR-iv, AR-v). Being defined | — |
+| [AR-iii](modules/AR-iii/README.md) | **Collections** form: one form for AR-iii, AR-iv, AR-v (money collected without an invoice). Shell, fields to be defined | [form](https://veranzy.github.io/ServiceNowARdemo/#/portal/form/AR-iii) · [cases](https://veranzy.github.io/ServiceNowARdemo/#/ws/list/requests/all_col) |
 | [AR-ix](modules/AR-ix/README.md) | AR-ix GIRO authorisation | [form](https://veranzy.github.io/ServiceNowARdemo/#/portal/form/AR-ix) · [cases](https://veranzy.github.io/ServiceNowARdemo/#/ws/list/requests/all_arix) |
 | [CCI](modules/CCI/README.md) | Customers, contracts, invoices, billing schedules | [contracts](https://veranzy.github.io/ServiceNowARdemo/#/ws/list/contracts/all) · [invoices](https://veranzy.github.io/ServiceNowARdemo/#/ws/list/invoices/all) |
 | [BSU](modules/BSU/README.md) | Bank statement upload and cash application (manual matching) | [upload](https://veranzy.github.io/ServiceNowARdemo/#/ws/bsu) · [cash application](https://veranzy.github.io/ServiceNowARdemo/#/ws/cash) |

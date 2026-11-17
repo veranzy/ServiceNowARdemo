@@ -2,7 +2,7 @@
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
 import { giroPurposesFor, giroContracts, DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, billingMode, giroTarget, giroTypesFor, canViewReq, draftLine, draftPro, itemCalc, reqItems, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
-import { GIRO_PURPOSES, AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, GIRO_TYPES, GST_RATE, ROLES, TABLES, fieldVisible } from "../schema.js";
+import { COLLECTION_TILES, COLLECTIONS_FORM, GIRO_PURPOSES, AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, GIRO_TYPES, GST_RATE, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
 import { custName, ctrNo, fieldHtml, icon, initials, reqChip, reqCustName, sn } from "./common.js";
@@ -238,14 +238,17 @@ function generalInfo(d, e, f) {
 }
 
 function formPage() {
-  const p = P(), code = p.formCode || "AR-i";
-  if (!p.draft || p.draft.form !== code) {
-    const gen = { form: code, requesterName: me().name, requesterEmail: me().email || "", ccList: "", department: me().department || "", newCustomer: false, custQ: "", attachments: [] };
+  const p = P(), code = p.formCode || "AR-i", col = COLLECTION_TILES.includes(code), form = col ? COLLECTIONS_FORM : code;
+  // Collections (D30): the AR-iii, AR-iv and AR-v tiles open one form with the type preselected
+  if (!p.draft || p.draft.form !== form || (col && p.draft.tile !== code)) {
+    const gen = { form, requesterName: me().name, requesterEmail: me().email || "", ccList: "", department: me().department || "", newCustomer: false, custQ: "", attachments: [] };
     p.draft = code === "AR-ix" ? { ...gen, contractOption: "", giroPurpose: "", giroType: "" }
+      : col ? { ...gen, tile: code, colType: code }
       : { ...gen, needItems: "no", items: [] };
     p.errors = {};
   }
   if (code === "AR-ix") return giroFormPage();
+  if (col) return colFormPage();
   const d = p.draft, e = p.errors || {};
   const f = (k, o = {}) => fieldHtml("requests", reqField(k), d, { prefix: "pf", errors: e, vals: d, ...o });
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
@@ -293,6 +296,29 @@ function formPage() {
         <fieldset class="psec"${sn("PT-42")}><legend>${n()}. Others</legend>
           <p class="pt-hint">Optional. Where these fields finally go is still to be decided.</p>
           <div class="fgrid"${sn("PT-29")}>${INV_KEYS.map(k => f(k, { help: null })).join("")}${f("poNumber")}</div>
+        </fieldset>
+      </form>
+      <aside class="pt-side" id="pfSide">${formSide(d)}</aside>
+    </div>
+  </div>`;
+}
+
+/** Collections form (AR-iii module, D30): one form for AR-iii, AR-iv and AR-v. Shell: General information, then the
+ *  collection type (preselected from the tile). The rest of the form comes when the owner gives the fields. */
+function colFormPage() {
+  const p = P(), d = p.draft, e = p.errors || {};
+  const f = (k, o = {}) => fieldHtml("requests", reqField(k), d, { prefix: "pf", errors: e, vals: d, ...o });
+  return `<div class="pt-inner pt-body">
+    <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <button type="button" class="linkish" data-pnav="forms">AR forms</button> › <span>Collections</span></nav>
+    <div class="pt-item">
+      <form class="pt-form pt-card" id="arForm" novalidate${sn("PT-49")}>
+        <div><span class="ft-code">AR-iii · AR-iv · AR-v</span><h1>Collections</h1></div>
+        <p class="pt-lead">Money collected without an invoice. Choose the collection type first.</p>
+        <div id="pfAlert">${formAlert(Object.keys(e).length)}</div>
+        ${generalInfo(d, e, f)}
+        <fieldset class="psec"${sn("PT-50")}><legend>2. Collection type</legend>
+          <div class="fgrid">${f("colType", { mandatory: true, help: null, placeholder: "-- Choose the collection type --" })}</div>
+          <p class="pt-hint">The rest of this form is still to be defined.</p>
         </fieldset>
       </form>
       <aside class="pt-side" id="pfSide">${formSide(d)}</aside>
@@ -371,6 +397,16 @@ const ctrSummary = d => d.contractOption === "existing" ? (d.contractId ? `Contr
 export const formAlert = n => n ? `<div class="pt-alert err" role="alert">Please fix ${n} field${n === 1 ? "" : "s"} below.</div>` : "";
 
 export function formSide(d) {
+  if (d.form === "COL") {
+    const labels = [...new Set(Object.keys(validateARi(d)).map(k => reqField(k)?.label).filter(Boolean))];
+    return `<div class="pt-card sticky"><div class="side-info">
+      <span class="ft-code">Collections</span><h2>Submit request</h2>
+      <p class="small muted">Goes to the Accounts Receivable team as a case. You and the people on the CC list can follow it on My requests.</p>
+      <p class="small"><b>${esc(d.colType ? `Collection type ${d.colType}` : "Choose the collection type")}</b></p>
+      ${labels.length ? `<p class="small"><b>Still needed</b><br>${labels.map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
+      </div><button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
+    </div>`;
+  }
   if (d.form === "AR-ix") {
     const labels = [...new Set(Object.keys(validateARi(d)).map(k => reqField(k)?.label).filter(Boolean))];
     return `<div class="pt-card sticky"><div class="side-info">
@@ -396,6 +432,12 @@ export function formSide(d) {
 
 function confirmPage() {
   const r = reqById(P().id); if (!r) return homePage();
+  if (r.form === "COL") return `<div class="pt-inner pt-body"><section class="pt-card pt-done" role="status">
+    <h1>Request submitted</h1>
+    <p>Your Collections request <b class="mono">${esc(r.number)}</b> (${esc(r.colType)}) has been sent to Accounts Receivable.</p>
+    ${ccEmails(r.ccList).length ? `<p class="small">CC: ${esc(ccEmails(r.ccList).join(", "))} can view this case.</p>` : ""}
+    <div class="row"><button type="button" class="btn primary" data-ticket="${r.id}">View request</button><button type="button" class="btn" data-pnav="forms">Back to AR forms</button></div>
+  </section></div>`;
   if (r.form === "AR-ix") return `<div class="pt-inner pt-body"><section class="pt-card pt-done" role="status">
     <h1>Request submitted</h1>
     <p>Your AR-ix request <b class="mono">${esc(r.number)}</b> (${esc(giroLabel(r))}) for ${esc(reqCustName(r))} has been sent to Accounts Receivable.</p>
@@ -439,7 +481,7 @@ function ticketPage() {
         <header class="tk-head"><div><span class="mono muted">${esc(r.number)}</span><h1 class="h2">${esc(r.title)}</h1></div>${reqChip(r)}</header>
         ${r.state === "awaiting_requestor_info" ? `<div class="pt-alert" role="status"><b>Accounts Receivable needs more information.</b> Reply below. Your reply sends the request back to AR.</div>` : ""}
         ${giro ? `<div class="tklines"${sn("PT-35")}><h2 class="small">GIRO</h2><ul><li><div><b>${esc(giroLabel(r))}</b><span class="desc">${esc([r.carplate, r.giroLocation, r.giroAmount, r.giroStart ? `from ${r.giroStart}` : "", r.giroEnd ? `until ${r.giroEnd}` : ""].filter(Boolean).join(" · "))}</span></div>
-          <div class="tkst">${r.state === "closed_complete" ? (cur?.id === r.id ? `<span class="chip c-ok">GIRO active</span><span class="desc">on ${esc(ctrNo(r.contractId))}</span>` : `<span class="chip c-ok">Closed complete</span>${r.contractId ? `<span class="desc">${esc(ctrNo(r.contractId))}</span>` : ""}`) : r.state === "rejected" ? `<span class="chip c-bad">Rejected</span>` : r.contractId ? `<span class="chip c-neutral">With AR</span>` : `<span class="chip c-warn">Contract to be linked</span><span class="desc">${esc(r.contractOption === "none" ? "No contract required" : r.newCtrRef || "")}</span>`}</div></li></ul></div>` : `<div class="tklines"${sn("PT-27")}><h2 class="small">Billing</h2><ul>${lines.map(l => { const inv = l.invoiceId ? S.invoices.find(i => i.id === l.invoiceId) : null, sch = l.scheduleId ? S.schedules.find(x => x.id === l.scheduleId) : null, st = lineStatus(l);
+          <div class="tkst">${r.state === "closed_complete" ? (cur?.id === r.id ? `<span class="chip c-ok">GIRO active</span><span class="desc">on ${esc(ctrNo(r.contractId))}</span>` : `<span class="chip c-ok">Closed complete</span>${r.contractId ? `<span class="desc">${esc(ctrNo(r.contractId))}</span>` : ""}`) : r.state === "rejected" ? `<span class="chip c-bad">Rejected</span>` : r.contractId ? `<span class="chip c-neutral">With AR</span>` : `<span class="chip c-warn">Contract to be linked</span><span class="desc">${esc(r.contractOption === "none" ? "No contract required" : r.newCtrRef || "")}</span>`}</div></li></ul></div>` : r.form === "COL" ? "" : `<div class="tklines"${sn("PT-27")}><h2 class="small">Billing</h2><ul>${lines.map(l => { const inv = l.invoiceId ? S.invoices.find(i => i.id === l.invoiceId) : null, sch = l.scheduleId ? S.schedules.find(x => x.id === l.scheduleId) : null, st = lineStatus(l);
           return `<li><div><b>${esc(l.desc)}</b><span class="desc">${l.lineType === "recurring" ? `${esc(freqLabel(l.frequency).toLowerCase())} SGD ${fmt(l.amount)} · ${esc(l.startDate)} to ${esc(l.endDate)}` : `One-off SGD ${fmt(l.amount)}`}</span></div>
             <div class="tkst">${st === "invoiced" ? `<span class="chip c-ok">Invoiced</span><span class="desc">${esc(inv.number)} · issued ${esc(inv.date)} · due ${esc(inv.due)}</span>` : st === "scheduled" ? `<span class="chip c-ok">Scheduled</span><span class="desc">${esc(sch.number)} · AR raises each invoice</span>` : st === "draft" ? `<span class="chip c-accent">Being invoiced</span>` : `<span class="chip c-neutral">With AR</span>`}</div></li>`; }).join("")}</ul></div>`}
         ${r.state === "closed_incomplete" || r.state === "cancelled" ? `<div class="pt-alert err" role="status"><b>This request is ${r.state === "cancelled" ? "cancelled" : "closed incomplete"}.</b> See the comments below. Submit a new AR form if needed.</div>` : ""}
@@ -449,8 +491,9 @@ function ticketPage() {
       </section>
       <aside class="pt-card"${sn("PT-13")}>
         <h2>Details</h2>
-        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${kv("Customer", esc(reqCustName(r)))}${r.pocName || r.pocEmail ? kv("Customer POC", esc([r.pocName, r.pocEmail].filter(Boolean).join(" · "))) : ""}${kv("Department", esc([r.department || "—", reqField("deptSubBu").choices.find(c => c[0] === r.deptSubBu)?.[1]].filter(Boolean).join(" · ")))}${kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.contractOption === "none" ? "No contract required" : r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
+        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${r.form === "COL" ? "" : kv("Customer", esc(reqCustName(r)))}${r.pocName || r.pocEmail ? kv("Customer POC", esc([r.pocName, r.pocEmail].filter(Boolean).join(" · "))) : ""}${kv("Department", esc([r.department || "—", reqField("deptSubBu").choices.find(c => c[0] === r.deptSubBu)?.[1]].filter(Boolean).join(" · ")))}${r.form === "COL" ? "" : kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.contractOption === "none" ? "No contract required" : r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
           ${giro ? `${kv("GIRO", esc(giroLabel(r)))}${["giroReference", "applicantName", "applicantEmail", "applicantMobile", "giroStart", "giroEnd", "giroAmount", "giroRemarks"].filter(x => r[x]).map(x => kv(reqField(x).label, esc(r[x]))).join("")}`
+          : r.form === "COL" ? kv(reqField("colType").label, esc(r.colType || "—"))
           : `${kv("Billing", esc(linesLabel(r)))}${r.attnName || r.attnEmail ? kv("Attention to", esc([r.attnName, r.attnEmail].filter(Boolean).join(" · "))) : ""}${r.perPeriod ? kv("Amount per period", `<span class="mono">SGD ${fmt(r.perPeriod)}</span> before GST`) : ""}${r.invoiceTiming ? kv("Preferred invoice date", `${esc(reqField("invoiceTiming").choices.find(c => c[0] === r.invoiceTiming)?.[1] || r.invoiceTiming)}${r.expediteReason ? `<br><span class="small">${esc(r.expediteReason)}</span>` : ""}`) : ""}${reqItems(r).length ? kv("Billing line items", reqItems(r).map(it => `Item ${esc(it.seq)}: SGD ${fmt(it.total)} incl. GST`).join("<br>")) : ""}${r.giroOnContract ? kv("GIRO on contract", r.giroOnContract === "yes" ? "Yes" : "No") : ""}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
 ${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>
         ${r.details ? `<p class="small">${esc(r.details)}</p>` : ""}

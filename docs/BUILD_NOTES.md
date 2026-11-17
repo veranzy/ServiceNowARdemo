@@ -40,6 +40,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `WS-15` | Form record presence: avatars of users viewing the record (out-of-box on the Horizon Record page template) |
 | `WS-17` | Record history tab (out-of-box on the Record page template): sys_audit / sys_history_line for the record. Turn on Audit in the dictionary of every x_ar table; shows when, who, field, old and new value |
 | `WS-16` | List page template (Horizon): list menu on the left, list on the right; the menu selection drives the list. Menu can be hidden |
+| `LST-REQ-COL` | Workspace list All Collections (D30): x_ar_request, condition ar_form = COL; default columns as the other AR form lists |
 | `LST-REQ-ARI` | Workspace list All AR-i (UIX decision 15, amended 2026-11-16): x_ar_request, condition ar_form = AR-i (every state, open and closed); list view ar_i_all with its own columns (for now: number, ar_form, short_description, customer, department, amount, state, assigned_to, opened_by, opened_at); list menu category AR requests |
 | `LST-REQ-ARIX` | Workspace list All AR-ix (UIX decision 15, amended 2026-11-16): x_ar_request, condition ar_form = AR-ix (every state); list view ar_ix_all with its own columns (for now the same as All AR-i); list menu category AR requests |
 | `CON-GIRO` | Tab GIRO history on the contract (and on no-contract shells): related list x_ar_request where contract = this contract and ar_form = AR-ix; columns AR-ix case, Type of request, Purpose of GIRO/DDA request, Amount, Requested by, Updated, GIRO (Active = contract.giro_case, Completed, Open, Contract to link, Rejected) |
@@ -55,6 +56,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ-GIRO` | GIRO setup panel (AR-ix case, contextual side bar): contract set? (for No contract required: the customer's no-contract shell for the department, set as Contract on the case); the contract's GIRO status and active case; reminder to update GIRO status and Active GIRO case on the contract record, then set State = Closed complete (AR-ix decision 11, AR-00 2026-11-16) |
 | `REQ-GIROHIST` | Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix) |
 | `REQ-FV-ARI` | Form view ar_i on x_ar_request (view rule: ar_form = AR-i), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Customer, 3. Contract and bill-to, 4. Invoice details, 5. Customer documents, 6. Others, in the AR-i portal order; every field of each section on the form, empty when not answered; editable while the case is open |
+| `REQ-FV-COL` | Form view collections on x_ar_request (view rule: ar_form = COL), Details tab: sections Case (with Request value, the amount to collect, D29), 1. General information, 2. Collection type; ribbon Collection type, Request value, BSU deposits matched (sum of accepted allocations with request = this case) |
 | `REQ-FV-ARIX` | Form view ar_ix on x_ar_request (view rule: ar_form = AR-ix), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Select Customer, 3. Select Contract, 4. GIRO details, 5. Attachments (attachment list), in the AR-ix portal order (section 6 Others removed 2026-11-17, AR-ix decision 23); every field shown, empty when not answered; editable while the case is open |
 | `REQ-LINKCTR` | RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Contract to link picker in the AR-ix GIRO setup panel (Link contract retired) |
 | `REQ-LINKCO` | Company (core_company) for the new customer; mandatory when Link to customer creates a new x_ar_customer. Lists companies with no customer yet, closest name first (D26) |
@@ -74,8 +76,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CSH-01` | Cash application page (UI Builder custom page) |
 | `CSH-02` | Single-score cards over x_ar_bank_statement / x_ar_allocation |
 | `CSH-03` | List of x_ar_bank_statement with match state; filter tabs To match / Matched / All |
-| `CSH-04` | Invoice finder (modal or side panel): ranked issued invoices and open Collections cases (AR-iii, AR-iv, AR-v; D29) + allocation preview before confirming |
-| `CSH-05` | Collection case tag in the invoice finder and preview (D29): the candidate is an open x_ar_request with ar_form IN AR-iii, AR-iv, AR-v and Request value (amount) not yet matched; its allocation sets request instead of invoice |
+| `CSH-04` | Invoice finder (modal or side panel): ranked issued invoices and open Collections cases (ar_form = COL: AR-iii, AR-iv, AR-v; D29, D30) + allocation preview before confirming |
+| `CSH-05` | Collection case tag in the invoice finder and preview (D29): the candidate is an open x_ar_request with ar_form = COL (tag shows its collection_type, D30) and Request value (amount) not yet matched; its allocation sets request instead of invoice |
 
 ## BSU page
 
@@ -115,6 +117,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-45` | AR-ix info message for No contract required: the customer's no-contract shell for the department (x_ar_contract, contract_type = shell) the GIRO goes on, or that AR links it once the shell is set up |
 | `PT-46` | AR-ix section Attachments (decision 16, modelled on AR-i Customer documents): supporting documents (sc_attachment on the case), optional, for Add and Remove GIRO |
 | `PT-47` | RETIRED 2026-11-17 (AR-ix decision 23, E8.14): variable set Others with Form number (giro_form_number, also retired) |
+| `PT-49` | Collections record producer (AR-iii module, D30): one form for AR-iii, AR-iv and AR-v. Catalogue items AR-iii, AR-iv, AR-v open it with collection_type preset. Sections: General information (PT-30), 2. Collection type (PT-50); the rest to be defined |
+| `PT-50` | Collections variable set Collection type (D30): collection_type (Choice AR-iii / AR-iv / AR-v, labels to be given), mandatory, preset from the catalogue item |
 | `PT-48` | AR-ix Select Customer hint (decision 17, E8.1): Customer not found? Submit an AR-i to set up the customer first. Shown under the customer search instead of the AR-i add-as-new-customer button (UA-PT-newcust stays on AR-i) |
 | `PT-07` | Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include |
 | `PT-08` | Variable attachments → sys_attachment on the created x_ar_request |
@@ -153,7 +157,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.state` | x_ar_request.state · Choice · mandatory · Set by AR with the dropdown on the case and Save (AR-00 decision, 2026-11-16). Assign to me moves New to Work in progress; a portal reply moves Awaiting requestor information to Work in progress |
 | `REQ.substate` | x_ar_request.substate · Choice · Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal) |
 | `REQ.opened_by` | x_ar_request.opened_by · Reference → sys_user · read-only |
-| `REQ.ar_form` | x_ar_request.ar_form · Choice · read-only |
+| `REQ.ar_form` | x_ar_request.ar_form · Choice · read-only · Collections cases: COL, with the type in collection_type (D30) |
+| `REQ.collection_type` | x_ar_request.collection_type · Choice · Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording |
 | `REQ.requester_name` | x_ar_request.requester_name · String · General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name |
 | `REQ.requester_email` | x_ar_request.requester_email · String · read-only · General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only |
 | `REQ.department_sub_bu` | x_ar_request.department_sub_bu · Choice · General information (all AR forms). Sub-BUs of the chosen department (mock list) |
@@ -324,7 +329,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `ALC.deposit` | x_ar_allocation.deposit · Reference → x_ar_bank_statement |
 | `ALC.invoice` | x_ar_allocation.invoice · Reference → x_ar_invoice |
-| `ALC.request` | x_ar_allocation.request · Reference → x_ar_request · Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form IN AR-iii, AR-iv, AR-v; D29) |
+| `ALC.request` | x_ar_allocation.request · Reference → x_ar_request · Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form = COL, the Collections form for AR-iii, AR-iv, AR-v; D29, D30) |
 | `ALC.amount` | x_ar_allocation.amount · Currency |
 | `ALC.state` | x_ar_allocation.state · Choice |
 | `ALC.exception` | x_ar_allocation.exception · Choice |

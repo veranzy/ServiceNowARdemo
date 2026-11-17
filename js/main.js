@@ -117,6 +117,7 @@ function portalFieldUpdated(el) {
 
 /** AR-i contract step changed: drop a prefilled bill-to (it belonged to the previous choice) and prefill again. */
 function contractChanged(d) {
+  if (d.form === "COL") return;                     // Collections (D30): no contract step yet
   if (d.form === "AR-ix") {
     // AR-ix: the applicant is prefilled from the contract's bill-to (cleared again when the contract changes)
     if (d.applicantPrefilled) { Object.assign(d, { applicantName: "", applicantEmail: "", applicantMobile: "" }); delete d.applicantPrefilled; }
@@ -168,7 +169,7 @@ function bsuAction(name) {
 
 /** AR-i invoice details typed into: refresh the billing summary and contract box in place. */
 function invUpdated() {
-  const d = P().draft; if (!d || d.form === "AR-ix") return;
+  const d = P().draft; if (!d || d.form === "AR-ix" || d.form === "COL") return;
   const swap = (id, html) => { const n = $(id); if (n) n.outerHTML = html; };
   swap("pfInvSum", invSum(d));
   const box = document.querySelector(".pt-info.ctr-box"); if (box) box.outerHTML = contractBox(d);
@@ -355,6 +356,11 @@ document.addEventListener("submit", e => {
   if (f.id === "arForm") {
     const d = P().draft, errors = validateARi(d);
     if (Object.keys(errors).length) { P().errors = errors; render(); return (document.querySelector("#arForm [aria-invalid], #arForm .has-err input, #arForm .has-err .btn"))?.focus(); }
+    if (d.form === "COL") {                       // Collections (D30): the tile is not stored on the case
+      const { custQ, tile, ...vals } = d;
+      const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;
+      render(); return window.scrollTo(0, 0);
+    }
     if (d.form === "AR-ix") {
       const { custQ, applicantPrefilled, ...vals } = d;
       vals.newCtrRef = ""; if (vals.contractOption !== "existing") vals.contractId = null;   // AR-ix decision 25: no new-contract reference on AR-ix

@@ -28,14 +28,21 @@ const SUB_BU_NAMES = {
 export const DEPT_SUB_BUS = DEPARTMENTS.flatMap(d => SUB_BU_NAMES[d].map((n, i) => [`${d.slice(0, 3).toUpperCase()}-${i + 1}`, n, d]));
 
 /** Portal AR forms catalogue (D9): AR-i … AR-xvi. Only AR-i is defined so far. */
+/** Collections (D28, D30): AR-iii, AR-iv and AR-v are one form. Its tiles open the same form with the type preselected;
+ *  the case records ar_form = COL and the chosen type in collection_type. Names and descriptions: placeholders until the owner gives them. */
+export const COLLECTION_TILES = ["AR-iii", "AR-iv", "AR-v"];
+export const COLLECTIONS_FORM = "COL";
 export const AR_FORMS = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii", "xiv", "xv", "xvi"].map((r, n) => ({
-  code: `AR-${r}`, name: n === 0 ? "New AR request" : n === 8 ? "GIRO authorisation" : "To be defined",
+  code: `AR-${r}`, name: n === 0 ? "New AR request" : n === 8 ? "GIRO authorisation" : n >= 2 && n <= 4 ? "Collections" : "To be defined",
   desc: n === 0 ? "Bill a customer: one-off and recurring lines, new or existing customer. Customer documents are given once."
-    : n === 8 ? "Add or remove GIRO (direct debit) on a contract: rental, carpark or other charges." : "Form not yet specified.",
-  active: n === 0 || n === 8
+    : n === 8 ? "Add or remove GIRO (direct debit) on a contract: rental, carpark or other charges."
+    : n >= 2 && n <= 4 ? "Money collected without an invoice. One form for AR-iii, AR-iv and AR-v." : "Form not yet specified.",
+  active: n === 0 || n === 8 || (n >= 2 && n <= 4)
 }));
+/** Collection type choices (D30): codes until the owner gives the labels. */
+export const COLLECTION_TYPES = COLLECTION_TILES.map(c => [c, c]);
 /** Collections category (D28): money collected without an invoice. A BSU deposit can be matched to an open case of these forms (D29). */
-export const COLLECTION_FORMS = ["AR-iii", "AR-iv", "AR-v"];
+export const COLLECTION_FORMS = ["COL"];   // D30: one Collections form; the case's collection_type says AR-iii, AR-iv or AR-v
 export const GIRO_PURPOSES = [["rental", "Rental"], ["carpark", "Carpark"], ["others", "Others"]];
 export const GIRO_TYPES = [["add", "Add GIRO"], ["remove", "Remove GIRO"]];
 const GIRO_STATUS = [["active", "Active"], ["none", "Not active"]];
@@ -66,7 +73,8 @@ export const TABLES = {
       { key: "state", name: "state", label: "State", type: "Choice", choices: STATE_REQ, mandatory: true, help: "Set by AR with the dropdown on the case and Save (AR-00 decision, 2026-11-16). Assign to me moves New to Work in progress; a portal reply moves Awaiting requestor information to Work in progress" },
       { key: "substate", name: "substate", label: "Substate", type: "Choice", choices: SUBSTATE_REQ, showIf: { key: "state", eq: "awaiting_requestor_info" }, help: "Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal)" },
       { key: "requestedBy", name: "opened_by", label: "Requested by", type: "Reference", ref: "users", readonly: true },
-      { key: "form", name: "ar_form", label: "AR form", type: "Choice", choices: AR_FORMS.map(f => [f.code, `${f.code} ${f.name}`]), readonly: true },
+      { key: "form", name: "ar_form", label: "AR form", type: "Choice", choices: [...AR_FORMS.filter(f => !COLLECTION_TILES.includes(f.code)).map(f => [f.code, `${f.code} ${f.name}`]), ["COL", "Collections (AR-iii, AR-iv, AR-v)"]], readonly: true, help: "Collections cases: COL, with the type in collection_type (D30)" },
+      { key: "colType", name: "collection_type", label: "Collection type", type: "Choice", choices: COLLECTION_TYPES, help: "Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording" },
       { key: "requesterName", name: "requester_name", label: "Requester name", type: "String", help: "General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name", default: "gs.getUser().getFullName()" },
       { key: "requesterEmail", name: "requester_email", label: "Email", type: "String", readonly: true, help: "General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only", default: "gs.getUser().getEmail()" },
       { key: "deptSubBu", name: "department_sub_bu", label: "Sub-BU", type: "Choice", choices: DEPT_SUB_BUS, choiceDependsOn: "department", help: "General information (all AR forms). Sub-BUs of the chosen department (mock list)" },
@@ -218,7 +226,7 @@ export const TABLES = {
     fields: [
       { key: "depositId", name: "deposit", label: "BSU deposit", type: "Reference", ref: "deposits" },
       { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices" },
-      { key: "requestId", name: "request", label: "Collection case", type: "Reference", ref: "requests", help: "Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form IN AR-iii, AR-iv, AR-v; D29)" },
+      { key: "requestId", name: "request", label: "Collection case", type: "Reference", ref: "requests", help: "Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form = COL, the Collections form for AR-iii, AR-iv, AR-v; D29, D30)" },
       { key: "amount", name: "amount", label: "Amount", type: "Currency" },
       { key: "status", name: "state", label: "State", type: "Choice", choices: [["accepted", "Applied"], ["removed", "Removed"]] },
       { key: "exception", name: "exception", label: "Exception", type: "Choice", choices: [["none", "Exact"], ["multi_invoice", "Multi-invoice"], ["short_pay", "Short pay"], ["over_pay", "Overpayment"], ["partial", "Partial"], ["discount", "Discount taken"]] },
@@ -447,4 +455,11 @@ export const RECORD_PRODUCER_ARIX = {
     "applicantName", "applicantEmail", "applicantMobile", "giroRemarks", "giroStart", "giroEnd", "carplate", "giroLocation", "giroAmount"],
   script: "current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; contract_option = none → current.contract = the customer's no-contract shell for the department, if it exists;"
 };
-export const RECORD_PRODUCERS = [RECORD_PRODUCER, RECORD_PRODUCER_ARIX];
+/** Collections form (AR-iii module, D30): one record producer for AR-iii, AR-iv and AR-v. Shell: fields to be defined. */
+export const RECORD_PRODUCER_COL = {
+  name: "Collections (AR-iii, AR-iv, AR-v)",
+  table: "requests",
+  variables: [...GENERAL_INFO, "colType"],
+  script: "current.opened_by = gs.getUserID(); current.ar_form = 'COL'; current.collection_type = producer.collection_type; current.short_description = 'Collections – ' + collection_type; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>. Catalogue: three items (AR-iii, AR-iv, AR-v) open this producer with collection_type preset (URL parameter / default value)."
+};
+export const RECORD_PRODUCERS = [RECORD_PRODUCER, RECORD_PRODUCER_ARIX, RECORD_PRODUCER_COL];

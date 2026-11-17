@@ -1,7 +1,7 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
-import { DOC_LABEL, reqItems, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById, freeCompanies } from "../records.js";
+import { isARi, DOC_LABEL, reqItems, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById, freeCompanies } from "../records.js";
 import { CODE } from "../notes.js";
 import { COLLECTION_FORMS, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
@@ -23,7 +23,7 @@ export const LISTS = {
       new: ["New, unassigned", r => r.state === "new" && !r.assignedTo],
       mine: ["Assigned to me", r => mine(r) && REQ_OPEN.includes(r.state)],
       awaiting: ["Awaiting requestor information", r => r.state === "awaiting_requestor_info"],
-      setup: ["Customer setup pending", r => REQ_OPEN.includes(r.state) && r.form !== "AR-ix" && (!!r.newCustomer || !setupStatus(r).docsDone)],
+      setup: ["Customer setup pending", r => REQ_OPEN.includes(r.state) && isARi(r) && (!!r.newCustomer || !setupStatus(r).docsDone)],
       giroall: ["All AR-ix GIRO cases", r => r.form === "AR-ix"],
       all: ["All", () => true]
     },
@@ -135,7 +135,9 @@ export const REQ_COLS_DEFAULT = ["number", "form", "title", "customerId", "depar
 export const REQ_FORM_LISTS = [
   // Owner 2026-11-16: All (open and closed) instead of Open, so closed demo cases such as ARQ0001009 can be found
   { form: "AR-i", filter: "all_ari", label: "All AR-i", note: "LST-REQ-ARI", cols: [...REQ_COLS_DEFAULT] },
-  { form: "AR-ix", filter: "all_arix", label: "All AR-ix", note: "LST-REQ-ARIX", cols: [...REQ_COLS_DEFAULT] }
+  { form: "AR-ix", filter: "all_arix", label: "All AR-ix", note: "LST-REQ-ARIX", cols: [...REQ_COLS_DEFAULT] },
+  // D30: one list for the Collections form (AR-iii, AR-iv, AR-v); the Form column shows the collection type
+  { form: "COL", filter: "all_col", label: "All Collections", note: "LST-REQ-COL", cols: [...REQ_COLS_DEFAULT] }
 ];
 for (const l of REQ_FORM_LISTS) LISTS.requests.filters[l.filter] = [l.label, r => (r.form || "AR-i") === l.form];
 
@@ -288,12 +290,13 @@ function listView(table, filter, menuOpen) {
 }
 
 // ---------- record pages ----------
-const has = k => r => !!r[k], not = k => r => !r[k], isIx = r => r.form === "AR-ix", isI = r => !isIx(r);
+const has = k => r => !!r[k], not = k => r => !r[k], isIx = r => r.form === "AR-ix", isI = r => isARi(r), isCol = r => r.form === "COL";
 const LAYOUT = {
   // Case page Details = one form view per AR form (UIX decision 12): the portal form's sections, same names and order, every field shown (empty when not answered)
   // AR-00 2026-11-16: State is a dropdown with Substate under it; Assignment group above Assigned to
   requests: [["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened", "amount"], isI],
     ["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened"], isIx],
+    ["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened", "amount"], isCol],
     ["1. General information", ["requesterName", "requesterEmail", "department", "deptSubBu", "ccList"]],
     // AR-i form view (portal: PT-25, PT-20, PT-37, PT-23, PT-42)
     ["2. Customer", ["customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "agencyType", "vag", "subBu", "pocName", "pocEmail"], isI],
@@ -308,7 +311,9 @@ const LAYOUT = {
     ["3. Select Contract", ["contractOption", "contractId"], isIx],
     ["4. GIRO details", ["giroType", "giroEnd", "giroPurpose", "giroReference", "giroPurposeOther", "giroStart", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks",
       "carplate", "giroLocation", "giroAmount"], isIx],
-    ["5. Attachments", ["@attachments"], isIx]],
+    ["5. Attachments", ["@attachments"], isIx],
+    // Collections form view (D30, portal: PT-49, PT-50); the rest of the form is to be defined
+    ["2. Collection type", ["colType"], isCol]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
@@ -370,6 +375,9 @@ function ribbon(table, rec, tab) {
     const k = rec.contractId ? ctrById(rec.contractId) : null, cur = activeGiroCase(k);
     ws = [w("GIRO", esc(giroLabel(rec)), esc(rec.carplate || rec.giroLocation || rec.giroPurposeOther || "")), w("Amount", rec.giroAmount ? esc(rec.giroAmount) : "—"),
       w("Contract", k ? esc(k.number) : `<span class="bad">Not linked</span>`, k ? (cur ? `GIRO active from ${esc(cur.number)}${cur.id === rec.id ? " (this case)" : ""}` : "GIRO not active") : `Reference given: ${esc(rec.giroReference || "—")}`)];
+  } else if (table === "requests" && isCol(rec)) {
+    const matched = Object.values(S.matches).filter(m => m && m.status === "accepted").flatMap(m => m.allocations).filter(a => a.requestId === rec.id).reduce((s, a) => s + a.amount, 0);
+    ws = [w("Collection type", esc(rec.colType || "—")), w("Request value", `SGD ${fmt(rec.amount)}`), w("BSU deposits matched", `SGD ${fmt(matched)}`, rec.amount ? `${fmt(Math.max(0, rec.amount - matched))} still to match` : "", bar(matched, rec.amount, "var(--ok)"))];
   } else if (table === "requests") {
     const ls = reqLines(rec), done = ls.filter(l => ["invoiced", "scheduled"].includes(lineStatus(l))).length;
     const st = setupStatus(rec), checks = [st.linked, st.contractDone, st.billToOk, st.docsDone], ok = checks.filter(Boolean).length;
@@ -407,7 +415,7 @@ function actionsFor(table, rec, isNew, canEdit) {
       // AR-00 2026-11-16: case actions are Assign to me and Save only; state changes go through the State dropdown.
       // Exception (owner): AR-i keeps Link to customer. Link contract, Complete, Request info and Reject are retired.
       if (!mine(rec)) a.push(action(table, "Assign to me", "assign"));
-      if (!isIx(rec) && setupPending(rec, st)) a.push(action(table, rec.newCustomer ? "Create customer & link" : "Link to customer", "link", { primary: true }));
+      if (isI(rec) && setupPending(rec, st)) a.push(action(table, rec.newCustomer ? "Create customer & link" : "Link to customer", "link", { primary: true }));
     }
 
   }
@@ -603,7 +611,7 @@ function recordPage(tab) {
   // Horizon record page: header (title, presence, UI action bar, label-value pairs) › ribbon › resizable pane (record tabs | contextual side bar)
   const tabs = [{ key: "details", label: "Details" }, ...(isNew ? [] : [...related(table, rec), historyTab(table, rec)])];
   const cur = tabs.find(x => x.key === tab.sub) || tabs[0];
-  const view = table === "requests" ? `<div${sn(isIx(rec) ? "REQ-FV-ARIX" : "REQ-FV-ARI")}>${sections}</div>` : sections;
+  const view = table === "requests" ? `<div${sn(isIx(rec) ? "REQ-FV-ARIX" : isCol(rec) ? "REQ-FV-COL" : "REQ-FV-ARI")}>${sections}</div>` : sections;
   const form = `<form class="rform" data-rform="${esc(tab.key)}" novalidate${sn(`FRM-${CODE[table]}`)}>${view}</form>`;
   // CCI 2026-11-16: customer and contract pages show every tab (no More menu)
   const MAXT = table === "customers" || table === "contracts" ? Infinity : window.innerWidth < 760 ? 2 : 5, shownT = tabs.slice(0, MAXT), moreT = tabs.slice(MAXT), curMore = moreT.includes(cur);
@@ -656,12 +664,12 @@ function sidePanels(table, rec, tab) {
   if (table !== "requests") return [];
   const out = [];
   if (isIx(rec)) out.push({ key: "setup", label: "GIRO setup", icon: "check", html: giroPanel(rec, tab), badge: REQ_OPEN.includes(rec.state) && !rec.contractId ? "!" : "" });
-  else if (rec.form) out.push({ key: "setup", label: "Customer setup", icon: "check", html: setupPanel(rec, tab), badge: setupPending(rec) ? "!" : "" });
+  else if (isI(rec) && rec.form) out.push({ key: "setup", label: "Customer setup", icon: "check", html: setupPanel(rec, tab), badge: setupPending(rec) ? "!" : "" });
   out.push({ key: "activity", label: "Activity", icon: "chat", html: activity(rec) });
   out.push({ key: "attachments", label: "Attachments", icon: "clip", html: attachments(rec) });
   return out;
 }
-const sideDefault = (table, rec) => table === "requests" && rec.form && REQ_OPEN.includes(rec.state) && (isIx(rec) || setupPending(rec)) ? "setup" : "activity";
+const sideDefault = (table, rec) => table === "requests" && rec.form && REQ_OPEN.includes(rec.state) && (isIx(rec) || (isI(rec) && setupPending(rec))) ? "setup" : "activity";
 
 /** AR-ix side panel: link the contract (after its AR-i is processed if it is new), then AR updates GIRO on the contract record and completes the case (AR-ix decision 11). */
 function giroPanel(r, tab) {

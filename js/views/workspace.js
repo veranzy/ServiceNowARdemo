@@ -363,7 +363,7 @@ function headerFields(table, rec) {
   if (table === "contracts") { const r = rollup(S.invoices.filter(i => i.contractId === rec.id && i.state === "issued"));
     return [hf("Type", ctrTypeChip(rec)), hf("Status", ctrStatusChip(rec)), hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department || "—")), hf("Bill-to", esc(rec.billToName || "Not set")), hf("GIRO", giroChip(rec))]; }
   if (table === "schedules") return [hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)), hf("Frequency", esc(freqLabel(rec.frequency))), hf("Department", esc(rec.department))];
-  if (table === "lines") return [hf("Type", esc(LINE_TYPE[rec.lineType])), hf("Status", lineChip(rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : "Set by Link to customer")];
+  if (table === "lines") return [hf("Type", esc(LINE_TYPE[rec.lineType])), hf("Status", lineChip(rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : "Set by Link Contract Reference")];
   if (table === "contacts") return [hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department)), hf("Email", esc(rec.email || "—"))];
   if (table === "documents") return [hf("Customer", refLink("customers", rec.customerId)), hf("Type", esc(DOC_LABEL[rec.docType])), hf("Received", esc(rec.received)), hf("From request", refLink("requests", rec.requestId))];
   return [];

@@ -142,7 +142,7 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `contract_option` | Contract | Choice | Choices: Existing contract (`existing`), New contract (`new`), No contract required (`none`). Mandatory. Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15) |
 | `link_customer` | Link Customer Reference | Reference | → `x_ar_customer`. AR-i, workspace Link section (D31). x_ar_customer, display value UEN (reference auto-complete shows UEN and name). Saving sets the case's customer. Mandatory before Closed complete |
 | `link_contract` | Link Contract Reference | Reference | → `x_ar_contract`. AR-i and AR-ix, workspace Link section (D31). x_ar_contract, display value Contract ID (CTR…). Reference qualifier: contracts of the linked customer (AR-i) or of the case's customer (AR-ix). Saving sets the case's contract (AR-i: also every billing line's contract). AR-i: mandatory before Closed complete |
-| `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer. Existing contract; for a new contract or No contract required, set by Link to customer |
+| `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer. Existing contract; otherwise set when AR saves Link Contract Reference (D31). Read-only in the workspace |
 | `new_contract_type` | Contract type | Choice | Choices: Recurring (`recurring`), Ad-hoc (`ad_hoc`). Mandatory for a new contract |
 | `new_contract_number` | Contract number | String | Mandatory for a new contract |
 | `new_contract_ref` | Contract reference number | String | AR-i, optional for a new contract. Not on AR-ix (AR-ix decision 25: the GIRO reference giro_reference is used instead) |
@@ -159,7 +159,7 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `new_contract_proration` | Proration | Choice | Choices: Yes (`yes`), No (`no`). Default No |
 | `new_contract_proration_first` | Proration for 1st month | Currency | Shown when Proration = Yes (UI policy). Mandatory when proration is Yes |
 | `new_contract_proration_last` | Proration for last month | Currency | Shown when Proration = Yes (UI policy). Mandatory when proration is Yes |
-| `bill_to_name` | Bill-to person | String | Mandatory when the contract (or shell) has no bill-to person yet; Link to customer writes it to the contract |
+| `bill_to_name` | Bill-to person | String | Mandatory when the contract (or shell) has no bill-to person yet; AR copies it to the contract by hand (D16 as amended by D31) |
 | `bill_to_email` | Bill-to email | String |  |
 | `bill_to_phone` | Bill-to phone | String |  |
 | `bill_to_address` | Billing address | String (1000) |  |
@@ -172,14 +172,14 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `billing_line_items_required` | Require billing line item? | Choice | Choices: Yes (`yes`), No (`no`). Yes shows the billing line items table (multi-row variable set) |
 | `amount` | Request value | Currency | Read-only on form. AR-i: calculated, one-off lines + recurring amount × number of periods. Collections (AR-iii, AR-iv, AR-v): the amount to collect; BSU deposits are matched against it on Cash application (D29) |
 | `po_number` | Customer PO number | String |  |
-| `customer_poc_name` | POC name | String | AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in and replicated to the customer by Link to customer |
+| `customer_poc_name` | POC name | String | AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in; AR copies it to the customer by hand (D23 as amended by D31) |
 | `customer_poc_email` | POC email | String | AR-i customer details; must be a valid email. Same rule as POC name |
 | `cost_center` | Cost center | String | Optional, free text. To be filled by GA. Tooltip: "To be filled by GA" |
 | `agent_name` | Name of agent to be billed | String | Optional, free text |
 | `agency_type` | Agency type | Choice | Choices: M, SB, PV. AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master |
 | `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type is SB, PV (UI policy). AR-i customer details, optional. Found customer: read-only from the customer master |
 | `sub_bu` | V@G sub-BU | String | Shown when V@G = Yes (UI policy). Optional, free text |
-| `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Contract level: entered for a new contract (copied to the contract by Link to customer); read-only copy of the contract's value for an existing one |
+| `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Contract level: entered for a new contract (AR copies it to the contract by hand, D31); read-only copy of the contract's value for an existing one |
 | `bulk_supporting_docs` | Supporting documents (bulk upload) | Attachment | Shown when Type of billing is C, D, E (UI policy). Optional; several files at once |
 | `giro_on_contract` | GIRO on this contract | Choice | Choices: Yes (`yes`), No (`no`). Read-only on form. Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21). Tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." |
 | `giro_type` | Type of request | Choice | Choices: Add GIRO (`add`), Remove GIRO (`remove`). AR-ix. Mandatory. New contract or no contract: Add GIRO only. Existing contract: Add GIRO when GIRO is not active, Remove GIRO only when it is (catalog client script filters the choices) |

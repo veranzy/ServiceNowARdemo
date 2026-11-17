@@ -234,7 +234,6 @@ function homePage() {
     ["Assigned to me", S.requests.filter(f.mine[1]).length, "Open cases you own", "list", "requests:mine"],
     ["Awaiting requestor information", S.requests.filter(f.awaiting[1]).length, "Waiting on the project team", "list", "requests:awaiting"],
     ["Customer setup pending", S.requests.filter(f.setup[1]).length, "AR-i to link to the customer master", "list", "requests:setup"],
-    ["Billing periods due", S.schedules.reduce((n, x) => n + periodsDue(x).length, 0), "Recurring invoices to raise", "list", "schedules:due"],
     ["Draft invoices", S.invoices.filter(fi.draft[1]).length, "Created, not yet issued", "list", "invoices:draft"],
     ["Overdue", `SGD ${fmt(overdue.reduce((s, i) => s + invMoney(i).open, 0))}`, `${overdue.length} invoices past due`, "list", "invoices:overdue"],
     ["BSU deposits to match", `SGD ${fmt(unappliedPays.reduce((s, p) => s + depositMoney(p).unapplied, 0))}`, `${unappliedPays.length} deposits from bank statements`, "cash", ""]

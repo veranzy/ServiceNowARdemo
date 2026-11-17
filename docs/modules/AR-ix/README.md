@@ -45,7 +45,7 @@ Fields are free text unless stated. `*` = mandatory.
      after *Purpose of GIRO/DDA request*, so it appears or hides as the purpose changes; **hidden when Purpose = Carpark**
      (carpark has no contract or tenancy agreement, E8.10). Remove GIRO: after *Type of request*.
    - **Remove GIRO:** the reference, then **Effective end date*** (decision 18, E8.8). Nothing else.
-   - **Add GIRO:** Purpose of GIRO/DDA request*, choices set by the contract (decision 25): **No contract required →
+   - **Add GIRO:** Purpose of GIRO/DDA request* (starts on *-- Choose the purpose --*), choices set by the contract (decision 25): **No contract required →
      Carpark, Others**; **existing or new contract → Rental, Others**. Changing the contract clears a purpose that no
      longer fits. Contract / tenancy agreement / reference;
      Other purpose* when Others; **Effective start date*** (every purpose, no end date; decision 18, E8.7). Heading **Customer**: **Customer name***, **Customer

@@ -46,3 +46,4 @@ Issue: [#8](https://github.com/veranzy/ServiceNowARdemo/issues/8) · raised 2026
 | 2026-11-17 | E8.1, E8.4–E8.15 **Built** (AR-ix decisions 17–23, CCI decision 10). E8.2, E8.3 already done, to confirm on the demo. |
 | 2026-11-17 | Owner: reference field moved after Purpose of GIRO/DDA request (AR-ix decision 24); built. |
 | 2026-11-17 | Owner: remove `REQ.new_contract_ref` from AR-ix; purpose by contract (no contract → Carpark / Others; existing / new → Rental / Others). AR-ix decision 25; built. |
+| 2026-11-17 | Owner: Purpose placeholder *-- Choose the purpose --*; built. |

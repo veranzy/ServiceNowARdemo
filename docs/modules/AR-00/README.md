@@ -20,7 +20,7 @@ authorisation; AR-ii … AR-xvi get a module each when the owner defines them.
 | Category | Forms | Meaning |
 |---|---|---|
 | Billing | AR-i | AR bills the customer with an invoice; BSU deposits are matched to the invoice. |
-| Collections (D28) | AR-iii, AR-iv, AR-v | Money collected **without an invoice**; the BSU deposit is matched to the case (D29). |
+| Collections (D28, D30) | AR-iii, AR-iv, AR-v | Money collected **without an invoice**; one form, type chosen first; the BSU deposit is matched to the case (D29). |
 | GIRO | AR-ix | Add or remove GIRO on a contract. |
 
 The catalogue stays one flat list; categories are not a field or heading (D28).
@@ -53,7 +53,7 @@ master data says. This creates some scenarios the build must handle:
 ## Screens and flow
 
 **Portal**
-1. *AR forms* catalogue (`PT-14`): 16 tiles. Active forms: AR-i (`PT-15`), AR-ix. The rest show
+1. *AR forms* catalogue (`PT-14`): 16 tiles. Active forms: AR-i (`PT-15`), AR-iii, AR-iv and AR-v (all three open the Collections form, D30), AR-ix. The rest show
    "To be defined" (`PT-16`).
 2. Every form starts with **General information** (`PT-30`, D19): requester name (default: current user),
    email (SSO, read-only), requesting department (tooltip: change only when requesting for another

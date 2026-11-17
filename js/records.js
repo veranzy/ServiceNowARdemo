@@ -27,6 +27,8 @@ export function assignContractIds() {
   let max = S.contracts.reduce((m, k) => Math.max(m, +(String(k.ctrId || "").replace(/\D/g, "")) || 0), 1000);
   for (const k of S.contracts) if (!k.ctrId) k.ctrId = "CTR" + String(++max).padStart(7, "0");
 }
+/** Days to the due date: the contract's payment terms (CCI decision 18: customers no longer hold terms). */
+export const termsDays = k => k?.terms || 30;
 export function nextNumber(table) {
   const list = S[table];
   if (table === "invoices") {
@@ -385,7 +387,7 @@ export function firstInvoices(r) {
     const date = (l.lineType === "recurring" ? l.startDate : l.invoiceDate) || t;
     const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: k?.id || null, requestId: r.id, lineId: l.id,
       periodDate: l.lineType === "recurring" ? l.startDate || "" : "", customer: c?.name || "", desc: l.desc, amount: l.amount, date, approvalDate: "",
-      due: addDays(date, k?.terms || c?.terms || 30), currency: "SGD" };
+      due: addDays(date, termsDays(k)), currency: "SGD" };
     S.invoices.push(inv); l.invoiceId = inv.id; made.push(inv);
     journal(r, "work_note", `Closed complete: 1st invoice ${inv.number} generated as a draft from the AR-i (${l.lineType === "recurring" ? "first period; later invoices come from the billing schedule on the contract" : "one-off"}).`);
   }
@@ -402,7 +404,7 @@ export function lineInvoice(lineId) {
   const k = ctrById(l.contractId), c = custById(r.customerId);
   const date = l.invoiceDate && l.invoiceDate > isoToday() ? l.invoiceDate : isoToday();
   const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: l.contractId, requestId: r.id, lineId: l.id,
-    customer: c?.name || "", desc: l.desc, amount: l.amount, date, due: addDays(date, k?.terms || c?.terms || 30), currency: "SGD" };
+    customer: c?.name || "", desc: l.desc, amount: l.amount, date, due: addDays(date, termsDays(k)), currency: "SGD" };
   S.invoices.push(inv); l.invoiceId = inv.id; if (r.state === "new") r.state = "work_in_progress";
   if (!r.assignedTo) r.assignedTo = me().id;
   journal(r, "work_note", `Draft invoice ${inv.number} created for line "${l.desc}".`);
@@ -440,7 +442,7 @@ export function runDailyInvoiceCheck() {
       const invDate = date > t ? date : t;
       const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: c?.id || sch.customerId, contractId: sch.contractId, requestId: sch.requestId || null,
         lineId: sch.lineId || null, scheduleId: sch.id, periodDate: date, customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount: amounts[ix] ?? sch.amount,
-        date: invDate, due: addDays(invDate, k?.terms || c?.terms || 30), currency: "SGD" };
+        date: invDate, due: addDays(invDate, termsDays(k)), currency: "SGD" };
       S.invoices.push(inv); made.push(inv);
       const r = sch.requestId && reqById(sch.requestId);
       if (r) journal(r, "work_note", `Daily invoice check: draft invoice ${inv.number} created for ${label} (${sch.number}).`, null);
@@ -538,7 +540,7 @@ export function issueInvoice(id) {
   if (!(i.amount > 0) || !i.customerId || !i.desc) return "Customer, description and amount are required before issuing.";
   if (!i.approvalDate) return "Set the Approval date before issuing.";   // CCI decision 9: every invoice
   i.state = "issued"; if (!i.date) i.date = isoToday();
-  if (!i.due) { const k = ctrById(i.contractId), c = custById(i.customerId); i.due = addDays(i.date, k?.terms || c?.terms || 30); }
+  if (!i.due) { const k = ctrById(i.contractId), c = custById(i.customerId); i.due = addDays(i.date, termsDays(k)); }
   const r = reqById(i.requestId);
   if (r) { journal(r, "comment", `Invoice ${i.number} (${i.desc}) was issued on ${i.date} for SGD ${(i.amount / 100).toFixed(2)}, due ${i.due}.`); updateBilled(r); }
   return null;
@@ -632,8 +634,8 @@ export function saveRecord(table, id, raw) {
   for (const f of def.fields) if (f.readonly && !f.auto && f.key in raw && raw[f.key] != null && rec[f.key] === undefined) rec[f.key] = raw[f.key];
   if (def.prefix && !rec.number) rec.number = nextNumber(table);
   if (table === "invoices") Object.assign(rec, { state: "draft", customer: custById(rec.customerId)?.name || "", currency: "SGD" });   // manual invoice from the contract (CCI decision 14)
-  if (table === "customers") { Object.assign(rec, { aliases: rec.aliases || [], terms: rec.terms || 30 }); withCompany(rec); }
-  if (table === "contracts") Object.assign(rec, { terms: rec.terms || custById(rec.customerId)?.terms || 30 });
+  if (table === "customers") { Object.assign(rec, { aliases: rec.aliases || [] }); withCompany(rec); }
+  if (table === "contracts") Object.assign(rec, { terms: rec.terms || 30 });
   if (table === "bankAccounts") rec.currency = "SGD";
   S[table].push(rec);
   if (table === "contracts") { assignContractIds(); if (!rec.number) rec.number = rec.ctrId; }   // No contract without a number shows its Contract ID

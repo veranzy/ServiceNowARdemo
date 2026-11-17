@@ -45,7 +45,7 @@ export function payerSim(payer, inv) { return Math.max(nameSim(payer, inv.custom
 export function findOrCreateContract(c, number) {
   const n = String(number || "").trim(); if (!c || !n) return null;
   let k = S.contracts.find(x => x.customerId === c.id && normTok(x.number) === normTok(n));
-  if (!k) { k = { id: uid("k"), customerId: c.id, number: n, title: "Imported contract", start: "", end: "", value: 0, billing: "Milestone", terms: c.terms || 30, discPct: 0, discDays: 0, notes: "", contractType: "contract", ctrId: "CTR" + String(S.contracts.reduce((m, x) => Math.max(m, +(String(x.ctrId || "").replace(/\D/g, "")) || 0), 1000) + 1).padStart(7, "0") }; S.contracts.push(k); }
+  if (!k) { k = { id: uid("k"), customerId: c.id, number: n, title: "Imported contract", start: "", end: "", value: 0, billing: "Milestone", terms: 30,  notes: "", contractType: "contract", ctrId: "CTR" + String(S.contracts.reduce((m, x) => Math.max(m, +(String(x.ctrId || "").replace(/\D/g, "")) || 0), 1000) + 1).padStart(7, "0") }; S.contracts.push(k); }
   return k;
 }
 

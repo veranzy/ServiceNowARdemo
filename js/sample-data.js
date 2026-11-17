@@ -87,14 +87,14 @@ export function loadSample() {
   // core_company (platform table, D26): one per customer, plus companies with no AR customer yet
   S.companies = [...cus.map(r => r[1]), "Zephyr Data Centres Pte Ltd", "Straits Aquaculture Pte Ltd", "Kallang Precision Works Pte Ltd"].map(name => ({ id: uid("co"), name }));
   const coId = name => S.companies.find(x => x.name === name).id;
-  S.customers = cus.map(r => { const c = withCompany({ id: uid("c"), companyId: coId(r[1]), uen: uens[r[0]] || "", address: "", parent: r[2], aliases: r[3], terms: r[4], creditLimit: cents(r[5]), notes: r[6] }); cid[r[0]] = c; return c; });
+  S.customers = cus.map(r => { const c = withCompany({ id: uid("c"), companyId: coId(r[1]), uen: uens[r[0]] || "", address: "", parent: r[2], aliases: r[3], notes: r[6] }); cid[r[0]] = c; return c; });
 
   // Customer details (D23): agency type, V@G, V@G sub-BU and POC, replicated from earlier AR-i requests. Some customers have none on file yet.
   const det = { tanj: ["M", "", "", "Grace Lim", "grace.lim@tanjongretail.example", "3 Jurong Gateway Road, Singapore 608532"],
     harb: ["SB", "yes", "Port Operations West", "Daniel Ong", "daniel.ong@harbourline.example", "21 Pioneer Road, Singapore 628503"],
     kest: ["PV", "no", "", "Mei Tan", "mei.tan@kestrel-eng.example", "50 Ubi Avenue 3, Singapore 408866"] };
   for (const [k, v] of Object.entries(det)) if (cid[k]) Object.assign(cid[k], { agencyType: v[0], vag: v[1], vagSubBu: v[2], pocName: v[3], pocEmail: v[4], address: cid[k].address || v[5] });
-  S.contracts = ctr.map(r => { const k = { id: uid("k"), customerId: cid[r[0]].id, number: r[1], title: r[2], start: shiftDate(r[3]), end: shiftDate(r[4]), value: cents(r[5]), billing: r[6], terms: r[7], discPct: r[8], discDays: r[9], lpiApplicable: false, lpiMinRate: 0, lpiRate: 0, notes: r[10] }; kid[r[1]] = k; return k; });
+  S.contracts = ctr.map(r => { const k = { id: uid("k"), customerId: cid[r[0]].id, number: r[1], title: r[2], start: shiftDate(r[3]), end: shiftDate(r[4]), value: cents(r[5]), billing: r[6], terms: r[7], lpiApplicable: false, lpiMinRate: 0, lpiRate: 0, notes: r[10] }; kid[r[1]] = k; return k; });
   Object.assign(S.contracts[0], { lpiApplicable: true, lpiMinRate: 5, lpiRate: 8 });
   S.invoices = inv.map(r => ({ id: uid("i"), customerId: cid[r[0]].id, contractId: r[1] ? kid[r[1]].id : null, customer: cid[r[0]].name, number: r[2], date: shiftDate(r[3]), due: shiftDate(r[4]), amount: cents(r[5]), desc: r[6], currency: "SGD", state: "issued", requestId: null }));
   S.users = users.map(r => ({ id: r[0], name: r[1], team: r[2], title: r[3], department: r[4], email: `${r[1].toLowerCase().replace(/\s+/g, ".")}@corp.example` }));
@@ -244,7 +244,7 @@ export function loadSample() {
     if (c && k.number !== "HL-2026-02") Object.assign(k, { billToName: c.name, billToEmail: c.email, billToPhone: c.phone, billToAddress: c.address });
   }
   // A no-contract shell (D15): Meridian's ad-hoc sensor replacement was billed without a contract
-  const shell = { id: uid("k"), contractType: "shell", customerId: cid.meri.id, department: "Logistics", number: "NC-LOG-0001", title: "No contract – Logistics", start: "", end: "", value: 0, billing: "", terms: 30, discPct: 0, discDays: 0,
+  const shell = { id: uid("k"), contractType: "shell", customerId: cid.meri.id, department: "Logistics", number: "NC-LOG-0001", title: "No contract – Logistics", start: "", end: "", value: 0, billing: "", terms: 30,
     notes: "Holds billing for this customer and department that has no contract (D15).", billToName: "Joanne Lee", billToEmail: "ap@meridianfoods.example", billToPhone: "+65 6862 4400", billToAddress: "Meridian Foods, 9 Senoko Way, Singapore 758049" };
   S.contracts.push(shell);
   const sensors = invByNo("INV-10052"); sensors.contractId = shell.id;

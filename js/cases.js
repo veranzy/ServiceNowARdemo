@@ -4,7 +4,7 @@
 // Each row goes through the same record-producer logic as a portal submission (createRequest), so a CSV case and a
 // portal case open on the same reusable Record page.
 import { parseCSV } from "./io.js";
-import { createRequest, draftDate, firstInvoices, journal, nextCycleDate, nextNumber, periodAmounts, periodDates, runDailyInvoiceCheck } from "./records.js";
+import { createRequest, termsDays, draftDate, firstInvoices, journal, nextCycleDate, nextNumber, periodAmounts, periodDates, runDailyInvoiceCheck } from "./records.js";
 import { TABLES } from "./schema.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, uid } from "./util.js";
@@ -33,7 +33,7 @@ function scheduleHistory() {
       const k = S.contracts.find(x => x.id === sch.contractId), c = S.customers.find(x => x.id === (sch.customerId || k?.customerId));
       const label = new Date(date + "T00:00:00").toLocaleDateString("en-SG", { month: "short", year: "numeric" });
       S.invoices.push({ id: uid("i"), number: nextNumber("invoices"), state: "issued", customerId: c?.id, contractId: sch.contractId, requestId: sch.requestId || null, lineId: sch.lineId || null,
-        scheduleId: sch.id, periodDate: date, customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount: amounts[ix] ?? sch.amount, date, approvalDate: draftDate(date), due: addDays(date, k?.terms || c?.terms || 30), currency: "SGD" });
+        scheduleId: sch.id, periodDate: date, customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount: amounts[ix] ?? sch.amount, date, approvalDate: draftDate(date), due: addDays(date, termsDays(k)), currency: "SGD" });
     });
   }
 }

@@ -39,8 +39,6 @@ Custom customer master (not CSM customer_account). Each customer references one 
 | `vag_sub_bu` | V@G sub-BU | String | Shown when V@G = Yes (UI policy) |
 | `poc_name` | POC name | String |  |
 | `poc_email` | POC email | String |  |
-| `payment_terms` | Payment terms (days) | Integer |  |
-| `credit_limit` | Credit limit | Currency |  |
 | `bank_names` | Names seen on bank statements | String (1000) | Comma-separated. Used to rank invoices in the invoice finder. |
 | `notes` | Notes for AR | String (4000) |  |
 | `active` | Active | True/False | Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields. Default: true |
@@ -60,14 +58,12 @@ Custom contract table (not ast_contract). Every record has a system Contract ID 
 | `contract_owners` | Contract owner | List | → `sys_user` (users with x_ar.project_team). Project team users who can pick this contract on an AR-ix even when it belongs to another department (List of sys_user, several owners; CCI decision 10, E8.5) |
 | `reference_number` | Contract reference number | String |  |
 | `po_number` | Contract PO number | String |  |
-| `short_description` | Title | String | Mandatory |
+| `short_description` | Contract title | String | Mandatory |
 | `billing_type` | Billing | Choice | Choices: Monthly, Milestone, Annual, Time & materials, Per PO |
-| `contract_value` | Contract value | Currency |  |
-| `start_date` | Start | Date |  |
-| `end_date` | End | Date |  |
+| `contract_value` | Contract value (SGD) | Currency |  |
+| `start_date` | Contract start date | Date |  |
+| `end_date` | Contract end date | Date |  |
 | `payment_terms` | Payment terms (days) | Integer |  |
-| `discount_percent` | Early-settlement discount % | Decimal |  |
-| `discount_days` | Discount if paid within (days) | Integer |  |
 | `lpi_applicable` | LPI applicable | True/False | Late payment interest is charged on overdue invoices under this contract |
 | `lpi_min_rate` | Minimum LPI rate (%) | Decimal | Mandatory when LPI applicable. % per annum; must not exceed the LPI rate |
 | `lpi_rate` | LPI rate (%) | Decimal | Mandatory when LPI applicable. % per annum |

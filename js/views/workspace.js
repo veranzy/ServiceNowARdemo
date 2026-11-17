@@ -129,7 +129,7 @@ export const LISTS = {
   },
   customers: {
     filters: { all: ["Customers", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
-    cols: [["Name", c => refLink("customers", c.id, c.name), "", "name"], ["Parent group", c => esc(c.parent || "—"), "", "parent"], ["Terms", c => `Net ${esc(c.terms)}`, "", "terms"],
+    cols: [["Name", c => refLink("customers", c.id, c.name), "", "name"], ["Parent group", c => esc(c.parent || "—"), "", "parent"],
       ["Open AR", c => fmt(rollup(issuedOf(c.id)).open), "num", "=CUS.open_ar"], ["Overdue", c => { const o = rollup(issuedOf(c.id)).overdue; return o ? `<span class="bad">${fmt(o)}</span>` : fmt(0); }, "num", "=CUS.overdue"]],
     sort: (a, b) => a.name.localeCompare(b.name),
     text: c => [c.name, c.parent, ...(c.aliases || [])].join(" "),
@@ -352,13 +352,15 @@ const LAYOUT = {
   paymentModes: [["Payment mode", ["bankAccountId", "name", "prefix", "suffix", "accountCode", "costCentre", "active"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency", "colTypes", "active"]]],
-  customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes", "active"]],
+  customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "aliases", "notes", "active"]],
     ["Agency and point of contact", ["agencyType", "vag", "vagSubBu", "pocName", "pocEmail"]]],
+  // CCI decision 18: sections in AR-i order (contract → billing terms → bill-to → GIRO → documents); discount fields removed
   contracts: [["Contract", ["ctrId", "contractType", "category", "number", "reference", "poNumber", "customerId", "department", "owners", "title", "start", "end", "value", "billing", "notes"]],
-    ["Billing terms", ["billingCycle", "billingCycleOther", "invoiceDate", "paymentTerms", "paymentTermsOther", "terms", "discPct", "discDays", "prorate", "prorateFirst", "prorateLast", "typeOfBilling", "bulkDocs"]],
+    ["Billing terms", ["billingCycle", "billingCycleOther", "invoiceDate", "paymentTerms", "paymentTermsOther", "terms", "prorate", "prorateFirst", "prorateLast", "typeOfBilling"]],
     ["Late payment interest (LPI)", ["lpiApplicable", "lpiMinRate", "lpiRate"]],
+    ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]],
     ["GIRO", ["giroStatus", "giroCaseId"]],
-    ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
+    ["Documents", ["bulkDocs"]]],
   costCentres: [["Cost centre", ["code", "name", "department", "active"]]],
   accountCodes: [["Account code", ["code", "name", "treatment", "active"]]],
   contacts: [["Billing contact", ["customerId", "requestor", "department", "name", "email", "phone", "address", "requestId", "active"]]],
@@ -395,7 +397,7 @@ function headerFields(table, rec) {
   if (table === "deposits") { const a = acctById(rec.bankAccountId); return [hf("Match", depositChip(rec)), hf("Value date", esc(rec.date)), hf("Bank account", refLink("bankAccounts", rec.bankAccountId)), hf("Department", esc(a?.department || "—")), hf("Account type", esc(a ? acctType(a) : "—"))]; }
   if (table === "uploads") return [hf("Bank account", refLink("bankAccounts", rec.bankAccountId)), hf("Statement date", esc(rec.statementDate)), hf("Deposits", String(rec.depositCount)), hf("Total", `<span class="mono">SGD ${fmt(rec.depositTotal)}</span>`), hf("Uploaded by", esc(userById(rec.uploadedBy)?.name || "—"))];
   if (table === "bankAccounts") { const ups = S.uploads.filter(u => u.bankAccountId === rec.id); return [hf("Bank", esc(BANKS[rec.bank]?.name || "—")), hf("Department", esc(rec.department || "—")), hf("Type", esc(acctType(rec))), hf("Uploads", String(ups.length)), hf("Last statement", esc(ups.map(u => u.statementDate).sort().pop() || "—"))]; }
-  if (table === "customers") return [hf("UEN", esc(rec.uen || "—")), hf("Parent group", esc(rec.parent || "—")), hf("Payment terms", `Net ${esc(rec.terms)}`), hf("Credit limit", rec.creditLimit ? `<span class="mono">${fmt(rec.creditLimit)}</span>` : "Not set")];
+  if (table === "customers") return [hf("UEN", esc(rec.uen || "—")), hf("Parent group", esc(rec.parent || "—")), hf("Agency type", esc(rec.agencyType || "—")), hf("POC", esc(rec.pocName || "—"))];
   if (table === "contracts") { const r = rollup(S.invoices.filter(i => i.contractId === rec.id && i.state === "issued"));
     return [hf("Type", ctrTypeChip(rec)), hf("Status", ctrStatusChip(rec)), hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department || "—")), hf("Bill-to", esc(rec.billToName || "Not set")), hf("GIRO", giroChip(rec))]; }
   if (table === "schedules") return [hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)), hf("Frequency", esc(freqLabel(rec.frequency))), hf("Department", esc(rec.department))];

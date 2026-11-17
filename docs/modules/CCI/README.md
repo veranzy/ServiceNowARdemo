@@ -52,11 +52,11 @@ invoices ([BSU](../BSU/README.md)).
 
 | Item | Build |
 |---|---|
-| `x_ar_customer` | Custom table; `company` → `core_company` (display, mandatory, unique; D26), UEN, address, agency type, V@G, V@G sub-BU, POC name / email (replicated from AR-i by Link to customer, D23). |
+| `x_ar_customer` | Custom table; `company` → `core_company` (display, mandatory, unique; D26), UEN, address, agency type, V@G, V@G sub-BU, POC name / email (copied from AR-i by AR, D23 / D31), names seen on bank statements, notes, active. No payment terms or credit limit (decision 18). |
 | `x_ar_contract` | Fields `contract_type` (record type: contract / shell), `contract_category` (contract type: recurring / ad-hoc), `reference_number`, `po_number`, `department`, `contract_owners` (**Contract owner**, List → `sys_user`, project team users, several; decision 10), `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `billing_cycle` (+ `_other`), `preferred_invoice_date`, `payment_terms_choice` (+ `payment_terms_other`; `terms` days = 30 unless Others), `proration`, `proration_first`, `proration_last`, `type_of_billing`, `bulk_supporting_docs`, LPI fields (below), `giro_status`, `giro_case` (AR-ix). Shell unique per customer + department (business rule). |
 | `x_ar_billing_contact` | Customer + department → the department's usual bill-to person; used to prefill the bill-to on a new contract or shell. Unique per customer + department. |
 | `x_ar_customer_document` | Customer documents: type (contract / PO, ACRA, billing form), file (`sys_attachment`), contract (optional), department (billing form), source AR request. |
-| `x_ar_invoice` | Number prefix `INV`; `state` draft / issued / cancelled; customer, contract, AR request, billing line, billing schedule + period; `due_date` = invoice date + contract payment terms; `amount_due` and `payment_status` calculated from accepted allocations (business rule on allocation insert / update). Only issued invoices receive deposits. |
+| `x_ar_invoice` | Number prefix `INV`; `state` draft / issued / cancelled; customer, contract, AR request, billing line, billing schedule + period; `due_date` = invoice date + the contract's payment terms (days; customers hold none, decision 18); `amount_due` and `payment_status` calculated from accepted allocations (business rule on allocation insert / update). Only issued invoices receive deposits. |
 | UI actions | Invoice: *Issue invoice*, *Cancel invoice*. Customer: *Add billing contact* (overflow). |
 
 Full column lists: `SERVICENOW_MAPPING.md` (generated from `js/schema.js`).

@@ -415,8 +415,6 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CUS.vag_sub_bu` | x_ar_customer.vag_sub_bu · String |
 | `CUS.poc_name` | x_ar_customer.poc_name · String |
 | `CUS.poc_email` | x_ar_customer.poc_email · String |
-| `CUS.payment_terms` | x_ar_customer.payment_terms · Integer |
-| `CUS.credit_limit` | x_ar_customer.credit_limit · Currency |
 | `CUS.bank_names` | x_ar_customer.bank_names · String (1000) · Comma-separated. Used to rank invoices in the invoice finder. |
 | `CUS.notes` | x_ar_customer.notes · String (4000) |
 | `CUS.active` | x_ar_customer.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields |
@@ -449,8 +447,6 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON.start_date` | x_ar_contract.start_date · Date |
 | `CON.end_date` | x_ar_contract.end_date · Date |
 | `CON.payment_terms` | x_ar_contract.payment_terms · Integer |
-| `CON.discount_percent` | x_ar_contract.discount_percent · Decimal |
-| `CON.discount_days` | x_ar_contract.discount_days · Integer |
 | `CON.lpi_applicable` | x_ar_contract.lpi_applicable · True/False · Late payment interest is charged on overdue invoices under this contract |
 | `CON.lpi_min_rate` | x_ar_contract.lpi_min_rate · Decimal · Mandatory when LPI applicable. % per annum; must not exceed the LPI rate |
 | `CON.lpi_rate` | x_ar_contract.lpi_rate · Decimal · Mandatory when LPI applicable. % per annum |

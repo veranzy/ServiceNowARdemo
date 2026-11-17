@@ -13,3 +13,4 @@
 | 2026-11-16 | **Owner (decision 15 amended):** *Open AR-i* / *Open AR-ix* replaced by **All AR-i** / **All AR-ix** (every state), so closed cases such as ARQ0001009 are listed. URLs `#/ws/list/requests/all_ari`, `…/all_arix`; Lists rail and missing-case links open All AR-i. IDs kept: `LST-REQ-ARI`, `LST-REQ-ARIX` (notes updated). |
 | 2026-11-17 | D31: AR-i side bar *Customer setup* (`REQ-SETUP`) retired; Activity is the AR-i side panel. |
 | 2026-11-18 | Decision 16: common case page. Collections cases no longer show Customer / Contract in the header; Activity is the default side panel on every case (AR-ix opened on GIRO setup before). No IDs added or retired. |
+| 2026-11-18 | Fix: with Show IDs on, the `WS-01` tag covered the bottom of the AR logo in the workspace header; it now sits on the header's bottom edge. |

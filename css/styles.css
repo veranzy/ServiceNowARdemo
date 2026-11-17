@@ -451,7 +451,7 @@ body.sn-notes fieldset[data-snid]::before{left:auto;right:10px}
 body.sn-notes :is(.summary,.picker,.ws-tabs,.rtabs)[data-snid]::before{top:3px;left:auto;right:3px}
 body.sn-notes :is(button,th,a)[data-snid]::before{display:inline-block;margin-right:6px;vertical-align:1px}
 body.sn-notes label.ffield[data-snid]::before,body.sn-notes .ffield[data-snid]::before{align-self:flex-start;position:static}
-body.sn-notes .ws-head[data-snid]::before{top:auto;bottom:2px}
+body.sn-notes .ws-head[data-snid]::before{top:auto;bottom:-8px}   /* WS-01: straddle the bottom edge, clear of the AR logo */
 body.sn-notes .ws-rail[data-snid]::before{top:auto;bottom:6px;right:50%;transform:translateX(50%)}
 .db-hint{color:#e6c8ff;font-size:12px}
 

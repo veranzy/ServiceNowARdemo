@@ -26,3 +26,4 @@
 | 2026-11-17 | Decision 25 (owner, #8): AR-ix no longer uses `REQ.new_contract_ref` (field kept for AR-i; workspace header, ribbon and GIRO setup panel now show `giro_reference`); Purpose choices filtered by the contract option. ARQ0001005 (carpark) moved to No contract required. No IDs added or retired. |
 | 2026-11-17 | Owner: *Purpose of GIRO/DDA request* starts on the placeholder **-- Choose the purpose --** (no choice preselected). No IDs added or retired. |
 | 2026-11-17 | Owner: AR-ix portal form **locked** again after #8. Open question 9 added (reference mandatory for a new contract?). |
+| 2026-11-17 | Decision 26 / D31: workspace **Link** section with `REQ.link_contract`; GIRO setup panel text now says *set it as Link Contract Reference on this case and Save*. Portal form (locked) unchanged. |

@@ -18,3 +18,4 @@
 | 2026-11-17 | Decision 11: master data *Cost centres* and *Account codes* (lists under Master data). **New IDs:** `CCT.*`, `ACT.*`, `UA-CCT-new`, `UA-CCT-save`, `UA-CCT-insert`, `UA-ACT-new`, `UA-ACT-save`, `UA-ACT-insert`. |
 | 2026-11-18 | Decision 12: master data block. **New IDs:** `CUS.active`, `BCT.active`, `BNK.active`, `UA-DOC-new`, `UA-DOC-insert`, `UA-DOC-save`, `RL-CCT-CAL`, `RL-ACT-CAL`. List tabs *Active* / *Inactive*; New records default to Active. |
 | 2026-11-18 | Decision 13: invoice preview tab and print. **New IDs:** `INV-PDF`, `UA-INV-pdf`. Draft wording to confirm: *Invoice preview*, *Print or save as PDF*, *Tax invoice*, *Bill to*, *Reference*, *Breakdown on the AR request*, *Please pay by the due date to … quoting the invoice number.* |
+| 2026-11-18 | Enhancement set [#10](https://github.com/veranzy/ServiceNowARdemo/issues/10) triaged: [`ENH-10.md`](../../enhancements/ENH-10.md). |

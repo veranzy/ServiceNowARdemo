@@ -368,7 +368,7 @@ const btn = (html, ovf = false) => ({ html, ovf });
 
 function headerFields(table, rec) {
   const hf = (k, v) => `<div class="hf"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
-  // Common case header (UIX decision 17): the same fields on every form, plus the form's own identity
+  // Common case header (UIX decision 16): the same fields on every form, plus the form's own identity
   if (table === "requests") {
     const id = isCol(rec) ? [hf("Collection type", esc(rec.colType || "—"))]
       : [hf("Customer", rec.customerId ? refLink("customers", rec.customerId) : `${esc(rec.newCustName || "—")} <span class="chip c-warn">New</span>`),
@@ -682,13 +682,13 @@ function historyTab(table, rec) {
 function sidePanels(table, rec, tab) {
   if (table !== "requests") return [];
   const out = [];
-  // UIX decision 17: Activity first on every case; AR-ix keeps its GIRO setup panel after it. D31: AR-i Customer setup retired
+  // UIX decision 16: Activity first on every case; AR-ix keeps its GIRO setup panel after it. D31: AR-i Customer setup retired
   out.push({ key: "activity", label: "Activity", icon: "chat", html: activity(rec) });
   if (isIx(rec)) out.push({ key: "setup", label: "GIRO setup", icon: "check", html: giroPanel(rec, tab), badge: REQ_OPEN.includes(rec.state) && !rec.contractId ? "!" : "" });
   out.push({ key: "attachments", label: "Attachments", icon: "clip", html: attachments(rec) });
   return out;
 }
-const sideDefault = () => "activity";   // UIX decision 17: Activity is every record's default side panel
+const sideDefault = () => "activity";   // UIX decision 16: Activity is every record's default side panel
 
 /** AR-ix side panel: link the contract (after its AR-i is processed if it is new), then AR updates GIRO on the contract record and completes the case (AR-ix decision 11). */
 function giroPanel(r, tab) {

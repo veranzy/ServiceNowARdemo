@@ -94,6 +94,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-16 | Checking changes: the daily invoice check is mock data (ARQ0001009), no demo button. | Owner |
 | 2026-11-16 | Core flow: Closed complete generates the AR-i's 1st invoice; the schedule (created by AR on the contract) covers the 2nd invoice onwards (CCI decision 8). | Owner |
 | 2026-11-16 | Code layout updated to today's functions (firstInvoices, daily job, billing cycle helpers); retired ones marked. | Owner |
+| 2026-11-17 | Client enhancement tickets follow `docs/ENHANCEMENT_SOP.md` (triage file per ticket, issue template). | Owner |
 
 ## How we work: modules, one at a time
 
@@ -120,6 +121,9 @@ before every push, never force-push. For every new module or change:
 4. **Check and commit** (`docs/GIT_WORKFLOW.md`): `node tools/check.mjs`, commit with the module code as
    prefix (`AR-i: …`), push to `main`, confirm the Pages deploy and the Check run.
 5. **Prompt the next step.** End by suggesting the next module or refinement and the questions it needs.
+
+**Client enhancement tickets** (GitHub issues labelled `enhancement`) follow `docs/ENHANCEMENT_SOP.md`: triage into
+items in `docs/enhancements/ENH-<issue>.md`, owner unlocks and decides, build, check, report on the issue, close.
 
 ## Change requests by build-note ID
 
@@ -231,6 +235,7 @@ tools/notes.mjs         generates docs/BUILD_NOTES.md (every ID and what it maps
 tools/check.mjs         pre-push check (syntax, IDs, generated docs, module folders, links); CI runs it
 docs/modules/<CODE>/    one folder per module (see "How we work"); docs/DECISIONS.md cross-module decisions
 docs/GIT_WORKFLOW.md    git rules for every session
+docs/ENHANCEMENT_SOP.md SOP for client enhancement tickets; docs/enhancements/ENH-<n>.md one triage file per ticket
 ```
 
 ## Conventions

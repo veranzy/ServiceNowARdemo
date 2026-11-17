@@ -644,3 +644,4 @@ button.ws-tab[aria-selected="true"],.ws-tab.rec.on{background:transparent;color:
 .mrvs input { width: 100%; min-width: 96px; }
 .mrvs td .ferr { display: block; }
 .mrvs tfoot th, .mrvs tfoot td { border-top: 1px solid var(--line); }
+.radios{display:flex;gap:16px;flex-wrap:wrap}.radios .fcheck{font-weight:400}

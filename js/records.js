@@ -105,7 +105,24 @@ export const isARi = r => !r.form || r.form === "AR-i";
 export function validateCOL(d) {
   const e = {}; generalInfoErrors(d, e);
   if (!d.colType) e.colType = "Choose the collection type.";
+  const rows = (k, min, max, label) => {
+    const rs = d[k] || [];
+    if (rs.length < min) e[k] = `Add at least ${min} row.`; else if (rs.length > max) e[k] = `No more than ${max} rows.`;
+    rs.forEach((r, i) => { for (const f of TABLES[k].fields.filter(x => x.mandatory)) {
+      const v = r[f.key], bad = f.type === "Currency" ? !(v > 0) : f.type === "Integer" ? !(Number.isInteger(+v) && +v > 0) : !v;
+      if (bad) e[`crow:${k}:${i}:${f.key}`] = f.type === "Currency" ? "Enter an amount greater than zero." : f.type === "Integer" ? "Enter a whole number greater than zero." : `Enter the ${f.label.toLowerCase()}.`; } });
+  };
+  // AR-iii decisions 12–17 (#9 §7–9). AR-v: only the category is required (owner: no AR5 field mandatory yet)
+  if (d.colType === "AR-iii") { if (!d.colDate) e.colDate = "Enter the collection date."; rows("colTx", 1, 99); }
+  if (d.colType === "AR-iv") { if (!d.colCostCentre) e.colCostCentre = "Choose the requesting department cost centre."; rows("colAlloc", 1, 10); }
+  if (d.colType === "AR-v" && !d.colCategory) e.colCategory = "Choose the category.";
   return e;
+}
+/** Collections: the Request value (D29 matching). AR-iv: allocation total; AR-v: the amount received; AR-iii: none yet (AR-iii open question 6). */
+export function colValue(r, rows = S.colAlloc.filter(x => x.requestId === r.id)) {
+  if (r.colType === "AR-iv") return rows.reduce((s, x) => s + (x.amount || 0), 0);
+  if (r.colType === "AR-v") return (r.colCategory === "cash_bail" ? r.bailAmount : r.ar5Amount) || 0;
+  return 0;
 }
 /** AR-ix decision 22 (E8.5): the existing contracts a requester may pick. The customer's contracts (not No contract) whose
  *  department is the form's Department, or of which the requester is a contract owner (reference qualifier on REQ.contract). */
@@ -440,7 +457,7 @@ export function journal(req, kind, text, by) {
 
 /** Record producer submit (portal AR form). `o` overrides the case header when a case is loaded from data/AR_form.csv (UIX decision 13). */
 export function createRequest(vals, o = {}) {
-  const { lines, items = [], ...rest } = vals;
+  const { lines, items = [], colTx = [], colAlloc = [], tile, ...rest } = vals;
   clearHidden("requests", rest);
   const by = o.requestedBy || me().id;
   const req = { id: uid("r"), number: o.number || nextNumber("requests"), state: "new", substate: "", requestedBy: by, assignmentGroup: "g_ar", assignedTo: null,
@@ -454,8 +471,12 @@ export function createRequest(vals, o = {}) {
     journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : req.contractOption === "none" ? (req.contractId ? `on no-contract shell ${ctrById(req.contractId)?.number}` : `with no contract (no ${req.department} no-contract shell on file yet; AR links it)`) : `for a new contract${req.giroReference ? ` ${req.giroReference}` : ""} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
     return req;
   }
-  if (req.form === "COL") {                           // Collections (D30): no billing lines; amount to collect comes with the form's fields
-    req.amount = req.amount || 0;
+  if (req.form === "COL") {                           // Collections (D30): no billing lines; rows copied to their tables (#9)
+    req.colOrigin = "manual";
+    const put = (k, rs) => rs.forEach((x, i) => S[k].push({ id: uid("cr"), requestId: req.id, seq: i + 1, ...x }));
+    if (req.colType === "AR-iii") put("colTx", colTx);
+    if (req.colType === "AR-iv") put("colAlloc", colAlloc);
+    req.amount = colValue(req, colAlloc);
     req.title = `Collections – ${req.colType || ""}`;
     S.requests.push(req);
     journal(req, "system", `Submitted from the Collections form (${req.colType}) on the portal.`, req.requestedBy);

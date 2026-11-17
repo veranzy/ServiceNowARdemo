@@ -4,7 +4,7 @@
 import { RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES } from "./schema.js";
 
 /** Short code per table, used as the prefix of field IDs (e.g. INV.due_date) and record-page IDs. */
-export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI" };
+export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI", colTx: "CTX", colAlloc: "CAL", costCentres: "CCT", accountCodes: "ACT" };
 const T = Object.fromEntries(Object.entries(CODE).map(([k, c]) => [c, k]));
 
 /** Screen elements that aren't a field, list, record page, related list or UI action. */
@@ -84,6 +84,13 @@ export const NOTES = {
   "PT-47": "RETIRED 2026-11-17 (AR-ix decision 23, E8.14): variable set Others with Form number (giro_form_number, also retired)",
   "PT-49": "Collections record producer (AR-iii module, D30): one form for AR-iii, AR-iv and AR-v. Catalogue items AR-iii, AR-iv, AR-v open it with collection_type preset. Sections: General information (PT-30), 2. Collection type (PT-50); the rest to be defined",
   "PT-50": "Collections variable set Collection type (D30): collection_type (Choice AR-iii / AR-iv / AR-v, labels to be given), mandatory, preset from the catalogue item",
+  "PT-51": "Collections variable set 3. Collection Details (#9 §7–9): fields of the selected type. AR-iii: Collection Date*. AR-iv: Collection Date, Reference Number, Requesting Department Cost Centre*. AR-v: Category* first, then that category's fields only (UI policies on collection_type and ar5_category); AR-v fields optional until confirmed (AR-iii decision 14)",
+  "PT-52": "Collections AR-iii multi-row variable set Total number of collections for the day (#9 §7): Collection Type* (Choice), Number of Transactions* (positive whole number); 1 to 99 rows; duplicates allowed (owner). Producer script copies rows to x_ar_collection_tx",
+  "PT-53": "Collections AR-iv multi-row variable set Amount for Each Account Code (#9 §8): Description*, Amount* (> 0, two decimals), Cost Centre* (active, Requesting Department), Account Code* (active); 1 to 10 rows. Producer script copies rows to x_ar_collection_allocation; the allocation total becomes amount (Request value)",
+  "PT-54": "Collections AR-v supporting-document guidance by category (#9 §9): Cash Bail: G56, Bailor identity document, Bail Bond Form, Bank-in slip or receipt; Seized Monies and Restitution: G56, Case Property List, Bank-in slip or receipt (UI policy / rich-text label per category)",
+  "PT-55": "Collections section 4. Supporting Documents (#9 §10): multiple attachments, optional (sc_attachment on the case); file size and type rules documented for the build, not checked in the demo (owner)",
+  "PT-56": "Collections AR-iii total: calculated sum of Number of Transactions across rows (catalog client script; shown in the multi-row set footer)",
+  "PT-57": "Collections AR-iv allocation total: calculated sum of Amount across rows (catalog client script); stored as amount on the case",
   "PT-48": "AR-ix Select Customer hint (decision 17, E8.1): Customer not found? Submit an AR-i to set up the customer first. Shown under the customer search instead of the AR-i add-as-new-customer button (UA-PT-newcust stays on AR-i)",
   "PT-07": "Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include",
   "PT-08": `Variable attachments → sys_attachment on the created ${TABLES.requests.table}`,
@@ -108,6 +115,8 @@ export const NOTES = {
 
 /** UI actions per table: "UA-<CODE>-<action>". */
 export const UI_ACTIONS = {
+  "UA-PT-addcol": "Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99)",
+  "UA-PT-addalloc": "Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10)",
   "UA-REQ-assign": "Assign to me → assigned_to = current user (assignment_group kept, default Accounts Receivable); New → Work in progress. One of only two case actions with Save (AR-00, 2026-11-16)",
   "UA-REQ-info": "RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Request info. AR sets State = Awaiting requestor information (optional Substate) and posts an additional comment",
   "UA-REQ-reject": "RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Reject. AR sets State = Closed incomplete or Cancelled and posts an additional comment",
@@ -140,7 +149,7 @@ export const UI_ACTIONS = {
   "UA-BSU-sample": "Demo only: generate a sample CSV in the bank's layout",
   "UA-BNK-upload": "Upload statement → opens the BSU page for this account",
   "UA-CUS-save": "Save (update)", "UA-CON-save": "Save (update)", "UA-BNK-save": "Save (update)",
-  "UA-CUS-new": "New (list action)", "UA-CON-new": "New (list action)", "UA-BNK-new": "New (list action)",
+  "UA-CUS-new": "New (list action)", "UA-CON-new": "New (list action)", "UA-CCT-new": "New (list action)", "UA-ACT-new": "New (list action)", "UA-CCT-save": "Save (update)", "UA-CCT-insert": "Submit (insert)", "UA-ACT-save": "Save (update)", "UA-ACT-insert": "Submit (insert)", "UA-BNK-new": "New (list action)",
   "UA-CUS-insert": "Submit (insert)", "UA-CON-insert": "Submit (insert)", "UA-SCH-insert": "Submit (insert) of a billing schedule created from the contract (CCI decision 8)", "UA-BNK-insert": "Submit (insert)",
   "UA-CON-newschedule": "New billing schedule (contract record, CCI decision 8) → new x_ar_billing_schedule form with contract (and customer) prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case (source_request)",
   "UA-CUS-newcontract": "New contract → new contract form with customer prefilled"
@@ -152,7 +161,7 @@ export const RELATED = {
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",
-  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request",
+  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request",
   "RL-BSU-DEP": "bsu", "RL-BNK-BSU": "bank_account", "RL-BNK-DEP": "bank_account"
 };
 
@@ -191,7 +200,7 @@ export function noteText(id) {
     return { RP: `Record page (UI Builder) · ${t.table}${t.extends ? ` extends ${t.extends}` : ""}`, HDR: `Record header: highlighted values of ${t.table}`,
       FRM: `Form view: ${t.table} (Default view)`, LST: `List: ${t.table} · list view layout + list menu condition` }[m[1]];
   }
-  if ((m = id.match(/^([A-Z]+)\.([a-z_.]+)$/)) && T[m[1]]) {
+  if ((m = id.match(/^([A-Z]+)\.([a-z0-9_.]+)$/)) && T[m[1]]) {   // column names may hold digits (e.g. g56_receipt_number)
     const f = TABLES[T[m[1]]].fields.find(x => x.name === m[2]);
     if (f) return fieldText(T[m[1]], f);
   }

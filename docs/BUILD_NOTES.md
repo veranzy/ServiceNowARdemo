@@ -119,6 +119,13 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-47` | RETIRED 2026-11-17 (AR-ix decision 23, E8.14): variable set Others with Form number (giro_form_number, also retired) |
 | `PT-49` | Collections record producer (AR-iii module, D30): one form for AR-iii, AR-iv and AR-v. Catalogue items AR-iii, AR-iv, AR-v open it with collection_type preset. Sections: General information (PT-30), 2. Collection type (PT-50); the rest to be defined |
 | `PT-50` | Collections variable set Collection type (D30): collection_type (Choice AR-iii / AR-iv / AR-v, labels to be given), mandatory, preset from the catalogue item |
+| `PT-51` | Collections variable set 3. Collection Details (#9 §7–9): fields of the selected type. AR-iii: Collection Date*. AR-iv: Collection Date, Reference Number, Requesting Department Cost Centre*. AR-v: Category* first, then that category's fields only (UI policies on collection_type and ar5_category); AR-v fields optional until confirmed (AR-iii decision 14) |
+| `PT-52` | Collections AR-iii multi-row variable set Total number of collections for the day (#9 §7): Collection Type* (Choice), Number of Transactions* (positive whole number); 1 to 99 rows; duplicates allowed (owner). Producer script copies rows to x_ar_collection_tx |
+| `PT-53` | Collections AR-iv multi-row variable set Amount for Each Account Code (#9 §8): Description*, Amount* (> 0, two decimals), Cost Centre* (active, Requesting Department), Account Code* (active); 1 to 10 rows. Producer script copies rows to x_ar_collection_allocation; the allocation total becomes amount (Request value) |
+| `PT-54` | Collections AR-v supporting-document guidance by category (#9 §9): Cash Bail: G56, Bailor identity document, Bail Bond Form, Bank-in slip or receipt; Seized Monies and Restitution: G56, Case Property List, Bank-in slip or receipt (UI policy / rich-text label per category) |
+| `PT-55` | Collections section 4. Supporting Documents (#9 §10): multiple attachments, optional (sc_attachment on the case); file size and type rules documented for the build, not checked in the demo (owner) |
+| `PT-56` | Collections AR-iii total: calculated sum of Number of Transactions across rows (catalog client script; shown in the multi-row set footer) |
+| `PT-57` | Collections AR-iv allocation total: calculated sum of Amount across rows (catalog client script); stored as amount on the case |
 | `PT-48` | AR-ix Select Customer hint (decision 17, E8.1): Customer not found? Submit an AR-i to set up the customer first. Shown under the customer search instead of the AR-i add-as-new-customer button (UA-PT-newcust stays on AR-i) |
 | `PT-07` | Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include |
 | `PT-08` | Variable attachments → sys_attachment on the created x_ar_request |
@@ -158,7 +165,27 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.substate` | x_ar_request.substate · Choice · Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal) |
 | `REQ.opened_by` | x_ar_request.opened_by · Reference → sys_user · read-only |
 | `REQ.ar_form` | x_ar_request.ar_form · Choice · read-only · Collections cases: COL, with the type in collection_type (D30) |
+| `REQ.submission_origin` | x_ar_request.submission_origin · Choice · read-only · Collections (#9 §6). System-managed: Manual for portal submissions; system-generated cases are a later phase (AR-iii decision 10) |
 | `REQ.collection_type` | x_ar_request.collection_type · Choice · Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording |
+| `REQ.collection_date` | x_ar_request.collection_date · Date · AR-iii: mandatory. AR-iv: optional (#9 §7, §8) |
+| `REQ.collection_reference` | x_ar_request.collection_reference · String · AR-iv. Optional (#9 §8) |
+| `REQ.requesting_cost_centre` | x_ar_request.requesting_cost_centre · Reference → x_ar_cost_centre · AR-iv. Mandatory. Reference qualifier: active cost centres of the Requesting Department (#9 §8, AC-10) |
+| `REQ.ar5_category` | x_ar_request.ar5_category · Choice · AR-v. Chosen first; shows only that category's fields and document guidance (#9 §9). Mandatory |
+| `REQ.date_of_collection` | x_ar_request.date_of_collection · Date · AR-v, every category. Optional until confirmed |
+| `REQ.g56_receipt_number` | x_ar_request.g56_receipt_number · String · AR-v, every category. Optional until confirmed |
+| `REQ.bail_amount` | x_ar_request.bail_amount · Currency · AR-v Cash Bail. Sets the Request value |
+| `REQ.bailor_name` | x_ar_request.bailor_name · String |
+| `REQ.bailor_nric` | x_ar_request.bailor_nric · String · Protected: masked on display (last 4 shown); validation rule to be approved (#9 §9.4) |
+| `REQ.bailor_address` | x_ar_request.bailor_address · String (1000) |
+| `REQ.ib_case_number` | x_ar_request.ib_case_number · String |
+| `REQ.case_number` | x_ar_request.case_number · String |
+| `REQ.case_status` | x_ar_request.case_status · Choice · AR-v. Choices depend on the category (#9 §9; subject to final business confirmation) |
+| `REQ.accused_name` | x_ar_request.accused_name · String |
+| `REQ.accused_id_number` | x_ar_request.accused_id_number · String · Protected: masked on display (last 4 shown) |
+| `REQ.ar5_amount` | x_ar_request.ar5_amount · Currency · AR-v Seized Monies and Restitution. Sets the Request value |
+| `REQ.ar5_currency` | x_ar_request.ar5_currency · Choice · Controlled list (default list; master list to be decided) |
+| `REQ.ar5_to_be_invested` | x_ar_request.ar5_to_be_invested · Choice · Yes / No radio buttons (#9 §9.4), where applicable |
+| `REQ.ar5_currency_banked` | x_ar_request.ar5_currency_banked · Choice · AR-v Restitution (#9 §9.3). Read as a currency choice; to confirm (AR-iii open question 10) |
 | `REQ.requester_name` | x_ar_request.requester_name · String · General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name |
 | `REQ.requester_email` | x_ar_request.requester_email · String · read-only · General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only |
 | `REQ.department_sub_bu` | x_ar_request.department_sub_bu · Choice · General information (all AR forms). Sub-BUs of the chosen department (mock list) |
@@ -336,6 +363,12 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `ALC.state` | x_ar_allocation.state · Choice |
 | `ALC.exception` | x_ar_allocation.exception · Choice |
 | `ALC.reason` | x_ar_allocation.reason · String (1000) |
+| `CAL.ar_request` | x_ar_collection_allocation.ar_request · Reference → x_ar_request · read-only |
+| `CAL.row_number` | x_ar_collection_allocation.row_number · Integer · read-only |
+| `CAL.description` | x_ar_collection_allocation.description · String · mandatory |
+| `CAL.amount` | x_ar_collection_allocation.amount · Currency · mandatory · Positive, at most two decimals |
+| `CAL.cost_centre` | x_ar_collection_allocation.cost_centre · Reference → x_ar_cost_centre · mandatory · Reference qualifier: active cost centres of the Requesting Department |
+| `CAL.account_code` | x_ar_collection_allocation.account_code · Reference → x_ar_account_code · mandatory · Reference qualifier: active account codes. GST / recovery rule check to be approved (AR-iii open question 11) |
 
 ## Company
 
@@ -549,6 +582,69 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RQI.late_payment_interest` | x_ar_request_item.late_payment_interest · Decimal · Rate % (to be confirmed with the users) |
 | `RQI.account_code` | x_ar_request_item.account_code · String |
 
+## Collection
+
+| ID | ServiceNow |
+|---|---|
+| `LST-CTX` | List: x_ar_collection_tx · list view layout + list menu condition |
+| `RP-CTX` | Record page (UI Builder) · x_ar_collection_tx |
+| `HDR-CTX` | Record header: highlighted values of x_ar_collection_tx |
+| `FRM-CTX` | Form view: x_ar_collection_tx (Default view) |
+
+## Collection fields
+
+| ID | ServiceNow |
+|---|---|
+| `CTX.ar_request` | x_ar_collection_tx.ar_request · Reference → x_ar_request · read-only |
+| `CTX.row_number` | x_ar_collection_tx.row_number · Integer · read-only |
+| `CTX.collection_type` | x_ar_collection_tx.collection_type · Choice · mandatory |
+| `CTX.number_of_transactions` | x_ar_collection_tx.number_of_transactions · Integer · mandatory · Positive whole number |
+
+## Allocation
+
+| ID | ServiceNow |
+|---|---|
+| `LST-CAL` | List: x_ar_collection_allocation · list view layout + list menu condition |
+| `RP-CAL` | Record page (UI Builder) · x_ar_collection_allocation |
+| `HDR-CAL` | Record header: highlighted values of x_ar_collection_allocation |
+| `FRM-CAL` | Form view: x_ar_collection_allocation (Default view) |
+
+## Cost centre
+
+| ID | ServiceNow |
+|---|---|
+| `LST-CCT` | List: x_ar_cost_centre · list view layout + list menu condition |
+| `RP-CCT` | Record page (UI Builder) · x_ar_cost_centre |
+| `HDR-CCT` | Record header: highlighted values of x_ar_cost_centre |
+| `FRM-CCT` | Form view: x_ar_cost_centre (Default view) |
+
+## Cost centre fields
+
+| ID | ServiceNow |
+|---|---|
+| `CCT.code` | x_ar_cost_centre.code · String · mandatory |
+| `CCT.name` | x_ar_cost_centre.name · String · mandatory |
+| `CCT.department` | x_ar_cost_centre.department · Choice · mandatory |
+| `CCT.active` | x_ar_cost_centre.active · True/False |
+
+## Account code
+
+| ID | ServiceNow |
+|---|---|
+| `LST-ACT` | List: x_ar_account_code · list view layout + list menu condition |
+| `RP-ACT` | Record page (UI Builder) · x_ar_account_code |
+| `HDR-ACT` | Record header: highlighted values of x_ar_account_code |
+| `FRM-ACT` | Form view: x_ar_account_code (Default view) |
+
+## Account code fields
+
+| ID | ServiceNow |
+|---|---|
+| `ACT.code` | x_ar_account_code.code · String · mandatory |
+| `ACT.description` | x_ar_account_code.description · String · mandatory |
+| `ACT.gst_treatment` | x_ar_account_code.gst_treatment · Choice |
+| `ACT.active` | x_ar_account_code.active · True/False |
+
 ## Calculated columns
 
 | ID | ServiceNow |
@@ -590,6 +686,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RL-INV-ALC` | Related list: x_ar_allocation where invoice = this invoice |
 | `RL-DEP-ALC` | Related list: x_ar_allocation where deposit = this bsu deposit |
 | `RL-REQ-ALC` | Related list: x_ar_allocation where request = this ar request |
+| `RL-REQ-CTX` | Related list: x_ar_collection_tx where ar_request = this ar request |
+| `RL-REQ-CAL` | Related list: x_ar_collection_allocation where ar_request = this ar request |
 | `RL-BSU-DEP` | Related list: x_ar_bank_statement where bsu = this statement upload |
 | `RL-BNK-BSU` | Related list: x_ar_bsu where bank_account = this bank account |
 | `RL-BNK-DEP` | Related list: x_ar_bank_statement where bank_account = this bank account |
@@ -598,6 +696,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 
 | ID | ServiceNow |
 |---|---|
+| `UA-PT-addcol` | UI action: Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99) |
+| `UA-PT-addalloc` | UI action: Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10) |
 | `UA-REQ-assign` | UI action: Assign to me → assigned_to = current user (assignment_group kept, default Accounts Receivable); New → Work in progress. One of only two case actions with Save (AR-00, 2026-11-16) |
 | `UA-REQ-info` | UI action: RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Request info. AR sets State = Awaiting requestor information (optional Substate) and posts an additional comment |
 | `UA-REQ-reject` | UI action: RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Reject. AR sets State = Closed incomplete or Cancelled and posts an additional comment |
@@ -636,6 +736,12 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-BNK-save` | UI action: Save (update) |
 | `UA-CUS-new` | UI action: New (list action) |
 | `UA-CON-new` | UI action: New (list action) |
+| `UA-CCT-new` | UI action: New (list action) |
+| `UA-ACT-new` | UI action: New (list action) |
+| `UA-CCT-save` | UI action: Save (update) |
+| `UA-CCT-insert` | UI action: Submit (insert) |
+| `UA-ACT-save` | UI action: Save (update) |
+| `UA-ACT-insert` | UI action: Submit (insert) |
 | `UA-BNK-new` | UI action: New (list action) |
 | `UA-CUS-insert` | UI action: Submit (insert) |
 | `UA-CON-insert` | UI action: Submit (insert) |

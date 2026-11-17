@@ -3,6 +3,7 @@
 import { ctrById, custById, rollup } from "../ledger.js";
 import { giroPurposesFor, giroContracts, DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, billingMode, giroTarget, giroTypesFor, canViewReq, draftLine, draftPro, itemCalc, reqItems, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
 import { COLLECTION_TILES, COLLECTIONS_FORM, GIRO_PURPOSES, AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, GIRO_TYPES, GST_RATE, ROLES, TABLES, fieldVisible } from "../schema.js";
+import { CODE } from "../notes.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
 import { custName, ctrNo, fieldHtml, icon, initials, reqChip, reqCustName, sn } from "./common.js";
@@ -318,12 +319,56 @@ function colFormPage() {
         ${generalInfo(d, e, f)}
         <fieldset class="psec"${sn("PT-50")}><legend>2. Collection type</legend>
           <div class="fgrid">${f("colType", { mandatory: true, help: null, placeholder: "-- Choose the collection type --" })}</div>
-          <p class="pt-hint">The rest of this form is still to be defined.</p>
         </fieldset>
+        ${d.colType ? colDetails(d, e, f) : ""}
+        ${d.colType ? `<fieldset class="psec"${sn("PT-55")}><legend>4. Supporting Documents</legend>
+          ${COL_DOCS[d.colType === "AR-v" ? d.colCategory : d.colType] ? `<p class="pt-hint"${sn("PT-54")}>Supporting-document guidance: ${COL_DOCS[d.colType === "AR-v" ? d.colCategory : d.colType].map(esc).join(" · ")}</p>` : ""}
+          <div class="ffield wide"${sn("PT-08")}><span class="flabel">Supporting documents</span>
+            <div><label class="btn small" for="pfAttach">${icon("clip", 15)} Add attachment</label><input type="file" id="pfAttach" multiple hidden></div>
+            ${d.attachments?.length ? `<ul class="attlist">${d.attachments.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unattach="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Optional.</span>`}
+          </div>
+        </fieldset>` : ""}
       </form>
       <aside class="pt-side" id="pfSide">${formSide(d)}</aside>
     </div>
   </div>`;
+}
+
+/** Supporting-document guidance (#9 §9): AR-v per category; AR-iii and AR-iv have none yet. */
+const COL_DOCS = { cash_bail: ["G56", "Bailor identity document", "Bail Bond Form", "Bank-in slip or receipt"], seized: ["G56", "Case Property List", "Bank-in slip or receipt"], restitution: ["G56", "Case Property List", "Bank-in slip or receipt"] };
+/** Collections section 3. Collection Details: the selected type's fields (#9 §7–9, AR-iii decisions 12–17). */
+function colDetails(d, e, f) {
+  const show = k => fieldVisible("requests", reqField(k), d);
+  const keys = { "AR-iii": ["colDate"], "AR-iv": ["colDate", "colRef", "colCostCentre"],
+    "AR-v": ["colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "bailorId", "bailorAddress", "ibCase", "caseNumber", "caseStatus", "accusedName", "accusedId", "ar5Amount", "ar5Currency", "ar5Invest", "ar5CurrencyEq"] }[d.colType] || [];
+  const must = { colDate: d.colType === "AR-iii", colCostCentre: true, colCategory: true };
+  return `<fieldset class="psec"${sn("PT-51")}><legend>3. Collection Details</legend>
+    <div class="fgrid">${keys.filter(show).map(k => f(k, { mandatory: !!must[k], help: null, ...(k === "colCategory" ? { placeholder: "-- Choose the category --" } : {}), ...(k === "caseStatus" ? { placeholder: "-- Choose the case status --" } : {}) })).join("")}</div>
+    ${d.colType === "AR-iii" ? colRows(d, e, "colTx", { max: 99, total: ["transactions", "Total transactions", false], id: "PT-52" }) : ""}
+    ${d.colType === "AR-iv" ? colRows(d, e, "colAlloc", { max: 10, total: ["amount", "Allocation total", true], id: "PT-53" }) : ""}
+  </fieldset>`;
+}
+/** Multi-row variable set for Collections (AR3 collections, AR4 allocations). Rows live in the draft under the table key. */
+export function colRows(d, e, k, o) {
+  const t = TABLES[k], cols = t.fields.filter(x => !["requestId", "seq"].includes(x.key)), rows = d[k] || [];
+  const cell = (r, i, fl) => { const nm = `crow:${k}:${i}:${fl.key}`, err = e[nm], v = r[fl.key], aria = `aria-label="${esc(fl.label)}, row ${i + 1}"${err ? ` aria-invalid="true"` : ""}`;
+    const opts = fl.type === "Choice" ? fl.choices : fl.ref === "costCentres" ? S.costCentres.filter(c => c.active && c.department === d.department).map(c => [c.id, `${c.code} · ${c.name}`]) : fl.ref === "accountCodes" ? S.accountCodes.filter(a => a.active).map(a => [a.id, `${a.code} · ${a.name}`]) : null;
+    const ctl = opts ? `<select id="cr-${k}-${i}-${fl.key}" name="${nm}" ${aria}><option value="">-- Choose --</option>${opts.map(([x, l]) => `<option value="${esc(x)}"${x === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`
+      : fl.type === "Currency" ? `<input type="number" step="0.01" min="0" inputmode="decimal" id="cr-${k}-${i}-${fl.key}" name="${nm}" value="${v ? (v / 100).toFixed(2) : ""}" ${aria}>`
+      : fl.type === "Integer" ? `<input type="number" step="1" min="1" id="cr-${k}-${i}-${fl.key}" name="${nm}" value="${v || ""}" ${aria}>`
+      : `<input type="text" id="cr-${k}-${i}-${fl.key}" name="${nm}" value="${esc(v || "")}" ${aria}>`;
+    return `<td data-label="${esc(fl.label)}"${sn(`${CODE[k]}.${fl.name}`)}>${ctl}${err ? `<span class="ferr">${esc(err)}</span>` : ""}</td>`; };
+  return `<div class="ffield wide${e[k] ? " has-err" : ""}"${sn(o.id)}><span class="flabel"><i class="req" aria-hidden="true">*</i>${esc(t.plural)}</span>
+    <div class="tablewrap"><table class="list mrvs"><thead><tr><th>Row</th>${cols.map(c => `<th${c.type === "Currency" || c.type === "Integer" ? ` class="num"` : ""}>${esc(c.label)}</th>`).join("")}<th><span class="sr">Remove</span></th></tr></thead>
+    <tbody>${rows.map((r, i) => `<tr><td class="mono" data-label="Row">${i + 1}</td>${cols.map(c => cell(r, i, c)).join("")}<td><button type="button" class="linkish small" data-crdel="${k}:${i}">Remove</button></td></tr>`).join("")}</tbody>
+    ${colTotal(d, k, o.total)}</table></div>
+    ${e[k] ? `<span class="ferr">${esc(e[k])}</span>` : ""}
+    <div class="row start">${rows.length < o.max ? `<button type="button" class="btn small" data-cradd="${k}"${sn(k === "colTx" ? "UA-PT-addcol" : "UA-PT-addalloc")}>+ Add row</button>` : ""}<span class="fhelp">1 to ${o.max} rows.</span></div></div>`;
+}
+export function colTotal(d, k, [key, label, money] = k === "colTx" ? ["transactions", "Total transactions", false] : ["amount", "Allocation total", true]) {
+  const cols = TABLES[k].fields.filter(x => !["requestId", "seq"].includes(x.key)), at = cols.findIndex(c => c.key === key);
+  const n = (d[k] || []).reduce((s, r) => s + (+r[key] || 0), 0);
+  return `<tfoot id="pfTot-${k}"${sn(k === "colTx" ? "PT-56" : "PT-57")}><tr><th scope="row" colspan="${at + 1}">${esc(label)}</th><td class="num mono"><b>${money ? fmt(n) : n}</b></td><td colspan="${cols.length - at}"></td></tr></tfoot>`;
 }
 
 /** AR-ix Type help text, owner's wording exactly (AR-ix decision 14). */
@@ -398,7 +443,7 @@ export const formAlert = n => n ? `<div class="pt-alert err" role="alert">Please
 
 export function formSide(d) {
   if (d.form === "COL") {
-    const labels = [...new Set(Object.keys(validateARi(d)).map(k => reqField(k)?.label).filter(Boolean))];
+    const labels = [...new Set(Object.keys(validateARi(d)).map(k => { const t = k.startsWith("crow:") ? k.split(":")[1] : k; return TABLES[t]?.plural || reqField(k)?.label; }).filter(Boolean))];
     return `<div class="pt-card sticky"><div class="side-info">
       <span class="ft-code">Collections</span><h2>Submit request</h2>
       <p class="small muted">Goes to the Accounts Receivable team as a case. You and the people on the CC list can follow it on My requests.</p>

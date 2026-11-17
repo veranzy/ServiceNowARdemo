@@ -10,7 +10,7 @@ import { $, S } from "./state.js";
 import { cents, fmt, uid } from "./util.js";
 import { render, setStatus, syncBarHeight, toast } from "./views/app.js";
 import { refreshPicker } from "./views/finder.js";
-import { contractBox, custResults, formAlert, formSide, invSum, itemTotals } from "./views/portal.js";
+import { colTotal, contractBox, custResults, formAlert, formSide, invSum, itemTotals } from "./views/portal.js";
 import { listRows } from "./views/workspace.js";
 
 const W = () => S.ui.ws, P = () => S.ui.portal;
@@ -112,7 +112,12 @@ function portalFieldUpdated(el) {
 
 /** AR-i contract step changed: drop a prefilled bill-to (it belonged to the previous choice) and prefill again. */
 function contractChanged(d) {
-  if (d.form === "COL") return;                     // Collections (D30): no contract step yet
+  if (d.form === "COL") {                           // Collections: no contract step. AC-10: cost centres follow the requesting department
+    const ok = id => S.costCentres.some(c => c.id === id && c.department === d.department);
+    if (d.colCostCentre && !ok(d.colCostCentre)) d.colCostCentre = "";
+    for (const r of d.colAlloc || []) if (r.costCentre && !ok(r.costCentre)) r.costCentre = "";
+    return;
+  }
   if (d.form === "AR-ix") {
     // AR-ix: the applicant is prefilled from the contract's bill-to (cleared again when the contract changes)
     if (d.applicantPrefilled) { Object.assign(d, { applicantName: "", applicantEmail: "", applicantMobile: "" }); delete d.applicantPrefilled; }
@@ -169,6 +174,12 @@ function invUpdated() {
   swap("pfInvSum", invSum(d));
   const box = document.querySelector(".pt-info.ctr-box"); if (box) box.outerHTML = contractBox(d);
 }
+/** Collections row typed into: refresh the total in place and clear the cell's error. */
+function colRowUpdated(el, t) {
+  const d = P().draft, tf = $(`pfTot-${t}`); if (tf) tf.outerHTML = colTotal(d, t);
+  if (P().errors[el.name]) { delete P().errors[el.name]; el.removeAttribute("aria-invalid"); el.closest("td")?.querySelector(".ferr")?.remove(); const a = $("pfAlert"); if (a) a.innerHTML = formAlert(Object.keys(P().errors).length); }
+  portalFieldUpdated(el);
+}
 /** Billing line item typed into: recalculate its GST / total and the table totals in place. */
 function itemUpdated(el, i) {
   const d = P().draft, k = el.name.split(":")[2], c = itemCalc(d.items[i]);
@@ -210,6 +221,9 @@ document.addEventListener("click", e => {
     contractChanged(dr); delete P().errors.contractOption; render();
     return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? (dr.form === "AR-ix" ? null : $("pf-newCtrType")) : null)?.focus(); }
   // AR-i billing line items (multi-row variable set, AR-i decision 32)
+  // Collections multi-row sets (#9: AR3 collections, AR4 allocations)
+  if (d.cradd !== undefined) { const dr = P().draft, k = d.cradd; (dr[k] ||= []).push(k === "colTx" ? { collectionType: "", transactions: 0 } : { desc: "", amount: 0, costCentre: "", accountCode: "" }); delete P().errors[k]; render(); return $(`cr-${k}-${dr[k].length - 1}-${k === "colTx" ? "collectionType" : "desc"}`)?.focus(); }
+  if (d.crdel !== undefined) { const [k, i] = d.crdel.split(":"); P().draft[k].splice(+i, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([x]) => !x.startsWith(`crow:${k}:`))); return render(); }
   if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ amount: 0, lpiRate: 0, accountCode: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
   if (d.iremove !== undefined) { P().draft.items.splice(+d.iremove, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith("item:"))); return render(); }
   if (d.unattach !== undefined) { P().draft.attachments.splice(+d.unattach, 1); return render(); }
@@ -292,6 +306,7 @@ document.addEventListener("change", e => {
     cb.closest(".cand")?.classList.toggle("on", cb.checked); return refreshPicker(cb.dataset.pick, "preview"); }
   // portal AR form: billing line item fields
   if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
+  if (el.closest("#arForm") && el.name?.startsWith("crow:")) { const [, t, i, k] = el.name.split(":"); P().draft[t][+i][k] = t && TABLES[t].fields.find(x => x.key === k)?.type === "Integer" ? (el.value === "" ? 0 : Math.trunc(+el.value)) : coerce(t, k, el); return colRowUpdated(el, t); }
   // portal AR form: dependent fields re-render
   if (el.closest("#arForm") && el.name) {
     const d = P().draft; d[el.name] = coerce("requests", el.name, el);
@@ -333,6 +348,7 @@ document.addEventListener("input", e => {
   if (el.dataset.picknote && S.pick[el.dataset.picknote]) { S.pick[el.dataset.picknote].note = el.value; return; }
   if (el.id === "pfCustQ") { P().draft.custQ = el.value; const n = $("pfCustResults"); if (n) n.outerHTML = custResults(P().draft); return; }
   if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
+  if (el.closest("#arForm") && el.name?.startsWith("crow:")) { const [, t, i, k] = el.name.split(":"); P().draft[t][+i][k] = t && TABLES[t].fields.find(x => x.key === k)?.type === "Integer" ? (el.value === "" ? 0 : Math.trunc(+el.value)) : coerce(t, k, el); return colRowUpdated(el, t); }
   if (el.closest("#arForm") && el.name && el.tagName !== "SELECT") { P().draft[el.name] = coerce("requests", el.name, el); portalFieldUpdated(el); return invUpdated(); }
   const rf = el.closest("[data-rform]");
   if (rf && el.name && el.tagName !== "SELECT") { const tab = W().tabs.find(x => x.key === rf.dataset.rform); if (tab) (tab.vals ||= {})[el.name] = coerce(tab.table, el.name, el); }

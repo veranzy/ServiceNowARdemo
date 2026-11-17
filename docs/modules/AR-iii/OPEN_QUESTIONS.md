@@ -4,9 +4,15 @@ Every question has an owner. Answered ones are struck through with the answer an
 parked ones link their GitHub issue (label `AR-iii`).
 
 1. *(Being answered by [#9](https://github.com/veranzy/ServiceNowARdemo/issues/9), see `docs/enhancements/ENH-9.md`.)* The Collections form's name, the labels of the three types (AR-iii, AR-iv, AR-v), what each covers, and the form's sections and fields after Collection type. Placeholders meanwhile: *Collections*, *Collection type*, codes as choice labels, tile description *Money collected without an invoice. One form for AR-iii, AR-iv and AR-v.* (Owner)
-2. Does a collection need the customer and contract from AR's master data (existing customer only, as AR-ix; existing or new, as AR-i; or a free-text payer)? Owner: not sure yet (2026-11-17). Applies to AR-iv and AR-v too. (Owner)
+2. ~~Does a collection need the customer and contract from AR's master data?~~ No: customer and contract maintenance is out of scope for Collections (#9 §3, E9.24, 2026-11-17).
 3. ~~What does AR do with the case when the deposit is matched?~~ Nothing automatic: AR sets the state by hand (BSU decision 11, 2026-11-17).
 4. Can one deposit cover several collection cases, or one case be paid by several deposits? Built as for invoices (both allowed); mixing invoices and cases is BSU open question 5. (Owner)
 5. ~~Should Collection type move above General information?~~ No: it stays right after General information (decision 8, 2026-11-17).
 6. AR3 has no amount (only transaction counts). What does AR match a BSU deposit to for an AR3 case (D29 uses the Request value)? ([#9](https://github.com/veranzy/ServiceNowARdemo/issues/9) E9.5) (Owner)
 7. Shared-part changes from #9, one by one: CC Count + up to 10 CC fields (E9.3), round-robin assignment (E9.13), clarification with reopened fields (E9.14), AR Approver role and approval (E9.15), state *Awaiting Internal Information* (E9.16, E9.20), withdrawal (E9.17), closure codes (E9.18), bulk close (E9.19), system-generated cases (E9.12). Parked by decision 10. (Owner)
+8. Wording of the warning when the collection type is changed after details are entered (#9 §5, E9.2). Owner to give the wording; until then changing the type keeps the other type's entries in the draft and clears them on submit. (Owner)
+9. Do we need a currency master list, or is the default list enough? (Owner)
+10. Restitution *Currency equivalent when banked in*: a currency choice (as built) or an SGD amount? (Owner)
+11. AR4 GST / recovery check: which account-code rule applies, and must the allocation total equal a collection total (§8, §22)? Not checked in the demo. (Owner)
+12. Request value for AR-v when the currency isn't SGD (used for BSU matching, D29). (Owner)
+13. From #9 §22, still open: 7 MB per file or per submission; AR5 mandatory fields per category; final AR5 status lists; AR4 Collection Date optional on purpose; permitted attachment formats. (Owner)

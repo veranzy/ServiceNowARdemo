@@ -69,6 +69,9 @@ function refOptions(f, rec, formVals) {
     const cust = rec.form === "AR-ix" ? rec.customerId : (formVals?.linkCustomer ?? rec.linkCustomer);
     return S.contracts.filter(k => cust && k.customerId === cust).map(k => [k.id, `${k.ctrId || "—"} · ${k.number} · ${k.title}`]);
   }
+  // Collections (#9 §8, AC-10): active cost centres of the requesting department; active account codes
+  if (f.ref === "costCentres") { const dep = formVals?.department ?? rec.department; return S.costCentres.filter(c => c.active && (!dep || c.department === dep)).map(c => [c.id, `${c.code} · ${c.name}`]); }
+  if (f.ref === "accountCodes") return S.accountCodes.filter(a => a.active).map(a => [a.id, `${a.code} · ${a.name}`]);
   if (f.ref === "contracts") {
     const cust = formVals?.customerId ?? rec.customerId;
     return S.contracts.filter(k => !cust || k.customerId === cust).map(k => [k.id, `${k.number} · ${k.title}`]);
@@ -76,11 +79,14 @@ function refOptions(f, rec, formVals) {
   return (S[f.ref] || []).map(r => [r.id, displayOf(f.ref, r)]);
 }
 
+/** Protected identity numbers (Collections AR-v): show only the last 4 characters. */
+export const maskId = v => { const s = String(v || ""); return s.length <= 4 ? "••••" : "•".repeat(s.length - 4) + s.slice(-4); };
 function readValue(table, f, rec) {
   const v = rec[f.key];
   if (f.key === "linkCustomer") { const c = S.customers.find(x => x.id === v); return c ? refLink("customers", c.id, `${c.uen || "No UEN"} · ${c.name}`) : "—"; }
   if (f.key === "linkContract") { const k = S.contracts.find(x => x.id === v); return k ? refLink("contracts", k.id, `${k.ctrId || "—"} · ${k.number}`) : "—"; }
   if (f.type === "Reference") return f.ref === "groups" ? esc(S.groups.find(g => g.id === v)?.name || "—") : f.ref === "users" ? esc(userById(v)?.name || "—") : f.ref === "companies" ? esc(S.companies.find(co => co.id === v)?.name || "—") : refLink(f.ref, v);
+  if (f.mask) return v ? esc(maskId(v)) : "—";   // protected identity numbers (#9 §9.4)
   if (f.type === "List") return (v || []).length ? (v || []).map(x => esc(f.ref === "users" ? userById(x)?.name || x : x)).join(", ") : "—";
   if (f.type === "Choice") return esc((f.choices.find(c => c[0] === v) || [, v || "—"])[1]);
   if (f.type === "Currency") return v ? `<span class="mono">SGD ${fmt(v)}</span>` : "—";
@@ -108,6 +114,7 @@ export function fieldHtml(table, f, rec, ctx = {}) {
     const common = `id="${id}" name="${ctx.name || f.key}"${f.mandatory ? ` aria-required="true"` : ""}${err ? ` aria-invalid="true"` : ""}`;
     if (f.type === "List") ctl = `<select ${common} multiple size="${Math.min(4, refOptions(f, rec, ctx.vals).length)}">${refOptions(f, rec, ctx.vals).map(([k, l]) => `<option value="${esc(k)}"${(v || []).includes(k) ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     else if (f.type === "Reference") ctl = `<select ${common}><option value="">-- None --</option>${refOptions(f, rec, ctx.vals).map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+    else if (f.type === "Choice" && f.radio) ctl = `<span class="radios" role="radiogroup" aria-label="${esc(f.label)}">${f.choices.map(([k, l]) => `<label class="fcheck"><input type="radio" id="${id}-${esc(k)}" name="${ctx.name || f.key}" value="${esc(k)}"${k === v ? " checked" : ""}> ${esc(l)}</label>`).join(" ")}</span>`;
     else if (f.type === "Choice") ctl = `<select ${common}>${ctx.placeholder ? `<option value="">${esc(ctx.placeholder)}</option>` : f.mandatory ? "" : `<option value="">-- None --</option>`}${(ctx.choices || (f.choiceDependsOn ? f.choices.filter(c => c[2] === (ctx.vals || rec)[f.choiceDependsOn]) : f.choices)).map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     else if (f.type.startsWith("String (")) ctl = `<textarea ${common} rows="3">${esc(f.key === "aliases" ? (v || []).join(", ") : v || "")}</textarea>`;
     else if (f.type === "Currency") ctl = `<div class="money-in"><span>SGD</span><input ${common} type="number" step="0.01" min="0" inputmode="decimal" value="${v ? (v / 100).toFixed(2) : ""}"></div>`;

@@ -1,6 +1,7 @@
 // Demo dataset: customers, contracts, invoices and payments loaded on start.
 import { loadCases } from "./cases.js";
 import { S } from "./state.js";
+import { DEPARTMENTS, DEPT_SUB_BUS } from "./schema.js";
 import { DAY, cents, today, uid } from "./util.js";
 import { depositId } from "./bsu.js";
 import { assignContractIds, itemCalc, resetAudit } from "./records.js";
@@ -216,6 +217,12 @@ export function loadSample() {
     ["bwo", "Facilities", "Hotel Finance (Orchard)", "finance.orchard@brightwater.example", "+65 6275 0002", "Brightwater Hospitality Holdings, Treasury, 1 Harbourfront Walk, Singapore 098585"],
     ["lume", "Advisory", "Lionel Tan", "lionel@lumenprint.example", "+65 9123 4567", "Lumen Print Studio, 51 Ubi Ave 1, Singapore 408933"]
   ];
+  // Cost centres and account codes (CCI decision 11): fictional master data for the Collections form (AR4)
+  S.costCentres = DEPARTMENTS.flatMap((d, di) => DEPT_SUB_BUS.filter(x => x[2] === d).map(([, n], i) => ({ id: uid("cc"), code: `CC-${d.slice(0, 3).toUpperCase()}-${i + 1}00`, name: `${d} – ${n}`, department: d, active: true })));
+  S.costCentres.push({ id: uid("cc"), code: "CC-FAC-900", name: "Facilities – Former Car Park Ops", department: "Facilities", active: false });
+  S.accountCodes = [["4100", "Card and NETS collections", "no_gst"], ["4200", "Rental and carpark income", "gst"], ["4300", "Service recoveries", "recovery"], ["2400", "Deposits held", "no_gst"],
+    ["2500", "Cash bail held", "no_gst"], ["2600", "Seized monies held", "no_gst"], ["4900", "Miscellaneous income (closed)", "gst", false]]
+    .map(([code, name, treatment, active = true]) => ({ id: uid("ac"), code, name, treatment, active }));
   S.contacts = ct.map(r => ({ id: uid("t"), customerId: cid[r[0]].id, department: r[1], name: r[2], email: r[3], phone: r[4], address: r[5], requestId: null }));
   // Contracts: owning department and bill-to person (D16). HL-2026-02 has no bill-to yet (the requester is asked for one).
   const ctrDept = { "HL-2026-01": "Logistics", "HL-2026-02": "Logistics", "MF-2025-07": "Logistics", "KE-2026-03": "Engineering", "TR-2026-02": "Digital", "OC-2026-01": "Healthcare",
@@ -343,7 +350,7 @@ export function loadSample() {
   // Owner 2026-11-12 (UIX decision 12): every sample case is removed so the workspace only holds cases raised from
   // the latest AR-i and AR-ix forms. Customers, contracts, invoices, schedules, documents and BSU data stay, unhooked
   // from the removed cases; GIRO is Not active on every contract until AR sets it from a new AR-ix case.
-  S.requests = []; S.lines = []; S.items = [];
+  S.requests = []; S.lines = []; S.items = []; S.colTx = []; S.colAlloc = [];
   for (const i of S.invoices) Object.assign(i, { requestId: null, lineId: null });
   for (const x of S.schedules) Object.assign(x, { requestId: null, lineId: null });
   for (const d of S.documents) d.requestId = null;

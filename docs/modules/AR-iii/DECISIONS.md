@@ -16,3 +16,9 @@ it replaces, and the old row is struck through. Cross-module decisions go to `do
 | 9 | Sanitising #9 (ENH-9) | Keep the issue's terms as they are (owner: generic enough). Demo data stays fictional; identity numbers are masked. | 2026-11-17 |
 | 10 | Phasing (ENH-9) | **Form only for now** (phase 1): the portal form's sections after the selector. Workspace processing (clarification modes, approval, withdrawal, bulk close, assignment) and system-generated cases are parked. | 2026-11-17 |
 | 11 | Shared parts (ENH-9) | General information and the AR-iii / AR-iv / AR-v selector **stay as built**; the form continues after the right type is selected. Changes to shared parts (CC count, states, assignment, rejection codes) are taken one by one later. | 2026-11-17 |
+| 12 | Form after the selector (#9 phase 1) | **3. Collection Details** shows only the selected type's fields; **4. Supporting Documents** follows. Labels as written in #9. | 2026-11-17 |
+| 13 | AR4 lookups | Two master tables, **Cost centre** (by department, active) and **Account code** (active, GST / recovery treatment), with fictional samples (CCI decision 11). Requesting Department Cost Centre and row cost centres list only the requesting department's active cost centres (AC-10). | 2026-11-17 |
+| 14 | AR5 mandatory fields | **None mandatory** until confirmed; only *Category* is required, so the category's fields can show. | 2026-11-17 |
+| 15 | Review, drafts, documents | No separate Review and Submit step (the side summary stays); **no drafts** in this demo; documents are generic attachments as on AR-ix, with no size or type checks. | 2026-11-17 |
+| 16 | AR3 rows | Collection Type choices: Cashcard, Credit Card, NETS, NETS FlashPay, NETS Scan/QR; **duplicates allowed**. 1–99 rows; total transactions shown. | 2026-11-17 |
+| 17 | Currency | Default list SGD, USD, MYR, EUR, GBP, CNY, JPY, AUD until a currency master list is decided (open question 9). | 2026-11-17 |

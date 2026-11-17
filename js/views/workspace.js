@@ -96,6 +96,17 @@ export const LISTS = {
     text: c => [custName(c.customerId), c.department, c.name, c.email].join(" "),
     newable: true
   },
+  // Master data for the Collections form (CCI decision 11, #9 §8)
+  costCentres: {
+    filters: { all: ["Cost centres", () => true] },
+    cols: [["Code", c => refLink("costCentres", c.id, c.code), "", "code"], ["Name", c => esc(c.name), "wrap", "name"], ["Department", c => esc(c.department), "", "department"], ["Active", c => c.active ? "Yes" : "No", "", "active"]],
+    sort: (a, b) => a.code.localeCompare(b.code), text: c => [c.code, c.name, c.department].join(" "), newable: true
+  },
+  accountCodes: {
+    filters: { all: ["Account codes", () => true] },
+    cols: [["Code", a => refLink("accountCodes", a.id, a.code), "", "code"], ["Description", a => esc(a.name), "wrap", "name"], ["GST / recovery treatment", a => esc(TABLES.accountCodes.fields.find(f => f.key === "treatment").choices.find(c => c[0] === a.treatment)?.[1] || "—"), "", "treatment"], ["Active", a => a.active ? "Yes" : "No", "", "active"]],
+    sort: (a, b) => a.code.localeCompare(b.code), text: a => [a.code, a.name].join(" "), newable: true
+  },
   documents: {
     filters: { all: ["Customer documents", () => true] },
     cols: [["Number", d => refLink("documents", d.id, d.number), "", "number"], ["Customer", d => esc(custName(d.customerId)), "", "customerId"], ["Type", d => esc(DOC_LABEL[d.docType]), "", "docType"],
@@ -147,7 +158,7 @@ const MENU = [
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
   ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"]]],
   ["GIRO", [["requests", "giroall"], ["contracts", "giro"]]],
-  ["Master data", [["customers", "all"], ["contracts", "all"], ["contracts", "shell"], ["contacts", "all"], ["documents", "all"]]]
+  ["Master data", [["customers", "all"], ["contracts", "all"], ["contracts", "shell"], ["contacts", "all"], ["documents", "all"], ["costCentres", "all"], ["accountCodes", "all"]]]
 ];
 
 // ---------- shell ----------
@@ -296,7 +307,7 @@ const LAYOUT = {
   // AR-00 2026-11-16: State is a dropdown with Substate under it; Assignment group above Assigned to
   requests: [["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened", "amount"], isI],
     ["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened"], isIx],
-    ["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened", "amount"], isCol],
+    ["Case", ["form", "colOrigin", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened", "amount"], isCol],
     // D31: Link section right after Case. AR links the case to master data set up by hand (Link to customer retired)
     ["Link", ["linkCustomer", "linkContract"], isI],
     ["Link", ["linkContract"], isIx],
@@ -316,7 +327,10 @@ const LAYOUT = {
       "carplate", "giroLocation", "giroAmount"], isIx],
     ["5. Attachments", ["@attachments"], isIx],
     // Collections form view (D30, portal: PT-49, PT-50); the rest of the form is to be defined
-    ["2. Collection type", ["colType"], isCol]],
+    ["2. Collection type", ["colType"], isCol],
+    ["3. Collection Details", ["colDate", "colRef", "colCostCentre", "colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "bailorId", "bailorAddress", "ibCase", "caseNumber",
+      "caseStatus", "accusedName", "accusedId", "ar5Amount", "ar5Currency", "ar5Invest", "ar5CurrencyEq"], isCol],
+    ["4. Supporting Documents", ["@attachments"], isCol]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
@@ -330,6 +344,8 @@ const LAYOUT = {
     ["Late payment interest (LPI)", ["lpiApplicable", "lpiMinRate", "lpiRate"]],
     ["GIRO", ["giroStatus", "giroCaseId"]],
     ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
+  costCentres: [["Cost centre", ["code", "name", "department", "active"]]],
+  accountCodes: [["Account code", ["code", "name", "treatment", "active"]]],
   contacts: [["Billing contact", ["customerId", "department", "name", "email", "phone", "address", "requestId"]]],
   documents: [["Customer document", ["number", "customerId", "docType", "fileName", "contractId", "department", "requestId", "received"]]],
   schedules: [["Billing schedule", ["number", "contractId", "customerId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "firstAmount", "lastAmount", "requestId"]]],
@@ -482,11 +498,14 @@ const sec = (key, label, n, html) => ({ key, label, n, html });
 
 /** Record tabs after Details: related items and one tab per related list (Horizon record page). */
 function related(table, rec) {
-  // D29: a Collections case lists the BSU deposits matched to it
+  // D29: a Collections case lists the BSU deposits matched to it; #9: its AR3 / AR4 rows
   if (table === "requests" && COLLECTION_FORMS.includes(rec.form)) {
+    const rowTab = (k, id) => { const t = TABLES[k], rs = S[k].filter(x => x.requestId === rec.id).sort((a, b) => a.seq - b.seq);
+      return rt(t.plural, k, rs, [["Row", x => String(x.seq), "num"], ...t.fields.filter(f => !["requestId", "seq"].includes(f.key)).map(f => [f.label, x => f.type === "Currency" ? fmt(x[f.key]) : f.ref ? esc(displayOf(f.ref, recById(f.ref, x[f.key])) || "—") : esc(String(x[f.key] ?? "")), f.type === "Currency" || f.type === "Integer" ? "num" : ""])], { id }); };
+    const extra = rec.colType === "AR-iii" ? [rowTab("colTx", "RL-REQ-CTX")] : rec.colType === "AR-iv" ? [rowTab("colAlloc", "RL-REQ-CAL")] : [];
     const rows = [];
     for (const [pid, m] of Object.entries(S.matches)) { if (!m || m.status !== "accepted") continue; for (const a of m.allocations) if (a.requestId === rec.id) rows.push({ pid, a, m }); }
-    return [rt("BSU deposits matched", "allocations", rows, [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]], { id: "RL-REQ-ALC" })];
+    return [...extra, rt("BSU deposits matched", "allocations", rows, [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]], { id: "RL-REQ-ALC" })];
   }
   if (table === "requests" && isIx(rec)) {
     return rec.contractId ? [giroHistory(ctrById(rec.contractId), "REQ-GIROHIST")] : [];
@@ -573,7 +592,7 @@ function recordPage(tab) {
   const vals = tab.vals || null;
   const shown = vals ? { ...rec, ...vals } : rec;
   const ro = RO[table] || [];
-  const sections = LAYOUT[table].filter(([, , when]) => !when || isNew || when(shown)).map(([title, keys]) => keys[0] === "@attachments" ? `<fieldset class="fsec"><legend>${esc(title)}</legend>${attList(rec)}</fieldset>` : `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).filter(f => table === "requests" || fieldVisible(table, f, shown)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit || ro.includes(f.key) || (f.key === "substate" && shown.state !== "awaiting_requestor_info"), errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
+  const sections = LAYOUT[table].filter(([, , when]) => !when || isNew || when(shown)).map(([title, keys]) => keys[0] === "@attachments" ? `<fieldset class="fsec"><legend>${esc(title)}</legend>${attList(rec)}</fieldset>` : `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).filter(f => (table === "requests" && !isCol(shown)) || fieldVisible(table, f, shown)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit || ro.includes(f.key) || (f.key === "substate" && shown.state !== "awaiting_requestor_info"), errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
   const title = isNew ? `New ${def.label.toLowerCase()}` : displayOf(table, rec);
   const sub = table === "requests" ? rec.title : table === "invoices" ? rec.desc : table === "contracts" ? rec.title : table === "deposits" ? `${rec.payer} · ${acctLabel(acctById(rec.bankAccountId))}`
     : table === "uploads" ? `${acctLabel(acctById(rec.bankAccountId))} · statement ${rec.statementDate}` : table === "bankAccounts" ? rec.name

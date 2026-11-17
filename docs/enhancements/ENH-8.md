@@ -3,7 +3,7 @@
 Issue: [#8](https://github.com/veranzy/ServiceNowARdemo/issues/8) · raised 2026-11-17 · module **AR-ix**
 (one item also needs **CCI**) · triaged 2026-11-17 under `docs/ENHANCEMENT_SOP.md`.
 
-**Lock:** the AR-ix portal form was unlocked by the owner on 2026-11-17 for this ticket (locked since 2026-11-12).
+**Lock:** the AR-ix portal form was unlocked by the owner on 2026-11-17 for this ticket (locked since 2026-11-12) and locked again the same day after the build.
 
 | Item | Client wording | Module · IDs | Lock | Conflicts | Proposed change | Questions | Status |
 |---|---|---|---|---|---|---|---|
@@ -47,3 +47,4 @@ Issue: [#8](https://github.com/veranzy/ServiceNowARdemo/issues/8) · raised 2026
 | 2026-11-17 | Owner: reference field moved after Purpose of GIRO/DDA request (AR-ix decision 24); built. |
 | 2026-11-17 | Owner: remove `REQ.new_contract_ref` from AR-ix; purpose by contract (no contract → Carpark / Others; existing / new → Rental / Others). AR-ix decision 25; built. |
 | 2026-11-17 | Owner: Purpose placeholder *-- Choose the purpose --*; built. |
+| 2026-11-17 | Owner: AR-ix portal form **locked** again. Remaining: client verifies each item on the live demo; AR-ix open question 9 (reference mandatory for a new contract). |

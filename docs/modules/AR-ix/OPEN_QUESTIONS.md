@@ -8,3 +8,4 @@
 6. ~~Should a new *Add GIRO* **replace** the active GIRO instead of being blocked?~~ No: an existing contract with GIRO active offers only Remove GIRO (decision 14). [GitHub issue #2](https://github.com/veranzy/ServiceNowARdemo/issues/2) closed 2026-11-12 (owner).
 7. Should completing an AR-ix case update the contract's GIRO automatically (flow or UI action)? Next major release, about 6 months. (Owner; [GitHub issue #4](https://github.com/veranzy/ServiceNowARdemo/issues/4)) **Deferred** (owner, 2026-11-12): not needed for this release.
 8. ~~Verify the **Form number** field in section Others.~~ Field and section removed (decision 23, E8.14, 2026-11-17).
+9. Should *Contract / tenancy agreement / reference* be **mandatory** when the contract is *New contract*? It is the only reference AR gets for a new contract (decision 25). Optional for now. (Owner) **Open**; the portal form is locked, so a change needs an unlock.

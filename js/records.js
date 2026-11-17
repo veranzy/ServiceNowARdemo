@@ -113,7 +113,6 @@ export function validateARix(d) {
     need("contractOption", "Choose the contract.");
     if (d.contractOption === "existing") need("contractId", "Choose the contract.");
     if (d.contractOption === "existing" && d.contractId && !giroContracts(d).some(k => k.id === d.contractId)) e.contractId = "Choose a contract of your department, or one you own.";
-    if (d.contractOption === "new") need("newCtrRef", "Enter the contract / tenancy agreement / reference number.");
   }
   const types = giroTypesFor(d);
   need("giroType", "Choose Add GIRO or Remove GIRO.");
@@ -121,6 +120,7 @@ export function validateARix(d) {
   if (d.giroType === "remove") need("giroEnd", "Enter the effective end date.");   // AR-ix decision 18 (E8.8)
   if (d.giroType !== "add") return e;
   need("giroPurpose", "Choose the purpose.");
+  if (d.giroPurpose && !giroPurposesFor(d).includes(d.giroPurpose)) e.giroPurpose = "This purpose isn't possible for the chosen contract.";   // decision 25
   if (d.giroPurpose === "others") need("giroPurposeOther", "Describe the purpose.");
   need("applicantName", "Enter the customer name.");
   need("applicantEmail", "Enter the customer's email.");
@@ -129,6 +129,12 @@ export function validateARix(d) {
   if (d.giroPurpose === "rental" || d.giroPurpose === "carpark") need("giroLocation", "Enter the location.");   // decision 21 (E8.15)
   if (d.giroPurpose === "carpark") need("carplate", "Enter the car plate.");
   return e;
+}
+/** AR-ix decision 25: the purposes the contract option allows. No contract required → Carpark, Others; existing or new contract → Rental, Others. */
+export function giroPurposesFor(d) {
+  if (d.contractOption === "none") return ["carpark", "others"];
+  if (d.contractOption === "existing" || d.contractOption === "new") return ["rental", "others"];
+  return GIRO_PURPOSES.map(p => p[0]);
 }
 /** AR-ix decision 14: the GIRO types the chosen contract allows. New contract or no contract → Add only; existing contract → Add when GIRO is not active, Remove only when it is. */
 export function giroTypesFor(d) {
@@ -498,7 +504,7 @@ export function createRequest(vals, o = {}) {
     if (req.contractOption === "none") req.contractId = giroTarget(req)?.id || null;
     req.title = `${giroLabel(req)}${req.carplate ? ` · ${req.carplate}` : req.giroLocation ? ` · ${req.giroLocation}` : ""}`;
     S.requests.push(req);
-    journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : req.contractOption === "none" ? (req.contractId ? `on no-contract shell ${ctrById(req.contractId)?.number}` : `with no contract (no ${req.department} no-contract shell on file yet; AR links it)`) : `for contract ${req.newCtrRef} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
+    journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : req.contractOption === "none" ? (req.contractId ? `on no-contract shell ${ctrById(req.contractId)?.number}` : `with no contract (no ${req.department} no-contract shell on file yet; AR links it)`) : `for a new contract${req.giroReference ? ` ${req.giroReference}` : ""} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
     return req;
   }
   const line = draftLine(req);

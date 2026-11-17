@@ -80,7 +80,7 @@ export const TABLES = {
       // New contract (AR-i, contract option = new). Link to customer creates the contract from these (D22: AR changes master data).
       { key: "newCtrType", name: "new_contract_type", label: "Contract type", type: "Choice", choices: CONTRACT_CATEGORIES, help: "Mandatory for a new contract" },
       { key: "newCtrNumber", name: "new_contract_number", label: "Contract number", type: "String", help: "Mandatory for a new contract" },
-      { key: "newCtrRef", name: "new_contract_ref", label: "Contract reference number", type: "String", help: "Optional for a new contract (AR-ix: the reference to link)" },
+      { key: "newCtrRef", name: "new_contract_ref", label: "Contract reference number", type: "String", help: "AR-i, optional for a new contract. Not on AR-ix (AR-ix decision 25: the GIRO reference giro_reference is used instead)" },
       { key: "newCtrPo", name: "new_contract_po", label: "Contract PO number", type: "String", help: "Optional" },
       { key: "newCtrTitle", name: "new_contract_title", label: "Contract title", type: "String", wide: true, help: "Mandatory for a new contract" },
       { key: "newCtrStart", name: "new_contract_start", label: "Contract start date", type: "Date", help: "Mandatory for a new contract" },
@@ -122,7 +122,7 @@ export const TABLES = {
       // Add GIRO asks the effective start date and the purpose details (decision 15 amended); Remove GIRO asks only the effective end date.
       { key: "giroType", name: "giro_type", label: "Type of request", type: "Choice", choices: GIRO_TYPES, help: "AR-ix. Mandatory. New contract or no contract: Add GIRO only. Existing contract: Add GIRO when GIRO is not active, Remove GIRO only when it is (catalog client script filters the choices)" },
       { key: "giroReference", name: "giro_reference", label: "Contract / tenancy agreement / reference", type: "String", wide: true, showIf: { key: "giroType", in: ["add", "remove"] }, hideIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix, Add and Remove GIRO. Optional. Add GIRO: right after Purpose of GIRO/DDA request, hidden when Purpose = Carpark; Remove GIRO: after Type of request (UI policy; AR-ix decisions 19, 24; E8.9–E8.12)" },
-      { key: "giroPurpose", name: "giro_purpose", label: "Purpose of GIRO/DDA request", type: "Choice", choices: GIRO_PURPOSES, showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Mandatory" },
+      { key: "giroPurpose", name: "giro_purpose", label: "Purpose of GIRO/DDA request", type: "Choice", choices: GIRO_PURPOSES, showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Mandatory. Choices by contract (catalog client script, AR-ix decision 25): No contract required → Carpark, Others; existing or new contract → Rental, Others" },
       { key: "giroPurposeOther", name: "giro_purpose_other", label: "Other purpose", type: "String", wide: true, showIf: { key: "giroPurpose", eq: "others" }, help: "AR-ix. Mandatory when Purpose = Others" },
       { key: "applicantName", name: "giro_applicant_name", label: "Customer name", type: "String", showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to (label: AR-ix decision 20, E8.6)" },
       { key: "applicantEmail", name: "giro_applicant_email", label: "Customer email", type: "String", showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to (label: AR-ix decision 20, E8.6)" },
@@ -440,7 +440,7 @@ export const RECORD_PRODUCER = {
 export const RECORD_PRODUCER_ARIX = {
   name: "AR-ix GIRO authorisation",
   table: "requests",
-  variables: [...GENERAL_INFO, "customerId", "contractOption", "contractId", "newCtrRef", "giroType", "giroReference", "giroPurpose", "giroPurposeOther",
+  variables: [...GENERAL_INFO, "customerId", "contractOption", "contractId", "giroType", "giroReference", "giroPurpose", "giroPurposeOther",
     "applicantName", "applicantEmail", "applicantMobile", "giroRemarks", "giroStart", "giroEnd", "carplate", "giroLocation", "giroAmount"],
   script: "current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; contract_option = none → current.contract = the customer's no-contract shell for the department, if it exists;"
 };

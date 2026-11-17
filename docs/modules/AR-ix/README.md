@@ -29,8 +29,8 @@ Fields are free text unless stated. `*` = mandatory.
    - Customer* (search; shows the customer name only). **Existing customers only**: no *add as new customer* on
      AR-ix (E8.1). Hint under the search: *Customer not found? Submit an AR-i to set up the customer first.* (`PT-48`).
 3. **Select Contract** (decisions 12, 22; step retained, E8.12)
-   - Which contract is the GIRO for?* **Existing contract**, **New contract** → Contract / tenancy agreement / reference number*,
-     or **No contract required** → the customer's no-contract shell for the requesting department (linked at submit
+   - Which contract is the GIRO for?* **Existing contract**, **New contract** (no reference asked here; the GIRO details
+     field *Contract / tenancy agreement / reference* is used, decision 25), or **No contract required** → the customer's no-contract shell for the requesting department (linked at submit
      when it exists; otherwise AR links it).
    - **Existing contract list (decision 22, E8.5):** the customer's contracts (not No contract) whose **Department** is the
      form's *Department* (General information), **or** of which the requester is a **Contract owner** (CCI decision 10).
@@ -45,7 +45,9 @@ Fields are free text unless stated. `*` = mandatory.
      after *Purpose of GIRO/DDA request*, so it appears or hides as the purpose changes; **hidden when Purpose = Carpark**
      (carpark has no contract or tenancy agreement, E8.10). Remove GIRO: after *Type of request*.
    - **Remove GIRO:** the reference, then **Effective end date*** (decision 18, E8.8). Nothing else.
-   - **Add GIRO:** Purpose of GIRO/DDA request* (Rental / Carpark / Others); Contract / tenancy agreement / reference;
+   - **Add GIRO:** Purpose of GIRO/DDA request*, choices set by the contract (decision 25): **No contract required →
+     Carpark, Others**; **existing or new contract → Rental, Others**. Changing the contract clears a purpose that no
+     longer fits. Contract / tenancy agreement / reference;
      Other purpose* when Others; **Effective start date*** (every purpose, no end date; decision 18, E8.7). Heading **Customer**: **Customer name***, **Customer
      email***, **Customer mobile** (decision 20, E8.6; prefilled from the contract's or shell's bill-to). Remarks.
      - Rental: Location*, Amount.
@@ -69,7 +71,7 @@ Section 6 *Others* (Form number) was removed on 2026-11-17 (decision 23, E8.14).
 
 | Item | Build |
 |---|---|
-| Record producer | "AR-ix GIRO authorisation" on `x_ar_request` (`PT-31`); variable sets General information (`PT-30`), Select Customer (`PT-44`), Select Contract (`PT-32`, no-contract message `PT-45`), GIRO details (`PT-33`), Attachments (`PT-46`); Others (`PT-47`) retired 2026-11-17. Customer search hint `PT-48` (no new customer). Reference qualifier on `contract` (Existing contract): `customer` = the chosen customer, `contract_type` = contract, and `department` = the form's department OR `contract_owners` contains the requester (decision 22). UI policies per type and purpose (`giro_reference` hidden for Carpark); catalog client script on contract or department change filters the Type choices, clears a contract that no longer qualifies, prefills the customer name / email / mobile and shows active GIRO (`PT-34`, GlideAjax). Producer script sets `ar_form`, `short_description`, `watch_list` from `cc_list`, and for No contract required `contract` = the customer's no-contract shell for the department when it exists. |
+| Record producer | "AR-ix GIRO authorisation" on `x_ar_request` (`PT-31`); variable sets General information (`PT-30`), Select Customer (`PT-44`), Select Contract (`PT-32`, no-contract message `PT-45`), GIRO details (`PT-33`), Attachments (`PT-46`); Others (`PT-47`) retired 2026-11-17. Customer search hint `PT-48` (no new customer). Reference qualifier on `contract` (Existing contract): `customer` = the chosen customer, `contract_type` = contract, and `department` = the form's department OR `contract_owners` contains the requester (decision 22). UI policies per type and purpose (`giro_reference` hidden for Carpark); catalog client script on contract or department change filters the Type and Purpose choices, clears a contract that no longer qualifies, prefills the customer name / email / mobile and shows active GIRO (`PT-34`, GlideAjax). Producer script sets `ar_form`, `short_description`, `watch_list` from `cc_list`, and for No contract required `contract` = the customer's no-contract shell for the department when it exists. |
 | Case fields | `x_ar_request`: `requester_name`, `requester_email`, `cc_list`, `giro_type`, `giro_reference`, `giro_purpose`, `giro_purpose_other`, `giro_applicant_name/_email/_mobile` (labels Customer name / email / mobile), `giro_remarks`, `giro_start_date` (Add), `giro_end_date` (Remove), `giro_carplate`, `giro_location`, `giro_amount` (String, free text). Retired 2026-11-17: `giro_tenancy_agreement`, `giro_parking_start`, `giro_parking_end`, `giro_contract_ref`, `giro_invoice_ref`, `giro_others_remarks`, `giro_form_number`. Case states: AR-00 decision 4. |
 | Contract fields | `x_ar_contract.giro_status` (Choice: Active / Not active) and `x_ar_contract.giro_case` (Reference → `x_ar_request`, reference qualifier `ar_form = AR-ix`, `giro_type = add`, `contract = current`), **editable by `x_ar.ar_team`** (decision 11). Audit on, so Record history shows every change. |
 | UI policy / business rule | `giro_case` mandatory when `giro_status` = Active; before update: clear `giro_case` when `giro_status` = Not active. One active GIRO per contract is guaranteed by the single `giro_case` field. |
@@ -79,7 +81,7 @@ Section 6 *Others* (Form number) was removed on 2026-11-17 (decision 23, E8.14).
 
 ## Demo data
 
-- AR-ix cases come from `data/AR_form.csv` (UIX decision 13): ARQ0001004 Add rental on TR-TA-2025-14, ARQ0001005 Add carpark on a new contract, ARQ0001006 Add others with no contract, ARQ0001007 completed Add rental on **HL-2026-01** (GIRO active from it, set as AR would by hand), ARQ0001008 Remove GIRO on HL-2026-01 (effective end date).
+- AR-ix cases come from `data/AR_form.csv` (UIX decision 13): ARQ0001004 Add rental on TR-TA-2025-14, ARQ0001005 Add carpark with no contract, ARQ0001006 Add others with no contract, ARQ0001007 completed Add rental on **HL-2026-01** (GIRO active from it, set as AR would by hand), ARQ0001008 Remove GIRO on HL-2026-01 (effective end date).
 - Contract owners (decision 22): Priya Nair (portal user, Digital) owns HL-2026-01 (Logistics) and TR-TA-2025-14 (Facilities), so with Department = Digital she still sees those; HL-2026-02 shows only with Department = Logistics.
 - Workspace case page: Details tab is the AR-ix form view (`REQ-FV-ARIX`), sections as on the portal. New portal cases continue the numbering (ARQ0001010 onwards).
 

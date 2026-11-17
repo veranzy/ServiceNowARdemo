@@ -1,8 +1,8 @@
 // Project team experience: Service Portal / Employee Center with the AR forms catalogue (AR-i … AR-xvi),
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
-import { giroContracts, DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, billingMode, giroTarget, giroTypesFor, canViewReq, draftLine, draftPro, itemCalc, reqItems, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
-import { AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, GIRO_TYPES, GST_RATE, ROLES, TABLES, fieldVisible } from "../schema.js";
+import { giroPurposesFor, giroContracts, DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, billingMode, giroTarget, giroTypesFor, canViewReq, draftLine, draftPro, itemCalc, reqItems, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
+import { GIRO_PURPOSES, AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, GIRO_TYPES, GST_RATE, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
 import { custName, ctrNo, fieldHtml, icon, initials, reqChip, reqCustName, sn } from "./common.js";
@@ -334,7 +334,7 @@ function giroFormPage() {
           ${d.contractOption === "existing" ? `<div class="fgrid"><label class="ffield wide${e.contractId ? " has-err" : ""}" for="pf-contractId"${sn("REQ.contract")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Contract</span>
             <select id="pf-contractId" name="contractId"${e.contractId ? ` aria-invalid="true"` : ""}><option value="">-- Choose the contract --</option>${ctrs.map(c => `<option value="${c.id}"${c.id === d.contractId ? " selected" : ""}>${esc(c.number)} · ${esc(c.title)}</option>`).join("")}</select>
             ${e.contractId ? `<span class="ferr">${esc(e.contractId)}</span>` : ""}</label></div>` : ""}
-          ${d.contractOption === "new" ? `<p class="pt-hint">AR links the GIRO to the contract once the contract is set up (AR processes its AR-i first).</p><div class="fgrid">${f("newCtrRef", { mandatory: true, label: "Contract / tenancy agreement / reference number", help: null })}</div>` : ""}
+          ${d.contractOption === "new" ? `<p class="pt-hint">AR links the GIRO to the contract once the contract is set up (AR processes its AR-i first).</p>` : ""}
           ${d.contractOption === "none" ? `<div class="pt-info"${sn("PT-45")}><b>No contract required</b><p class="small">${k ? `The GIRO goes on the customer's no-contract shell <b class="mono">${esc(k.number)}</b> (${esc(k.department)}).` : `AR links the GIRO to the customer's no-contract shell for ${esc(d.department || "your department")} once it is set up.`}</p></div>` : ""}
           ${k ? `<div class="pt-info"${sn("PT-34")}><b>GIRO on ${esc(k.number)}: ${cur ? "Active" : "Not active"}</b><p class="small">${cur ? `From ${esc(cur.number)} · ${esc(giroLabel(cur))}${cur.carplate ? ` ${esc(cur.carplate)}` : cur.giroLocation ? ` · ${esc(cur.giroLocation)}` : ""}${cur.giroAmount ? ` · ${esc(cur.giroAmount)}` : ""}. A contract can have only one active GIRO, so this form can only remove it.` : "You can add GIRO to this contract."}</p></div>` : ""}
           ` : `<p class="pt-hint">Select a customer above to see the contract options.</p>`}
@@ -346,7 +346,7 @@ function giroFormPage() {
               <select id="pf-giroType" name="giroType"${types.length ? "" : " disabled"}${err ? ` aria-invalid="true"` : ""}>${types.length ? "" : `<option value="">-- Choose the contract first --</option>`}${GIRO_TYPES.filter(([t]) => types.includes(t)).map(([t, l]) => `<option value="${t}"${t === d.giroType ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>
               <span class="fhelp">${esc(GIRO_TYPE_HELP)}</span>${err ? `<span class="ferr">${esc(err)}</span>` : ""}</label></div>`; })()}
           ${d.giroType === "remove" ? `<div class="fgrid">${f("giroReference", { help: null })}${f("giroEnd", { mandatory: true, help: null })}</div>` : ""}
-          ${d.giroType === "add" ? `<div class="fgrid">${f("giroPurpose", { mandatory: true, help: null })}${show("giroReference") ? f("giroReference", { help: null }) : ""}${show("giroPurposeOther") ? f("giroPurposeOther", { mandatory: true, help: null }) : ""}${f("giroStart", { mandatory: true, help: null })}</div>
+          ${d.giroType === "add" ? `<div class="fgrid">${f("giroPurpose", { mandatory: true, help: null, choices: GIRO_PURPOSES.filter(([x]) => giroPurposesFor(d).includes(x)) })}${show("giroReference") ? f("giroReference", { help: null }) : ""}${show("giroPurposeOther") ? f("giroPurposeOther", { mandatory: true, help: null }) : ""}${f("giroStart", { mandatory: true, help: null })}</div>
           <h3 class="small">Customer</h3>${d.applicantPrefilled ? `<p class="pt-hint">Prefilled from the bill-to on ${esc(k?.number || "the contract")}. Change it if the GIRO applicant is different.</p>` : ""}
           <div class="fgrid">${f("applicantName", { mandatory: true, help: null })}${f("applicantEmail", { mandatory: true, help: null })}${f("applicantMobile", { help: null })}${f("giroRemarks", { help: null })}</div>
           ${d.giroPurpose === "rental" ? `<h3 class="small">Rental</h3><div class="fgrid">${f("giroLocation", { mandatory: true, help: null })}${f("giroAmount", { help: null })}</div>` : ""}
@@ -372,11 +372,11 @@ export const formAlert = n => n ? `<div class="pt-alert err" role="alert">Please
 
 export function formSide(d) {
   if (d.form === "AR-ix") {
-    const labels = [...new Set(Object.keys(validateARi(d)).map(k => k === "newCtrRef" ? "Contract reference number" : reqField(k)?.label).filter(Boolean))];
+    const labels = [...new Set(Object.keys(validateARi(d)).map(k => reqField(k)?.label).filter(Boolean))];
     return `<div class="pt-card sticky"><div class="side-info">
       <span class="ft-code">AR-ix</span><h2>Submit request</h2>
       <p class="small muted">Goes to the Accounts Receivable team as a case. You and the people on the CC list can follow it on My requests.</p>
-      <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "Customer"} (not at AR yet)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(d.contractOption === "existing" ? (d.contractId ? `Contract ${ctrById(d.contractId)?.number}` : "Choose the contract") : d.contractOption === "new" ? `Contract ${d.newCtrRef || "(reference to enter)"} · AR links it` : d.contractOption === "none" ? `No contract required${giroTarget(d) ? ` · ${giroTarget(d).number}` : " · AR links the shell"}` : "Contract not chosen yet")}<br>${esc(d.giroPurpose ? giroLabel(d) : "GIRO details to fill in")}${d.giroAmount ? ` · ${esc(d.giroAmount)}` : ""}</p>
+      <p class="small"><b>${esc(d.newCustomer ? `${d.newCustName || "Customer"} (not at AR yet)` : d.customerId ? custName(d.customerId) : "No customer yet")}</b><br>${esc(d.contractOption === "existing" ? (d.contractId ? `Contract ${ctrById(d.contractId)?.number}` : "Choose the contract") : d.contractOption === "new" ? `New contract${d.giroReference ? ` ${d.giroReference}` : ""} · AR links it` : d.contractOption === "none" ? `No contract required${giroTarget(d) ? ` · ${giroTarget(d).number}` : " · AR links the shell"}` : "Contract not chosen yet")}<br>${esc(d.giroPurpose ? giroLabel(d) : "GIRO details to fill in")}${d.giroAmount ? ` · ${esc(d.giroAmount)}` : ""}</p>
       ${labels.length ? `<p class="small"><b>Still needed</b><br>${labels.map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
       </div><button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
     </div>`;

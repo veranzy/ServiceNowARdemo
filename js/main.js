@@ -3,7 +3,7 @@ import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { giroContracts, custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { giroPurposesFor, giroContracts, custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -123,6 +123,8 @@ function contractChanged(d) {
     // AR-ix decision 22 (E8.5): a department change can take the chosen contract out of the requester's list
     if (d.contractOption === "existing" && d.contractId && !giroContracts(d).some(k => k.id === d.contractId)) d.contractId = "";
     if (d.contractOption === "existing" && !giroContracts(d).length) d.contractOption = "";
+    // AR-ix decision 25: the contract option limits the purpose (no contract → Carpark / Others; existing or new → Rental / Others)
+    if (d.giroPurpose && !giroPurposesFor(d).includes(d.giroPurpose)) d.giroPurpose = "";
     const k = giroTarget(d);
     // AR-ix decision 14: the contract decides the type (Add only, or Remove only when GIRO is active)
     const types = giroTypesFor(d); d.giroType = types.length === 1 ? types[0] : "";
@@ -210,7 +212,7 @@ document.addEventListener("click", e => {
   if (d.ctropt) { const dr = P().draft; dr.contractOption = d.ctropt; if (d.ctropt !== "existing") dr.contractId = null;
     if (d.ctropt === "new" && dr.form !== "AR-ix") { dr.newCtrTerms ||= "30"; dr.newCtrProrate ||= "no"; }
     contractChanged(dr); delete P().errors.contractOption; render();
-    return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? $(dr.form === "AR-ix" ? "pf-newCtrRef" : "pf-newCtrType") : null)?.focus(); }
+    return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? (dr.form === "AR-ix" ? null : $("pf-newCtrType")) : null)?.focus(); }
   // AR-i billing line items (multi-row variable set, AR-i decision 32)
   if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ amount: 0, lpiRate: 0, accountCode: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
   if (d.iremove !== undefined) { P().draft.items.splice(+d.iremove, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith("item:"))); return render(); }
@@ -355,7 +357,7 @@ document.addEventListener("submit", e => {
     if (Object.keys(errors).length) { P().errors = errors; render(); return (document.querySelector("#arForm [aria-invalid], #arForm .has-err input, #arForm .has-err .btn"))?.focus(); }
     if (d.form === "AR-ix") {
       const { custQ, applicantPrefilled, ...vals } = d;
-      if (vals.contractOption !== "new") vals.newCtrRef = ""; if (vals.contractOption !== "existing") vals.contractId = null;
+      vals.newCtrRef = ""; if (vals.contractOption !== "existing") vals.contractId = null;   // AR-ix decision 25: no new-contract reference on AR-ix
       if (vals.newCustomer) vals.customerId = null; else vals.newCustName = "";
       const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;
       render(); return window.scrollTo(0, 0);

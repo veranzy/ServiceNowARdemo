@@ -305,7 +305,7 @@ const LAYOUT = {
     ["6. Others", ["costCenter", "agentName", "poNumber"], isI],
     // AR-ix form view (portal: PT-44, PT-32, PT-33, PT-46; AR-ix decisions 17–21)
     ["2. Select Customer", ["customerId"], isIx],
-    ["3. Select Contract", ["contractOption", "contractId", "newCtrRef"], isIx],
+    ["3. Select Contract", ["contractOption", "contractId"], isIx],
     ["4. GIRO details", ["giroType", "giroEnd", "giroPurpose", "giroReference", "giroPurposeOther", "giroStart", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks",
       "carplate", "giroLocation", "giroAmount"], isIx],
     ["5. Attachments", ["@attachments"], isIx]],
@@ -345,7 +345,7 @@ const btn = (html, ovf = false) => ({ html, ovf });
 function headerFields(table, rec) {
   const hf = (k, v) => `<div class="hf"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
   if (table === "requests") return [hf("State", reqChip(rec)), hf("Form", `${esc(rec.form || "AR-i")} · ${esc(linesLabel(rec))}`), hf("Customer", rec.customerId ? refLink("customers", rec.customerId) : `${esc(rec.newCustName || "—")} <span class="chip c-warn">New</span>`),
-    hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : rec.contractOption === "new" ? `${esc((isIx(rec) ? rec.newCtrRef : rec.newCtrNumber) || "—")} <span class="chip c-warn">${isIx(rec) ? "Not linked" : "New"}</span>` : rec.contractOption === "none" ? `<span class="chip c-warn">No contract</span>` : "—"), hf("Department", esc(rec.department || "—")),
+    hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : rec.contractOption === "new" ? `${esc((isIx(rec) ? rec.giroReference : rec.newCtrNumber) || "—")} <span class="chip c-warn">${isIx(rec) ? "Not linked" : "New"}</span>` : rec.contractOption === "none" ? `<span class="chip c-warn">No contract</span>` : "—"), hf("Department", esc(rec.department || "—")),
     hf("Assigned to", esc(userById(rec.assignedTo)?.name || "Unassigned")), hf("Requested by", esc(userById(rec.requestedBy)?.name || "—")), hf("Opened", esc(rec.opened))];
   if (table === "invoices") return [hf("Status", invChip(rec)), hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)), hf("AR request", refLink("requests", rec.requestId)), hf("Invoice date", esc(rec.date || "—"))];
   if (table === "deposits") { const a = acctById(rec.bankAccountId); return [hf("Match", depositChip(rec)), hf("Value date", esc(rec.date)), hf("Bank account", refLink("bankAccounts", rec.bankAccountId)), hf("Department", esc(a?.department || "—")), hf("Account type", esc(a ? acctType(a) : "—"))]; }
@@ -369,7 +369,7 @@ function ribbon(table, rec, tab) {
   if (table === "requests" && isIx(rec)) {
     const k = rec.contractId ? ctrById(rec.contractId) : null, cur = activeGiroCase(k);
     ws = [w("GIRO", esc(giroLabel(rec)), esc(rec.carplate || rec.giroLocation || rec.giroPurposeOther || "")), w("Amount", rec.giroAmount ? esc(rec.giroAmount) : "—"),
-      w("Contract", k ? esc(k.number) : `<span class="bad">Not linked</span>`, k ? (cur ? `GIRO active from ${esc(cur.number)}${cur.id === rec.id ? " (this case)" : ""}` : "GIRO not active") : `Reference given: ${esc(rec.newCtrRef || "—")}`)];
+      w("Contract", k ? esc(k.number) : `<span class="bad">Not linked</span>`, k ? (cur ? `GIRO active from ${esc(cur.number)}${cur.id === rec.id ? " (this case)" : ""}` : "GIRO not active") : `Reference given: ${esc(rec.giroReference || "—")}`)];
   } else if (table === "requests") {
     const ls = reqLines(rec), done = ls.filter(l => ["invoiced", "scheduled"].includes(lineStatus(l))).length;
     const st = setupStatus(rec), checks = [st.linked, st.contractDone, st.billToOk, st.docsDone], ok = checks.filter(Boolean).length;
@@ -660,14 +660,14 @@ const sideDefault = (table, rec) => table === "requests" && rec.form && REQ_OPEN
 function giroPanel(r, tab) {
   const open = REQ_OPEN.includes(r.state), k = r.contractId ? ctrById(r.contractId) : null;
   const item = (ok, label, detail) => `<li class="${ok === true ? "ok" : ok === false ? "todo" : "na"}"><span class="tick" aria-hidden="true">${ok === true ? "✓" : ok === false ? "!" : "–"}</span><div><b>${label}</b>${detail ? `<span class="desc">${detail}</span>` : ""}</div></li>`;
-  const ref = String(r.newCtrRef || "").trim().toLowerCase(), none = r.contractOption === "none";
+  const ref = String(r.giroReference || "").trim().toLowerCase(), none = r.contractOption === "none";
   // No contract required: the no-contract shells are offered, the customer's own and the request's department first (AR-ix decision 12)
   const cands = S.contracts.filter(c => none ? isShell(c) : !isShell(c)).sort((a, b) => (b.number.toLowerCase() === ref) - (a.number.toLowerCase() === ref) || (b.customerId === r.customerId) - (a.customerId === r.customerId) || (none ? (b.department === r.department) - (a.department === r.department) : 0) || a.number.localeCompare(b.number));
   const done = r.state === "closed_complete", cur = activeGiroCase(k);
   return `<section class="setup"${sn("REQ-GIRO")}>
     <header><h2>GIRO setup</h2></header>
     <ul class="checklist">
-      ${item(!!k, k ? `Contract: ${esc(k.number)}` : `Contract not linked: ${esc(none ? "No contract required" : r.newCtrRef || "no reference")}`, k ? `${esc(custName(k.customerId))} · ${esc(isShell(k) ? `No-contract shell (${k.department})` : k.title)}` : none ? "Set up the customer's no-contract shell for the department first if needed, then set it as Contract on this case and Save." : "Process the AR-i that sets up this contract first, then set it as Contract on this case and Save.")}
+      ${item(!!k, k ? `Contract: ${esc(k.number)}` : `Contract not linked: ${esc(none ? "No contract required" : r.giroReference || "no reference")}`, k ? `${esc(custName(k.customerId))} · ${esc(isShell(k) ? `No-contract shell (${k.department})` : k.title)}` : none ? "Set up the customer's no-contract shell for the department first if needed, then set it as Contract on this case and Save." : "Process the AR-i that sets up this contract first, then set it as Contract on this case and Save.")}
       ${k ? item(cur ? true : null, `GIRO on ${esc(k.number)}: ${cur ? "Active" : "Not active"}`, cur ? `From ${refLink("requests", cur.id, cur.number)}${cur.id === r.id ? " (this case)" : ""} · ${esc(giroLabel(cur))}` : "No AR-ix case is active on this contract") : ""}
       ${item(done ? true : k ? false : null, "Update GIRO on the contract", done ? "Case closed complete" : k ? `Open ${refLink("contracts", k.id, k.number)} and set GIRO status and Active GIRO case for this request (${esc(giroLabel(r))}), then set State to Closed complete and Save.` : "Available once the contract is set on the case")}
     </ul>

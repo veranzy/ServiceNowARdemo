@@ -15,6 +15,16 @@ the case they create, **My requests** and the **ticket page**. Each form then ha
 after its number: [AR-i](../AR-i/README.md) New AR request, [AR-ix](../AR-ix/README.md) GIRO
 authorisation; AR-ii … AR-xvi get a module each when the owner defines them.
 
+## Form categories (documentation only)
+
+| Category | Forms | Meaning |
+|---|---|---|
+| Billing | AR-i | AR bills the customer with an invoice; BSU deposits are matched to the invoice. |
+| Collections (D28) | AR-iii, AR-iv, AR-v | Money collected **without an invoice**; the BSU deposit is matched to the case (D29). |
+| GIRO | AR-ix | Add or remove GIRO on a contract. |
+
+The catalogue stays one flat list; categories are not a field or heading (D28).
+
 ## Context: AR forms and master data are separate on purpose (D22)
 
 AR forms (AR-i, AR-ix, …) and customer / contract updates are **deliberately separate**. A form is a

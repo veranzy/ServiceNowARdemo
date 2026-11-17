@@ -27,3 +27,4 @@
 | 2026-11-17 | Owner: *Purpose of GIRO/DDA request* starts on the placeholder **-- Choose the purpose --** (no choice preselected). No IDs added or retired. |
 | 2026-11-17 | Owner: AR-ix portal form **locked** again after #8. Open question 9 added (reference mandatory for a new contract?). |
 | 2026-11-17 | Decision 26 / D31: workspace **Link** section with `REQ.link_contract`; GIRO setup panel text now says *set it as Link Contract Reference on this case and Save*. Portal form (locked) unchanged. |
+| 2026-11-18 | UIX decision 17: the case opens on Activity; GIRO setup is the second side panel. |

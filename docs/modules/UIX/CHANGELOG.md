@@ -12,3 +12,4 @@
 | 2026-11-16 | `data/AR_form.csv`: 9th row ARQ0001009 (CCI demo); `js/cases.js` demo setup sets up its billing schedule at load. Portal cases now start at ARQ0001010. |
 | 2026-11-16 | **Owner (decision 15 amended):** *Open AR-i* / *Open AR-ix* replaced by **All AR-i** / **All AR-ix** (every state), so closed cases such as ARQ0001009 are listed. URLs `#/ws/list/requests/all_ari`, `…/all_arix`; Lists rail and missing-case links open All AR-i. IDs kept: `LST-REQ-ARI`, `LST-REQ-ARIX` (notes updated). |
 | 2026-11-17 | D31: AR-i side bar *Customer setup* (`REQ-SETUP`) retired; Activity is the AR-i side panel. |
+| 2026-11-18 | Decision 17: common case page. Collections cases no longer show Customer / Contract in the header; Activity is the default side panel on every case (AR-ix opened on GIRO setup before). No IDs added or retired. |

@@ -7,3 +7,4 @@
 | 2026-11-16 | State Closed complete on an AR-i now also generates the 1st invoice (CCI decision 8) and is blocked until the case is linked to customer and contract. No IDs added or retired here. |
 | 2026-11-17 | Form categories documented: Billing (AR-i), Collections (AR-iii, AR-iv, AR-v; D28), GIRO (AR-ix). No screen change. |
 | 2026-11-17 | Catalogue: AR-iii, AR-iv and AR-v tiles active (name *Collections*, placeholder); each opens the one Collections form with the type preselected (D30). `ar_form` gains the choice COL. |
+| 2026-11-17 | D31: Link to customer retired; AR-i and AR-ix cases get a Link section on Details. |

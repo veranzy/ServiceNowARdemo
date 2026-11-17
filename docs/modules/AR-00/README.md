@@ -29,7 +29,7 @@ The catalogue stays one flat list; categories are not a field or heading (D28).
 
 AR forms (AR-i, AR-ix, …) and customer / contract updates are **deliberately separate**. A form is a
 request; it never changes customer or contract data by itself. AR changes the master data in the
-workspace (Link to customer on AR-i cases; customer and contract records, including GIRO on the contract). Each form only *reads* what the
+workspace (by hand, then the Link section on the case, D31; customer and contract records, including GIRO on the contract). Each form only *reads* what the
 master data says. This creates some scenarios the build must handle:
 
 | Scenario | What happens |
@@ -73,7 +73,7 @@ master data says. This creates some scenarios the build must handle:
   for other states; AR only.
 - **Assignment group** above *Assigned to*: one group, **Accounts Receivable**, set on every new case.
 - Case actions: **Assign to me** (New → Work in progress) and **Save** only, on every form. Exception: AR-i
-  keeps **Link to customer**. *Request info*, *Reject*, *Link contract* and *Complete* are retired; AR posts
+  had **Link to customer**, retired 2026-11-17 (D31: Link section on Details). *Request info*, *Reject*, *Link contract* and *Complete* are retired; AR posts
   the message to the requester as an additional comment. Nothing sets a closed state automatically.
 - Activity stream with comments (visible on the portal), work notes (AR only) and system entries.
 

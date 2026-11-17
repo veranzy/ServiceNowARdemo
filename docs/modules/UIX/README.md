@@ -38,7 +38,7 @@ Horizon Design System workspace guidance at https://horizon.servicenow.com/works
 | List page | Out-of-box list page template: List menu (\`sys_ux_list_menu_config\`, categories and lists with conditions; audience by role) + List component. `WS-04`, `WS-16`, `LST-*`. |
 | Record page | Out-of-box **Record** page template (not Record Vertical). Header + highlighted values (`HDR-*`), form record presence (`WS-15`), UI action bar via workspace action configuration with *overflow* set per action (`WS-11`), ribbon widgets per table (`WS-12`), tabs (`WS-13`), contextual side bar (`WS-14`). |
 | Ribbon widgets | Per table, from record and related-table data resources: see the ribbon list in decision 8. Up to 12 widgets per row. |
-| Side bar (AR request) | Customer setup = custom UI Builder component or a guided checklist (`REQ-SETUP`); Activity = activity stream component (`REQ-ACT`); Attachments = attachments panel (`REQ-ATT`). |
+| Side bar (AR request) | Activity = activity stream component (`REQ-ACT`); Attachments = attachments panel (`REQ-ATT`). |
 | Theme | **Default workspace theme** (decision 10): no custom theme record; the workspace uses the instance default (Next Experience / Horizon). The prototype's colours are approximations. |
 | Record history | Out-of-box Record history tab on the Record page template (`WS-17`), reading `sys_audit` / `sys_history_set`. **Dictionary: set Audit = true on every `x_ar_` table** (or list them in `glide.ui.audit_deleted_tables` / audit properties as the instance requires). Shows created, field changes with old and new values, who and when. |
 

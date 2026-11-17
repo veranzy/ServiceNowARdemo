@@ -67,7 +67,6 @@ Full column lists: `SERVICENOW_MAPPING.md` (generated from `js/schema.js`).
 |---|---|---|---|---|
 | `CUS.company` | `company` | Company | Reference → `core_company` | Mandatory. Display field of `x_ar_customer`. Unique: one customer per company (before-insert/update business rule or unique index). |
 | `CUS.company.name` | `company.name` | Customer name | Dot-walk (read-only) | Shown on the customer form, lists and every reference to a customer. Not a column on `x_ar_customer`. |
-| `REQ-LINKCO` | (UI) | Company (core_company) for the new customer | Choice on *Link to customer* | Mandatory when Link to customer creates a new customer. Lists `core_company` records that have no customer yet, closest name to the requested name first. |
 
 ServiceNow build: reference qualifier on `company` to exclude companies already used by another customer;
 lists and the customer search on AR-i search `company.name`. The app only reads `core_company`.

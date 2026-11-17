@@ -95,6 +95,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-16 | Core flow: Closed complete generates the AR-i's 1st invoice; the schedule (created by AR on the contract) covers the 2nd invoice onwards (CCI decision 8). | Owner |
 | 2026-11-16 | Code layout updated to today's functions (firstInvoices, daily job, billing cycle helpers); retired ones marked. | Owner |
 | 2026-11-17 | Client enhancement tickets follow `docs/ENHANCEMENT_SOP.md` (triage file per ticket, issue template). | Owner |
+| 2026-11-17 | Core flow: Collections category (AR-iii, AR-iv, AR-v, D28); BSU deposits can be matched to open Collections cases (D29). | Owner |
 
 ## How we work: modules, one at a time
 
@@ -167,7 +168,8 @@ the **1st invoice** as a draft from the AR-i (CCI decision 8; AR sets its *Appro
 contract** for the 2nd invoice onwards and picks the case; a daily job drafts each later period 5 working days ahead, shown under the case and the contract,
 and AR issues it (D12 amended). The requester sees each line's invoice or schedule on the ticket page. Each morning AR
 uploads yesterday's CSV statement per bank account (**BSU**) → deposits saved to the **Bank statements**
-table with a Deposit ID → AR matches deposits to issued invoices **manually** on the Cash application page.
+table with a Deposit ID → AR matches deposits to issued invoices, or to open **Collections** cases (AR-iii, AR-iv, AR-v:
+money collected without an invoice, D28, D29), **manually** on the Cash application page.
 **There is no auto-matching anywhere (D5); don't add it.** The app is the **system of record** for
 invoices. Automation after AR form submission is still to be defined by the owner.
 
@@ -181,7 +183,7 @@ contract → GIRO status + active AR-ix case (`giro_status`, `giro_case`; max on
 
 **Money received is only ever a BSU deposit (D7).** There is no payments table or "payment received"
 concept: deposits come from BSU uploads, live in `x_ar_bank_statement` (code key `deposits`,
-`S.deposits`, `TABLES.deposits`) and are matched to invoices on the Cash application page. Say
+`S.deposits`, `TABLES.deposits`) and are matched to invoices or Collections cases (D29) on the Cash application page. Say
 "BSU deposit" in the UI and docs, never "payment".
 
 - **`js/schema.js` is the single source** for tables, columns, types, choices, roles and the record
@@ -194,7 +196,8 @@ concept: deposits come from BSU uploads, live in `x_ar_bank_statement` (code key
   awaiting_requestor_info; `assignment_group` (Accounts Receivable). Case actions: Assign to me, Save (AR-i also Link to customer). There is
   no request type field; `amount` is the calculated request value (sum of line values). `activity` holds journal
   entries: `comment` (visible on portal), `work_note` (AR only), `system`.
-- Matches (`S.matches[<deposit id>]`) hold the deposit's allocations; `status: "accepted"` applies them.
+- Matches (`S.matches[<deposit id>]`) hold the deposit's allocations; `status: "accepted"` applies them. An allocation
+  has `invoiceId` or, for a Collections case, `requestId` (`allocKey()` in `js/ledger.js`).
   Only manual matching creates them (invoice finder → Apply); *Remove match* clears them.
 - Bank accounts have bank (MB/OB/US mock aliases), department and account type. Each bank's CSV
   layout is in `BANKS` in `js/schema.js`.

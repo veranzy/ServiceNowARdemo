@@ -345,9 +345,8 @@ function giroFormPage() {
             return `<div class="fgrid"><label class="ffield wide${err ? " has-err" : ""}" for="pf-giroType"${sn("REQ.giro_type")}><span class="flabel"><i class="req" aria-hidden="true">*</i>${esc(reqField("giroType").label)}</span>
               <select id="pf-giroType" name="giroType"${types.length ? "" : " disabled"}${err ? ` aria-invalid="true"` : ""}>${types.length ? "" : `<option value="">-- Choose the contract first --</option>`}${GIRO_TYPES.filter(([t]) => types.includes(t)).map(([t, l]) => `<option value="${t}"${t === d.giroType ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>
               <span class="fhelp">${esc(GIRO_TYPE_HELP)}</span>${err ? `<span class="ferr">${esc(err)}</span>` : ""}</label></div>`; })()}
-          ${d.giroType && show("giroReference") ? `<div class="fgrid">${f("giroReference", { help: null })}</div>` : ""}
-          ${d.giroType === "remove" ? `<div class="fgrid">${f("giroEnd", { mandatory: true, help: null })}</div>` : ""}
-          ${d.giroType === "add" ? `<div class="fgrid">${f("giroPurpose", { mandatory: true, help: null })}${f("giroStart", { mandatory: true, help: null })}${show("giroPurposeOther") ? f("giroPurposeOther", { mandatory: true, help: null }) : ""}</div>
+          ${d.giroType === "remove" ? `<div class="fgrid">${f("giroReference", { help: null })}${f("giroEnd", { mandatory: true, help: null })}</div>` : ""}
+          ${d.giroType === "add" ? `<div class="fgrid">${f("giroPurpose", { mandatory: true, help: null })}${show("giroReference") ? f("giroReference", { help: null }) : ""}${show("giroPurposeOther") ? f("giroPurposeOther", { mandatory: true, help: null }) : ""}${f("giroStart", { mandatory: true, help: null })}</div>
           <h3 class="small">Customer</h3>${d.applicantPrefilled ? `<p class="pt-hint">Prefilled from the bill-to on ${esc(k?.number || "the contract")}. Change it if the GIRO applicant is different.</p>` : ""}
           <div class="fgrid">${f("applicantName", { mandatory: true, help: null })}${f("applicantEmail", { mandatory: true, help: null })}${f("applicantMobile", { help: null })}${f("giroRemarks", { help: null })}</div>
           ${d.giroPurpose === "rental" ? `<h3 class="small">Rental</h3><div class="fgrid">${f("giroLocation", { mandatory: true, help: null })}${f("giroAmount", { help: null })}</div>` : ""}

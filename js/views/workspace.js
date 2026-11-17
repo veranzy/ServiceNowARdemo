@@ -306,7 +306,7 @@ const LAYOUT = {
     // AR-ix form view (portal: PT-44, PT-32, PT-33, PT-46; AR-ix decisions 17–21)
     ["2. Select Customer", ["customerId"], isIx],
     ["3. Select Contract", ["contractOption", "contractId", "newCtrRef"], isIx],
-    ["4. GIRO details", ["giroType", "giroReference", "giroEnd", "giroPurpose", "giroStart", "giroPurposeOther", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks",
+    ["4. GIRO details", ["giroType", "giroEnd", "giroPurpose", "giroReference", "giroPurposeOther", "giroStart", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks",
       "carplate", "giroLocation", "giroAmount"], isIx],
     ["5. Attachments", ["@attachments"], isIx]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],

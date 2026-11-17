@@ -41,11 +41,12 @@ Fields are free text unless stated. `*` = mandatory.
      *Add GIRO* if it has no GIRO, *Remove GIRO* only if GIRO is active. Help text (owner's wording): "remove-ask payee to
      contact their bank to terminate, new-please inform payee to make payment until giro is up, officer will contact
      applicant to complete giro application form and to mail the bank endorsed completed form back".
-   - **Contract / tenancy agreement / reference** (decision 19), right after Type of request, Add and Remove GIRO,
-     optional. **Hidden when Purpose = Carpark** (carpark has no contract or tenancy agreement, E8.10).
-   - **Remove GIRO:** **Effective end date*** only (decision 18, E8.8).
-   - **Add GIRO:** Purpose of GIRO/DDA request* (Rental / Carpark / Others); **Effective start date*** (every purpose,
-     no end date; decision 18, E8.7); Other purpose* when Others. Heading **Customer**: **Customer name***, **Customer
+   - **Contract / tenancy agreement / reference** (decisions 19, 24), optional, Add and Remove GIRO. Add GIRO: right
+     after *Purpose of GIRO/DDA request*, so it appears or hides as the purpose changes; **hidden when Purpose = Carpark**
+     (carpark has no contract or tenancy agreement, E8.10). Remove GIRO: after *Type of request*.
+   - **Remove GIRO:** the reference, then **Effective end date*** (decision 18, E8.8). Nothing else.
+   - **Add GIRO:** Purpose of GIRO/DDA request* (Rental / Carpark / Others); Contract / tenancy agreement / reference;
+     Other purpose* when Others; **Effective start date*** (every purpose, no end date; decision 18, E8.7). Heading **Customer**: **Customer name***, **Customer
      email***, **Customer mobile** (decision 20, E8.6; prefilled from the contract's or shell's bill-to). Remarks.
      - Rental: Location*, Amount.
      - Carpark: Car plate* (one vehicle per form), Location*, Amount (decision 21, E8.15).

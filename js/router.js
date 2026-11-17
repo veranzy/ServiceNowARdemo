@@ -14,7 +14,8 @@
 //   #/portal/ticket/<number>      a ticket page (also used after submitting)
 import { S } from "./state.js";
 
-const keyOf = (table, r) => r.number || r.code || (table === "customers" ? r.name : r.id);   // business key in the URL (code for cost centres / account codes)
+// URL key: business key (number, code for cost centres / account codes, customer name); deposits use their record id because Deposit IDs repeat (BSU decision 18)
+const keyOf = (table, r) => table === "deposits" ? r.id : r.number || r.code || (table === "customers" ? r.name : r.id);
 const findRec = (table, key) => (S[table] || []).find(r => keyOf(table, r) === key) || null;
 const enc = s => encodeURIComponent(s).replace(/%2F/gi, "/");
 

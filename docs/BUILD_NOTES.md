@@ -85,6 +85,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 
 | ID | ServiceNow |
 |---|---|
+| `BSU-08` | Preview tag No payment mode (BSU decision 18): the line's transaction ID matches no active payment mode of the bank account; it is saved with the fallback Deposit ID UNK-<DDMMYY>-XX |
 | `BSU-01` | BSU upload form (BSU decision 16): opened by New on the Statement uploads list (the BSU rail item opens that list of upload RITMs); upload form, preview, save opens the new RITM |
 | `BSU-02` | RETIRED 2026-11-18 (BSU decision 16): statement-day checklist; upload completeness tracking to be decided |
 | `BSU-03` | Upload form = catalog item 'Bank statement upload' rendered in the workspace (D32): variables bank account, statement date, CSV attachment; submit creates the RITM |
@@ -302,7 +303,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 
 | ID | ServiceNow |
 |---|---|
-| `DEP.deposit_id` | x_ar_bank_statement.deposit_id · String · read-only · Set by before-insert business rule |
+| `DEP.deposit_id` | x_ar_bank_statement.deposit_id · String · read-only · Set by before-insert business rule (BSU decision 18): the payment mode's prefix, the deposit (value) date as DDMMYY and the payment mode's suffix. Not unique: deposits of one payment mode on one day share it. No matching payment mode: UNK-<DDMMYY>-XX |
 | `DEP.bank_account` | x_ar_bank_statement.bank_account · Reference → x_ar_bank_account · read-only |
 | `DEP.bsu` | x_ar_bank_statement.bsu · Reference → sc_req_item · read-only |
 | `DEP.value_date` | x_ar_bank_statement.value_date · Date · read-only |
@@ -310,6 +311,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `DEP.payer_name` | x_ar_bank_statement.payer_name · String · read-only |
 | `DEP.bank_reference` | x_ar_bank_statement.bank_reference · String · read-only |
 | `DEP.bank_transaction_ref` | x_ar_bank_statement.bank_transaction_ref · String · read-only |
+| `DEP.transaction_id` | x_ar_bank_statement.transaction_id · String · read-only · From the bank's transaction-code column (BSU decision 18); matched to a payment mode of the bank account |
+| `DEP.payment_mode` | x_ar_bank_statement.payment_mode · Reference → x_ar_payment_mode · read-only · Payment mode whose Transaction ID equals the statement line's; empty when none matched (fallback Deposit ID) |
 
 ## Statement upload
 
@@ -651,6 +654,26 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `ACT.gst_treatment` | x_ar_account_code.gst_treatment · Choice |
 | `ACT.active` | x_ar_account_code.active · True/False · Inactive records are not offered in forms (CCI decision 12) |
 
+## Payment mode
+
+| ID | ServiceNow |
+|---|---|
+| `LST-PMD` | List: x_ar_payment_mode · list view layout + list menu condition |
+| `RP-PMD` | Record page (UI Builder) · x_ar_payment_mode |
+| `HDR-PMD` | Record header: highlighted values of x_ar_payment_mode |
+| `FRM-PMD` | Form view: x_ar_payment_mode (Default view) |
+
+## Payment mode fields
+
+| ID | ServiceNow |
+|---|---|
+| `PMD.bank_account` | x_ar_payment_mode.bank_account · Reference → x_ar_bank_account · mandatory |
+| `PMD.name` | x_ar_payment_mode.name · String · mandatory · e.g. GIRO, FAST, Cheque, Telegraphic transfer |
+| `PMD.transaction_id` | x_ar_payment_mode.transaction_id · String · mandatory · The value in the bank statement's transaction-code column for this payment mode (exact match, not case-sensitive) |
+| `PMD.prefix` | x_ar_payment_mode.prefix · String · mandatory · Start of the Deposit ID, e.g. AAA |
+| `PMD.suffix` | x_ar_payment_mode.suffix · String · mandatory · End of the Deposit ID |
+| `PMD.active` | x_ar_payment_mode.active · True/False · Inactive payment modes are not used for new uploads (CCI decision 12) |
+
 ## Calculated columns
 
 | ID | ServiceNow |
@@ -669,6 +692,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `SCH.next_billing_date` | Calculated: first period on or after today without an invoice |
 | `SCH.periods_due` | Calculated: periods up to today without an invoice |
 | `BNK.last_statement` | Calculated: latest sc_req_item.statement_date for the account |
+| `PMD.deposit_id_pattern` | Calculated for display: <prefix>-DDMMYY-<suffix> (BSU decision 18) |
 
 ## Related lists
 
@@ -695,6 +719,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RL-REQ-CTX` | Related list: x_ar_collection_tx where ar_request = this ar request |
 | `RL-REQ-CAL` | Related list: x_ar_collection_allocation where ar_request = this ar request |
 | `RL-CCT-CAL` | Related list: x_ar_collection_allocation where cost_centre = this cost centre |
+| `RL-BNK-PMD` | Related list: x_ar_payment_mode where bank_account = this bank account |
 | `RL-ACT-CAL` | Related list: x_ar_collection_allocation where account_code = this account code |
 | `RL-BSU-DEP` | Related list: x_ar_bank_statement where bsu = this statement upload |
 | `RL-BNK-BSU` | Related list: sc_req_item where bank_account = this bank account |
@@ -747,6 +772,10 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-CON-new` | UI action: New (list action) |
 | `UA-CCT-new` | UI action: New (list action) |
 | `UA-INV-pdf` | UI action: Print or save as PDF: opens the invoice document for printing (in ServiceNow: download the generated PDF attachment) |
+| `UA-BNK-newmode` | UI action: New payment mode (on the bank account): opens a new payment mode with the bank account filled in |
+| `UA-PMD-new` | UI action: New (list action) |
+| `UA-PMD-insert` | UI action: Submit (insert) |
+| `UA-PMD-save` | UI action: Save (update) |
 | `UA-DOC-new` | UI action: New (list action): AR files a customer document by hand (D31) |
 | `UA-DOC-insert` | UI action: Submit (insert) |
 | `UA-DOC-save` | UI action: Save (update) |

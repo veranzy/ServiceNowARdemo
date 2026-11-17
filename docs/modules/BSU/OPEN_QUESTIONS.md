@@ -8,3 +8,5 @@
 6. ~~Rename the finder labels?~~ Yes, proposed wording (decision 14, 2026-11-18).
 7. AR-iii cases have no amount, so they cannot be matched (AR-iii open question 6, parked by the owner 2026-11-18). (Owner)
 8. How to track upload completeness (which bank accounts have no RITM for a statement day). Decided later (decision 16). (Owner)
+9. Fallback Deposit ID for lines with no payment mode: `UNK-DDMMYY-XX` is a placeholder. What prefix and suffix? (Owner)
+10. Deposit IDs repeat within a payment mode and day (decision 18). Is another unique reference needed when AR or the bank quotes a deposit? (Owner)

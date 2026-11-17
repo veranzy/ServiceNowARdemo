@@ -65,7 +65,7 @@ existing customer when you need an example; otherwise invent one in the same sty
 Three **mock** banks with their own CSV statement layouts (`BANKS` in `js/schema.js`): **Marina Bank** (MB),
 **Orchard Bank** (OB), **Union Straits Bank** (US). Corpex's accounts: AR collections and Project deposits –
 Engineering (Marina), Revenue SGD (Orchard), Retention and deposits – Marine and Operating (Union Straits).
-Money received is only ever a **BSU deposit** from these statements (D7).
+Each account has payment modes (e.g. GIRO, FAST, Cheque) that set the Deposit ID, e.g. `MBG-151126-AR`. Money received is only ever a **BSU deposit** from these statements (D7).
 
 ## AR forms (portal catalogue)
 

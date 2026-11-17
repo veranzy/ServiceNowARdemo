@@ -28,9 +28,12 @@ export function parseBankDate(bank, text) {
   return "";
 }
 
-/** Deposit ID: DEP-<bank code><last 4 of account>-<YYMMDD>-<NNN>. */
-export function depositId(acct, iso, seq) {
-  return `DEP-${acct.bank}${last4(acct)}-${iso.slice(2).replace(/-/g, "")}-${String(seq).padStart(3, "0")}`;
+/** BSU decision 18: the bank account's active payment mode whose Transaction ID equals the statement line's. */
+export const modeFor = (acct, txn) => S.paymentModes.find(m => m.bankAccountId === acct.id && m.active !== false && String(m.txnId).trim().toLowerCase() === String(txn || "").trim().toLowerCase()) || null;
+/** Deposit ID (BSU decision 18): <Prefix>-<DDMMYY>-<Suffix> from the payment mode and the deposit date; UNK-<DDMMYY>-XX when no mode matches. Not unique. */
+export function depositId(acct, iso, txn) {
+  const m = modeFor(acct, txn), [y, mo, d] = iso.split("-");
+  return `${m ? m.prefix : "UNK"}-${d}${mo}${y.slice(2)}-${m ? m.suffix : "XX"}`;
 }
 
 /** Parse CSV text with the account's bank template. Deposits = rows with a credit amount > 0. */
@@ -42,7 +45,7 @@ export function parseStatement(text, acct, statementDate) {
   if (hIx < 0) return { error: `This doesn't look like a ${bank.name} export: no "${bank.cols.date}" column. Check you picked the right bank account.` };
   const head = rows[hIx].map(c => c.trim().toLowerCase());
   const col = k => bank.cols[k] ? head.indexOf(bank.cols[k].toLowerCase()) : -1;
-  const ix = { date: col("date"), payer: col("payer"), reference: col("reference"), credit: col("credit"), debit: col("debit"), bankRef: col("bankRef") };
+  const ix = { date: col("date"), txn: col("txn"), payer: col("payer"), reference: col("reference"), credit: col("credit"), debit: col("debit"), bankRef: col("bankRef") };
   const missing = ["payer", "credit"].filter(k => ix[k] < 0).map(k => `"${bank.cols[k]}"`);
   if (missing.length) return { error: `Missing column${missing.length > 1 ? "s" : ""} ${missing.join(", ")} for ${bank.name}.` };
   const deposits = [], skipped = [];
@@ -51,11 +54,11 @@ export function parseStatement(text, acct, statementDate) {
     const get = i => (i >= 0 ? (r[i] ?? "") : "").trim();
     const credit = cents(get(ix.credit)), debit = cents(get(ix.debit));
     const date = parseBankDate(acct.bank, get(ix.date)) || statementDate;
-    if (credit > 0) deposits.push({ seq: ++n, date, payer: get(ix.payer), reference: get(ix.reference), amount: credit, bankRef: get(ix.bankRef) });
+    if (credit > 0) { const txn = get(ix.txn), m = modeFor(acct, txn); deposits.push({ seq: ++n, date, txnId: txn, paymentModeId: m?.id || null, payer: get(ix.payer), reference: get(ix.reference), amount: credit, bankRef: get(ix.bankRef) }); }
     else if (debit > 0) skipped.push({ date, payer: get(ix.payer), reference: get(ix.reference), amount: debit });
   }
   if (!deposits.length && !skipped.length) return { error: "No transactions found under the header row." };
-  for (const d of deposits) d.depositId = depositId(acct, statementDate, d.seq);
+  for (const d of deposits) d.depositId = depositId(acct, d.date, d.txnId);   // deposit (value) date, BSU decision 18
   return { deposits, skipped, total: deposits.reduce((s, d) => s + d.amount, 0) };
 }
 
@@ -66,7 +69,7 @@ export function saveUpload(acct, statementDate, fileName, parsed) {
     depositCount: parsed.deposits.length, depositTotal: parsed.total, skippedCount: parsed.skipped.length };
   S.uploads.push(up);
   for (const d of parsed.deposits)
-    S.deposits.push({ id: uid("p"), number: d.depositId, bankAccountId: acct.id, uploadId: up.id, date: d.date, payer: d.payer, reference: d.reference, amount: d.amount, bankRef: d.bankRef, currency: "SGD" });
+    S.deposits.push({ id: uid("p"), number: d.depositId, txnId: d.txnId, paymentModeId: d.paymentModeId, bankAccountId: acct.id, uploadId: up.id, date: d.date, payer: d.payer, reference: d.reference, amount: d.amount, bankRef: d.bankRef, currency: "SGD" });
   return up;
 }
 
@@ -82,11 +85,13 @@ export function sampleCSV(acct, iso) {
   const custOf = i => S.customers.find(c => c.id === i.customerId);
   const lines = [];
   const a = pick(1), b = pick(2);
-  if (a) lines.push({ payer: (custOf(a)?.aliases?.[0] || a.customer).toUpperCase().slice(0, 34), ref: `INV ${a.number.replace("INV-", "")}`, credit: a.amount });
-  if (b && b !== a) lines.push({ payer: (custOf(b)?.name || b.customer).toUpperCase().replace(/ PTE LTD| SDN BHD/, "").slice(0, 34), ref: `PAYMENT ${b.number}`, credit: Math.round(b.amount / 2) });
-  lines.push({ payer: "FAST PAYMENT", ref: `OTHR ${1000 + (seed % 9000)}`, credit: 50000 + (seed % 40) * 2500 });
-  lines.push({ payer: "SERVICE CHARGE", ref: "CHG TT", debit: 1800 });
-  if (acct.accountType !== "revenue") lines.push({ payer: "INTEREST CREDIT", ref: "INT", credit: 1234 + (seed % 500) });
+  // transaction codes as the sample payment modes of the account use them (BSU decision 18); INT has no payment mode (fallback ID)
+  const codes = S.paymentModes.filter(m => m.bankAccountId === acct.id).map(m => m.txnId), code = k => codes.length ? codes[(seed + k) % codes.length] : "FAST";
+  if (a) lines.push({ txn: code(1), payer: (custOf(a)?.aliases?.[0] || a.customer).toUpperCase().slice(0, 34), ref: `INV ${a.number.replace("INV-", "")}`, credit: a.amount });
+  if (b && b !== a) lines.push({ txn: code(2), payer: (custOf(b)?.name || b.customer).toUpperCase().replace(/ PTE LTD| SDN BHD/, "").slice(0, 34), ref: `PAYMENT ${b.number}`, credit: Math.round(b.amount / 2) });
+  lines.push({ txn: code(3), payer: "FAST PAYMENT", ref: `OTHR ${1000 + (seed % 9000)}`, credit: 50000 + (seed % 40) * 2500 });
+  lines.push({ txn: "CHG", payer: "SERVICE CHARGE", ref: "CHG TT", debit: 1800 });
+  if (acct.accountType !== "revenue") lines.push({ txn: "INT", payer: "INTEREST CREDIT", ref: "INT", credit: 1234 + (seed % 500) });
   const d = bankDate(acct.bank, iso);
   const out = [];
   if (acct.bank === "MB") out.push(`Account Details For:,${acct.number}`, `Statement as at:,${d}`, "");
@@ -95,9 +100,9 @@ export function sampleCSV(acct, iso) {
   lines.forEach((l, n) => {
     bal += (l.credit || 0) - (l.debit || 0);
     const ref = `${acct.bank}${iso.replace(/-/g, "").slice(2)}${String(n + 1).padStart(4, "0")}`;
-    const row = acct.bank === "MB" ? [d, d, l.payer, l.ref, money(l.debit), money(l.credit), ref]
-      : acct.bank === "OB" ? [d, d, l.payer, l.ref, money(l.debit), money(l.credit)]
-      : [d, l.payer, l.ref, money(l.credit), money(l.debit), (bal / 100).toFixed(2)];
+    const row = acct.bank === "MB" ? [d, d, l.txn, l.payer, l.ref, money(l.debit), money(l.credit), ref]
+      : acct.bank === "OB" ? [d, d, l.txn, l.payer, l.ref, money(l.debit), money(l.credit)]
+      : [d, l.txn, l.payer, l.ref, money(l.credit), money(l.debit), (bal / 100).toFixed(2)];
     out.push(row.map(csvCell).join(","));
   });
   return out.join("\n");

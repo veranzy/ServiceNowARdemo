@@ -258,7 +258,7 @@ document.addEventListener("click", e => {
     return newTab(d.new, { contractId: k?.id, customerId: k?.customerId, department: k?.department || "", frequency: "monthly", firstDate: nextCycleDate(k), lastDate: k?.end || "" });
   }
   if (d.new === "uploads") return showMain({ kind: "bsu" });   // New upload RITM: the upload form (BSU decision 16)
-  if (d.new) return newTab(d.new, d.prefillCustomer ? { customerId: d.prefillCustomer } : null);
+  if (d.new) return newTab(d.new, d.prefillCustomer ? { customerId: d.prefillCustomer } : d.prefillAccount ? { bankAccountId: d.prefillAccount } : null);
   if (d.ui) return uiAction(d.ui);
   if (d.ckind) { const tab = activeTab(); const c = W().composer[tab.id] ||= { kind: "work_note", text: "" }; c.kind = d.ckind; c.text = $("composer-" + tab.id)?.value || c.text; return render(); }
   // BSU

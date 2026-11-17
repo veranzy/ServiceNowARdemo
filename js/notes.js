@@ -4,7 +4,7 @@
 import { RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES } from "./schema.js";
 
 /** Short code per table, used as the prefix of field IDs (e.g. INV.due_date) and record-page IDs. */
-export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI", colTx: "CTX", colAlloc: "CAL", costCentres: "CCT", accountCodes: "ACT" };
+export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI", colTx: "CTX", colAlloc: "CAL", costCentres: "CCT", accountCodes: "ACT", paymentModes: "PMD" };
 const T = Object.fromEntries(Object.entries(CODE).map(([k, c]) => [c, k]));
 
 /** Screen elements that aren't a field, list, record page, related list or UI action. */
@@ -51,6 +51,7 @@ export const NOTES = {
   "CSH-03": `List of ${TABLES.deposits.table} with match state; filter tabs To match / Matched / All`,
   "CSH-04": "Invoice finder (modal or side panel): ranked issued invoices and open Collections cases (ar_form = COL: AR-iii, AR-iv, AR-v; D29, D30) + allocation preview before confirming",
   "INV-PDF": "Invoice document (CCI decision 13): HTML template rendered with PDF Generation Utilities (sn_pdfgeneratorutils) when AR issues the invoice and attached to the invoice; the workspace tab shows the same template as a preview (DRAFT / CANCELLED watermark when not issued). Template wording is a draft",
+  "BSU-08": "Preview tag No payment mode (BSU decision 18): the line's transaction ID matches no active payment mode of the bank account; it is saved with the fallback Deposit ID UNK-<DDMMYY>-XX",
   "CSH-06": "Finder tag Account receives AR-… (BSU decision 13): the deposit's bank account lists the case's collection type in collection_types; adds to the ranking score, never hides other candidates",
   "CSH-05": "Collection case tag in the invoice finder and preview (D29): the candidate is an open x_ar_request with ar_form = COL (tag shows its collection_type, D30) and Request value (amount) not yet matched; its allocation sets request instead of invoice",
   // BSU page
@@ -152,7 +153,7 @@ export const UI_ACTIONS = {
   "UA-BSU-sample": "Demo only: generate a sample CSV in the bank's layout",
   "UA-BNK-upload": "Upload statement → opens the BSU page for this account",
   "UA-CUS-save": "Save (update)", "UA-CON-save": "Save (update)", "UA-BNK-save": "Save (update)",
-  "UA-CUS-new": "New (list action)", "UA-CON-new": "New (list action)", "UA-CCT-new": "New (list action)", "UA-INV-pdf": "Print or save as PDF: opens the invoice document for printing (in ServiceNow: download the generated PDF attachment)", "UA-DOC-new": "New (list action): AR files a customer document by hand (D31)", "UA-DOC-insert": "Submit (insert)", "UA-DOC-save": "Save (update)", "UA-ACT-new": "New (list action)", "UA-CCT-save": "Save (update)", "UA-CCT-insert": "Submit (insert)", "UA-ACT-save": "Save (update)", "UA-ACT-insert": "Submit (insert)", "UA-BNK-new": "New (list action)",
+  "UA-CUS-new": "New (list action)", "UA-CON-new": "New (list action)", "UA-CCT-new": "New (list action)", "UA-INV-pdf": "Print or save as PDF: opens the invoice document for printing (in ServiceNow: download the generated PDF attachment)", "UA-BNK-newmode": "New payment mode (on the bank account): opens a new payment mode with the bank account filled in", "UA-PMD-new": "New (list action)", "UA-PMD-insert": "Submit (insert)", "UA-PMD-save": "Save (update)", "UA-DOC-new": "New (list action): AR files a customer document by hand (D31)", "UA-DOC-insert": "Submit (insert)", "UA-DOC-save": "Save (update)", "UA-ACT-new": "New (list action)", "UA-CCT-save": "Save (update)", "UA-CCT-insert": "Submit (insert)", "UA-ACT-save": "Save (update)", "UA-ACT-insert": "Submit (insert)", "UA-BNK-new": "New (list action)",
   "UA-CUS-insert": "Submit (insert)", "UA-CON-insert": "Submit (insert)", "UA-SCH-insert": "Submit (insert) of a billing schedule created from the contract (CCI decision 8)", "UA-BNK-insert": "Submit (insert)",
   "UA-CON-newschedule": "New billing schedule (contract record, CCI decision 8) → new x_ar_billing_schedule form with contract (and customer) prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case (source_request)",
   "UA-CUS-newcontract": "New contract → new contract form with customer prefilled"
@@ -164,7 +165,7 @@ export const RELATED = {
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",
-  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request", "RL-CCT-CAL": "cost_centre", "RL-ACT-CAL": "account_code",
+  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request", "RL-CCT-CAL": "cost_centre", "RL-BNK-PMD": "bank_account", "RL-ACT-CAL": "account_code",
   "RL-BSU-DEP": "bsu", "RL-BNK-BSU": "bank_account", "RL-BNK-DEP": "bank_account"
 };
 
@@ -183,7 +184,8 @@ export const CALC_COLS = {
   "RQL.periods": "Calculated: number of billing dates between From and To at the frequency",
   "SCH.next_billing_date": "Calculated: first period on or after today without an invoice",
   "SCH.periods_due": "Calculated: periods up to today without an invoice",
-  "BNK.last_statement": `Calculated: latest ${TABLES.uploads.table}.statement_date for the account`
+  "BNK.last_statement": `Calculated: latest ${TABLES.uploads.table}.statement_date for the account`,
+  "PMD.deposit_id_pattern": "Calculated for display: <prefix>-DDMMYY-<suffix> (BSU decision 18)"
 };
 
 function fieldText(table, f) {

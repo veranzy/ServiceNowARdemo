@@ -342,7 +342,7 @@ The only record of money received (D7): one row per deposit (credit) loaded by B
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
-| `deposit_id` | Deposit ID | String | Read-only on form. Set by before-insert business rule |
+| `deposit_id` | Deposit ID | String | Read-only on form. Set by before-insert business rule (BSU decision 18): the payment mode's prefix, the deposit (value) date as DDMMYY and the payment mode's suffix. Not unique: deposits of one payment mode on one day share it. No matching payment mode: UNK-<DDMMYY>-XX |
 | `bank_account` | Bank account | Reference | → `x_ar_bank_account`. Read-only on form |
 | `bsu` | Statement upload | Reference | → `sc_req_item`. Read-only on form |
 | `value_date` | Value date | Date | Read-only on form |
@@ -350,6 +350,8 @@ The only record of money received (D7): one row per deposit (credit) loaded by B
 | `payer_name` | Payer (as on statement) | String | Read-only on form |
 | `bank_reference` | Reference / remittance | String | Read-only on form |
 | `bank_transaction_ref` | Bank transaction ref | String | Read-only on form |
+| `transaction_id` | Transaction ID | String | Read-only on form. From the bank's transaction-code column (BSU decision 18); matched to a payment mode of the bank account |
+| `payment_mode` | Payment mode | Reference | → `x_ar_payment_mode`. Read-only on form. Payment mode whose Transaction ID equals the statement line's; empty when none matched (fallback Deposit ID) |
 | `match_state` | Match state | Choice | Calculated: Unmatched / Part matched / Matched, from accepted allocations |
 | `unmatched_amount` | Unmatched amount | Currency | Calculated: amount − accepted allocations |
 
@@ -366,6 +368,19 @@ Applies part or all of a BSU deposit to an invoice, or to an open Collections ca
 | `state` | State | Choice | Choices: Applied (`accepted`), Removed (`removed`) |
 | `exception` | Exception | Choice | Choices: Exact (`none`), Multi-invoice (`multi_invoice`), Short pay (`short_pay`), Overpayment (`over_pay`), Partial (`partial`), Discount taken (`discount`) |
 | `reason` | Reason | String (1000) |  |
+
+### Payment mode — `x_ar_payment_mode`
+
+Payment modes per bank account (BSU decision 18), defined by AR. A statement line's transaction ID selects the payment mode, whose prefix and suffix build the Deposit ID: <Prefix>-<DDMMYY>-<Suffix>.
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `bank_account` | Bank account | Reference | → `x_ar_bank_account`. Mandatory |
+| `name` | Payment mode | String | Mandatory. e.g. GIRO, FAST, Cheque, Telegraphic transfer |
+| `transaction_id` | Transaction ID | String | Mandatory. The value in the bank statement's transaction-code column for this payment mode (exact match, not case-sensitive) |
+| `prefix` | Prefix | String | Mandatory. Start of the Deposit ID, e.g. AAA |
+| `suffix` | Suffix | String | Mandatory. End of the Deposit ID |
+| `active` | Active | True/False | Inactive payment modes are not used for new uploads (CCI decision 12). Default: true |
 
 ### Collection — `x_ar_collection_tx`
 
@@ -476,9 +491,9 @@ Only **issued** invoices receive deposits.
 
 | Bank (mock alias) | Code | Date format | Header columns |
 |---|---|---|---|
-| Marina Bank | MB | `D MMM YYYY` | Transaction Date, Value Date, Transaction Description 1, Transaction Description 2, Debit Amount, Credit Amount, Client Reference |
-| Orchard Bank | OB | `DD/MM/YYYY` | Transaction date, Value date, Description, Remarks, Withdrawals (SGD), Deposits (SGD) |
-| Union Straits Bank | US | `YYYY-MM-DD` | Date, Description, Reference, Deposit, Withdrawal, Ledger Balance |
+| Marina Bank | MB | `D MMM YYYY` | Transaction Date, Value Date, Transaction Code, Transaction Description 1, Transaction Description 2, Debit Amount, Credit Amount, Client Reference |
+| Orchard Bank | OB | `DD/MM/YYYY` | Transaction date, Value date, Txn Type, Description, Remarks, Withdrawals (SGD), Deposits (SGD) |
+| Union Straits Bank | US | `YYYY-MM-DD` | Date, Transaction ID, Description, Reference, Deposit, Withdrawal, Ledger Balance |
 
 ## Automation
 

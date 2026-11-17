@@ -37,13 +37,13 @@ export function bsuPage() {
         </div>
       </div>
       ${bank ? `<details class="layout"${sn("BSU-05")}><summary>${esc(bank.name)} CSV layout</summary>
-        <p class="small">Date format <span class="mono">${esc(bank.dateFmt)}</span>. Deposits are read from <b>${esc(bank.cols.credit)}</b>; rows with <b>${esc(bank.cols.debit)}</b> are skipped. Payer from <b>${esc(bank.cols.payer)}</b>, reference from <b>${esc(bank.cols.reference)}</b>.</p>
+        <p class="small">Date format <span class="mono">${esc(bank.dateFmt)}</span>. Deposits are read from <b>${esc(bank.cols.credit)}</b>; rows with <b>${esc(bank.cols.debit)}</b> are skipped. Payer from <b>${esc(bank.cols.payer)}</b>, reference from <b>${esc(bank.cols.reference)}</b>, transaction ID from <b>${esc(bank.cols.txn)}</b>.</p>
         <p class="small mono wrapcode">${bank.header.map(esc).join(", ")}</p></details>` : ""}
       ${b.error ? `<div class="notice err" role="alert"><span class="grow">${esc(b.error)}</span></div>` : ""}
       ${p ? `<div class="bsu-preview"${sn("BSU-06")}>
         <div class="row"><h3>Preview</h3><span class="small"><b>${p.deposits.length}</b> deposit${p.deposits.length === 1 ? "" : "s"} · <b class="mono">SGD ${fmt(p.total)}</b> · ${p.skipped.length} withdrawal${p.skipped.length === 1 ? "" : "s"} skipped</span></div>
-        <div class="tablewrap"><table><thead><tr><th${sn("DEP.deposit_id")}>Deposit ID</th><th>Value date</th><th>Payer</th><th>Reference</th><th class="num">Amount</th></tr></thead><tbody>
-          ${p.deposits.map(d => `<tr><td class="mono small">${esc(d.depositId)}</td><td>${esc(d.date)}</td><td>${esc(d.payer)}</td><td class="wrap"><span class="mono small">${esc(d.reference || "—")}</span></td><td class="num">${fmt(d.amount)}</td></tr>`).join("") || `<tr><td colspan="5" class="empty">No deposits in this file.</td></tr>`}
+        <div class="tablewrap"><table><thead><tr><th${sn("DEP.deposit_id")}>Deposit ID</th><th>Value date</th><th${sn("DEP.payment_mode")}>Payment mode</th><th>Payer</th><th>Reference</th><th class="num">Amount</th></tr></thead><tbody>
+          ${p.deposits.map(d => `<tr><td class="mono small">${esc(d.depositId)}</td><td>${esc(d.date)}</td><td>${d.paymentModeId ? `${esc(S.paymentModes.find(m => m.id === d.paymentModeId)?.name || "")} <span class="desc mono">${esc(d.txnId)}</span>` : `<span class="chip c-warn"${sn("BSU-08")}>No payment mode</span> <span class="desc mono">${esc(d.txnId || "—")}</span>`}</td><td>${esc(d.payer)}</td><td class="wrap"><span class="mono small">${esc(d.reference || "—")}</span></td><td class="num">${fmt(d.amount)}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">No deposits in this file.</td></tr>`}
         </tbody></table></div>
         ${p.skipped.length ? `<details><summary class="small">Skipped withdrawals (${p.skipped.length})</summary><ul class="small">${p.skipped.map(s => `<li>${esc(s.date)} · ${esc(s.payer)} ${esc(s.reference)} · ${fmt(s.amount)}</li>`).join("")}</ul></details>` : ""}
         <div class="row start"><button type="button" class="btn primary" data-bsu="save"${p.deposits.length ? "" : " disabled"}${sn("UA-BSU-save")}>Save ${p.deposits.length} deposit${p.deposits.length === 1 ? "" : "s"} to bank statements</button><button type="button" class="btn" data-bsu="discard">Discard</button></div>

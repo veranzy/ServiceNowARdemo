@@ -34,7 +34,7 @@ the **Bank statements** table, where the AR team reviews it and matches it manua
    upload form: choose the bank account (shows bank, account no., department, type), statement date
    (defaults to yesterday), then choose the CSV file. For the demo, *Use sample file* generates a file
    in that bank's layout; *Download sample* gives the CSV to try a real file upload.
-2. **Preview**: deposits with their new Deposit IDs, payer, reference and amount; withdrawals listed as
+2. **Preview**: deposits with their new Deposit IDs, payment mode (or *No payment mode*, `BSU-08`), payer, reference and amount; withdrawals listed as
    skipped; totals.
 3. **Save to bank statements**: submits the catalog item *Bank statement upload*, which creates the **RITM**
    (`RITM…`, one per bank account per day, decision 12) and one deposit record per credit, related to the RITM,
@@ -50,7 +50,8 @@ the **Bank statements** table, where the AR team reviews it and matches it manua
 | RITM (`sc_req_item`) | Upload = catalog item *Bank statement upload* (D32): variables bank account, statement date, file name; uploaded by = opened by; deposit count and total, skipped withdrawals set by the flow. Number prefix `RITM`. CSV kept as the RITM's attachment. Flow: parse with the bank's template, insert deposits, close the RITM complete. |
 | `x_ar_bank_statement` | **Bank statements** table: one row per deposit, `deposit_id` as display value, reference to the RITM (`bsu`) and bank account, value date, payer, reference, amount, match state. |
 | Parsing | The RITM's flow calls Script Include `x_ar.BankStatementParser` with the bank's template (or one Data Source + Transform Map per bank). Templates in a small config table or system properties. |
-| Deposit ID | Before-insert business rule: `DEP-` + bank code + last 4 of account + statement date + 3-digit sequence per upload. |
+| Payment modes | `x_ar_payment_mode` (decision 18): bank account, payment mode, transaction ID, prefix, suffix, active. Related list on the bank account (`RL-BNK-PMD`), *New payment mode* (`UA-BNK-newmode`). |
+| Deposit ID | Before-insert business rule (decision 18): find the bank account's active payment mode whose `transaction_id` equals the line's transaction ID (case-insensitive); `deposit_id` = prefix + `-` + value date as DDMMYY + `-` + suffix; set `payment_mode`. No match: `UNK-DDMMYY-XX`, `payment_mode` empty. Not unique. |
 | Matching | No auto-match. Manual matching on the Cash application page (below) creates `x_ar_allocation` records. |
 
 See `SERVICENOW_MAPPING.md` (generated) for full column lists.
@@ -90,9 +91,9 @@ The AR team matches each BSU deposit to one or more **issued** invoices ([CCI](.
 
 | Bank (alias) | Stands in for | Date format | Columns used |
 |---|---|---|---|
-| Marina Bank (MB) | Largest local bank | `31 Oct 2026` | Transaction Date, Transaction Description 1 (payer), Transaction Description 2 (reference), Debit Amount, Credit Amount |
-| Orchard Bank (OB) | Second largest | `31/10/2026` | Transaction date, Description (payer), Remarks (reference), Withdrawals (SGD), Deposits (SGD) |
-| Union Straits Bank (US) | Third largest | `2026-10-31` | Date, Description (payer), Reference, Deposit, Withdrawal |
+| Marina Bank (MB) | Largest local bank | `31 Oct 2026` | Transaction Date, Transaction Code (transaction ID), Transaction Description 1 (payer), Transaction Description 2 (reference), Debit Amount, Credit Amount |
+| Orchard Bank (OB) | Second largest | `31/10/2026` | Transaction date, Txn Type (transaction ID), Description (payer), Remarks (reference), Withdrawals (SGD), Deposits (SGD) |
+| Union Straits Bank (US) | Third largest | `2026-10-31` | Date, Transaction ID, Description (payer), Reference, Deposit, Withdrawal |
 
 ## Out of scope / later
 

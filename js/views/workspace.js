@@ -97,6 +97,14 @@ export const LISTS = {
     text: c => [custName(c.customerId), c.department, c.name, c.email].join(" "),
     newable: true
   },
+  // Payment modes per bank account (BSU decision 18)
+  paymentModes: {
+    filters: { all: ["Payment modes", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
+    cols: [["Payment mode", m => refLink("paymentModes", m.id, m.name), "", "name"], ["Bank account", m => esc(acctLabel(acctById(m.bankAccountId))), "", "bankAccountId"], ["Transaction ID", m => `<span class="mono">${esc(m.txnId)}</span>`, "", "txnId"],
+      ["Deposit ID", m => `<span class="mono">${esc(m.prefix)}-DDMMYY-${esc(m.suffix)}</span>`, "", "=PMD.deposit_id_pattern"], ["Active", m => m.active !== false ? "Yes" : "No", "", "active"]],
+    sort: (a, b) => String(acctLabel(acctById(a.bankAccountId))).localeCompare(acctLabel(acctById(b.bankAccountId))) || a.name.localeCompare(b.name),
+    text: m => [m.name, m.txnId, m.prefix, m.suffix, acctLabel(acctById(m.bankAccountId))].join(" "), newable: true
+  },
   // Master data for the Collections form (CCI decision 11, #9 §8)
   costCentres: {
     filters: { all: ["Cost centres", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
@@ -157,7 +165,7 @@ const MENU = [
   ["AR requests", REQ_FORM_LISTS.map(l => ["requests", l.filter])],   // UIX decision 15: one open list per AR form
   ["Recurring billing", [["schedules", "due"], ["schedules", "active"], ["schedules", "all"]]],
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
-  ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"]]],
+  ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"], ["paymentModes", "all"]]],
   ["GIRO", [["requests", "giroall"], ["contracts", "giro"]]],
   ["Master data", [["customers", "all"], ["contracts", "all"], ["contracts", "shell"], ["contacts", "all"], ["documents", "all"], ["costCentres", "all"], ["accountCodes", "all"]]]
 ];
@@ -335,7 +343,8 @@ const LAYOUT = {
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
-  deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "bankRef", "payer", "reference"]]],
+  deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "txnId", "paymentModeId", "bankRef", "payer", "reference"]]],
+  paymentModes: [["Payment mode", ["bankAccountId", "name", "txnId", "prefix", "suffix", "active"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency", "colTypes", "active"]]],
   customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes", "active"]],
@@ -449,6 +458,7 @@ function actionsFor(table, rec, isNew, canEdit) {
   if (table === "deposits" && depositMoney(rec).unapplied > 0) a.push(btn(`<button type="button" class="btn primary" data-matchdep="${rec.id}"${sn("UA-DEP-match")}>Match to invoice</button>`));
   if (table === "uploads") a.push(btn(`<button type="button" class="btn" data-new="uploads"${sn("UA-BSU-new")}>Upload another</button>`));
   if (table === "bankAccounts") a.push(btn(`<button type="button" class="btn" data-bsu-acct="${rec.id}"${sn("UA-BNK-upload")}>Upload statement</button>`));
+  if (table === "bankAccounts") a.push(btn(`<button type="button" class="btn" data-new="paymentModes" data-prefill-account="${rec.id}"${sn("UA-BNK-newmode")}>New payment mode</button>`, true));   // BSU decision 18
   // CCI decision 8: Create invoice / Set up billing schedule retired on billing lines
   if (table === "contracts") a.push(btn(`<button type="button" class="btn" data-new="schedules" data-prefill-contract="${rec.id}"${sn("UA-CON-newschedule")}>New billing schedule</button>`));   // CCI decision 8
   if (table === "customers") { a.push(btn(`<button type="button" class="btn" data-new="contracts" data-prefill-customer="${rec.id}"${sn("UA-CUS-newcontract")}>New contract</button>`));
@@ -594,7 +604,8 @@ function related(table, rec) {
     const deps = S.deposits.filter(p => table === "uploads" ? p.uploadId === rec.id : p.bankAccountId === rec.id).sort(LISTS.deposits.sort);
     const ups = table === "bankAccounts" ? [rt("Statement uploads", "uploads", S.uploads.filter(u => u.bankAccountId === rec.id).sort(LISTS.uploads.sort),
       [["Upload", u => refLink("uploads", u.id, u.number)], ["Statement date", u => esc(u.statementDate)], ["Deposits", u => String(u.depositCount), "num"], ["Total", u => fmt(u.depositTotal), "num"]], { id: "RL-BNK-BSU" })] : [];
-    return [...ups, rt("BSU deposits", "deposits", deps, [["Deposit ID", p => refLink("deposits", p.id, p.number)], ["Payer", p => esc(p.payer)], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap"], ["Amount", p => fmt(p.amount), "num"], ["Match", p => depositChip(p)]], { id: table === "uploads" ? "RL-BSU-DEP" : "RL-BNK-DEP" })];
+    const pms = table === "bankAccounts" ? [rt("Payment modes", "paymentModes", S.paymentModes.filter(m => m.bankAccountId === rec.id), [["Payment mode", m => refLink("paymentModes", m.id, m.name)], ["Transaction ID", m => `<span class="mono">${esc(m.txnId)}</span>`], ["Deposit ID", m => `<span class="mono">${esc(m.prefix)}-DDMMYY-${esc(m.suffix)}</span>`], ["Active", m => m.active !== false ? "Yes" : "No"]], { id: "RL-BNK-PMD" })] : [];
+    return [...pms, ...ups, rt("BSU deposits", "deposits", deps, [["Deposit ID", p => refLink("deposits", p.id, p.number)], ["Payer", p => esc(p.payer)], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap"], ["Amount", p => fmt(p.amount), "num"], ["Match", p => depositChip(p)]], { id: table === "uploads" ? "RL-BSU-DEP" : "RL-BNK-DEP" })];
   }
   if (table === "invoices" || table === "deposits") {
     const rows = [];

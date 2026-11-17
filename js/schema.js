@@ -217,14 +217,16 @@ export const TABLES = {
     table: `${SCOPE}_bank_statement`, label: "BSU deposit", plural: "BSU deposits", tableLabel: "Bank statements (BSU deposits)", display: "number", prefix: "DEP",
     note: "The only record of money received (D7): one row per deposit (credit) loaded by BSU from the daily CSV statement. There is no separate payments table. Matched to invoices manually; no auto-matching (D5).",
     fields: [
-      { key: "number", name: "deposit_id", label: "Deposit ID", type: "String", readonly: true, auto: "DEP-<bank><acct4>-<YYMMDD>-<NNN>", help: "Set by before-insert business rule" },
+      { key: "number", name: "deposit_id", label: "Deposit ID", type: "String", readonly: true, auto: "<Prefix>-<DDMMYY>-<Suffix>", help: "Set by before-insert business rule (BSU decision 18): the payment mode's prefix, the deposit (value) date as DDMMYY and the payment mode's suffix. Not unique: deposits of one payment mode on one day share it. No matching payment mode: UNK-<DDMMYY>-XX" },
       { key: "bankAccountId", name: "bank_account", label: "Bank account", type: "Reference", ref: "bankAccounts", readonly: true },
       { key: "uploadId", name: "bsu", label: "Statement upload", type: "Reference", ref: "uploads", readonly: true },
       { key: "date", name: "value_date", label: "Value date", type: "Date", readonly: true },
       { key: "amount", name: "amount", label: "Amount", type: "Currency", readonly: true },
       { key: "payer", name: "payer_name", label: "Payer (as on statement)", type: "String", readonly: true, wide: true },
       { key: "reference", name: "bank_reference", label: "Reference / remittance", type: "String", readonly: true, wide: true },
-      { key: "bankRef", name: "bank_transaction_ref", label: "Bank transaction ref", type: "String", readonly: true }
+      { key: "bankRef", name: "bank_transaction_ref", label: "Bank transaction ref", type: "String", readonly: true },
+      { key: "txnId", name: "transaction_id", label: "Transaction ID", type: "String", readonly: true, help: "From the bank's transaction-code column (BSU decision 18); matched to a payment mode of the bank account" },
+      { key: "paymentModeId", name: "payment_mode", label: "Payment mode", type: "Reference", ref: "paymentModes", readonly: true, help: "Payment mode whose Transaction ID equals the statement line's; empty when none matched (fallback Deposit ID)" }
     ],
     calculated: [
       { name: "match_state", label: "Match state", type: "Choice", how: "Unmatched / Part matched / Matched, from accepted allocations" },
@@ -258,6 +260,18 @@ export const TABLES = {
       { key: "currency", name: "currency", label: "Currency", type: "String", readonly: true },
       { key: "colTypes", name: "collection_types", label: "Collection types", type: "List", choices: COLLECTION_TYPES, help: "Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others" },
       { key: "active", name: "active", label: "Active", type: "True/False", default: true, help: "Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields" }
+    ]
+  },
+  paymentModes: {
+    table: `${SCOPE}_payment_mode`, label: "Payment mode", plural: "Payment modes", display: "name",
+    note: "Payment modes per bank account (BSU decision 18), defined by AR. A statement line's transaction ID selects the payment mode, whose prefix and suffix build the Deposit ID: <Prefix>-<DDMMYY>-<Suffix>.",
+    fields: [
+      { key: "bankAccountId", name: "bank_account", label: "Bank account", type: "Reference", ref: "bankAccounts", mandatory: true },
+      { key: "name", name: "name", label: "Payment mode", type: "String", mandatory: true, help: "e.g. GIRO, FAST, Cheque, Telegraphic transfer" },
+      { key: "txnId", name: "transaction_id", label: "Transaction ID", type: "String", mandatory: true, help: "The value in the bank statement's transaction-code column for this payment mode (exact match, not case-sensitive)" },
+      { key: "prefix", name: "prefix", label: "Prefix", type: "String", mandatory: true, help: "Start of the Deposit ID, e.g. AAA" },
+      { key: "suffix", name: "suffix", label: "Suffix", type: "String", mandatory: true, help: "End of the Deposit ID" },
+      { key: "active", name: "active", label: "Active", type: "True/False", default: true, help: "Inactive payment modes are not used for new uploads (CCI decision 12)" }
     ]
   },
   allocations: {
@@ -474,14 +488,14 @@ export const TABLES = {
 /** Mock bank CSV layouts (BSU). Column names as they appear in each bank's export header. */
 export const BANKS = {
   MB: { name: "Marina Bank", short: "Marina", dateFmt: "D MMM YYYY",
-    header: ["Transaction Date", "Value Date", "Transaction Description 1", "Transaction Description 2", "Debit Amount", "Credit Amount", "Client Reference"],
-    cols: { date: "Transaction Date", payer: "Transaction Description 1", reference: "Transaction Description 2", debit: "Debit Amount", credit: "Credit Amount", bankRef: "Client Reference" } },
+    header: ["Transaction Date", "Value Date", "Transaction Code", "Transaction Description 1", "Transaction Description 2", "Debit Amount", "Credit Amount", "Client Reference"],
+    cols: { date: "Transaction Date", txn: "Transaction Code", payer: "Transaction Description 1", reference: "Transaction Description 2", debit: "Debit Amount", credit: "Credit Amount", bankRef: "Client Reference" } },
   OB: { name: "Orchard Bank", short: "Orchard", dateFmt: "DD/MM/YYYY",
-    header: ["Transaction date", "Value date", "Description", "Remarks", "Withdrawals (SGD)", "Deposits (SGD)"],
-    cols: { date: "Transaction date", payer: "Description", reference: "Remarks", debit: "Withdrawals (SGD)", credit: "Deposits (SGD)", bankRef: null } },
+    header: ["Transaction date", "Value date", "Txn Type", "Description", "Remarks", "Withdrawals (SGD)", "Deposits (SGD)"],
+    cols: { date: "Transaction date", txn: "Txn Type", payer: "Description", reference: "Remarks", debit: "Withdrawals (SGD)", credit: "Deposits (SGD)", bankRef: null } },
   US: { name: "Union Straits Bank", short: "Union Straits", dateFmt: "YYYY-MM-DD",
-    header: ["Date", "Description", "Reference", "Deposit", "Withdrawal", "Ledger Balance"],
-    cols: { date: "Date", payer: "Description", reference: "Reference", debit: "Withdrawal", credit: "Deposit", bankRef: null } }
+    header: ["Date", "Transaction ID", "Description", "Reference", "Deposit", "Withdrawal", "Ledger Balance"],
+    cols: { date: "Date", txn: "Transaction ID", payer: "Description", reference: "Reference", debit: "Withdrawal", credit: "Deposit", bankRef: null } }
 };
 
 export const fieldOf = (tableKey, key) => TABLES[tableKey].fields.find(f => f.key === key);

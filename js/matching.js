@@ -12,7 +12,7 @@ const issued = () => S.invoices.filter(i => i.state === "issued");
 // D29: open Collections cases (AR-iii, AR-iv, AR-v) can be matched too, against their Request value (amount).
 // A case is shown to the finder in the shape of an invoice (kind "case"); its allocation records requestId instead of invoiceId.
 const caseTarget = r => ({ kind: "case", id: r.id, number: r.number, customer: custById(r.customerId)?.name || r.newCustName || "", customerId: r.customerId, contractId: r.contractId,
-  amount: r.amount || 0, date: r.opened, due: "", desc: r.title, form: r.colType || r.form });
+  amount: r.amount || 0, date: r.opened, due: "", desc: r.title, form: r.colType || r.form, department: r.department, refs: [r.colRef, r.ar5Receipt, r.caseNumber, r.ibCase].filter(Boolean) });
 export const openCollections = () => S.requests.filter(r => COLLECTION_FORMS.includes(r.form) && REQ_OPEN.includes(r.state) && r.amount > 0).map(caseTarget);
 /** An invoice, or a Collections case in invoice shape. */
 export function targetById(id) { const i = invById(id); if (i) return i; const r = S.requests.find(x => x.id === id && COLLECTION_FORMS.includes(x.form)); return r ? caseTarget(r) : null; }
@@ -39,13 +39,16 @@ export function remainingToApply(p, m) { return p.amount - (m && m.status === "a
 
 export function signals(p, i, open, toApply) {
   const refD = new Set(digitRuns(p.reference));
-  const invD = String(i.number).match(/\d{3,}/g) || [];
+  // a Collections case is also found by its own references (AR-iv Reference Number, AR-v G56 receipt / case numbers)
+  const invD = [i.number, ...(i.kind === "case" ? i.refs || [] : [])].flatMap(x => String(x || "").match(/\d{3,}/g) || []);
   const ref = invD.some(x => refD.has(x));
-  const ns = payerSim(p.payer, i);
+  const ns = i.kind === "case" ? 0 : payerSim(p.payer, i);
   const diff = toApply - open;
   const exact = diff === 0;
   const near = !exact && Math.abs(diff) <= Math.round(open * 0.03);
-  return { ref, ns, exact, near, diff, score: (ref ? 3 : 0) + ns * 2 + (exact ? 2 : near ? 1 : 0) };
+  // BSU decision 13: a case of a collection type this bank account receives ranks higher (never hidden)
+  const a = S.bankAccounts.find(x => x.id === p.bankAccountId), acct = i.kind === "case" && !!a && (a.colTypes || []).includes(i.form);
+  return { ref, ns, exact, near, diff, acct, score: (ref ? 3 : 0) + ns * 2 + (exact ? 2 : near ? 1 : 0) + (acct ? 2 : 0) };
 }
 
 export function candidateList(p, m) {

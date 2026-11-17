@@ -15,13 +15,14 @@ export function dueText(i) {
 export function candRows(p, m) {
   const pk = S.pick[p.id]; const q = (pk.q || "").trim().toLowerCase();
   let list = candidateList(p, m);
-  if (q) list = list.filter(x => [x.i.number, x.i.customer, fmt(x.st.open), (x.st.open / 100).toFixed(2), x.i.due].join(" ").toLowerCase().includes(q));
+  if (q) list = list.filter(x => [x.i.number, x.i.customer, fmt(x.st.open), (x.st.open / 100).toFixed(2), x.i.due, ...(x.i.refs || []), x.i.department || ""].join(" ").toLowerCase().includes(q));
   const total = list.length, shown = q ? list : list.slice(0, 12);
   if (!shown.length) return `<div class="empty">No open invoices${openCollections().length ? " or collection cases" : ""} match “${esc(pk.q)}”.</div>`;
   return shown.map(({ i, st, sg }) => {
     const on = pk.sel.includes(i.id);
     const tags = [
       sg.ref ? `<span class="chip c-accent">Cited in reference</span>` : "",
+      sg.acct ? `<span class="chip c-accent"${sn("CSH-06")}>Account receives ${esc(i.form)}</span>` : "",
       sg.exact ? `<span class="chip c-ok">Amount matches</span>` : sg.near ? `<span class="chip c-warn">Within 3% (${sg.diff < 0 ? "short" : "over"} ${fmt(Math.abs(sg.diff))})</span>` : "",
       sg.ns >= .5 ? `<span class="chip c-neutral">Name ${Math.round(sg.ns * 100)}% similar</span>` : "",
       (m?.rejectedInvoices || []).includes(i.id) ? `<span class="chip c-bad">You rejected this</span>` : ""
@@ -82,7 +83,7 @@ export function pickerPanel(p, m) {
   const pk = S.pick[p.id];
   return `<div class="picker"${sn("CSH-04")}>
     <div class="pk-list">
-      <div class="pk-search"><input type="search" id="pkq-${p.id}" data-pickq="${p.id}" value="${esc(pk.q || "")}" placeholder="Search invoice no., customer or amount" aria-label="Search open invoices"></div>
+      <div class="pk-search"><input type="search" id="pkq-${p.id}" data-pickq="${p.id}" value="${esc(pk.q || "")}" placeholder="Search invoice / case no., customer, reference or amount" aria-label="Search open invoices and collection cases"></div>
       <div class="pk-rows" id="pk-list-${p.id}">${candRows(p, m)}</div>
     </div>
     <div class="pk-prev" id="pk-prev-${p.id}" aria-live="polite">${previewHtml(p, m)}</div>

@@ -107,7 +107,9 @@ export function loadSample() {
     ["usOps", "US", "451-302-990-2", "Operating", "Finance", "operating"]
   ];
   const aid = {};
-  S.bankAccounts = accts.map(r => { const a = { id: uid("b"), bank: r[1], number: r[2], name: r[3], department: r[4], accountType: r[5], currency: "SGD" }; aid[r[0]] = a; return a; });
+  // Collection types received per account (BSU decision 13): which Collections forms' money lands where
+  const colTypes = { mbRev: ["AR-iii"], obRev: ["AR-iv"], usDep: ["AR-v"] };
+  S.bankAccounts = accts.map(r => { const a = { id: uid("b"), bank: r[1], number: r[2], name: r[3], department: r[4], accountType: r[5], currency: "SGD", colTypes: colTypes[r[0]] || [] }; aid[r[0]] = a; return a; });
   // Past statements already uploaded: deposits grouped into one BSU upload per account per day.
   const payAcct = ["mbRev", "obRev", "mbRev", "obRev", "mbRev", "obRev", "mbRev", "obRev", "mbRev", "obRev", "usDep"];
   S.uploads = []; S.deposits = [];
@@ -116,7 +118,7 @@ export function loadSample() {
   pay.forEach((r, n) => {
     const a = aid[payAcct[n]], date = shiftDate(r[1]), key = a.id + date;
     let up = ups[key];
-    if (!up) { up = ups[key] = { id: uid("u"), number: "BSU" + String(++upNo).padStart(7, "0"), bankAccountId: a.id, statementDate: date, fileName: `${a.bank}_${a.number.replace(/\D/g, "")}_${date.replace(/-/g, "")}.csv`,
+    if (!up) { up = ups[key] = { id: uid("u"), number: "RITM" + String(++upNo).padStart(7, "0"), bankAccountId: a.id, statementDate: date, fileName: `${a.bank}_${a.number.replace(/\D/g, "")}_${date.replace(/-/g, "")}.csv`,
       uploadedBy: n % 2 ? "u_ar2" : "u_ar1", uploadedAt: shiftDate(r[1]).slice(0, 10) + " 09:1" + (n % 10), depositCount: 0, depositTotal: 0, skippedCount: n % 3 === 0 ? 1 : 0 }; S.uploads.push(up); }
     up.depositCount++; up.depositTotal += cents(r[2]);
     S.deposits.push({ id: uid("p"), number: depositId(a, date, up.depositCount), bankAccountId: a.id, uploadId: up.id, date, payer: r[0], amount: cents(r[2]), reference: r[3], bankRef: "", currency: "SGD" });

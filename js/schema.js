@@ -232,10 +232,10 @@ export const TABLES = {
     ]
   },
   uploads: {
-    table: `${SCOPE}_bsu`, label: "Statement upload", plural: "Statement uploads", display: "number", prefix: "BSU",
-    note: "Bank statement upload (BSU): one record per bank account per statement day. The CSV is kept as an attachment.",
+    table: "sc_req_item", label: "Statement upload", plural: "Statement uploads", display: "number", prefix: "RITM",
+    note: "Bank statement upload (BSU) = one RITM per bank account per statement day (D32, BSU decision 12): catalog item 'Bank statement upload' submitted from the workspace BSU page (direct upload by AR); its variables hold the fields below, the CSV is the RITM's attachment, and a flow creates the related Bank statements records and closes the RITM.",
     fields: [
-      { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "BSU0001000" },
+      { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "RITM0001000" },
       { key: "bankAccountId", name: "bank_account", label: "Bank account", type: "Reference", ref: "bankAccounts", readonly: true },
       { key: "statementDate", name: "statement_date", label: "Statement date", type: "Date", readonly: true },
       { key: "fileName", name: "file_name", label: "File", type: "String", readonly: true },
@@ -255,7 +255,8 @@ export const TABLES = {
       { key: "name", name: "account_name", label: "Account name", type: "String", mandatory: true },
       { key: "department", name: "department", label: "Department", type: "Choice", choices: [["Finance", "Finance"], ...DEPT_CHOICES], mandatory: true },
       { key: "accountType", name: "account_type", label: "Account type", type: "Choice", choices: [["revenue", "Revenue account"], ["deposit", "Deposit account"], ["operating", "Operating account"]], mandatory: true },
-      { key: "currency", name: "currency", label: "Currency", type: "String", readonly: true }
+      { key: "currency", name: "currency", label: "Currency", type: "String", readonly: true },
+      { key: "colTypes", name: "collection_types", label: "Collection types", type: "List", choices: COLLECTION_TYPES, help: "Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others" }
     ]
   },
   allocations: {

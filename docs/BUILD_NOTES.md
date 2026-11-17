@@ -77,6 +77,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CSH-02` | Single-score cards over x_ar_bank_statement / x_ar_allocation |
 | `CSH-03` | List of x_ar_bank_statement with match state; filter tabs To match / Matched / All |
 | `CSH-04` | Invoice finder (modal or side panel): ranked issued invoices and open Collections cases (ar_form = COL: AR-iii, AR-iv, AR-v; D29, D30) + allocation preview before confirming |
+| `CSH-06` | Finder tag Account receives AR-… (BSU decision 13): the deposit's bank account lists the case's collection type in collection_types; adds to the ranking score, never hides other candidates |
 | `CSH-05` | Collection case tag in the invoice finder and preview (D29): the candidate is an open x_ar_request with ar_form = COL (tag shows its collection_type, D30) and Request value (amount) not yet matched; its allocation sets request instead of invoice |
 
 ## BSU page
@@ -84,12 +85,12 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `BSU-01` | BSU page (UI Builder custom page): checklist, upload form, recent uploads |
-| `BSU-02` | Statement-day checklist: x_ar_bank_account left-joined to x_ar_bsu for the chosen statement_date |
-| `BSU-03` | Upload form: bank account, statement date, CSV file |
-| `BSU-04` | CSV file kept as sys_attachment on x_ar_bsu |
+| `BSU-02` | Statement-day checklist: x_ar_bank_account left-joined to sc_req_item for the chosen statement_date |
+| `BSU-03` | Upload form = catalog item 'Bank statement upload' rendered in the workspace (D32): variables bank account, statement date, CSV attachment; submit creates the RITM |
+| `BSU-04` | CSV file kept as sys_attachment on sc_req_item |
 | `BSU-05` | Bank template: column mapping per bank (config table x_ar_bank_template or system properties) |
 | `BSU-06` | Preview before insert: deposits with Deposit IDs, skipped withdrawals, totals |
-| `BSU-07` | Recent uploads: list of x_ar_bsu ordered by uploaded_at desc |
+| `BSU-07` | Recent uploads: list of sc_req_item ordered by uploaded_at desc |
 
 ## Portal
 
@@ -302,7 +303,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `DEP.deposit_id` | x_ar_bank_statement.deposit_id · String · read-only · Set by before-insert business rule |
 | `DEP.bank_account` | x_ar_bank_statement.bank_account · Reference → x_ar_bank_account · read-only |
-| `DEP.bsu` | x_ar_bank_statement.bsu · Reference → x_ar_bsu · read-only |
+| `DEP.bsu` | x_ar_bank_statement.bsu · Reference → sc_req_item · read-only |
 | `DEP.value_date` | x_ar_bank_statement.value_date · Date · read-only |
 | `DEP.amount` | x_ar_bank_statement.amount · Currency · read-only |
 | `DEP.payer_name` | x_ar_bank_statement.payer_name · String · read-only |
@@ -313,24 +314,24 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 
 | ID | ServiceNow |
 |---|---|
-| `LST-BSU` | List: x_ar_bsu · list view layout + list menu condition |
-| `RP-BSU` | Record page (UI Builder) · x_ar_bsu |
-| `HDR-BSU` | Record header: highlighted values of x_ar_bsu |
-| `FRM-BSU` | Form view: x_ar_bsu (Default view) |
+| `LST-BSU` | List: sc_req_item · list view layout + list menu condition |
+| `RP-BSU` | Record page (UI Builder) · sc_req_item |
+| `HDR-BSU` | Record header: highlighted values of sc_req_item |
+| `FRM-BSU` | Form view: sc_req_item (Default view) |
 
 ## Statement upload fields
 
 | ID | ServiceNow |
 |---|---|
-| `BSU.number` | x_ar_bsu.number · String · read-only |
-| `BSU.bank_account` | x_ar_bsu.bank_account · Reference → x_ar_bank_account · read-only |
-| `BSU.statement_date` | x_ar_bsu.statement_date · Date · read-only |
-| `BSU.file_name` | x_ar_bsu.file_name · String · read-only |
-| `BSU.uploaded_by` | x_ar_bsu.uploaded_by · Reference → sys_user · read-only |
-| `BSU.uploaded_at` | x_ar_bsu.uploaded_at · String · read-only |
-| `BSU.deposit_count` | x_ar_bsu.deposit_count · Integer · read-only |
-| `BSU.deposit_total` | x_ar_bsu.deposit_total · Currency · read-only |
-| `BSU.withdrawals_skipped` | x_ar_bsu.withdrawals_skipped · Integer · read-only |
+| `BSU.number` | sc_req_item.number · String · read-only |
+| `BSU.bank_account` | sc_req_item.bank_account · Reference → x_ar_bank_account · read-only |
+| `BSU.statement_date` | sc_req_item.statement_date · Date · read-only |
+| `BSU.file_name` | sc_req_item.file_name · String · read-only |
+| `BSU.uploaded_by` | sc_req_item.uploaded_by · Reference → sys_user · read-only |
+| `BSU.uploaded_at` | sc_req_item.uploaded_at · String · read-only |
+| `BSU.deposit_count` | sc_req_item.deposit_count · Integer · read-only |
+| `BSU.deposit_total` | sc_req_item.deposit_total · Currency · read-only |
+| `BSU.withdrawals_skipped` | sc_req_item.withdrawals_skipped · Integer · read-only |
 
 ## Bank account
 
@@ -351,6 +352,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `BNK.department` | x_ar_bank_account.department · Choice · mandatory |
 | `BNK.account_type` | x_ar_bank_account.account_type · Choice · mandatory |
 | `BNK.currency` | x_ar_bank_account.currency · String · read-only |
+| `BNK.collection_types` | x_ar_bank_account.collection_types · List · Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others |
 
 ## Allocation fields
 
@@ -662,7 +664,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RQL.periods` | Calculated: number of billing dates between From and To at the frequency |
 | `SCH.next_billing_date` | Calculated: first period on or after today without an invoice |
 | `SCH.periods_due` | Calculated: periods up to today without an invoice |
-| `BNK.last_statement` | Calculated: latest x_ar_bsu.statement_date for the account |
+| `BNK.last_statement` | Calculated: latest sc_req_item.statement_date for the account |
 
 ## Related lists
 
@@ -689,7 +691,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RL-REQ-CTX` | Related list: x_ar_collection_tx where ar_request = this ar request |
 | `RL-REQ-CAL` | Related list: x_ar_collection_allocation where ar_request = this ar request |
 | `RL-BSU-DEP` | Related list: x_ar_bank_statement where bsu = this statement upload |
-| `RL-BNK-BSU` | Related list: x_ar_bsu where bank_account = this bank account |
+| `RL-BNK-BSU` | Related list: sc_req_item where bank_account = this bank account |
 | `RL-BNK-DEP` | Related list: x_ar_bank_statement where bank_account = this bank account |
 
 ## UI actions
@@ -728,7 +730,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-DEP-confirm` | UI action: Confirm match → inserts x_ar_allocation records (manual), with invoice or, for a Collections case, request set (D29) |
 | `UA-DEP-remove` | UI action: Remove match → deletes the deposit's allocations |
 | `UA-DEP-export` | UI action: Export matches to CSV |
-| `UA-BSU-save` | UI action: Save to bank statements → inserts x_ar_bsu + one x_ar_bank_statement row per deposit |
+| `UA-BSU-save` | UI action: Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete |
 | `UA-BSU-sample` | UI action: Demo only: generate a sample CSV in the bank's layout |
 | `UA-BNK-upload` | UI action: Upload statement → opens the BSU page for this account |
 | `UA-CUS-save` | UI action: Save (update) |

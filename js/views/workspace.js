@@ -336,7 +336,7 @@ const LAYOUT = {
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
   deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "bankRef", "payer", "reference"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
-  bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency"]]],
+  bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency", "colTypes"]]],
   customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]],
     ["Agency and point of contact", ["agencyType", "vag", "vagSubBu", "pocName", "pocEmail"]]],
   contracts: [["Contract", ["ctrId", "contractType", "category", "number", "reference", "poNumber", "customerId", "department", "owners", "title", "start", "end", "value", "billing", "notes"]],

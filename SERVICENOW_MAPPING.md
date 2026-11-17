@@ -315,10 +315,11 @@ Company bank accounts that statements are uploaded for. Department and account t
 | `department` | Department | Choice | Choices: Finance, Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory |
 | `account_type` | Account type | Choice | Choices: Revenue account (`revenue`), Deposit account (`deposit`), Operating account (`operating`). Mandatory |
 | `currency` | Currency | String | Read-only on form |
+| `collection_types` | Collection types | List | Choices: AR-iii, AR-iv, AR-v. Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others |
 
-### Statement upload — `x_ar_bsu`
+### Statement upload — `sc_req_item`
 
-Bank statement upload (BSU): one record per bank account per statement day. The CSV is kept as an attachment. Number prefix: `BSU`.
+Bank statement upload (BSU) = one RITM per bank account per statement day (D32, BSU decision 12): catalog item 'Bank statement upload' submitted from the workspace BSU page (direct upload by AR); its variables hold the fields below, the CSV is the RITM's attachment, and a flow creates the related Bank statements records and closes the RITM. Number prefix: `RITM`.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
@@ -340,7 +341,7 @@ The only record of money received (D7): one row per deposit (credit) loaded by B
 |---|---|---|---|
 | `deposit_id` | Deposit ID | String | Read-only on form. Set by before-insert business rule |
 | `bank_account` | Bank account | Reference | → `x_ar_bank_account`. Read-only on form |
-| `bsu` | Statement upload | Reference | → `x_ar_bsu`. Read-only on form |
+| `bsu` | Statement upload | Reference | → `sc_req_item`. Read-only on form |
 | `value_date` | Value date | Date | Read-only on form |
 | `amount` | Amount | Currency | Read-only on form |
 | `payer_name` | Payer (as on statement) | String | Read-only on form |
@@ -454,7 +455,7 @@ Master data (CCI decision 11, #9 §8): account codes for AR4 allocations with th
 | Invoice | Cancel invoice (overflow menu) | Only when no allocations; the line becomes open again and the request goes back to In progress |
 | Deposit | Match to invoice / Find invoice → Apply | Inserts `x_ar_allocation` records (manual); exception = short pay / over pay / multi-invoice |
 | Deposit | Remove match | Removes the deposit's allocations |
-| BSU page | Save to bank statements | Inserts `x_ar_bsu` + one `x_ar_bank_statement` row per deposit; withdrawals skipped |
+| BSU page | Save to bank statements | Inserts `sc_req_item` + one `x_ar_bank_statement` row per deposit; withdrawals skipped |
 | Bank account | Upload statement | Opens the BSU page for that account |
 
 ### Matching (manual only)

@@ -87,7 +87,7 @@ function readValue(table, f, rec) {
   if (f.key === "linkContract") { const k = S.contracts.find(x => x.id === v); return k ? refLink("contracts", k.id, `${k.ctrId || "—"} · ${k.number}`) : "—"; }
   if (f.type === "Reference") return f.ref === "groups" ? esc(S.groups.find(g => g.id === v)?.name || "—") : f.ref === "users" ? esc(userById(v)?.name || "—") : f.ref === "companies" ? esc(S.companies.find(co => co.id === v)?.name || "—") : refLink(f.ref, v);
   if (f.mask) return v ? esc(maskId(v)) : "—";   // protected identity numbers (#9 §9.4)
-  if (f.type === "List") return (v || []).length ? (v || []).map(x => esc(f.ref === "users" ? userById(x)?.name || x : x)).join(", ") : "—";
+  if (f.type === "List") return (v || []).length ? (v || []).map(x => esc(f.ref === "users" ? userById(x)?.name || x : f.choices?.find(c => c[0] === x)?.[1] || x)).join(", ") : "—";
   if (f.type === "Choice") return esc((f.choices.find(c => c[0] === v) || [, v || "—"])[1]);
   if (f.type === "Currency") return v ? `<span class="mono">SGD ${fmt(v)}</span>` : "—";
   if (f.key === "aliases") return (v || []).length ? v.map(a => `<span class="ref">${esc(a)}</span>`).join(" ") : "—";
@@ -112,7 +112,7 @@ export function fieldHtml(table, f, rec, ctx = {}) {
   else {
     const v = rec[f.key];
     const common = `id="${id}" name="${ctx.name || f.key}"${f.mandatory ? ` aria-required="true"` : ""}${err ? ` aria-invalid="true"` : ""}`;
-    if (f.type === "List") ctl = `<select ${common} multiple size="${Math.min(4, refOptions(f, rec, ctx.vals).length)}">${refOptions(f, rec, ctx.vals).map(([k, l]) => `<option value="${esc(k)}"${(v || []).includes(k) ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+    if (f.type === "List") ctl = `<select ${common} multiple size="${Math.min(4, (f.choices || refOptions(f, rec, ctx.vals)).length)}">${(f.choices || refOptions(f, rec, ctx.vals)).map(([k, l]) => `<option value="${esc(k)}"${(v || []).includes(k) ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     else if (f.type === "Reference") ctl = `<select ${common}><option value="">-- None --</option>${refOptions(f, rec, ctx.vals).map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     else if (f.type === "Choice" && f.radio) ctl = `<span class="radios" role="radiogroup" aria-label="${esc(f.label)}">${f.choices.map(([k, l]) => `<label class="fcheck"><input type="radio" id="${id}-${esc(k)}" name="${ctx.name || f.key}" value="${esc(k)}"${k === v ? " checked" : ""}> ${esc(l)}</label>`).join(" ")}</span>`;
     else if (f.type === "Choice") ctl = `<select ${common}>${ctx.placeholder ? `<option value="">${esc(ctx.placeholder)}</option>` : f.mandatory ? "" : `<option value="">-- None --</option>`}${(ctx.choices || (f.choiceDependsOn ? f.choices.filter(c => c[2] === (ctx.vals || rec)[f.choiceDependsOn]) : f.choices)).map(([k, l]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;

@@ -33,7 +33,7 @@ function depositCard(p, openInv) {
   const money = depositMoney(p), a = acctById(p.bankAccountId);
   const exc = m.allocations.length ? (EXC[m.exception] || [m.exception, "c-neutral"]) : null;
   const allocHtml = m.allocations.length ? `<div class="alloc">${m.allocations.map(x => { const i = targetById(allocKey(x)) || {};
-      return `<span class="inv">${refLink(i.kind === "case" ? "requests" : "invoices", i.id, i.number)}</span><span class="cust">${esc(i.customer)}</span><span class="num">${fmt(x.amount)}</span>`; }).join("")}
+      return `<span class="inv">${refLink(i.kind === "case" ? "requests" : "invoices", i.id, i.number)}</span><span class="cust">${esc(i.customer || (i.kind === "case" ? `Collections · ${i.form}` : ""))}</span><span class="num">${fmt(x.amount)}</span>`; }).join("")}
       ${money.unapplied ? `<span class="inv muted">Unmatched</span><span></span><span class="num" style="color:var(--bad)">${fmt(money.unapplied)}</span>` : ""}</div>` : "";
   const pickable = openInv.filter(x => !m.allocations.some(al => allocKey(al) === x.i.id));
   const canMatch = money.unapplied > 0 && pickable.length;
@@ -48,9 +48,9 @@ function depositCard(p, openInv) {
     <div class="match">
       <div class="chips"><span class="chip ${money.state === "Matched" ? "c-ok" : money.state === "Part matched" ? "c-accent" : "c-warn"}">${money.state}</span>${exc ? `<span class="chip ${exc[1]}">${esc(exc[0])}</span>` : ""}${a ? `<span class="chip c-neutral">${esc(a.department)}</span>` : ""}</div>
       ${allocHtml}
-      ${m.reason ? `<div class="reason">${esc(m.reason)}</div>` : `<div class="reason">Not matched yet. Use Find invoice to choose the invoice(s) this deposit pays.</div>`}
+      ${m.reason ? `<div class="reason">${esc(m.reason)}</div>` : `<div class="reason">Not matched yet. Use Find invoice or case to choose the invoice(s) this deposit pays.</div>`}
       <div class="actions">
-        ${canMatch ? `<button class="btn small${m.allocations.length ? "" : " primary"}" data-pickopen="${p.id}" aria-expanded="${pkOpen ? "true" : "false"}"${sn("UA-DEP-find")}>${pkOpen ? "Close finder" : m.allocations.length ? "Add invoice…" : "Find invoice…"}</button>` : ""}
+        ${canMatch ? `<button class="btn small${m.allocations.length ? "" : " primary"}" data-pickopen="${p.id}" aria-expanded="${pkOpen ? "true" : "false"}"${sn("UA-DEP-find")}>${pkOpen ? "Close finder" : m.allocations.length ? "Add invoice or case…" : "Find invoice or case…"}</button>` : ""}
         ${m.allocations.length ? `<button class="btn small" data-act="remove" data-id="${p.id}"${sn("UA-DEP-remove")}>Remove match</button>` : ""}
       </div>
     </div>${pkOpen ? pickerPanel(p, m) : ""}</article>`;

@@ -99,35 +99,35 @@ export const canViewReq = (r, u = me()) => r.requestedBy === u.id || ccEmails(r.
 // ---------- AR-ix GIRO authorisation (AR-ix module) ----------
 export const CONTRACT_CATEGORY = Object.fromEntries(CONTRACT_CATEGORIES);
 export const GIRO_PURPOSE = Object.fromEntries(GIRO_PURPOSES), GIRO_TYPE = Object.fromEntries(GIRO_TYPES);
+/** AR-ix decision 22 (E8.5): the existing contracts a requester may pick. The customer's contracts (not No contract) whose
+ *  department is the form's Department, or of which the requester is a contract owner (reference qualifier on REQ.contract). */
+export function giroContracts(d, u = me()) {
+  if (!d.customerId) return [];
+  return S.contracts.filter(k => k.customerId === d.customerId && !isShell(k) && ((d.department && k.department === d.department) || (k.owners || []).includes(u?.id)));
+}
 export function validateARix(d) {
   const e = {}, need = (k, msg) => { const v = d[k]; if (v === undefined || v === null || v === "" || v === false) e[k] = msg; };
   generalInfoErrors(d, e);
-  if (d.newCustomer) need("newCustName", "Enter the customer's name.");
-  else need("customerId", "Search for the customer, or add its name if AR doesn't have it.");
-  if (d.newCustomer || d.customerId) {
+  need("customerId", "Search for the customer. Customer not found? Submit an AR-i to set up the customer first.");   // AR-ix decision 17 (E8.1)
+  if (d.customerId) {
     need("contractOption", "Choose the contract.");
     if (d.contractOption === "existing") need("contractId", "Choose the contract.");
+    if (d.contractOption === "existing" && d.contractId && !giroContracts(d).some(k => k.id === d.contractId)) e.contractId = "Choose a contract of your department, or one you own.";
     if (d.contractOption === "new") need("newCtrRef", "Enter the contract / tenancy agreement / reference number.");
   }
   const types = giroTypesFor(d);
   need("giroType", "Choose Add GIRO or Remove GIRO.");
   if (d.giroType && types.length && !types.includes(d.giroType)) e.giroType = giroBlock(d) || "This type isn't possible for the chosen contract.";
-  if (d.giroType !== "add") return e;                    // AR-ix decision 14: Remove GIRO needs nothing more
+  if (d.giroType === "remove") need("giroEnd", "Enter the effective end date.");   // AR-ix decision 18 (E8.8)
+  if (d.giroType !== "add") return e;
   need("giroPurpose", "Choose the purpose.");
   if (d.giroPurpose === "others") need("giroPurposeOther", "Describe the purpose.");
-  need("applicantName", "Enter the applicant name or entity.");
-  need("applicantEmail", "Enter the applicant's email.");
+  need("applicantName", "Enter the customer name.");
+  need("applicantEmail", "Enter the customer's email.");
   if (d.applicantEmail && !EMAIL_RE.test(d.applicantEmail)) e.applicantEmail = "Enter a valid email address.";
-  if (d.giroPurpose === "rental") {
-    need("giroLocation", "Enter the location.");
-    need("giroStart", "Enter the effective start date.");
-    if (d.giroStart && d.giroEnd && d.giroEnd < d.giroStart) e.giroEnd = "Must be on or after the start date.";
-  }
-  if (d.giroPurpose === "carpark") {
-    need("carplate", "Enter the car plate.");
-    need("parkStart", "Enter the parking start date.");
-    if (d.parkStart && d.parkEnd && d.parkEnd < d.parkStart) e.parkEnd = "Must be on or after the start date.";
-  }
+  need("giroStart", "Enter the effective start date.");                          // AR-ix decision 18 (E8.7)
+  if (d.giroPurpose === "rental" || d.giroPurpose === "carpark") need("giroLocation", "Enter the location.");   // decision 21 (E8.15)
+  if (d.giroPurpose === "carpark") need("carplate", "Enter the car plate.");
   return e;
 }
 /** AR-ix decision 14: the GIRO types the chosen contract allows. New contract or no contract → Add only; existing contract → Add when GIRO is not active, Remove only when it is. */

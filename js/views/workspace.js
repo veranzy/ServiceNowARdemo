@@ -303,13 +303,12 @@ const LAYOUT = {
     ["4. Invoice details", ["title", "attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "needItems"], isI],
     ["5. Customer documents", ["docContract", "docAcra", "docBillingForm", "details"], isI],
     ["6. Others", ["costCenter", "agentName", "poNumber"], isI],
-    // AR-ix form view (portal: PT-44, PT-32, PT-33, PT-46, PT-47)
-    ["2. Select Customer", ["customerId", "newCustomer", "newCustName"], isIx],
+    // AR-ix form view (portal: PT-44, PT-32, PT-33, PT-46; AR-ix decisions 17–21)
+    ["2. Select Customer", ["customerId"], isIx],
     ["3. Select Contract", ["contractOption", "contractId", "newCtrRef"], isIx],
-    ["4. GIRO details", ["giroType", "giroPurpose", "giroPurposeOther", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks", "giroLocation", "giroTenancy", "giroStart", "giroEnd",
-      "carplate", "parkStart", "parkEnd", "giroCtrRef", "giroInvoiceRef", "giroAmount", "giroOtherRemarks"], isIx],
-    ["5. Attachments", ["@attachments"], isIx],
-    ["6. Others", ["giroFormNo"], isIx]],
+    ["4. GIRO details", ["giroType", "giroReference", "giroEnd", "giroPurpose", "giroStart", "giroPurposeOther", "applicantName", "applicantEmail", "applicantMobile", "giroRemarks",
+      "carplate", "giroLocation", "giroAmount"], isIx],
+    ["5. Attachments", ["@attachments"], isIx]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],

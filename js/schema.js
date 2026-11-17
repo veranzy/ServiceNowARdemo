@@ -118,26 +118,21 @@ export const TABLES = {
       { key: "docBulk", name: "bulk_supporting_docs", label: "Supporting documents (bulk upload)", type: "Attachment", multiple: true, showIf: { key: "typeOfBilling", in: ["C", "D", "E"] }, help: "Optional; several files at once" },
       { key: "giroOnContract", name: "giro_on_contract", label: "GIRO on this contract", type: "Choice", choices: YES_NO, readonly: true, help: "Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21)", tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." },
       // AR-ix GIRO authorisation (record producer variables; mandatory rules enforced on the form, see AR-ix module)
-      // AR-ix decision 14: Type comes first and is limited by the contract; Remove GIRO asks nothing more. Add GIRO fields follow (decision 15).
+      // AR-ix decision 14: Type comes first and is limited by the contract. Decisions 17–21 (enhancement set #8): the reference follows Type;
+      // Add GIRO asks the effective start date and the purpose details (decision 15 amended); Remove GIRO asks only the effective end date.
       { key: "giroType", name: "giro_type", label: "Type of request", type: "Choice", choices: GIRO_TYPES, help: "AR-ix. Mandatory. New contract or no contract: Add GIRO only. Existing contract: Add GIRO when GIRO is not active, Remove GIRO only when it is (catalog client script filters the choices)" },
+      { key: "giroReference", name: "giro_reference", label: "Contract / tenancy agreement / reference", type: "String", wide: true, showIf: { key: "giroType", in: ["add", "remove"] }, hideIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix, right after Type of request, Add and Remove GIRO. Optional. Hidden when Purpose = Carpark (UI policy; AR-ix decision 19, E8.9–E8.12)" },
       { key: "giroPurpose", name: "giro_purpose", label: "Purpose of GIRO/DDA request", type: "Choice", choices: GIRO_PURPOSES, showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Mandatory" },
       { key: "giroPurposeOther", name: "giro_purpose_other", label: "Other purpose", type: "String", wide: true, showIf: { key: "giroPurpose", eq: "others" }, help: "AR-ix. Mandatory when Purpose = Others" },
-      { key: "applicantName", name: "giro_applicant_name", label: "Applicant name / entity", type: "String", showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to" },
-      { key: "applicantEmail", name: "giro_applicant_email", label: "Applicant email", type: "String", showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to" },
-      { key: "applicantMobile", name: "giro_applicant_mobile", label: "Applicant mobile", type: "String", showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Prefilled from the contract's bill-to phone" },
+      { key: "applicantName", name: "giro_applicant_name", label: "Customer name", type: "String", showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to (label: AR-ix decision 20, E8.6)" },
+      { key: "applicantEmail", name: "giro_applicant_email", label: "Customer email", type: "String", showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to (label: AR-ix decision 20, E8.6)" },
+      { key: "applicantMobile", name: "giro_applicant_mobile", label: "Customer mobile", type: "String", showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO. Prefilled from the contract's bill-to phone (label: AR-ix decision 20, E8.6)" },
       { key: "giroRemarks", name: "giro_remarks", label: "Remarks", type: "String (1000)", wide: true, showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO, all purposes. Optional" },
-      { key: "giroLocation", name: "giro_location", label: "Location", type: "String", wide: true, showIf: { key: "giroPurpose", eq: "rental" }, help: "AR-ix rental. Mandatory" },
-      { key: "giroTenancy", name: "giro_tenancy_agreement", label: "Tenancy agreement", type: "String", showIf: { key: "giroPurpose", eq: "rental" }, help: "AR-ix rental. Optional (decision 15)" },
-      { key: "giroStart", name: "giro_start_date", label: "Effective start date", type: "Date", showIf: { key: "giroPurpose", eq: "rental" }, help: "AR-ix rental. Mandatory" },
-      { key: "giroEnd", name: "giro_end_date", label: "Effective end date", type: "Date", showIf: { key: "giroPurpose", eq: "rental" }, help: "AR-ix rental. Optional; on or after the start date" },
+      { key: "giroLocation", name: "giro_location", label: "Location", type: "String", wide: true, showIf: { key: "giroPurpose", in: ["rental", "carpark"] }, help: "AR-ix Rental and Carpark. Mandatory (AR-ix decision 21, E8.15)" },
+      { key: "giroStart", name: "giro_start_date", label: "Effective start date", type: "Date", showIf: { key: "giroType", eq: "add" }, help: "AR-ix Add GIRO, every purpose. Mandatory (AR-ix decision 18, E8.7)" },
+      { key: "giroEnd", name: "giro_end_date", label: "Effective end date", type: "Date", showIf: { key: "giroType", eq: "remove" }, help: "AR-ix Remove GIRO. Mandatory; the only Remove GIRO detail (AR-ix decision 18, E8.8)" },
       { key: "carplate", name: "giro_carplate", label: "Car plate", type: "String", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Mandatory; one vehicle per form" },
-      { key: "parkStart", name: "giro_parking_start", label: "Parking start date", type: "Date", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Mandatory" },
-      { key: "parkEnd", name: "giro_parking_end", label: "Parking end date", type: "Date", showIf: { key: "giroPurpose", eq: "carpark" }, help: "AR-ix carpark. Optional; on or after the start date" },
-      { key: "giroCtrRef", name: "giro_contract_ref", label: "Contract reference number", type: "String", showIf: { key: "giroPurpose", eq: "others" }, help: "AR-ix others. Optional" },
-      { key: "giroInvoiceRef", name: "giro_invoice_ref", label: "Invoice reference number", type: "String", showIf: { key: "giroPurpose", eq: "others" }, help: "AR-ix others. Optional; requirement to be confirmed (open question 1)" },
-      { key: "giroAmount", name: "giro_amount", label: "Amount", type: "String", showIf: { key: "giroPurpose", in: ["rental", "carpark", "others"] }, help: "AR-ix Add GIRO, all purposes. Optional free text; not used by any other field or calculation (AR-ix decision 13)" },
-      { key: "giroOtherRemarks", name: "giro_others_remarks", label: "Remarks", type: "String (1000)", wide: true, showIf: { key: "giroPurpose", eq: "others" }, help: "AR-ix others. Optional; a second Remarks for the Others block (decision 15)" },
-      { key: "giroFormNo", name: "giro_form_number", label: "Form number", type: "String", help: "AR-ix section Others, every type and purpose. Optional; to be verified (open question 8, decision 16)" },
+      { key: "giroAmount", name: "giro_amount", label: "Amount", type: "String", showIf: { key: "giroPurpose", in: ["rental", "carpark"] }, help: "AR-ix Rental and Carpark. Optional free text; not used by any other field or calculation (AR-ix decisions 13, 21; E8.13, E8.15)" },
       { key: "docContract", name: "doc_contract_po", label: "Signed contract / PO", type: "Attachment", help: "Optional, offered for a new contract only" },
       { key: "docAcra", name: "doc_acra", label: "Company registration (ACRA / UEN)", type: "Attachment", help: "Only when not already on file" },
       { key: "docBillingForm", name: "doc_billing_form", label: "Billing contact & address form", type: "Attachment", help: "Only when not already on file for this department" },
@@ -400,6 +395,7 @@ export const fieldOf = (tableKey, key) => TABLES[tableKey].fields.find(f => f.ke
 export function fieldVisible(tableKey, f, vals) {
   if (!f?.showIf) return true;
   const p = fieldOf(tableKey, f.showIf.key), v = vals[f.showIf.key];
+  if (f.hideIf && vals[f.hideIf.key] === f.hideIf.eq) return false;   // UI policy that hides the field for one value (e.g. AR-ix reference on Carpark)
   return fieldVisible(tableKey, p, vals) && (f.showIf.in ? f.showIf.in.includes(v) : v === f.showIf.eq);
 }
 /** Blank the values of fields hidden by a UI policy (run when a parent changes and before saving). Returns the keys cleared. */
@@ -412,7 +408,10 @@ export function clearHidden(tableKey, vals) {
 export function showIfText(tableKey, f) {
   if (!f.showIf) return "";
   const p = fieldOf(tableKey, f.showIf.key), lab = x => x === true ? "Yes" : (p.choices?.find(c => c[0] === x) || [, x])[1];
-  return f.showIf.in ? `Shown when ${p.label} is ${f.showIf.in.map(lab).join(", ")}` : `Shown when ${p.label} = ${lab(f.showIf.eq)}`;
+  const t = f.showIf.in ? `Shown when ${p.label} is ${f.showIf.in.map(lab).join(", ")}` : `Shown when ${p.label} = ${lab(f.showIf.eq)}`;
+  if (!f.hideIf) return t;
+  const h = fieldOf(tableKey, f.hideIf.key);
+  return `${t}; hidden when ${h.label} = ${(h.choices?.find(c => c[0] === f.hideIf.eq) || [, f.hideIf.eq])[1]}`;
 }
 
 /** Build-note text for a field, e.g. "x_ar_invoice.due_date · Date". */
@@ -441,8 +440,8 @@ export const RECORD_PRODUCER = {
 export const RECORD_PRODUCER_ARIX = {
   name: "AR-ix GIRO authorisation",
   table: "requests",
-  variables: [...GENERAL_INFO, "customerId", "newCustomer", "newCustName", "contractOption", "contractId", "newCtrRef", "giroType", "giroPurpose", "giroPurposeOther",
-    "applicantName", "applicantEmail", "applicantMobile", "giroRemarks", "giroLocation", "giroTenancy", "giroStart", "giroEnd", "carplate", "parkStart", "parkEnd", "giroCtrRef", "giroInvoiceRef", "giroAmount", "giroOtherRemarks", "giroFormNo"],
+  variables: [...GENERAL_INFO, "customerId", "contractOption", "contractId", "newCtrRef", "giroType", "giroReference", "giroPurpose", "giroPurposeOther",
+    "applicantName", "applicantEmail", "applicantMobile", "giroRemarks", "giroStart", "giroEnd", "carplate", "giroLocation", "giroAmount"],
   script: "current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; contract_option = none → current.contract = the customer's no-contract shell for the department, if it exists;"
 };
 export const RECORD_PRODUCERS = [RECORD_PRODUCER, RECORD_PRODUCER_ARIX];

@@ -30,13 +30,15 @@ the **Bank statements** table, where the AR team reviews it and matches it manua
 
 ## Screens and flow
 
-1. **BSU page**: choose the bank account (shows bank, account no., department, type), statement date
+1. **BSU** (rail) opens the **Statement uploads** list: every upload RITM (decision 16). **New** opens the
+   upload form: choose the bank account (shows bank, account no., department, type), statement date
    (defaults to yesterday), then choose the CSV file. For the demo, *Use sample file* generates a file
    in that bank's layout; *Download sample* gives the CSV to try a real file upload.
 2. **Preview**: deposits with their new Deposit IDs, payer, reference and amount; withdrawals listed as
    skipped; totals.
 3. **Save to bank statements**: submits the catalog item *Bank statement upload*, which creates the **RITM**
-   (`RITM…`, one per bank account per day, decision 12) and one deposit record per credit, related to the RITM.
+   (`RITM…`, one per bank account per day, decision 12) and one deposit record per credit, related to the RITM,
+   then opens the new RITM. Upload completeness (which accounts are still missing a day) is decided later.
 4. **Afterwards**: deposits appear in *Bank statements → Unmatched deposits* and on the Cash
    application page, where the AR team matches them with *Find invoice or case…* (decision 14).
 

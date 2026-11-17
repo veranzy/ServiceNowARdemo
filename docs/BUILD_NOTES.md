@@ -84,13 +84,13 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 
 | ID | ServiceNow |
 |---|---|
-| `BSU-01` | BSU page (UI Builder custom page): checklist, upload form, recent uploads |
-| `BSU-02` | Statement-day checklist: x_ar_bank_account left-joined to sc_req_item for the chosen statement_date |
+| `BSU-01` | BSU upload form (BSU decision 16): opened by New on the Statement uploads list (the BSU rail item opens that list of upload RITMs); upload form, preview, save opens the new RITM |
+| `BSU-02` | RETIRED 2026-11-18 (BSU decision 16): statement-day checklist; upload completeness tracking to be decided |
 | `BSU-03` | Upload form = catalog item 'Bank statement upload' rendered in the workspace (D32): variables bank account, statement date, CSV attachment; submit creates the RITM |
 | `BSU-04` | CSV file kept as sys_attachment on sc_req_item |
 | `BSU-05` | Bank template: column mapping per bank (config table x_ar_bank_template or system properties) |
 | `BSU-06` | Preview before insert: deposits with Deposit IDs, skipped withdrawals, totals |
-| `BSU-07` | Recent uploads: list of sc_req_item ordered by uploaded_at desc |
+| `BSU-07` | RETIRED 2026-11-18 (BSU decision 16): recent uploads card; the Statement uploads list replaces it |
 
 ## Portal
 
@@ -730,6 +730,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-DEP-confirm` | UI action: Confirm match → inserts x_ar_allocation records (manual), with invoice or, for a Collections case, request set (D29) |
 | `UA-DEP-remove` | UI action: Remove match → deletes the deposit's allocations |
 | `UA-DEP-export` | UI action: Export matches to CSV |
+| `UA-BSU-new` | UI action: New (list action on Statement uploads): opens the upload form (catalog item Bank statement upload) |
 | `UA-BSU-save` | UI action: Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete |
 | `UA-BSU-sample` | UI action: Demo only: generate a sample CSV in the bank's layout |
 | `UA-BNK-upload` | UI action: Upload statement → opens the BSU page for this account |

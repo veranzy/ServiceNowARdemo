@@ -1,4 +1,4 @@
-// BSU page (AR workspace): daily statement checklist, upload with preview, recent uploads.
+// BSU upload form (AR workspace, BSU decision 16): opened with New on the Statement uploads list; preview, then save as an RITM.
 import { acctById, acctLabel, yesterday } from "../bsu.js";
 import { userById } from "../records.js";
 import { BANKS, TABLES } from "../schema.js";
@@ -16,21 +16,10 @@ export function bsuPage() {
   if (acct && b.acctId !== acct.id) b.acctId = acct.id;
   const bank = acct ? BANKS[acct.bank] : null;
   const existing = acct ? S.uploads.filter(u => u.bankAccountId === acct.id && u.statementDate === b.date) : [];
-  const recent = S.uploads.slice().sort((x, y) => String(y.uploadedAt).localeCompare(String(x.uploadedAt))).slice(0, 8);
   const p = b.parsed;
   return `<div class="page"${sn("BSU-01")}>
     <div class="pagehead"><div><h1 class="pt">Bank statement upload</h1><p class="psub">Load the previous day's CSV statement for each company bank account. Deposits are tagged with a Deposit ID and saved to the Bank statements table, ready for manual matching. Withdrawals are skipped.</p></div>
-      <button type="button" class="btn" data-list="deposits:unapplied">BSU deposits to match</button></div>
-
-    <section class="card"${sn("BSU-02")}>
-      <header><h2>Statements for ${esc(b.date)}</h2><span class="muted small">${S.bankAccounts.filter(a => S.uploads.some(u => u.bankAccountId === a.id && u.statementDate === b.date)).length} of ${S.bankAccounts.length} accounts uploaded</span></header>
-      <div class="tablewrap"><table><thead><tr><th>Bank account</th><th>Department</th><th>Type</th><th>Status</th><th></th></tr></thead><tbody>
-        ${S.bankAccounts.map(a => { const u = S.uploads.find(x => x.bankAccountId === a.id && x.statementDate === b.date);
-          return `<tr${a.id === acct?.id ? ` class="sel"` : ""}><td>${refLink("bankAccounts", a.id, `${BANKS[a.bank].name} · ${a.number}`)}<span class="desc">${esc(a.name)}</span></td><td>${esc(a.department)}</td><td>${esc(acctType(a))}</td>
-            <td>${u ? `<span class="chip c-ok">Uploaded</span> <span class="desc">${refLink("uploads", u.id, u.number)} · ${u.depositCount} deposit${u.depositCount === 1 ? "" : "s"}</span>` : `<span class="chip c-warn">Not uploaded</span>`}</td>
-            <td>${u ? "" : `<button type="button" class="btn small" data-bsu-acct="${a.id}">Upload</button>`}</td></tr>`; }).join("")}
-      </tbody></table></div>
-    </section>
+      <button type="button" class="btn" data-list="uploads:all">Statement uploads</button><button type="button" class="btn" data-list="deposits:unapplied">BSU deposits to match</button></div>
 
     <section class="card bsu-up"${sn("BSU-03")}>
       <header><h2>Upload a statement</h2></header>
@@ -61,11 +50,5 @@ export function bsuPage() {
       </div>` : ""}
     </section>
 
-    <section class="card"${sn("BSU-07")}>
-      <header><h2>Recent uploads</h2><button type="button" class="linkish small" data-list="uploads:all">View all</button></header>
-      <div class="tablewrap"><table><thead><tr><th>Upload</th><th>Bank account</th><th>Statement date</th><th class="num">Deposits</th><th class="num">Total</th><th>Uploaded</th></tr></thead><tbody>
-        ${recent.map(u => { const a = acctById(u.bankAccountId); return `<tr><td>${refLink("uploads", u.id, u.number)}</td><td>${esc(acctLabel(a))}</td><td>${esc(u.statementDate)}</td><td class="num">${u.depositCount}</td><td class="num">${fmt(u.depositTotal)}</td><td>${esc(u.uploadedAt)}<span class="desc">${esc(userById(u.uploadedBy)?.name || "")}</span></td></tr>`; }).join("")}
-      </tbody></table></div>
-    </section>
   </div>`;
 }

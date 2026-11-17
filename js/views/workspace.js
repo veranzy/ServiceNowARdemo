@@ -66,7 +66,7 @@ export const LISTS = {
       ["Statement date", u => esc(u.statementDate), "", "statementDate"], ["Deposits", u => String(u.depositCount), "num", "depositCount"], ["Total", u => fmt(u.depositTotal), "num", "depositTotal"],
       ["Uploaded", u => `${esc(u.uploadedAt)}<span class="desc">${esc(userById(u.uploadedBy)?.name || "")}</span>`, "", "uploadedAt"]],
     sort: (a, b) => String(b.statementDate).localeCompare(String(a.statementDate)) || String(b.number).localeCompare(String(a.number)),
-    text: u => [u.number, acctLabel(acctById(u.bankAccountId)), u.fileName].join(" ")
+    text: u => [u.number, acctLabel(acctById(u.bankAccountId)), u.fileName].join(" "), newable: true
   },
   bankAccounts: {
     filters: { all: ["Bank accounts", () => true] },
@@ -178,7 +178,8 @@ function tabLabel(t) {
 export function workspaceView() {
   const w = W(), m = w.main, u = me();
   const rail = [["home", "Home", "home"], ["list", "Lists", "list"], ["bsu", "Bank statement upload (BSU)", "upload"], ["cash", "Cash application", "cash"]];
-  const railActive = k => w.active === "main" && (k === "list" ? m.kind === "list" : m.kind === k);
+  const bsuList = m.kind === "list" && m.table === "uploads";   // BSU decision 16
+  const railActive = k => w.active === "main" && (k === "list" ? m.kind === "list" && !bsuList : k === "bsu" ? m.kind === "bsu" || bsuList : m.kind === k);
   const counts = { new: S.requests.filter(LISTS.requests.filters.new[1]).length };
   return `<div class="ws">
     <header class="ws-head"${sn("WS-01")}>
@@ -223,8 +224,7 @@ function homePage() {
     ["Billing periods due", S.schedules.reduce((n, x) => n + periodsDue(x).length, 0), "Recurring invoices to raise", "list", "schedules:due"],
     ["Draft invoices", S.invoices.filter(fi.draft[1]).length, "Created, not yet issued", "list", "invoices:draft"],
     ["Overdue", `SGD ${fmt(overdue.reduce((s, i) => s + invMoney(i).open, 0))}`, `${overdue.length} invoices past due`, "list", "invoices:overdue"],
-    ["BSU deposits to match", `SGD ${fmt(unappliedPays.reduce((s, p) => s + depositMoney(p).unapplied, 0))}`, `${unappliedPays.length} deposits from bank statements`, "cash", ""],
-    [`Statements for ${yesterday()}`, `${S.bankAccounts.filter(a => S.uploads.some(u => u.bankAccountId === a.id && u.statementDate === yesterday())).length} of ${S.bankAccounts.length}`, "Bank accounts uploaded (BSU)", "bsu", ""]
+    ["BSU deposits to match", `SGD ${fmt(unappliedPays.reduce((s, p) => s + depositMoney(p).unapplied, 0))}`, `${unappliedPays.length} deposits from bank statements`, "cash", ""]
   ];
   // aging of issued, open invoices
   const buckets = [["Current", 0], ["1–30", 0], ["31–60", 0], ["61–90", 0], ["90+", 0]];
@@ -441,7 +441,7 @@ function actionsFor(table, rec, isNew, canEdit) {
     if (rec.state !== "cancelled") a.push(action(table, "Cancel invoice", "cancel", { danger: true, ovf: true }));
   }
   if (table === "deposits" && depositMoney(rec).unapplied > 0) a.push(btn(`<button type="button" class="btn primary" data-matchdep="${rec.id}"${sn("UA-DEP-match")}>Match to invoice</button>`));
-  if (table === "uploads") a.push(btn(`<button type="button" class="btn" data-rail="bsu">Upload another</button>`));
+  if (table === "uploads") a.push(btn(`<button type="button" class="btn" data-new="uploads"${sn("UA-BSU-new")}>Upload another</button>`));
   if (table === "bankAccounts") a.push(btn(`<button type="button" class="btn" data-bsu-acct="${rec.id}"${sn("UA-BNK-upload")}>Upload statement</button>`));
   // CCI decision 8: Create invoice / Set up billing schedule retired on billing lines
   if (table === "contracts") a.push(btn(`<button type="button" class="btn" data-new="schedules" data-prefill-contract="${rec.id}"${sn("UA-CON-newschedule")}>New billing schedule</button>`));   // CCI decision 8

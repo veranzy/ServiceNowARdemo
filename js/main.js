@@ -163,7 +163,7 @@ function bsuAction(name) {
     const up = saveUpload(a, b.date, b.fileName.replace(" (sample)", ""), b.parsed);
     Object.assign(b, { text: "", fileName: "", parsed: null, error: "" });
     toast(`${up.number} saved: ${up.depositCount} deposit${up.depositCount === 1 ? "" : "s"} added to bank statements.`);
-    return render();
+    return openTab("uploads", up.id);   // BSU decision 16: open the new RITM
   }
 }
 
@@ -231,6 +231,7 @@ document.addEventListener("click", e => {
   // workspace navigation
   if (d.rail) {
     if (d.rail === "list") { if (W().main.kind === "list") { W().active = "main"; return render(); } return showMain({ kind: "list", table: "requests", filter: "all_ari" }); }
+    if (d.rail === "bsu") return showMain({ kind: "list", table: "uploads", filter: "all" });   // BSU decision 16: the BSU page is the list of upload RITMs
     return showMain({ kind: d.rail });
   }
   // Horizon list page: list menu beside the list
@@ -249,6 +250,7 @@ document.addEventListener("click", e => {
     const k = S.contracts.find(x => x.id === d.prefillContract);
     return newTab(d.new, { contractId: k?.id, customerId: k?.customerId, department: k?.department || "", frequency: "monthly", firstDate: nextCycleDate(k), lastDate: k?.end || "" });
   }
+  if (d.new === "uploads") return showMain({ kind: "bsu" });   // New upload RITM: the upload form (BSU decision 16)
   if (d.new) return newTab(d.new, d.prefillCustomer ? { customerId: d.prefillCustomer } : null);
   if (d.ui) return uiAction(d.ui);
   if (d.ckind) { const tab = activeTab(); const c = W().composer[tab.id] ||= { kind: "work_note", text: "" }; c.kind = d.ckind; c.text = $("composer-" + tab.id)?.value || c.text; return render(); }

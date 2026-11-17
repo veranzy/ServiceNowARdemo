@@ -3,7 +3,7 @@ import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { exportCSV } from "./io.js";
 import { act } from "./matching.js";
-import { giroPurposesFor, giroContracts, custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, linkCustomer, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { giroPurposesFor, giroContracts, custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -59,11 +59,6 @@ function uiAction(name) {
     toast(c.kind === "comment" ? "Comment posted. The requester can see it on the portal." : "Work note posted."); return render();
   }
   if (!saveActive(tab, { quiet: true })) return render();
-  if (tab.table === "requests" && name === "link") {
-    const err = linkCustomer(tab.id, tab.linkTo || null, tab.linkCo || null); if (!err) { tab.linkTo = null; tab.linkCo = null; }
-    if (err) { tab.msg = { kind: "err", text: err }; return render(); }
-    toast("Linked to the customer: billing contact and documents filed on the customer record."); return render();
-  }
   if (tab.table === "requests") {
     const res = requestAction(tab.id, name);
     if (typeof res === "string") { tab.msg = { kind: "err", text: res }; return render(); }
@@ -286,8 +281,6 @@ document.addEventListener("change", e => {
   const el = e.target;
   if (el.id === "notesToggle") { S.ui.notes = el.checked; return render(); }
   if (el.dataset.linkctr) { const tab = W().tabs.find(x => x.key === el.dataset.linkctr); if (tab) tab.linkCtr = el.value || null; return; }
-  if (el.dataset.linkto) { const tab = W().tabs.find(x => x.key === el.dataset.linkto); if (tab) tab.linkTo = el.value || null; return render(); }
-  if (el.dataset.linkco) { const tab = W().tabs.find(x => x.key === el.dataset.linkco); if (tab) tab.linkCo = el.value || null; return; }
   if (el.id === "bsuAcct") { Object.assign(S.bsu, { acctId: el.value, text: "", fileName: "", parsed: null, error: "" }); return render(); }
   if (el.id === "bsuDate") { S.bsu.date = el.value; parseCurrent(); return render(); }
   if (el.id === "bsuFile") { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { S.bsu.text = String(r.result); S.bsu.fileName = f.name; parseCurrent(); render(); }; r.readAsText(f); el.value = ""; return; }
@@ -316,6 +309,7 @@ document.addEventListener("change", e => {
   if (rf && el.name) {
     const tab = W().tabs.find(x => x.key === rf.dataset.rform); if (!tab) return;
     (tab.vals ||= {})[el.name] = coerce(tab.table, el.name, el);
+    if (el.name === "linkCustomer") { const cur = tab.vals.linkContract ?? recById(tab.table, tab.id)?.linkContract; if (cur && S.contracts.find(k => k.id === cur)?.customerId !== tab.vals.linkCustomer) tab.vals.linkContract = null; render(); }
     if (el.name === "customerId") { const cur = tab.vals.contractId ?? recById(tab.table, tab.id)?.contractId; if (cur && S.contracts.find(k => k.id === cur)?.customerId !== tab.vals.customerId) tab.vals.contractId = null; render(); }
     // UI policy: a parent of showIf fields changed → blank the now-hidden children and redraw
     if (TABLES[tab.table].fields.some(f => f.choiceDependsOn === el.name)) {

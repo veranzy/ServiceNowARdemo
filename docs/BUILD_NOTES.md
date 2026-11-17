@@ -52,15 +52,15 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `REQ-ACT` | Activity stream: comments (visible to requester) + work_notes (AR only) + field changes |
-| `REQ-SETUP` | Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, billing lines done |
+| `REQ-SETUP` | RETIRED 2026-11-17 (D31): AR-i Customer setup panel removed with Link to customer. Was: Customer setup panel (UI Builder component on the AR request record page): checklist of customer link, contract / no-contract shell, bill-to on the contract, documents filed, billing lines done |
 | `REQ-GIRO` | GIRO setup panel (AR-ix case, contextual side bar): contract set? (for No contract required: the customer's no-contract shell for the department, set as Contract on the case); the contract's GIRO status and active case; reminder to update GIRO status and Active GIRO case on the contract record, then set State = Closed complete (AR-ix decision 11, AR-00 2026-11-16) |
 | `REQ-GIROHIST` | Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix) |
 | `REQ-FV-ARI` | Form view ar_i on x_ar_request (view rule: ar_form = AR-i), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Customer, 3. Contract and bill-to, 4. Invoice details, 5. Customer documents, 6. Others, in the AR-i portal order; every field of each section on the form, empty when not answered; editable while the case is open |
 | `REQ-FV-COL` | Form view collections on x_ar_request (view rule: ar_form = COL), Details tab: sections Case (with Request value, the amount to collect, D29), 1. General information, 2. Collection type; ribbon Collection type, Request value, BSU deposits matched (sum of accepted allocations with request = this case) |
 | `REQ-FV-ARIX` | Form view ar_ix on x_ar_request (view rule: ar_form = AR-ix), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Select Customer, 3. Select Contract, 4. GIRO details, 5. Attachments (attachment list), in the AR-ix portal order (section 6 Others removed 2026-11-17, AR-ix decision 23); every field shown, empty when not answered; editable while the case is open |
 | `REQ-LINKCTR` | RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Contract to link picker in the AR-ix GIRO setup panel (Link contract retired) |
-| `REQ-LINKCO` | Company (core_company) for the new customer; mandatory when Link to customer creates a new x_ar_customer. Lists companies with no customer yet, closest name first (D26) |
-| `REQ-LINKTO` | Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check) |
+| `REQ-LINKCO` | RETIRED 2026-11-17 (D31): Company (core_company) for the new customer; mandatory when Link to customer creates a new x_ar_customer. Lists companies with no customer yet, closest name first (D26) |
+| `REQ-LINKTO` | RETIRED 2026-11-17 (D31): Choice used by Link to customer: create the new customer, or link the AR-i to an existing x_ar_customer (duplicate check) |
 | `REQ-ATT` | Attachments: sys_attachment on x_ar_request (added on the portal form) |
 
 ## Customer record
@@ -170,6 +170,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.new_customer_uen` | x_ar_request.new_customer_uen · String |
 | `REQ.new_customer_address` | x_ar_request.new_customer_address · String (1000) |
 | `REQ.contract_option` | x_ar_request.contract_option · Choice · mandatory · Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15) |
+| `REQ.link_customer` | x_ar_request.link_customer · Reference → x_ar_customer · AR-i, workspace Link section (D31). x_ar_customer, display value UEN (reference auto-complete shows UEN and name). Saving sets the case's customer. Mandatory before Closed complete |
+| `REQ.link_contract` | x_ar_request.link_contract · Reference → x_ar_contract · AR-i and AR-ix, workspace Link section (D31). x_ar_contract, display value Contract ID (CTR…). Reference qualifier: contracts of the linked customer (AR-i) or of the case's customer (AR-ix). Saving sets the case's contract (AR-i: also every billing line's contract). AR-i: mandatory before Closed complete |
 | `REQ.contract` | x_ar_request.contract · Reference → x_ar_contract · Existing contract; for a new contract or No contract required, set by Link to customer |
 | `REQ.new_contract_type` | x_ar_request.new_contract_type · Choice · Mandatory for a new contract |
 | `REQ.new_contract_number` | x_ar_request.new_contract_number · String · Mandatory for a new contract |
@@ -368,7 +370,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CUS.uen` | x_ar_customer.uen · String |
 | `CUS.parent_group` | x_ar_customer.parent_group · String |
 | `CUS.registered_address` | x_ar_customer.registered_address · String (1000) |
-| `CUS.agency_type` | x_ar_customer.agency_type · Choice · Master data replicated from the AR-i that set the customer up (Link to customer, D23) |
+| `CUS.agency_type` | x_ar_customer.agency_type · Choice · Master data; AR copies it by hand from the AR-i that set the customer up (D23 as amended by D31) |
 | `CUS.vag` | x_ar_customer.vag · Choice |
 | `CUS.vag_sub_bu` | x_ar_customer.vag_sub_bu · String |
 | `CUS.poc_name` | x_ar_customer.poc_name · String |
@@ -514,7 +516,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `RQL.number` | x_ar_request_line.number · String · read-only |
 | `RQL.ar_request` | x_ar_request_line.ar_request · Reference → x_ar_request · read-only |
-| `RQL.contract` | x_ar_request_line.contract · Reference → x_ar_contract · read-only · Billing lines are contract level (D15). Existing contract at submit; otherwise set by Link to customer |
+| `RQL.contract` | x_ar_request_line.contract · Reference → x_ar_contract · read-only · Billing lines are contract level (D15). Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31) |
 | `RQL.line_type` | x_ar_request_line.line_type · Choice · mandatory |
 | `RQL.short_description` | x_ar_request_line.short_description · String · mandatory |
 | `RQL.amount` | x_ar_request_line.amount · Currency · mandatory · Recurring: amount per period |
@@ -603,7 +605,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-REQ-giroadd` | UI action: RETIRED 2026-11-12 (AR-ix decision 11): Activate GIRO. AR now updates GIRO on the contract record and uses Complete (UA-REQ-girocomplete) |
 | `UA-REQ-giroremove` | UI action: RETIRED 2026-11-12 (AR-ix decision 11): Remove GIRO. AR now updates GIRO on the contract record and uses Complete (UA-REQ-girocomplete) |
 | `UA-REQ-girocomplete` | UI action: RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Complete (AR-ix). AR sets State = Closed complete |
-| `UA-REQ-link` | UI action: Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document (D10, D15, D16) |
+| `UA-REQ-link` | UI action: RETIRED 2026-11-17 (D31): AR sets up customers, contracts and documents by hand and links the case with Link Customer Reference / Link Contract Reference. Was: Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document (D10, D15, D16) |
 | `UA-SCH-raise` | UI action: RETIRED 2026-11-16 (D12 amended): Raise invoice. Draft invoices now come from the daily scheduled job JOB-DAILYINV |
 | `UA-SCH-save` | UI action: Save (update) |
 | `UA-BCT-save` | UI action: Save (update) |

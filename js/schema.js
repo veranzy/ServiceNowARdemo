@@ -86,8 +86,11 @@ export const TABLES = {
       { key: "newCustUen", name: "new_customer_uen", label: "UEN (company registration no.)", type: "String" },
       { key: "newCustAddress", name: "new_customer_address", label: "Registered address", type: "String (1000)", wide: true },
       { key: "contractOption", name: "contract_option", label: "Contract", type: "Choice", choices: CONTRACT_OPTIONS, mandatory: true, help: "Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15)" },
+      // Link section (workspace only, D31): AR links the case to master data it has set up by hand. Saving sets customer / contract.
+      { key: "linkCustomer", name: "link_customer", label: "Link Customer Reference", type: "Reference", ref: "customers", help: "AR-i, workspace Link section (D31). x_ar_customer, display value UEN (reference auto-complete shows UEN and name). Saving sets the case's customer. Mandatory before Closed complete" },
+      { key: "linkContract", name: "link_contract", label: "Link Contract Reference", type: "Reference", ref: "contracts", help: "AR-i and AR-ix, workspace Link section (D31). x_ar_contract, display value Contract ID (CTR…). Reference qualifier: contracts of the linked customer (AR-i) or of the case's customer (AR-ix). Saving sets the case's contract (AR-i: also every billing line's contract). AR-i: mandatory before Closed complete" },
       { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", dependsOn: "customerId", help: "Existing contract; for a new contract or No contract required, set by Link to customer" },
-      // New contract (AR-i, contract option = new). Link to customer creates the contract from these (D22: AR changes master data).
+      // New contract (AR-i, contract option = new). AR creates the contract by hand from these, then links it (D22, D31).
       { key: "newCtrType", name: "new_contract_type", label: "Contract type", type: "Choice", choices: CONTRACT_CATEGORIES, help: "Mandatory for a new contract" },
       { key: "newCtrNumber", name: "new_contract_number", label: "Contract number", type: "String", help: "Mandatory for a new contract" },
       { key: "newCtrRef", name: "new_contract_ref", label: "Contract reference number", type: "String", help: "AR-i, optional for a new contract. Not on AR-ix (AR-ix decision 25: the GIRO reference giro_reference is used instead)" },
@@ -239,7 +242,7 @@ export const TABLES = {
     fields: [
       { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "RQL0001000" },
       { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
-      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", readonly: true, help: "Billing lines are contract level (D15). Existing contract at submit; otherwise set by Link to customer" },
+      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", readonly: true, help: "Billing lines are contract level (D15). Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31)" },
       { key: "lineType", name: "line_type", label: "Line type", type: "Choice", choices: LINE_TYPES, mandatory: true },
       { key: "desc", name: "short_description", label: "Description", type: "String", mandatory: true, wide: true },
       { key: "amount", name: "amount", label: "Amount", type: "Currency", mandatory: true, help: "Recurring: amount per period" },
@@ -331,7 +334,7 @@ export const TABLES = {
       { key: "uen", name: "uen", label: "UEN (company registration no.)", type: "String" },
       { key: "parent", name: "parent_group", label: "Parent group", type: "String" },
       { key: "address", name: "registered_address", label: "Registered address", type: "String (1000)", wide: true },
-      { key: "agencyType", name: "agency_type", label: "Agency type", type: "Choice", choices: AGENCY_TYPES, help: "Master data replicated from the AR-i that set the customer up (Link to customer, D23)" },
+      { key: "agencyType", name: "agency_type", label: "Agency type", type: "Choice", choices: AGENCY_TYPES, help: "Master data; AR copies it by hand from the AR-i that set the customer up (D23 as amended by D31)" },
       { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "agencyType", in: ["SB", "PV"] } },
       { key: "vagSubBu", name: "vag_sub_bu", label: "V@G sub-BU", type: "String", showIf: { key: "vag", eq: "yes" } },
       { key: "pocName", name: "poc_name", label: "POC name", type: "String" },

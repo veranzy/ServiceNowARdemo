@@ -63,6 +63,12 @@ function refOptions(f, rec, formVals) {
   // Billing schedule "From AR request" (CCI decision 8): AR-i cases with a recurring line on the schedule's contract
   if (f.name === "source_request") { const c = formVals?.contractId || rec.contractId; return S.requests.filter(r => r.form !== "AR-ix" && (!c || r.contractId === c) && S.lines.some(l => l.requestId === r.id && l.lineType === "recurring")).map(r => [r.id, `${r.number} · ${r.title}`]); }
   if (f.key === "giroCaseId") return S.requests.filter(r => r.form === "AR-ix" && r.giroType === "add" && r.contractId === rec.id).map(r => [r.id, `${r.number} · ${r.title}`]);
+  // D31 Link section: customers by UEN; contracts by Contract ID, of the linked customer (AR-i) or the case's customer (AR-ix)
+  if (f.key === "linkCustomer") return S.customers.slice().sort((a, b) => String(a.uen || "~").localeCompare(String(b.uen || "~"))).map(c => [c.id, `${c.uen || "No UEN"} · ${c.name}`]);
+  if (f.key === "linkContract") {
+    const cust = rec.form === "AR-ix" ? rec.customerId : (formVals?.linkCustomer ?? rec.linkCustomer);
+    return S.contracts.filter(k => cust && k.customerId === cust).map(k => [k.id, `${k.ctrId || "—"} · ${k.number} · ${k.title}`]);
+  }
   if (f.ref === "contracts") {
     const cust = formVals?.customerId ?? rec.customerId;
     return S.contracts.filter(k => !cust || k.customerId === cust).map(k => [k.id, `${k.number} · ${k.title}`]);
@@ -72,6 +78,8 @@ function refOptions(f, rec, formVals) {
 
 function readValue(table, f, rec) {
   const v = rec[f.key];
+  if (f.key === "linkCustomer") { const c = S.customers.find(x => x.id === v); return c ? refLink("customers", c.id, `${c.uen || "No UEN"} · ${c.name}`) : "—"; }
+  if (f.key === "linkContract") { const k = S.contracts.find(x => x.id === v); return k ? refLink("contracts", k.id, `${k.ctrId || "—"} · ${k.number}`) : "—"; }
   if (f.type === "Reference") return f.ref === "groups" ? esc(S.groups.find(g => g.id === v)?.name || "—") : f.ref === "users" ? esc(userById(v)?.name || "—") : f.ref === "companies" ? esc(S.companies.find(co => co.id === v)?.name || "—") : refLink(f.ref, v);
   if (f.type === "List") return (v || []).length ? (v || []).map(x => esc(f.ref === "users" ? userById(x)?.name || x : x)).join(", ") : "—";
   if (f.type === "Choice") return esc((f.choices.find(c => c[0] === v) || [, v || "—"])[1]);

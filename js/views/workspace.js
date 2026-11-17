@@ -23,7 +23,7 @@ export const LISTS = {
       new: ["New, unassigned", r => r.state === "new" && !r.assignedTo],
       mine: ["Assigned to me", r => mine(r) && REQ_OPEN.includes(r.state)],
       awaiting: ["Awaiting requestor information", r => r.state === "awaiting_requestor_info"],
-      setup: ["Customer setup pending", r => REQ_OPEN.includes(r.state) && isARi(r) && (!!r.newCustomer || !setupStatus(r).docsDone)],
+      setup: ["Customer setup pending", r => REQ_OPEN.includes(r.state) && isARi(r) && (!r.linkCustomer || !r.linkContract)],   // D31: not yet linked
       giroall: ["All AR-ix GIRO cases", r => r.form === "AR-ix"],
       all: ["All", () => true]
     },
@@ -297,6 +297,9 @@ const LAYOUT = {
   requests: [["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened", "amount"], isI],
     ["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened"], isIx],
     ["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened", "amount"], isCol],
+    // D31: Link section right after Case. AR links the case to master data set up by hand (Link to customer retired)
+    ["Link", ["linkCustomer", "linkContract"], isI],
+    ["Link", ["linkContract"], isIx],
     ["1. General information", ["requesterName", "requesterEmail", "department", "deptSubBu", "ccList"]],
     // AR-i form view (portal: PT-25, PT-20, PT-37, PT-23, PT-42)
     ["2. Customer", ["customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "agencyType", "vag", "subBu", "pocName", "pocEmail"], isI],
@@ -332,7 +335,7 @@ const LAYOUT = {
   schedules: [["Billing schedule", ["number", "contractId", "customerId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "firstAmount", "lastAmount", "requestId"]]],
 };
 /** Fields AR can't edit on the workspace form (set by the portal or by UI actions). */
-const RO = { requests: ["form", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast", "giroType"], lines: ["lineType"] };
+const RO = { requests: ["form", "customerId", "contractId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast", "giroType"], lines: ["lineType"] };
 
 function editable(table, rec) {
   if (table === "requests") return REQ_OPEN.includes(rec.state);
@@ -380,9 +383,9 @@ function ribbon(table, rec, tab) {
     ws = [w("Collection type", esc(rec.colType || "—")), w("Request value", `SGD ${fmt(rec.amount)}`), w("BSU deposits matched", `SGD ${fmt(matched)}`, rec.amount ? `${fmt(Math.max(0, rec.amount - matched))} still to match` : "", bar(matched, rec.amount, "var(--ok)"))];
   } else if (table === "requests") {
     const ls = reqLines(rec), done = ls.filter(l => ["invoiced", "scheduled"].includes(lineStatus(l))).length;
-    const st = setupStatus(rec), checks = [st.linked, st.contractDone, st.billToOk, st.docsDone], ok = checks.filter(Boolean).length;
+    const checks = [!!rec.linkCustomer, !!rec.linkContract], ok = checks.filter(Boolean).length;   // D31 Link section
     ws = [w("Request value", `SGD ${fmt(rec.amount)}`, esc(linesLabel(rec))), w("Billing lines done", `${done} of ${ls.length}`, done === ls.length && ls.length ? "Every line invoiced or scheduled" : "Invoice or schedule each line", bar(done, ls.length, "var(--ok)")),
-      w("Customer setup", `${ok} of ${checks.length}`, ok === checks.length ? "Customer, contract, bill-to, documents" : "See Customer setup in the side panel", bar(ok, checks.length))];
+      w("Customer setup", `${ok} of ${checks.length}`, ok === checks.length ? "Customer and contract linked" : "Set the Link section on Details", bar(ok, checks.length))];
   } else if (table === "invoices") { const m = invMoney(rec);
     ws = [w("Amount", `SGD ${fmt(rec.amount)}`), w("Amount due", `SGD ${fmt(m.open)}`, m.applied ? `SGD ${fmt(m.applied)} matched from BSU deposits` : "", bar(m.applied, rec.amount, "var(--ok)")),
       w("Due", esc(rec.due || "—"), rec.state === "issued" && m.open > 0 ? `<span class="${m.late ? "bad" : ""}">${esc(daysLabel(rec.due))}</span>` : "")];
@@ -411,11 +414,9 @@ function actionsFor(table, rec, isNew, canEdit) {
   if (isNew) return [action(table, "Save", "save", { primary: true, id: "insert" })];
   if (table === "requests") {
     if (REQ_OPEN.includes(rec.state)) {
-      const st = setupStatus(rec);
       // AR-00 2026-11-16: case actions are Assign to me and Save only; state changes go through the State dropdown.
-      // Exception (owner): AR-i keeps Link to customer. Link contract, Complete, Request info and Reject are retired.
+      // Link to customer retired 2026-11-17 (D31: Link section on Details). Link contract, Complete, Request info and Reject are retired.
       if (!mine(rec)) a.push(action(table, "Assign to me", "assign"));
-      if (isI(rec) && setupPending(rec, st)) a.push(action(table, rec.newCustomer ? "Create customer & link" : "Link to customer", "link", { primary: true }));
     }
 
   }
@@ -444,37 +445,6 @@ function actionBar(items) {
 const LINE_CHIP = { open: ["Open", "c-neutral"], draft: ["Invoice draft", "c-accent"], invoiced: ["Invoiced", "c-ok"], scheduled: ["Scheduled", "c-ok"] };
 const lineChip = l => { const [lab, c] = LINE_CHIP[lineStatus(l)]; return `<span class="chip ${c}">${lab}</span>`; };
 
-/** Link to customer is needed while the customer, bill-to, or documents aren't on the customer master yet. */
-function setupPending(r, st = setupStatus(r)) {
-  if (r.form === "AR-ix") return !r.contractId;
-  if (!st.linked || !st.contractDone) return true;
-  if (r.billToName && !st.billToOk) return true;
-  return !st.docsDone;
-}
-
-function setupPanel(r, tab) {
-  if (!r.form) return "";
-  const st = setupStatus(r), lines = reqLines(r), doneLines = lines.filter(l => ["invoiced", "scheduled"].includes(lineStatus(l))).length;
-  const item = (ok, label, detail) => `<li class="${ok === true ? "ok" : ok === false ? "todo" : "na"}"><span class="tick" aria-hidden="true">${ok === true ? "✓" : ok === false ? "!" : "–"}</span><div><b>${label}</b>${detail ? `<span class="desc">${detail}</span>` : ""}</div></li>`;
-  const similar = r.newCustomer ? S.customers.filter(c => nameSim(r.newCustName || "", c.name) >= .5) : [];
-  const ctr = st.ctr;
-  const ctrText = r.contractOption === "new" ? `new contract ${esc(r.newCtrNumber || "")}` : r.contractOption === "none" ? `the ${esc(r.department)} no-contract shell` : "the contract";
-  return `<section class="setup"${sn("REQ-SETUP")}>
-    <header><h2>Customer setup</h2><span class="muted small">${esc(r.form || "AR-i")}${r.newCustomer ? " · new customer (first request)" : ""}</span></header>
-    <ul class="checklist">
-      ${item(st.linked, st.linked ? `Customer: ${esc(custName(r.customerId))}` : `New customer to verify: ${esc(r.newCustName)}`, st.linked ? "" : `UEN ${esc(r.newCustUen || "not given")}. Choose its company (core_company) below and Link to customer creates the customer, or link to an existing customer.`)}
-      ${item(st.contractDone, st.contractDone ? `${isShell(ctr) ? "No-contract shell" : "Contract"}: ${esc(ctr.number)}` : `Contract: ${ctrText}`, st.contractDone ? `${isShell(ctr) ? "No contract required; " : ""}all billing lines are filed under it` : r.contractOption === "new" ? `Link to customer creates ${esc(r.newCtrNumber)} · ${esc(r.newCtrTitle || "")} and files the billing lines under it` : r.contractOption === "none" ? "Link to customer files the billing lines under the customer's no-contract shell for the department (created if needed)" : "Link to customer files the billing lines under the contract")}
-      ${item(st.billToOk ? true : false, `Bill-to on ${ctr ? esc(ctr.number) : "the contract"}`, st.billToOk ? `${esc(ctr.billToName)} · ${esc(ctr.billToEmail)}` : r.billToName ? `Will be ${ctr?.billToName ? "updated" : "set"} from this request: ${esc(r.billToName)} · ${esc(r.billToEmail)}` : "No bill-to on the contract and none on the request. Ask the requester.")}
-      ${st.docsGiven.length ? item(st.docsDone, "Documents filed on the customer", st.docsGiven.map(t => `${esc(DOC_LABEL[t])}${st.filed.includes(t) ? " ✓" : ""}`).join(" · ")) : item(null, "Documents", "All already on file; nothing new supplied")}
-      ${item(lines.length && doneLines === lines.length, `Billing lines ${doneLines} of ${lines.length} done`, `${lines.length && doneLines === lines.length ? "Every line is invoiced or scheduled" : st.contractDone ? "Create the invoice or billing schedule for each line" : "Available once the request is linked"} · <button type="button" class="linkish" data-rtab="RL-REQ-RQL">Open billing lines</button>`)}
-    </ul>
-    ${r.newCustomer && REQ_OPEN.includes(r.state) ? `<label class="ffield linkto"${sn("REQ-LINKTO")}><span class="flabel">Link to an existing customer instead (optional)</span>
-      <select id="linkTo-${r.id}" data-linkto="${esc(tab.key)}"><option value="">Create new customer "${esc(r.newCustName)}"</option>${S.customers.slice().sort((a, b) => nameSim(r.newCustName, b.name) - nameSim(r.newCustName, a.name)).map(c => `<option value="${c.id}"${tab.linkTo === c.id ? " selected" : ""}>${esc(c.name)}${similar.includes(c) ? " (similar)" : ""}</option>`).join("")}</select></label>
-    ${!tab.linkTo ? `<label class="ffield linkto" for="linkCo-${r.id}"${sn("REQ-LINKCO")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Company (core_company) for the new customer</span>
-      <select id="linkCo-${r.id}" data-linkco="${esc(tab.key)}"><option value="">-- Choose the company --</option>${freeCompanies().sort((a, b) => nameSim(r.newCustName, b.name) - nameSim(r.newCustName, a.name)).map(co => `<option value="${co.id}"${tab.linkCo === co.id ? " selected" : ""}>${esc(co.name)}</option>`).join("")}</select>
-      <span class="fhelp">The customer name comes from the company record (D26). Requested name: ${esc(r.newCustName)}</span></label>` : ""}` : ""}
-  </section>`;
-}
 
 /** Attachment names on a case (portal attachments and the AR-i document variables). */
 const attNames = rec => [["docContract", "Signed contract / PO"], ["docAcra", "ACRA"], ["docBillingForm", "Billing form"]].filter(([k]) => rec[k]).map(([k, l]) => `${rec[k]} (${l})`).concat(rec.attachments || []);
@@ -664,12 +634,12 @@ function sidePanels(table, rec, tab) {
   if (table !== "requests") return [];
   const out = [];
   if (isIx(rec)) out.push({ key: "setup", label: "GIRO setup", icon: "check", html: giroPanel(rec, tab), badge: REQ_OPEN.includes(rec.state) && !rec.contractId ? "!" : "" });
-  else if (isI(rec) && rec.form) out.push({ key: "setup", label: "Customer setup", icon: "check", html: setupPanel(rec, tab), badge: setupPending(rec) ? "!" : "" });
+  // D31: the AR-i Customer setup panel is retired (the Link section on Details replaces Link to customer)
   out.push({ key: "activity", label: "Activity", icon: "chat", html: activity(rec) });
   out.push({ key: "attachments", label: "Attachments", icon: "clip", html: attachments(rec) });
   return out;
 }
-const sideDefault = (table, rec) => table === "requests" && rec.form && REQ_OPEN.includes(rec.state) && (isIx(rec) || (isI(rec) && setupPending(rec))) ? "setup" : "activity";
+const sideDefault = (table, rec) => table === "requests" && rec.form && REQ_OPEN.includes(rec.state) && isIx(rec) ? "setup" : "activity";
 
 /** AR-ix side panel: link the contract (after its AR-i is processed if it is new), then AR updates GIRO on the contract record and completes the case (AR-ix decision 11). */
 function giroPanel(r, tab) {
@@ -682,7 +652,7 @@ function giroPanel(r, tab) {
   return `<section class="setup"${sn("REQ-GIRO")}>
     <header><h2>GIRO setup</h2></header>
     <ul class="checklist">
-      ${item(!!k, k ? `Contract: ${esc(k.number)}` : `Contract not linked: ${esc(none ? "No contract required" : r.giroReference || "no reference")}`, k ? `${esc(custName(k.customerId))} · ${esc(isShell(k) ? `No-contract shell (${k.department})` : k.title)}` : none ? "Set up the customer's no-contract shell for the department first if needed, then set it as Contract on this case and Save." : "Process the AR-i that sets up this contract first, then set it as Contract on this case and Save.")}
+      ${item(!!k, k ? `Contract: ${esc(k.number)}` : `Contract not linked: ${esc(none ? "No contract required" : r.giroReference || "no reference")}`, k ? `${esc(custName(k.customerId))} · ${esc(isShell(k) ? `No-contract shell (${k.department})` : k.title)}` : none ? "Set up the customer's no-contract shell for the department first if needed, then set it as Link Contract Reference on this case and Save." : "Process the AR-i that sets up this contract first, then set it as Link Contract Reference on this case and Save.")}
       ${k ? item(cur ? true : null, `GIRO on ${esc(k.number)}: ${cur ? "Active" : "Not active"}`, cur ? `From ${refLink("requests", cur.id, cur.number)}${cur.id === r.id ? " (this case)" : ""} · ${esc(giroLabel(cur))}` : "No AR-ix case is active on this contract") : ""}
       ${item(done ? true : k ? false : null, "Update GIRO on the contract", done ? "Case closed complete" : k ? `Open ${refLink("contracts", k.id, k.number)} and set GIRO status and Active GIRO case for this request (${esc(giroLabel(r))}), then set State to Closed complete and Save.` : "Available once the contract is set on the case")}
     </ul>

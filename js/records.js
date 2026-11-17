@@ -306,78 +306,15 @@ export function setupStatus(r) {
   return { linked, ctr, contractDone: !!ctr && linesOnCtr, billToOk, docsGiven, filed, docsDone: filed.length === docsGiven.length };
 }
 
-/** UI action "Link to customer": create or link the customer, upsert the department's billing contact,
- *  file the documents on the customer. existingId links a new-customer AR-i to an existing customer instead. */
 /** AR-i customer details captured on the request (transaction data) ↔ customer master fields (D23). [request key, customer key] */
 export const CUST_DETAILS = [["agencyType", "agencyType"], ["vag", "vag"], ["subBu", "vagSubBu"], ["pocName", "pocName"], ["pocEmail", "pocEmail"]];
 /** Request-shaped copy of a customer's master details (a found customer's values are read-only on AR-i). */
 export const custDetailsOf = c => Object.fromEntries(CUST_DETAILS.map(([rk, ck]) => [rk, c?.[ck] || ""]));
 /** core_company records with no x_ar_customer yet: the companies a new customer can be created for (D26). */
 export const freeCompanies = () => S.companies.filter(co => !S.customers.some(c => c.companyId === co.id));
-export function linkCustomer(id, existingId, companyId) {
-  const r = reqById(id); if (!r) return "Record not found.";
-  const notes = [];
-  if (r.newCustomer) {
-    let c = existingId ? custById(existingId) : null;
-    if (!c) {
-      // the officer creates the customer: it must point to a core_company record (D26); the name is dot-walked, never typed
-      const co = companyById(companyId);
-      if (!co) return "Choose the company (core_company) for the new customer, or link to an existing customer.";
-      if (S.customers.some(x => x.companyId === co.id)) return `${co.name} already has a customer record. Link to that customer instead.`;
-      c = withCompany({ id: uid("c"), companyId: co.id, uen: r.newCustUen || "", address: r.newCustAddress || "", parent: "", aliases: [], terms: 30, creditLimit: 0, notes: `Created from ${r.number}.` }); S.customers.push(c); notes.push(`created customer for company ${c.name}`);
-    }
-    else notes.push(`linked to existing customer ${c.name}`);
-    r.customerId = c.id; r.newCustomer = false;
-  } else notes.push(`customer ${custById(r.customerId)?.name} confirmed`);
-  // replicate the request's customer details to the customer master (D23): fill what the master doesn't have yet
-  { const c = custById(r.customerId), set = CUST_DETAILS.filter(([rk, ck]) => r[rk] && !c[ck]);
-    for (const [rk, ck] of set) c[ck] = r[rk];
-    if (set.length) notes.push(`copied ${set.map(([rk]) => TABLES.requests.fields.find(f => f.key === rk).label).join(", ")} to the customer`); }
-  // contract level (D15): existing contract, new contract, or the customer's no-contract shell for the department
-  let ctr = r.contractId ? ctrById(r.contractId) : null;
-  if (ctr && ctr.customerId !== r.customerId) ctr = null;
-  if (!ctr && r.contractOption === "new") {
-    const no = String(r.newCtrNumber || r.newCtrRef || "").trim();
-    ctr = S.contracts.find(k => k.customerId === r.customerId && !isShell(k) && k.number.toLowerCase() === no.toLowerCase());
-    if (ctr) notes.push(`linked to existing contract ${ctr.number}`);
-    else { ctr = { id: uid("k"), contractType: "contract", customerId: r.customerId, department: r.department, number: no || `NEW-${r.number}`, title: r.newCtrTitle || r.title,
-        category: r.newCtrType || "", reference: r.newCtrRef || "", poNumber: r.newCtrPo || "",
-        start: r.newCtrStart || "", end: r.newCtrEnd || "", value: r.newCtrValue || 0, billing: CONTRACT_CATEGORY[r.newCtrType] || "",
-        billingCycle: r.newCtrCycle || "", billingCycleOther: r.newCtrCycleOther || "", invoiceDate: r.newCtrInvDate || "",
-        paymentTerms: r.newCtrTerms || "30", paymentTermsOther: r.newCtrTermsOther || "", terms: r.newCtrTerms === "others" ? custById(r.customerId)?.terms || 30 : 30,
-        prorate: r.newCtrProrate || "no", prorateFirst: r.newCtrProFirst || 0, prorateLast: r.newCtrProLast || 0,
-        typeOfBilling: r.typeOfBilling || "", bulkDocs: r.docBulk || [], discPct: 0, discDays: 0, giroStatus: "none", giroCaseId: null, notes: `Created from ${r.number}.` };
-      S.contracts.push(ctr); assignContractIds(); notes.push(`created contract ${ctr.number}`); }
-  }
-  if (!ctr && (r.contractOption === "none" || !r.contractOption)) {
-    ctr = shellFor(r.customerId, r.department);
-    if (ctr) notes.push(`filed under no-contract shell ${ctr.number}`);
-    else { ctr = { id: uid("k"), contractType: "shell", customerId: r.customerId, department: r.department, number: nextShellNumber(r.department), title: `No contract – ${r.department}`,
-        start: "", end: "", value: 0, billing: "", terms: custById(r.customerId)?.terms || 30, discPct: 0, discDays: 0, notes: "Holds billing for this customer and department that has no contract (D15)." };
-      S.contracts.push(ctr); assignContractIds(); notes.push(`created No contract ${ctr.number}`); }
-  }
-  if (ctr) { r.contractId = ctr.id; for (const l of reqLines(r)) l.contractId = ctr.id; }
-  if (r.billToName && ctr) {
-    const changed = ctr.billToName && (ctr.billToName !== r.billToName || ctr.billToEmail !== r.billToEmail);
-    Object.assign(ctr, { billToName: r.billToName, billToEmail: r.billToEmail || "", billToPhone: r.billToPhone || "", billToAddress: r.billToAddress || "" });
-    notes.push(`${changed ? "updated" : "set"} bill-to on ${ctr.number}`);
-    if (!contactFor(r.customerId, r.department)) { S.contacts.push({ id: uid("t"), customerId: r.customerId, department: r.department, name: r.billToName, email: r.billToEmail || "", phone: r.billToPhone || "", address: r.billToAddress || "", requestId: r.id }); notes.push(`added ${r.department} default billing contact`); }
-  }
-  for (const [t, k] of Object.entries(DOC_KEY)) {
-    if (!r[k] || S.documents.some(d => d.requestId === r.id && d.docType === t)) continue;
-    S.documents.push({ id: uid("d"), number: nextNumber("documents"), customerId: r.customerId, docType: t, fileName: r[k], contractId: t === "contract" ? r.contractId || null : null,
-      department: t === "billing_form" ? r.department : "", requestId: r.id, received: isoToday() });
-    notes.push(`filed ${DOC_LABEL[t].toLowerCase()}`);
-  }
-  if (r.state === "new") { r.state = "work_in_progress"; if (!r.assignedTo) r.assignedTo = me().id; }
-  journal(r, "work_note", `Link to customer: ${notes.join("; ")}.`);
-  return null;
-}
+// D31 (2026-11-17): UI action "Link to customer" retired. AR creates customers, contracts and No contract records and files
+// documents by hand in master data (D22), then links the case with the Link section (link_customer / link_contract).
 
-function nextShellNumber(dept) {
-  const n = S.contracts.filter(isShell).length + 1;
-  return `NC-${String(dept || "GEN").slice(0, 3).toUpperCase()}-${String(n).padStart(4, "0")}`;
-}
 
 // ---------- recurring billing ----------
 const FREQ = Object.fromEntries(FREQUENCIES.map(f => [f[0], f]));
@@ -422,7 +359,7 @@ export function setupSchedule(lineId) {
  *  the first period (line start date, or today if that has passed); the 2nd invoice onwards comes from the billing schedule
  *  that AR creates on the contract. Needs the customer and contract linked. Returns an error or the invoices created. */
 export function firstInvoices(r) {
-  if (!r.customerId || r.newCustomer || !r.contractId) return "Link to customer before Closed complete: the 1st invoice needs the customer and contract.";
+  if (!r.customerId || r.newCustomer || !r.contractId) return "Set Link Customer Reference and Link Contract Reference before Closed complete: the 1st invoice needs the customer and contract.";
   const made = [], t = isoToday();
   for (const l of reqLines(r)) {
     if (l.invoiceId || S.invoices.some(i => i.lineId === l.id && i.state !== "cancelled")) continue;
@@ -443,7 +380,7 @@ export function lineInvoice(lineId) {
   const l = S.lines.find(x => x.id === lineId); if (!l) return "Billing line not found.";
   const r = reqById(l.requestId);
   if (l.lineType !== "one_off") return "Recurring lines are billed from a billing schedule.";
-  if (!r?.customerId || r.newCustomer || !l.contractId) return "Link the request to the customer and contract first (Link to customer).";
+  if (!r?.customerId || r.newCustomer || !l.contractId) return "Set Link Customer Reference and Link Contract Reference first.";
   if (lineStatus(l) !== "open") return "This line already has an invoice.";
   const k = ctrById(l.contractId), c = custById(r.customerId);
   const date = l.invoiceDate && l.invoiceDate > isoToday() ? l.invoiceDate : isoToday();
@@ -626,7 +563,7 @@ export function saveRecord(table, id, raw) {
   // CCI decision 8: Closed complete on an AR-i generates the 1st invoice (blocked until the case is linked)
   if (table === "requests" && existing && isARi(existing) && vals.state === "closed_complete" && existing.state !== "closed_complete") {
     const probe = { ...existing, ...vals };
-    if (!probe.customerId || probe.newCustomer || !probe.contractId) errors.state = "Link to customer before Closed complete: the 1st invoice needs the customer and contract.";
+    if (!probe.linkCustomer || !probe.linkContract) errors.state = "Set Link Customer Reference and Link Contract Reference before Closed complete: the 1st invoice needs the customer and contract.";   // D31
   }
   if (table === "schedules" && merged.firstDate && cycleDay(ctrById(merged.contractId)) && +merged.firstDate.slice(8, 10) !== cycleDay(ctrById(merged.contractId)))
     errors.firstDate = `The contract billing cycle is the ${cycleDay(ctrById(merged.contractId)) === 1 ? "1st" : "15th"} of the month: choose a first billing date on that day.`;
@@ -635,15 +572,27 @@ export function saveRecord(table, id, raw) {
     if (r && r.contractId !== merged.contractId) errors.requestId = "Choose an AR-i case on this contract.";
     else vals.lineId = l?.id || null;
   }
+  if (table === "requests" && existing && isARi(existing) && merged.linkContract && merged.linkCustomer && ctrById(merged.linkContract)?.customerId !== merged.linkCustomer)
+    errors.linkContract = "Choose a contract of the linked customer.";
   if (Object.keys(errors).length) return { errors };
   // AR-00 2026-11-16: State dropdown. Substate only for Awaiting requestor information; a state change is journalled.
   // AR-ix: setting Contract on the case replaces the retired Link contract (the customer follows the contract).
   if (table === "requests" && existing) {
     if (merged.state !== "awaiting_requestor_info") vals.substate = "";
     if ("state" in vals && vals.state !== existing.state) journal(existing, "system", `State changed to ${def.fields.find(f => f.key === "state").choices.find(c => c[0] === vals.state)?.[1] || vals.state}.`);
-    if (existing.form === "AR-ix" && vals.contractId && vals.contractId !== existing.contractId) {
-      const k = ctrById(vals.contractId);
-      if (k) { Object.assign(vals, { customerId: k.customerId, newCustomer: false }); journal(existing, "system", `Contract set to ${k.number} (${custById(k.customerId)?.name}).`); }
+    // D31 Link section: Link Customer Reference sets the case's customer; Link Contract Reference sets its contract
+    // (AR-i: and every billing line's contract; AR-ix: the customer follows the contract)
+    if ("linkCustomer" in vals && vals.linkCustomer && vals.linkCustomer !== existing.linkCustomer) {
+      Object.assign(vals, { customerId: vals.linkCustomer, newCustomer: false });
+      journal(existing, "system", `Link Customer Reference set to ${custById(vals.linkCustomer)?.uen || "—"} (${custById(vals.linkCustomer)?.name}).`);
+    }
+    if ("linkContract" in vals && vals.linkContract && vals.linkContract !== existing.linkContract) {
+      const k = ctrById(vals.linkContract);
+      if (k) {
+        vals.contractId = k.id; if (existing.form === "AR-ix") Object.assign(vals, { customerId: k.customerId, newCustomer: false });
+        if (isARi(existing)) for (const l of reqLines(existing)) l.contractId = k.id;
+        journal(existing, "system", `Link Contract Reference set to ${k.ctrId || k.number} (${k.number}).`);
+      }
     }
   }
   if (table === "contracts" && existing && !String(merged.number || "").trim()) vals.number = existing.ctrId;

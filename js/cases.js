@@ -95,6 +95,8 @@ export function addCases(text) {
   }
   scheduleHistory();         // the 2nd invoice: drafted by the daily job and issued by AR
   runDailyInvoiceCheck();   // mock data: the drafts last night's daily invoice check would have created
+  // D31: closed demo cases were linked by AR (Link section) before they were closed
+  for (const r of S.requests) if (r.state === "closed_complete") { if (r.form !== "AR-ix") r.linkCustomer ||= r.customerId || null; r.linkContract ||= r.contractId || null; }
   for (const [ctr, num] of GIRO_SET_BY_AR) {
     const k = S.contracts.find(x => x.number === ctr), r = S.requests.find(x => x.number === num);
     if (k && r) Object.assign(k, { giroStatus: "active", giroCaseId: r.id });

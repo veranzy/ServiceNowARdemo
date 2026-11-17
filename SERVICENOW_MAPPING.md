@@ -34,7 +34,7 @@ Custom customer master (not CSM customer_account). Each customer references one 
 | `uen` | UEN (company registration no.) | String |  |
 | `parent_group` | Parent group | String |  |
 | `registered_address` | Registered address | String (1000) |  |
-| `agency_type` | Agency type | Choice | Choices: M, SB, PV. Master data replicated from the AR-i that set the customer up (Link to customer, D23) |
+| `agency_type` | Agency type | Choice | Choices: M, SB, PV. Master data; AR copies it by hand from the AR-i that set the customer up (D23 as amended by D31) |
 | `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type is SB, PV (UI policy) |
 | `vag_sub_bu` | V@G sub-BU | String | Shown when V@G = Yes (UI policy) |
 | `poc_name` | POC name | String |  |
@@ -140,6 +140,8 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `new_customer_uen` | UEN (company registration no.) | String |  |
 | `new_customer_address` | Registered address | String (1000) |  |
 | `contract_option` | Contract | Choice | Choices: Existing contract (`existing`), New contract (`new`), No contract required (`none`). Mandatory. Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15) |
+| `link_customer` | Link Customer Reference | Reference | → `x_ar_customer`. AR-i, workspace Link section (D31). x_ar_customer, display value UEN (reference auto-complete shows UEN and name). Saving sets the case's customer. Mandatory before Closed complete |
+| `link_contract` | Link Contract Reference | Reference | → `x_ar_contract`. AR-i and AR-ix, workspace Link section (D31). x_ar_contract, display value Contract ID (CTR…). Reference qualifier: contracts of the linked customer (AR-i) or of the case's customer (AR-ix). Saving sets the case's contract (AR-i: also every billing line's contract). AR-i: mandatory before Closed complete |
 | `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer. Existing contract; for a new contract or No contract required, set by Link to customer |
 | `new_contract_type` | Contract type | Choice | Choices: Recurring (`recurring`), Ad-hoc (`ad_hoc`). Mandatory for a new contract |
 | `new_contract_number` | Contract number | String | Mandatory for a new contract |
@@ -210,7 +212,7 @@ What to bill on an AR request (D13): one-off, or recurring over a from–to date
 |---|---|---|---|
 | `number` | Number | String | Read-only on form |
 | `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
-| `contract` | Contract | Reference | → `x_ar_contract`. Read-only on form. Billing lines are contract level (D15). Existing contract at submit; otherwise set by Link to customer |
+| `contract` | Contract | Reference | → `x_ar_contract`. Read-only on form. Billing lines are contract level (D15). Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31) |
 | `line_type` | Line type | Choice | Choices: One-off (`one_off`), Recurring (`recurring`). Mandatory |
 | `short_description` | Description | String | Mandatory |
 | `amount` | Amount | Currency | Mandatory. Recurring: amount per period |

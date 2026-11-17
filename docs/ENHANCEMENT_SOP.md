@@ -30,8 +30,12 @@ Every point in a ticket becomes an item with one status:
 ## Steps
 
 ### 1. Intake
-- The client opens a GitHub issue with the label **`enhancement`**, one issue per batch, titled
-  *Enhancement set <date>* (template: `.github/ISSUE_TEMPLATE/enhancement.md`).
+- The client or a **reader agent** ([`AGENT_GUIDE.md`](AGENT_GUIDE.md)) opens a GitHub issue with the label **`enhancement`**,
+  one issue per batch, titled *Enhancement set <date>* (template: `.github/ISSUE_TEMPLATE/enhancement.md`), plus the module label.
+- **Requirement** tickets (new forms or features, label `requirement`) follow the same steps; the triage file lists the
+  proposed fields and rules, and the owner's answers become the module's first decisions. **Doc inconsistency** tickets
+  are fixed at the source (`js/schema.js`, `js/notes.js` or the spec) and closed; **Question** tickets are answered by the
+  owner and recorded as a decision or an open question.
 - One point per line, naming the form or screen (e.g. *AR9*, *Contract*). Screenshots or build-note IDs
   (turn on **Show IDs** in the demo bar) help.
 

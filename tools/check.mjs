@@ -1,6 +1,7 @@
 // Pre-push check (docs/GIT_WORKFLOW.md §4). Run: node tools/check.mjs   (CI: node tools/check.mjs --ci)
 // 1. JS syntax  2. literal build-note IDs are registered  3. generated docs regenerated and in sync
 // 4. every module folder is complete and listed in the index  5. relative links in the docs resolve
+// 6. drift: field / build-note IDs quoted in module specs exist in the schema and the registry (warning)
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -66,6 +67,25 @@ for (const f of walk(ROOT, [".md"])) {
     const target = m[1].split("#")[0];
     if (!target || /^[a-z]+:/i.test(target)) continue;
     if (!existsSync(resolve(dirname(f), target))) errors.push(`Broken link in ${rel(f)}: ${m[1]}`);
+  }
+}
+
+// 6. Drift: field and build-note IDs quoted in module specs must exist in js/schema.js / js/notes.js
+//    (lines that mention "retired" or are struck through are skipped). Warning only: the spec or the code needs fixing.
+{
+  const { TABLES } = await import(join(ROOT, "js/schema.js"));
+  const { CODE } = await import(join(ROOT, "js/notes.js"));
+  const cols = {}; for (const [k, t] of Object.entries(TABLES)) cols[CODE[k]] = new Set(t.fields.map(f => f.name));
+  const byTable = Object.fromEntries(Object.entries(TABLES).map(([k, t]) => [t.table, CODE[k]]));
+  for (const code of readdirSync(MOD)) {
+    const f = join(MOD, code, "README.md"); if (code === "_TEMPLATE" || !existsSync(f)) continue;
+    readFileSync(f, "utf8").split("\n").forEach((line, n) => {
+      if (/retir|~~/i.test(line)) return;
+      const at = `docs/modules/${code}/README.md:${n + 1}`;
+      for (const m of line.matchAll(/`([A-Z]{2,4})\.([a-z_][a-z0-9_.]*)`/g)) { const c = cols[m[1]]; if (c && !c.has(m[2].split(".")[0]) && noteText(`${m[1]}.${m[2]}`) === null) warnings.push(`Drift: ${at} quotes ${m[1]}.${m[2]}, not in js/schema.js`); }
+      for (const m of line.matchAll(/`(x_ar_[a-z_]+)\.([a-z_]+)`/g)) { const c = cols[byTable[m[1]]]; if (c && !c.has(m[2])) warnings.push(`Drift: ${at} quotes ${m[1]}.${m[2]}, not in js/schema.js`); }
+      for (const m of line.matchAll(/`((?:PT|UA|CSH|REQ|RL|CON|CUS|INV|BSU|LST|WS|DEP|SCH)-[A-Za-z0-9-]+)`/g)) if (noteText(m[1]) === null) warnings.push(`Drift: ${at} quotes build-note ID ${m[1]}, not registered in js/notes.js`);
+    });
   }
 }
 

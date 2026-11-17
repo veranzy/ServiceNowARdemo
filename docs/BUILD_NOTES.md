@@ -347,9 +347,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 
 | ID | ServiceNow |
 |---|---|
-| `BNK.bank` | x_ar_bank_account.bank · Choice · mandatory · Mock aliases for Singapore's three largest banks; each has its own CSV layout |
+| `BNK.bank` | x_ar_bank_account.bank · Choice · mandatory · BSU decision 17: shown apart from the bank account number. Mock aliases for Singapore's three largest banks; each has its own CSV layout |
 | `BNK.account_number` | x_ar_bank_account.account_number · String · mandatory |
-| `BNK.account_name` | x_ar_bank_account.account_name · String · mandatory |
+| `BNK.account_name` | x_ar_bank_account.account_name · String · mandatory · Describes the sub-account type under the department, so the department understands it (e.g. Project deposits, Retention and deposits) (BSU decision 17) |
 | `BNK.department` | x_ar_bank_account.department · Choice · mandatory |
 | `BNK.account_type` | x_ar_bank_account.account_type · Choice · mandatory |
 | `BNK.currency` | x_ar_bank_account.currency · String · read-only |

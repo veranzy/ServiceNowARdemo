@@ -250,9 +250,9 @@ export const TABLES = {
     table: `${SCOPE}_bank_account`, label: "Bank account", plural: "Bank accounts", display: "number",
     note: "Company bank accounts that statements are uploaded for. Department and account type classify every deposit on the account.",
     fields: [
-      { key: "bank", name: "bank", label: "Bank", type: "Choice", choices: [["MB", "Marina Bank"], ["OB", "Orchard Bank"], ["US", "Union Straits Bank"]], mandatory: true, help: "Mock aliases for Singapore's three largest banks; each has its own CSV layout" },
-      { key: "number", name: "account_number", label: "Account number", type: "String", mandatory: true },
-      { key: "name", name: "account_name", label: "Account name", type: "String", mandatory: true },
+      { key: "bank", name: "bank", label: "Bank name", type: "Choice", choices: [["MB", "Marina Bank"], ["OB", "Orchard Bank"], ["US", "Union Straits Bank"]], mandatory: true, help: "BSU decision 17: shown apart from the bank account number. Mock aliases for Singapore's three largest banks; each has its own CSV layout" },
+      { key: "number", name: "account_number", label: "Bank account number", type: "String", mandatory: true },
+      { key: "name", name: "account_name", label: "Bank account name", type: "String", mandatory: true, help: "Describes the sub-account type under the department, so the department understands it (e.g. Project deposits, Retention and deposits) (BSU decision 17)" },
       { key: "department", name: "department", label: "Department", type: "Choice", choices: [["Finance", "Finance"], ...DEPT_CHOICES], mandatory: true },
       { key: "accountType", name: "account_type", label: "Account type", type: "Choice", choices: [["revenue", "Revenue account"], ["deposit", "Deposit account"], ["operating", "Operating account"]], mandatory: true },
       { key: "currency", name: "currency", label: "Currency", type: "String", readonly: true },

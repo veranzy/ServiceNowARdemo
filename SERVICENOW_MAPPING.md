@@ -311,9 +311,9 @@ Company bank accounts that statements are uploaded for. Department and account t
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
-| `bank` | Bank | Choice | Choices: Marina Bank (`MB`), Orchard Bank (`OB`), Union Straits Bank (`US`). Mandatory. Mock aliases for Singapore's three largest banks; each has its own CSV layout |
-| `account_number` | Account number | String | Mandatory |
-| `account_name` | Account name | String | Mandatory |
+| `bank` | Bank name | Choice | Choices: Marina Bank (`MB`), Orchard Bank (`OB`), Union Straits Bank (`US`). Mandatory. BSU decision 17: shown apart from the bank account number. Mock aliases for Singapore's three largest banks; each has its own CSV layout |
+| `account_number` | Bank account number | String | Mandatory |
+| `account_name` | Bank account name | String | Mandatory. Describes the sub-account type under the department, so the department understands it (e.g. Project deposits, Retention and deposits) (BSU decision 17) |
 | `department` | Department | Choice | Choices: Finance, Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory |
 | `account_type` | Account type | Choice | Choices: Revenue account (`revenue`), Deposit account (`deposit`), Operating account (`operating`). Mandatory |
 | `currency` | Currency | String | Read-only on form |

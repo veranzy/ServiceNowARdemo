@@ -46,7 +46,7 @@ the **Bank statements** table, where the AR team reviews it and matches it manua
 
 | Item | Build |
 |---|---|
-| `x_ar_bank_account` | Bank account master (bank, account number, name, department, account type, currency, **collection types** AR-iii / AR-iv / AR-v received, decision 13). |
+| `x_ar_bank_account` | Bank account master (decision 17: *Bank name*, *Bank account number*, *Bank account name* describing the department's sub-account type, department, account type, currency, **collection types** AR-iii / AR-iv / AR-v received, decision 13). |
 | RITM (`sc_req_item`) | Upload = catalog item *Bank statement upload* (D32): variables bank account, statement date, file name; uploaded by = opened by; deposit count and total, skipped withdrawals set by the flow. Number prefix `RITM`. CSV kept as the RITM's attachment. Flow: parse with the bank's template, insert deposits, close the RITM complete. |
 | `x_ar_bank_statement` | **Bank statements** table: one row per deposit, `deposit_id` as display value, reference to the RITM (`bsu`) and bank account, value date, payer, reference, amount, match state. |
 | Parsing | The RITM's flow calls Script Include `x_ar.BankStatementParser` with the bank's template (or one Data Source + Transform Map per bank). Templates in a small config table or system properties. |

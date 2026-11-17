@@ -70,7 +70,8 @@ export const LISTS = {
   },
   bankAccounts: {
     filters: { all: ["Bank accounts", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
-    cols: [["Account", a => refLink("bankAccounts", a.id, `${BANKS[a.bank].name} · ${a.number}`), "", "number"], ["Name", a => esc(a.name), "", "name"], ["Department", a => esc(a.department), "", "department"],
+    // BSU decision 17: bank name and bank account number in their own columns; bank account name describes the department's sub-account
+    cols: [["Bank account number", a => refLink("bankAccounts", a.id, a.number), "", "number"], ["Bank name", a => esc(BANKS[a.bank].name), "", "bank"], ["Bank account name", a => esc(a.name), "", "name"], ["Department", a => esc(a.department), "", "department"],
       ["Type", a => esc(acctType(a)), "", "accountType"], ["Last statement", a => esc(S.uploads.filter(u => u.bankAccountId === a.id).map(u => u.statementDate).sort().pop() || "—"), "", "=BNK.last_statement"]],
     sort: (a, b) => a.bank.localeCompare(b.bank) || a.number.localeCompare(b.number),
     text: a => [BANKS[a.bank].name, a.number, a.name, a.department].join(" "),

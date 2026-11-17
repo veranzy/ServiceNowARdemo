@@ -47,7 +47,8 @@ export const NOTES = {
   "CSH-01": `Cash application page (UI Builder custom page)`,
   "CSH-02": `Single-score cards over ${TABLES.deposits.table} / ${TABLES.allocations.table}`,
   "CSH-03": `List of ${TABLES.deposits.table} with match state; filter tabs To match / Matched / All`,
-  "CSH-04": "Invoice finder (modal or side panel): ranked issued invoices + allocation preview before confirming",
+  "CSH-04": "Invoice finder (modal or side panel): ranked issued invoices and open Collections cases (AR-iii, AR-iv, AR-v; D29) + allocation preview before confirming",
+  "CSH-05": "Collection case tag in the invoice finder and preview (D29): the candidate is an open x_ar_request with ar_form IN AR-iii, AR-iv, AR-v and Request value (amount) not yet matched; its allocation sets request instead of invoice",
   // BSU page
   "BSU-01": "BSU page (UI Builder custom page): checklist, upload form, recent uploads",
   "BSU-02": `Statement-day checklist: ${TABLES.bankAccounts.table} left-joined to ${TABLES.uploads.table} for the chosen statement_date`,
@@ -128,7 +129,7 @@ export const UI_ACTIONS = {
   "UA-INV-save": "Save (update, draft only)",
   "UA-DEP-match": "Match to invoice → opens the invoice finder for this deposit",
   "UA-DEP-find": "Find invoice → opens the invoice finder",
-  "UA-DEP-confirm": `Confirm match → inserts ${TABLES.allocations.table} records (manual)`,
+  "UA-DEP-confirm": `Confirm match → inserts ${TABLES.allocations.table} records (manual), with invoice or, for a Collections case, request set (D29)`,
   "UA-DEP-remove": "Remove match → deletes the deposit's allocations",
   "UA-DEP-export": "Export matches to CSV",
   "UA-BSU-save": `Save to bank statements → inserts ${TABLES.uploads.table} + one ${TABLES.deposits.table} row per deposit`,
@@ -147,7 +148,7 @@ export const RELATED = {
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",
-  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit",
+  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request",
   "RL-BSU-DEP": "bsu", "RL-BNK-BSU": "bank_account", "RL-BNK-DEP": "bank_account"
 };
 

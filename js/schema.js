@@ -34,6 +34,8 @@ export const AR_FORMS = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix",
     : n === 8 ? "Add or remove GIRO (direct debit) on a contract: rental, carpark or other charges." : "Form not yet specified.",
   active: n === 0 || n === 8
 }));
+/** Collections category (D28): money collected without an invoice. A BSU deposit can be matched to an open case of these forms (D29). */
+export const COLLECTION_FORMS = ["AR-iii", "AR-iv", "AR-v"];
 export const GIRO_PURPOSES = [["rental", "Rental"], ["carpark", "Carpark"], ["others", "Others"]];
 export const GIRO_TYPES = [["add", "Add GIRO"], ["remove", "Remove GIRO"]];
 const GIRO_STATUS = [["active", "Active"], ["none", "Not active"]];
@@ -105,7 +107,7 @@ export const TABLES = {
       { key: "invoiceTiming", name: "preferred_invoice_date_choice", label: "Preferred invoice date", type: "Choice", choices: INVOICE_TIMING, help: "One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Optional (AR-i decision 38)" },
       { key: "expediteReason", name: "preferred_invoice_date_justification", label: "Provide Justification for expedited or Off billing cycle request", type: "String (1000)", wide: true, showIf: { key: "invoiceTiming", eq: "expedited" }, help: "Shown when Expedited; optional" },
       { key: "needItems", name: "billing_line_items_required", label: "Require billing line item?", type: "Choice", choices: YES_NO, help: "Yes shows the billing line items table (multi-row variable set)" },
-      { key: "amount", name: "amount", label: "Request value", type: "Currency", readonly: true, help: "Calculated: one-off lines + recurring amount × number of periods" },
+      { key: "amount", name: "amount", label: "Request value", type: "Currency", readonly: true, help: "AR-i: calculated, one-off lines + recurring amount × number of periods. Collections (AR-iii, AR-iv, AR-v): the amount to collect; BSU deposits are matched against it on Cash application (D29)" },
       { key: "poNumber", name: "po_number", label: "Customer PO number", type: "String" },
       { key: "pocName", name: "customer_poc_name", label: "POC name", type: "String", help: "AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in and replicated to the customer by Link to customer" },
       { key: "pocEmail", name: "customer_poc_email", label: "POC email", type: "String", help: "AR-i customer details; must be a valid email. Same rule as POC name" },
@@ -212,10 +214,11 @@ export const TABLES = {
   },
   allocations: {
     table: `${SCOPE}_allocation`, label: "Allocation", plural: "Allocations", display: "number",
-    note: "Applies part or all of a BSU deposit to an invoice. Always created manually by the AR team from the invoice finder (no auto-matching, D5).",
+    note: "Applies part or all of a BSU deposit to an invoice, or to an open Collections case (AR-iii, AR-iv, AR-v; D29). Exactly one of invoice or request is set. Always created manually by the AR team from the invoice finder (no auto-matching, D5).",
     fields: [
       { key: "depositId", name: "deposit", label: "BSU deposit", type: "Reference", ref: "deposits" },
       { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices" },
+      { key: "requestId", name: "request", label: "Collection case", type: "Reference", ref: "requests", help: "Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form IN AR-iii, AR-iv, AR-v; D29)" },
       { key: "amount", name: "amount", label: "Amount", type: "Currency" },
       { key: "status", name: "state", label: "State", type: "Choice", choices: [["accepted", "Applied"], ["removed", "Removed"]] },
       { key: "exception", name: "exception", label: "Exception", type: "Choice", choices: [["none", "Exact"], ["multi_invoice", "Multi-invoice"], ["short_pay", "Short pay"], ["over_pay", "Overpayment"], ["partial", "Partial"], ["discount", "Discount taken"]] },

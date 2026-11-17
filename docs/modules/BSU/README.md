@@ -51,23 +51,31 @@ See `SERVICENOW_MAPPING.md` (generated) for full column lists.
 
 ## Cash application (manual matching)
 
-The AR team matches each BSU deposit to one or more **issued** invoices ([CCI](../CCI/README.md)) by hand.
+The AR team matches each BSU deposit to one or more **issued** invoices ([CCI](../CCI/README.md)) or open
+**Collections cases** (AR-iii, AR-iv, AR-v; D28, D29, decision 11) by hand.
 
 1. **Cash application page** (`CSH-01`): summary cards (`CSH-02`: to match, matched, amounts) and the
    deposits list (`CSH-03`) with filter tabs *To match / Matched / All*.
 2. **Find invoice** opens the invoice finder (`CSH-04`): issued invoices ranked as a suggestion only (invoice
    number in the bank reference, amount fit, payer-name similarity), with an allocation preview. AR picks the
    invoices and amounts and clicks **Apply**, which creates accepted allocations.
+   Open Collections cases (`x_ar_request`, form AR-iii / AR-iv / AR-v, state New, Work in progress or Awaiting
+   requestor information, Request value not yet matched) are listed with the invoices and tagged *Collection case ·
+   AR-…* (`CSH-05`); their open amount is the case's **Request value** (`amount`) minus what is matched. The preview
+   shows *Opened* and *Amount to collect* instead of invoice date, due and original amount. Invoices and cases can be
+   ticked together (interim, open question 5).
 3. **Remove match** clears the deposit's allocations.
 4. Allocations update each invoice's amount due and payment status (Unpaid / Part paid / Paid / Overdue).
    Exceptions (short pay, over pay, multi-invoice) are labels on the match, not separate flows.
+5. A Collections case shows the deposits matched to it on its tab **BSU deposits matched** (`RL-REQ-ALC`).
+   Matching never changes the case state: AR closes it with the State dropdown (decision 11).
 
 | Item | Build |
 |---|---|
 | Cash application page | UI Builder custom page over `x_ar_bank_statement` with match state filters. |
-| Invoice finder | Modal or side panel; Script Include ranks `x_ar_invoice` where state = issued and amount due > 0. Suggestion only. |
-| `x_ar_allocation` | Deposit, invoice, amount, status (accepted); business rule recalculates the invoice's `amount_due` / `payment_status` and the deposit's match state. |
-| UI actions | Deposit: *Find invoice → Apply* (inserts allocations), *Remove match*. Related lists `RL-INV-ALC`, `RL-DEP-ALC`. |
+| Invoice finder | Modal or side panel; Script Include ranks `x_ar_invoice` where state = issued and amount due > 0, and `x_ar_request` where `ar_form` IN AR-iii, AR-iv, AR-v, state is open and `amount` minus accepted allocations > 0 (D29). Suggestion only. |
+| `x_ar_allocation` | Deposit, invoice **or** request (Collection case; exactly one is set, D29), amount, status (accepted); business rule recalculates the invoice's `amount_due` / `payment_status` and the deposit's match state. |
+| UI actions | Deposit: *Find invoice → Apply* (inserts allocations), *Remove match*. Related lists `RL-INV-ALC`, `RL-DEP-ALC`, `RL-REQ-ALC` (case). |
 
 ## Bank CSV layouts (mock)
 

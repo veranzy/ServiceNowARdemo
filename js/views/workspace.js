@@ -3,7 +3,7 @@
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
 import { DOC_LABEL, reqItems, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById, freeCompanies } from "../records.js";
 import { CODE } from "../notes.js";
-import { ROLES, TABLES, fieldVisible } from "../schema.js";
+import { COLLECTION_FORMS, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
 import { DAY, esc, fmt, nameSim, today } from "../util.js";
 import { acctById, acctLabel, yesterday } from "../bsu.js";
@@ -504,6 +504,12 @@ const sec = (key, label, n, html) => ({ key, label, n, html });
 
 /** Record tabs after Details: related items and one tab per related list (Horizon record page). */
 function related(table, rec) {
+  // D29: a Collections case lists the BSU deposits matched to it
+  if (table === "requests" && COLLECTION_FORMS.includes(rec.form)) {
+    const rows = [];
+    for (const [pid, m] of Object.entries(S.matches)) { if (!m || m.status !== "accepted") continue; for (const a of m.allocations) if (a.requestId === rec.id) rows.push({ pid, a, m }); }
+    return [rt("BSU deposits matched", "allocations", rows, [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]], { id: "RL-REQ-ALC" })];
+  }
   if (table === "requests" && isIx(rec)) {
     return rec.contractId ? [giroHistory(ctrById(rec.contractId), "REQ-GIROHIST")] : [];
   }
@@ -568,9 +574,10 @@ function related(table, rec) {
     const rows = [];
     for (const [pid, m] of Object.entries(S.matches)) { if (!m || m.status === "rejected") continue;
       for (const a of m.allocations) if ((table === "invoices" && a.invoiceId === rec.id) || (table === "deposits" && pid === rec.id)) rows.push({ pid, a, m }); }
+    const tgt = a => a.requestId ? refLink("requests", a.requestId, recById("requests", a.requestId)?.number) : refLink("invoices", a.invoiceId);   // D29: or a Collections case
     const cols = table === "invoices"
       ? [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]]
-      : [["Invoice", x => refLink("invoices", x.a.invoiceId)], ["Customer", x => esc(recById("invoices", x.a.invoiceId)?.customer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]];
+      : [["Invoice", x => tgt(x.a)], ["Customer", x => esc(x.a.requestId ? custName(recById("requests", x.a.requestId)?.customerId) : recById("invoices", x.a.invoiceId)?.customer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]];
     return [rt("Allocations", "allocations", rows, cols, { id: table === "invoices" ? "RL-INV-ALC" : "RL-DEP-ALC" })];
   }
   return [];

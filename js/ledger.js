@@ -2,13 +2,16 @@
 import { S } from "./state.js";
 import { nameSim, nameToks, normTok, today, uid } from "./util.js";
 
+/** What an allocation applies to: an invoice, or a Collections case (D29). Invoice and case ids never clash. */
+export const allocKey = a => a.invoiceId || a.requestId;
+
 export function invoiceUse() {
   const applied = {}, reserved = {};
   for (const [pid, m] of Object.entries(S.matches)) {
     if (!m || m.status === "rejected") continue;
     for (const a of m.allocations) {
       const tgt = m.status === "accepted" ? applied : reserved;
-      tgt[a.invoiceId] = (tgt[a.invoiceId] || 0) + a.amount;
+      tgt[allocKey(a)] = (tgt[allocKey(a)] || 0) + a.amount;
     }
   }
   return { applied, reserved };
@@ -18,7 +21,7 @@ export const invById = id => S.invoices.find(i => i.id === id);
 
 export function invoiceState(i) {
   const { applied, reserved } = invoiceUse();
-  const holders = Object.entries(S.matches).filter(([, mm]) => mm && mm.status === "proposed" && mm.allocations.some(a => a.invoiceId === i.id))
+  const holders = Object.entries(S.matches).filter(([, mm]) => mm && mm.status === "proposed" && mm.allocations.some(a => allocKey(a) === i.id))
     .map(([pid]) => S.deposits.find(x => x.id === pid)?.payer).filter(Boolean);
   return { applied: applied[i.id] || 0, reserved: reserved[i.id] || 0, open: i.amount - (applied[i.id] || 0) - (reserved[i.id] || 0), holders };
 }

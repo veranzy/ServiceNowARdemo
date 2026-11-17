@@ -167,7 +167,7 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `preferred_invoice_date_choice` | Preferred invoice date | Choice | Choices: Per Billing Cycle (`per_cycle`), Expedited (`expedited`). One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Optional (AR-i decision 38) |
 | `preferred_invoice_date_justification` | Provide Justification for expedited or Off billing cycle request | String (1000) | Shown when Preferred invoice date = Expedited (UI policy). Shown when Expedited; optional |
 | `billing_line_items_required` | Require billing line item? | Choice | Choices: Yes (`yes`), No (`no`). Yes shows the billing line items table (multi-row variable set) |
-| `amount` | Request value | Currency | Read-only on form. Calculated: one-off lines + recurring amount × number of periods |
+| `amount` | Request value | Currency | Read-only on form. AR-i: calculated, one-off lines + recurring amount × number of periods. Collections (AR-iii, AR-iv, AR-v): the amount to collect; BSU deposits are matched against it on Cash application (D29) |
 | `po_number` | Customer PO number | String |  |
 | `customer_poc_name` | POC name | String | AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in and replicated to the customer by Link to customer |
 | `customer_poc_email` | POC email | String | AR-i customer details; must be a valid email. Same rule as POC name |
@@ -328,12 +328,13 @@ The only record of money received (D7): one row per deposit (credit) loaded by B
 
 ### Allocation — `x_ar_allocation`
 
-Applies part or all of a BSU deposit to an invoice. Always created manually by the AR team from the invoice finder (no auto-matching, D5).
+Applies part or all of a BSU deposit to an invoice, or to an open Collections case (AR-iii, AR-iv, AR-v; D29). Exactly one of invoice or request is set. Always created manually by the AR team from the invoice finder (no auto-matching, D5).
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `deposit` | BSU deposit | Reference | → `x_ar_bank_statement` |
 | `invoice` | Invoice | Reference | → `x_ar_invoice` |
+| `request` | Collection case | Reference | → `x_ar_request`. Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form IN AR-iii, AR-iv, AR-v; D29) |
 | `amount` | Amount | Currency |  |
 | `state` | State | Choice | Choices: Applied (`accepted`), Removed (`removed`) |
 | `exception` | Exception | Choice | Choices: Exact (`none`), Multi-invoice (`multi_invoice`), Short pay (`short_pay`), Overpayment (`over_pay`), Partial (`partial`), Discount taken (`discount`) |

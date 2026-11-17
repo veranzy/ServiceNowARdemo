@@ -74,7 +74,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CSH-01` | Cash application page (UI Builder custom page) |
 | `CSH-02` | Single-score cards over x_ar_bank_statement / x_ar_allocation |
 | `CSH-03` | List of x_ar_bank_statement with match state; filter tabs To match / Matched / All |
-| `CSH-04` | Invoice finder (modal or side panel): ranked issued invoices + allocation preview before confirming |
+| `CSH-04` | Invoice finder (modal or side panel): ranked issued invoices and open Collections cases (AR-iii, AR-iv, AR-v; D29) + allocation preview before confirming |
+| `CSH-05` | Collection case tag in the invoice finder and preview (D29): the candidate is an open x_ar_request with ar_form IN AR-iii, AR-iv, AR-v and Request value (amount) not yet matched; its allocation sets request instead of invoice |
 
 ## BSU page
 
@@ -192,7 +193,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.preferred_invoice_date_choice` | x_ar_request.preferred_invoice_date_choice · Choice · One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Optional (AR-i decision 38) |
 | `REQ.preferred_invoice_date_justification` | x_ar_request.preferred_invoice_date_justification · String (1000) · Shown when Expedited; optional |
 | `REQ.billing_line_items_required` | x_ar_request.billing_line_items_required · Choice · Yes shows the billing line items table (multi-row variable set) |
-| `REQ.amount` | x_ar_request.amount · Currency · read-only · Calculated: one-off lines + recurring amount × number of periods |
+| `REQ.amount` | x_ar_request.amount · Currency · read-only · AR-i: calculated, one-off lines + recurring amount × number of periods. Collections (AR-iii, AR-iv, AR-v): the amount to collect; BSU deposits are matched against it on Cash application (D29) |
 | `REQ.po_number` | x_ar_request.po_number · String |
 | `REQ.customer_poc_name` | x_ar_request.customer_poc_name · String · AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in and replicated to the customer by Link to customer |
 | `REQ.customer_poc_email` | x_ar_request.customer_poc_email · String · AR-i customer details; must be a valid email. Same rule as POC name |
@@ -323,6 +324,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `ALC.deposit` | x_ar_allocation.deposit · Reference → x_ar_bank_statement |
 | `ALC.invoice` | x_ar_allocation.invoice · Reference → x_ar_invoice |
+| `ALC.request` | x_ar_allocation.request · Reference → x_ar_request · Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form IN AR-iii, AR-iv, AR-v; D29) |
 | `ALC.amount` | x_ar_allocation.amount · Currency |
 | `ALC.state` | x_ar_allocation.state · Choice |
 | `ALC.exception` | x_ar_allocation.exception · Choice |
@@ -580,6 +582,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RL-CON-SCH` | Related list: x_ar_billing_schedule where contract = this contract |
 | `RL-INV-ALC` | Related list: x_ar_allocation where invoice = this invoice |
 | `RL-DEP-ALC` | Related list: x_ar_allocation where deposit = this bsu deposit |
+| `RL-REQ-ALC` | Related list: x_ar_allocation where request = this ar request |
 | `RL-BSU-DEP` | Related list: x_ar_bank_statement where bsu = this statement upload |
 | `RL-BNK-BSU` | Related list: x_ar_bsu where bank_account = this bank account |
 | `RL-BNK-DEP` | Related list: x_ar_bank_statement where bank_account = this bank account |
@@ -615,7 +618,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-INV-save` | UI action: Save (update, draft only) |
 | `UA-DEP-match` | UI action: Match to invoice → opens the invoice finder for this deposit |
 | `UA-DEP-find` | UI action: Find invoice → opens the invoice finder |
-| `UA-DEP-confirm` | UI action: Confirm match → inserts x_ar_allocation records (manual) |
+| `UA-DEP-confirm` | UI action: Confirm match → inserts x_ar_allocation records (manual), with invoice or, for a Collections case, request set (D29) |
 | `UA-DEP-remove` | UI action: Remove match → deletes the deposit's allocations |
 | `UA-DEP-export` | UI action: Export matches to CSV |
 | `UA-BSU-save` | UI action: Save to bank statements → inserts x_ar_bsu + one x_ar_bank_statement row per deposit |

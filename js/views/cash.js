@@ -1,7 +1,8 @@
 // Cash application page (AR workspace): deposits from the Bank statements table, matched to issued invoices
 // manually with the invoice finder. No auto-matching (decision D5).
 import { acctById } from "../bsu.js";
-import { invById, invoiceUse } from "../ledger.js";
+import { allocKey, invoiceUse } from "../ledger.js";
+import { openCollections, targetById } from "../matching.js";
 import { BANKS } from "../schema.js";
 import { S } from "../state.js";
 import { esc, fmt } from "../util.js";
@@ -31,10 +32,10 @@ function depositCard(p, openInv) {
   const m = S.matches[p.id] || { status: "unmatched", allocations: [] };
   const money = depositMoney(p), a = acctById(p.bankAccountId);
   const exc = m.allocations.length ? (EXC[m.exception] || [m.exception, "c-neutral"]) : null;
-  const allocHtml = m.allocations.length ? `<div class="alloc">${m.allocations.map(x => { const i = invById(x.invoiceId) || {};
-      return `<span class="inv">${refLink("invoices", i.id, i.number)}</span><span class="cust">${esc(i.customer)}</span><span class="num">${fmt(x.amount)}</span>`; }).join("")}
+  const allocHtml = m.allocations.length ? `<div class="alloc">${m.allocations.map(x => { const i = targetById(allocKey(x)) || {};
+      return `<span class="inv">${refLink(i.kind === "case" ? "requests" : "invoices", i.id, i.number)}</span><span class="cust">${esc(i.customer)}</span><span class="num">${fmt(x.amount)}</span>`; }).join("")}
       ${money.unapplied ? `<span class="inv muted">Unmatched</span><span></span><span class="num" style="color:var(--bad)">${fmt(money.unapplied)}</span>` : ""}</div>` : "";
-  const pickable = openInv.filter(x => !m.allocations.some(al => al.invoiceId === x.i.id));
+  const pickable = openInv.filter(x => !m.allocations.some(al => allocKey(al) === x.i.id));
   const canMatch = money.unapplied > 0 && pickable.length;
   const pkOpen = canMatch && S.pick[p.id]?.open;
   const cls = money.state === "Matched" ? "accepted" : money.state === "Part matched" ? "proposed" : "unmatched";
@@ -60,7 +61,7 @@ export function cashPage() {
   const filt = p => { const st = depositMoney(p).state;
     return S.filter === "all" || (S.filter === "open" && st !== "Matched") || (S.filter === "done" && st === "Matched"); };
   const rows = S.deposits.filter(filt).sort((a, b) => String(b.date).localeCompare(String(a.date)) || a.number.localeCompare(b.number));
-  const openInv = S.invoices.filter(i => i.state === "issued").map(i => ({ i, open: i.amount - (applied[i.id] || 0) })).filter(x => x.open > 0);
+  const openInv = [...S.invoices.filter(i => i.state === "issued"), ...openCollections()].map(i => ({ i, open: i.amount - (applied[i.id] || 0) })).filter(x => x.open > 0);   // D29: plus open Collections cases
   const st = S.status;
   const hasAlloc = Object.values(S.matches).some(m => m && m.allocations.length);
   return `<div class="page"${sn("CSH-01")}>

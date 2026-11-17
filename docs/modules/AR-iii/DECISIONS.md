@@ -12,3 +12,4 @@ it replaces, and the old row is struck through. Cross-module decisions go to `do
 | 5 | One form (D30) | AR-iii, AR-iv and AR-v are **one form** (client request). Three catalogue tiles open it with the type preselected; **Collection type** is the first question after General information. | 2026-11-17 |
 | 6 | Case form value | The case records `ar_form` = **COL** plus `collection_type` (owner: "One code + type field"). | 2026-11-17 |
 | 7 | Shell first | Built now as a shell: General information + Collection type (owner: "Build a shell now"). Form name, choice labels and fields to come ("Tell you later"); codes used meanwhile. | 2026-11-17 |
+| 8 | Order of the first sections | **Collection type comes right after General information** (owner, 2026-11-17), so D19 holds: every form starts with General information. Open question 5 answered. | 2026-11-17 |

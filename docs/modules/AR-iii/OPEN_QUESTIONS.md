@@ -7,4 +7,4 @@ parked ones link their GitHub issue (label `AR-iii`).
 2. Does a collection need the customer and contract from AR's master data (existing customer only, as AR-ix; existing or new, as AR-i; or a free-text payer)? Owner: not sure yet (2026-11-17). Applies to AR-iv and AR-v too. (Owner)
 3. ~~What does AR do with the case when the deposit is matched?~~ Nothing automatic: AR sets the state by hand (BSU decision 11, 2026-11-17).
 4. Can one deposit cover several collection cases, or one case be paid by several deposits? Built as for invoices (both allowed); mixing invoices and cases is BSU open question 5. (Owner)
-5. D19 says every form starts with General information; the client asked to choose 3 / 4 / 5 "first". Built with Collection type right after General information. Should it move above General information? (Owner)
+5. ~~Should Collection type move above General information?~~ No: it stays right after General information (decision 8, 2026-11-17).

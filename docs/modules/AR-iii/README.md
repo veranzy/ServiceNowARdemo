@@ -28,7 +28,7 @@ The three are **one form** (D30, client request): the requester chooses AR-iii, 
    description). Each opens the same form with the type preselected (`#/portal/form/AR-iv`).
 2. **Form** (`PT-49`), shell for now:
    1. **General information** (D19, AR-00).
-   2. **Collection type*** (`collection_type`, `PT-50`): AR-iii / AR-iv / AR-v, preselected from the tile, starts on
+   2. **Collection type*** (`collection_type`, `PT-50`), right after General information (decision 8): AR-iii / AR-iv / AR-v, preselected from the tile, starts on
       *-- Choose the collection type --* otherwise. Hint: *The rest of this form is still to be defined.*
    - Submit creates an `x_ar_request` case: `ar_form` = **COL**, `collection_type`, title *Collections – AR-iv*.
 3. **Workspace** (AR team): list **All Collections** (`LST-REQ-COL`). Case page (`REQ-FV-COL`): Details with Case

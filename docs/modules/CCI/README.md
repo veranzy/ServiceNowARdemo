@@ -112,3 +112,13 @@ The prototype records the terms only. Nothing calculates or charges interest yet
 7. *Create invoice* and *Set up billing schedule* on billing lines are retired.
 
 **Demo data:** **ARQ0001009** (AR-i, Tanjong Retail Group, recurring contract TR-TA-2025-14, billing cycle 1st of the month, monthly rent SGD 4,800) is Closed complete: 1st invoice two cycle days back (issued; approval date earlier than the invoice date), billing schedule from the 2nd invoice (last cycle day, issued), 3rd invoice drafted by the daily job once it is 5 working days away. ARQ0001001 (one-off) shows the 1st invoice being generated when AR sets Closed complete. ARQ0001002 is a new customer, not linked. Sample schedule SCH0001001 has its past periods already issued.
+
+## Master data rules (decision 12)
+
+- Master data is never deleted. Customers, billing contacts, bank accounts, cost centres and account codes have
+  **Active** (default Yes). Lists have *All*, *Active* and *Inactive* tabs.
+- Inactive records are not offered in reference fields (reference qualifier `active=true^ORsys_id=<current>`),
+  the BSU upload form or the AR-ix customer search. AR-i's customer search is unchanged (portal form locked).
+- Contracts have no flag: their status comes from the start and end dates.
+- Cost centres and account codes open by code (`#/ws/costCentres/CC-ENG-100`) and list the AR4 allocations using
+  them (`RL-CCT-CAL`, `RL-ACT-CAL`). Customer documents can be added by hand (*New*, D31).

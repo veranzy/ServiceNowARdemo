@@ -16,3 +16,4 @@
 | 2026-11-17 | Decision 10 (#8 E8.5): **Contract owner** field on the contract (multi-select of project team users). **ID added:** `CON.contract_owners`. Sample owners: Priya Nair on HL-2026-01, TR-TA-2025-14, TR-2026-02, NB-2026-05; Marcus Wong on HL-2026-01. Forms support the List type (multi-select). |
 | 2026-11-17 | D31: customers, contracts and No contract records for AR-i are created by AR by hand (Link to customer retired); `REQ-LINKCO` retired. |
 | 2026-11-17 | Decision 11: master data *Cost centres* and *Account codes* (lists under Master data). **New IDs:** `CCT.*`, `ACT.*`, `UA-CCT-new`, `UA-CCT-save`, `UA-CCT-insert`, `UA-ACT-new`, `UA-ACT-save`, `UA-ACT-insert`. |
+| 2026-11-18 | Decision 12: master data block. **New IDs:** `CUS.active`, `BCT.active`, `BNK.active`, `UA-DOC-new`, `UA-DOC-insert`, `UA-DOC-save`, `RL-CCT-CAL`, `RL-ACT-CAL`. List tabs *Active* / *Inactive*; New records default to Active. |

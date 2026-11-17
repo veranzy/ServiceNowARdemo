@@ -256,7 +256,8 @@ export const TABLES = {
       { key: "department", name: "department", label: "Department", type: "Choice", choices: [["Finance", "Finance"], ...DEPT_CHOICES], mandatory: true },
       { key: "accountType", name: "account_type", label: "Account type", type: "Choice", choices: [["revenue", "Revenue account"], ["deposit", "Deposit account"], ["operating", "Operating account"]], mandatory: true },
       { key: "currency", name: "currency", label: "Currency", type: "String", readonly: true },
-      { key: "colTypes", name: "collection_types", label: "Collection types", type: "List", choices: COLLECTION_TYPES, help: "Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others" }
+      { key: "colTypes", name: "collection_types", label: "Collection types", type: "List", choices: COLLECTION_TYPES, help: "Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others" },
+      { key: "active", name: "active", label: "Active", type: "True/False", default: true, help: "Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields" }
     ]
   },
   allocations: {
@@ -316,7 +317,8 @@ export const TABLES = {
       { key: "email", name: "email", label: "Email", type: "String", mandatory: true },
       { key: "phone", name: "phone", label: "Phone", type: "String" },
       { key: "address", name: "billing_address", label: "Billing address", type: "String (1000)", wide: true },
-      { key: "requestId", name: "source_request", label: "From AR request", type: "Reference", ref: "requests", readonly: true }
+      { key: "requestId", name: "source_request", label: "From AR request", type: "Reference", ref: "requests", readonly: true },
+      { key: "active", name: "active", label: "Active", type: "True/False", default: true, help: "Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields" }
     ]
   },
   documents: {
@@ -362,7 +364,7 @@ export const TABLES = {
       { key: "code", name: "code", label: "Code", type: "String", mandatory: true },
       { key: "name", name: "name", label: "Name", type: "String", mandatory: true, wide: true },
       { key: "department", name: "department", label: "Department", type: "Choice", choices: DEPT_CHOICES, mandatory: true },
-      { key: "active", name: "active", label: "Active", type: "True/False" }
+      { key: "active", name: "active", label: "Active", type: "True/False", default: true, help: "Inactive records are not offered in forms (CCI decision 12)" }
     ]
   },
   accountCodes: {
@@ -372,7 +374,7 @@ export const TABLES = {
       { key: "code", name: "code", label: "Code", type: "String", mandatory: true },
       { key: "name", name: "description", label: "Description", type: "String", mandatory: true, wide: true },
       { key: "treatment", name: "gst_treatment", label: "GST / recovery treatment", type: "Choice", choices: [["gst", "GST applicable"], ["no_gst", "No GST"], ["recovery", "Recovery"]] },
-      { key: "active", name: "active", label: "Active", type: "True/False" }
+      { key: "active", name: "active", label: "Active", type: "True/False", default: true, help: "Inactive records are not offered in forms (CCI decision 12)" }
     ]
   },
   schedules: {
@@ -420,7 +422,8 @@ export const TABLES = {
       { key: "terms", name: "payment_terms", label: "Payment terms (days)", type: "Integer" },
       { key: "creditLimit", name: "credit_limit", label: "Credit limit", type: "Currency" },
       { key: "aliases", name: "bank_names", label: "Names seen on bank statements", type: "String (1000)", wide: true, help: "Comma-separated. Used to rank invoices in the invoice finder." },
-      { key: "notes", name: "notes", label: "Notes for AR", type: "String (4000)", wide: true }
+      { key: "notes", name: "notes", label: "Notes for AR", type: "String (4000)", wide: true },
+      { key: "active", name: "active", label: "Active", type: "True/False", default: true, help: "Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields" }
     ]
   },
   contracts: {

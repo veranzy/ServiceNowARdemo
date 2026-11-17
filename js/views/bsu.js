@@ -12,7 +12,7 @@ export const acctType = a => TYPE[a.accountType] || a.accountType;
 export function bsuPage() {
   const b = S.bsu;
   if (!b.date) b.date = yesterday();
-  const acct = acctById(b.acctId) || S.bankAccounts[0];
+  const acct = acctById(b.acctId) || S.bankAccounts.find(a => a.active !== false);   // CCI decision 12: inactive accounts aren't offered
   if (acct && b.acctId !== acct.id) b.acctId = acct.id;
   const bank = acct ? BANKS[acct.bank] : null;
   const existing = acct ? S.uploads.filter(u => u.bankAccountId === acct.id && u.statementDate === b.date) : [];
@@ -25,7 +25,7 @@ export function bsuPage() {
       <header><h2>Upload a statement</h2></header>
       <div class="bsu-form">
         <label class="ffield"${sn("BSU.bank_account")}><span class="flabel"><i class="req">*</i>Bank account</span>
-          <select id="bsuAcct">${S.bankAccounts.map(a => `<option value="${a.id}"${a.id === acct?.id ? " selected" : ""}>${esc(acctLabel(a))} · ${esc(a.name)}</option>`).join("")}</select>
+          <select id="bsuAcct">${S.bankAccounts.filter(a => a.active !== false || a.id === acct?.id).map(a => `<option value="${a.id}"${a.id === acct?.id ? " selected" : ""}>${esc(acctLabel(a))} · ${esc(a.name)}</option>`).join("")}</select>
           ${acct ? `<span class="fhelp">${esc(acct.department)} · ${esc(acctType(acct))}</span>` : ""}</label>
         <label class="ffield"${sn("BSU.statement_date")}><span class="flabel"><i class="req">*</i>Statement date</span><input type="date" id="bsuDate" value="${esc(b.date)}">
           ${existing.length ? `<span class="fhelp">Already uploaded for this day: ${existing.map(u => refLink("uploads", u.id, u.number)).join(", ")}</span>` : `<span class="fhelp">Usually yesterday.</span>`}</label>

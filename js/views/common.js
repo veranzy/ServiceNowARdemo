@@ -54,7 +54,12 @@ export function refLink(table, id, label) {
   return `<button type="button" class="linkish" data-open="${table}:${id}">${esc(label ?? displayOf(table, rec))}</button>`;
 }
 
+/** Reference choices without inactive master data (CCI decision 12); the record's current value is always kept. */
 function refOptions(f, rec, formVals) {
+  const cur = (formVals && f.key in formVals ? formVals[f.key] : rec?.[f.key]);
+  return refOptionsAll(f, rec, formVals).filter(([id]) => id === cur || (Array.isArray(cur) && cur.includes(id)) || (S[f.ref] || []).find(x => x.id === id)?.active !== false);
+}
+function refOptionsAll(f, rec, formVals) {
   if (f.ref === "bankAccounts") return S.bankAccounts.map(a => [a.id, `${BANKS[a.bank].name} · ${a.number} · ${a.name}`]);
   if (f.ref === "groups") return S.groups.map(g => [g.id, g.name]);
   if (f.ref === "users") return S.users.filter(u => !f.refFilter || u.team === f.refFilter).map(u => [u.id, u.name]);

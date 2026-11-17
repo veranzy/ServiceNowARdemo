@@ -353,6 +353,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `BNK.account_type` | x_ar_bank_account.account_type · Choice · mandatory |
 | `BNK.currency` | x_ar_bank_account.currency · String · read-only |
 | `BNK.collection_types` | x_ar_bank_account.collection_types · List · Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others |
+| `BNK.active` | x_ar_bank_account.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields |
 
 ## Allocation fields
 
@@ -414,6 +415,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CUS.credit_limit` | x_ar_customer.credit_limit · Currency |
 | `CUS.bank_names` | x_ar_customer.bank_names · String (1000) · Comma-separated. Used to rank invoices in the invoice finder. |
 | `CUS.notes` | x_ar_customer.notes · String (4000) |
+| `CUS.active` | x_ar_customer.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields |
 
 ## Contract
 
@@ -486,6 +488,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `BCT.phone` | x_ar_billing_contact.phone · String |
 | `BCT.billing_address` | x_ar_billing_contact.billing_address · String (1000) |
 | `BCT.source_request` | x_ar_billing_contact.source_request · Reference → x_ar_request · read-only |
+| `BCT.active` | x_ar_billing_contact.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields |
 
 ## Customer document
 
@@ -627,7 +630,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CCT.code` | x_ar_cost_centre.code · String · mandatory |
 | `CCT.name` | x_ar_cost_centre.name · String · mandatory |
 | `CCT.department` | x_ar_cost_centre.department · Choice · mandatory |
-| `CCT.active` | x_ar_cost_centre.active · True/False |
+| `CCT.active` | x_ar_cost_centre.active · True/False · Inactive records are not offered in forms (CCI decision 12) |
 
 ## Account code
 
@@ -645,7 +648,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `ACT.code` | x_ar_account_code.code · String · mandatory |
 | `ACT.description` | x_ar_account_code.description · String · mandatory |
 | `ACT.gst_treatment` | x_ar_account_code.gst_treatment · Choice |
-| `ACT.active` | x_ar_account_code.active · True/False |
+| `ACT.active` | x_ar_account_code.active · True/False · Inactive records are not offered in forms (CCI decision 12) |
 
 ## Calculated columns
 
@@ -690,6 +693,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RL-REQ-ALC` | Related list: x_ar_allocation where request = this ar request |
 | `RL-REQ-CTX` | Related list: x_ar_collection_tx where ar_request = this ar request |
 | `RL-REQ-CAL` | Related list: x_ar_collection_allocation where ar_request = this ar request |
+| `RL-CCT-CAL` | Related list: x_ar_collection_allocation where cost_centre = this cost centre |
+| `RL-ACT-CAL` | Related list: x_ar_collection_allocation where account_code = this account code |
 | `RL-BSU-DEP` | Related list: x_ar_bank_statement where bsu = this statement upload |
 | `RL-BNK-BSU` | Related list: sc_req_item where bank_account = this bank account |
 | `RL-BNK-DEP` | Related list: x_ar_bank_statement where bank_account = this bank account |
@@ -740,6 +745,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-CUS-new` | UI action: New (list action) |
 | `UA-CON-new` | UI action: New (list action) |
 | `UA-CCT-new` | UI action: New (list action) |
+| `UA-DOC-new` | UI action: New (list action): AR files a customer document by hand (D31) |
+| `UA-DOC-insert` | UI action: Submit (insert) |
+| `UA-DOC-save` | UI action: Save (update) |
 | `UA-ACT-new` | UI action: New (list action) |
 | `UA-CCT-save` | UI action: Save (update) |
 | `UA-CCT-insert` | UI action: Submit (insert) |

@@ -18,3 +18,4 @@
 | 14 | ~~Approval date: must it be set before Issue invoice?~~ Yes, for every invoice (decision 9). | Owner |
 | 15 | ~~1st invoice date and amount~~ The 1st invoice is reviewed manually: invoice date suggested from the AR-i's indicated start, approval date set by AR; amount from the AR-i, AR corrects it if needed (decision 9). | Owner |
 | 16 | Should one contract record (Contract or No contract) have **only one recurring billing schedule**? Owner: in theory yes, but uncertain. Today any number is allowed and the case's Billing schedule tab shows all of the contract's schedules. ([issue #7](https://github.com/veranzy/ServiceNowARdemo/issues/7)) | Owner |
+| 17 | Should the locked AR-i customer search also hide inactive customers (decision 12)? Needs the AR-i portal form unlocked. | Owner |

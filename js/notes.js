@@ -151,7 +151,7 @@ export const UI_ACTIONS = {
   "UA-BSU-sample": "Demo only: generate a sample CSV in the bank's layout",
   "UA-BNK-upload": "Upload statement → opens the BSU page for this account",
   "UA-CUS-save": "Save (update)", "UA-CON-save": "Save (update)", "UA-BNK-save": "Save (update)",
-  "UA-CUS-new": "New (list action)", "UA-CON-new": "New (list action)", "UA-CCT-new": "New (list action)", "UA-ACT-new": "New (list action)", "UA-CCT-save": "Save (update)", "UA-CCT-insert": "Submit (insert)", "UA-ACT-save": "Save (update)", "UA-ACT-insert": "Submit (insert)", "UA-BNK-new": "New (list action)",
+  "UA-CUS-new": "New (list action)", "UA-CON-new": "New (list action)", "UA-CCT-new": "New (list action)", "UA-DOC-new": "New (list action): AR files a customer document by hand (D31)", "UA-DOC-insert": "Submit (insert)", "UA-DOC-save": "Save (update)", "UA-ACT-new": "New (list action)", "UA-CCT-save": "Save (update)", "UA-CCT-insert": "Submit (insert)", "UA-ACT-save": "Save (update)", "UA-ACT-insert": "Submit (insert)", "UA-BNK-new": "New (list action)",
   "UA-CUS-insert": "Submit (insert)", "UA-CON-insert": "Submit (insert)", "UA-SCH-insert": "Submit (insert) of a billing schedule created from the contract (CCI decision 8)", "UA-BNK-insert": "Submit (insert)",
   "UA-CON-newschedule": "New billing schedule (contract record, CCI decision 8) → new x_ar_billing_schedule form with contract (and customer) prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case (source_request)",
   "UA-CUS-newcontract": "New contract → new contract form with customer prefilled"
@@ -163,7 +163,7 @@ export const RELATED = {
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",
-  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request",
+  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request", "RL-CCT-CAL": "cost_centre", "RL-ACT-CAL": "account_code",
   "RL-BSU-DEP": "bsu", "RL-BNK-BSU": "bank_account", "RL-BNK-DEP": "bank_account"
 };
 

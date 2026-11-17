@@ -106,7 +106,8 @@ export function custResults(d) {
   // AR-ix decision 17 (E8.1): existing customers only; a missing customer is set up through an AR-i first
   const missing = `<p class="pt-hint"${sn("PT-48")}>Customer not found? Submit an AR-i to set up the customer first.</p>`;
   if (!q) return `<div id="pfCustResults"><p class="pt-hint">${ix ? "Start typing the company name or UEN." : "Start typing the company name or UEN. If AR doesn't have the customer yet, you can add it as a new customer."}</p>${ix ? missing : ""}</div>`;
-  const hits = S.customers.map(c => ({ c, sc: Math.max(nameSim(q, c.name), c.name.toLowerCase().includes(q) ? 1 : 0, (c.uen || "").toLowerCase().includes(q) ? 1 : 0, ...(c.aliases || []).map(a => a.toLowerCase().includes(q) ? .8 : 0)) }))
+  // CCI decision 12: inactive customers aren't offered (AR-ix; AR-i's portal form is locked and unchanged)
+  const hits = S.customers.filter(c => d.form === "AR-i" || c.active !== false).map(c => ({ c, sc: Math.max(nameSim(q, c.name), c.name.toLowerCase().includes(q) ? 1 : 0, (c.uen || "").toLowerCase().includes(q) ? 1 : 0, ...(c.aliases || []).map(a => a.toLowerCase().includes(q) ? .8 : 0)) }))
     .filter(x => x.sc >= .5).sort((a, b) => b.sc - a.sc).slice(0, 6);
   return `<div id="pfCustResults">
     ${hits.length ? `<ul class="custhits" aria-label="Matching customers">${hits.map(({ c }) => `<li><button type="button" class="custhit" data-pickcust="${c.id}"><b>${esc(c.name)}</b><span class="desc">${esc(c.uen ? `UEN ${c.uen}` : "")}${c.parent ? ` · ${esc(c.parent)}` : ""}</span></button></li>`).join("")}</ul>` : `<p class="pt-hint">No customer at AR matches "${esc(d.custQ)}".</p>`}

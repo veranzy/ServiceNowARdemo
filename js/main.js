@@ -26,7 +26,8 @@ function openTab(table, id) {
 }
 function newTab(table, prefill) {
   const id = "new" + uid(""), key = `${table}:${id}`;
-  W().tabs.push({ key, table, id, draft: {}, vals: prefill ? { ...prefill } : {} });
+  const defaults = Object.fromEntries((TABLES[table]?.fields || []).filter(f => f.default !== undefined).map(f => [f.key, f.default]));   // e.g. Active = true
+  W().tabs.push({ key, table, id, draft: {}, vals: { ...defaults, ...(prefill || {}) } });
   W().active = key; render(); window.scrollTo(0, 0);
 }
 function closeTab(key) {

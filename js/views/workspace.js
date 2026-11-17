@@ -69,7 +69,7 @@ export const LISTS = {
     text: u => [u.number, acctLabel(acctById(u.bankAccountId)), u.fileName].join(" "), newable: true
   },
   bankAccounts: {
-    filters: { all: ["Bank accounts", () => true] },
+    filters: { all: ["Bank accounts", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
     cols: [["Account", a => refLink("bankAccounts", a.id, `${BANKS[a.bank].name} · ${a.number}`), "", "number"], ["Name", a => esc(a.name), "", "name"], ["Department", a => esc(a.department), "", "department"],
       ["Type", a => esc(acctType(a)), "", "accountType"], ["Last statement", a => esc(S.uploads.filter(u => u.bankAccountId === a.id).map(u => u.statementDate).sort().pop() || "—"), "", "=BNK.last_statement"]],
     sort: (a, b) => a.bank.localeCompare(b.bank) || a.number.localeCompare(b.number),
@@ -89,7 +89,7 @@ export const LISTS = {
     text: x => [x.number, custName(x.customerId), x.desc, x.department].join(" ")
   },
   contacts: {
-    filters: { all: ["Billing contacts", () => true] },
+    filters: { all: ["Billing contacts", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
     cols: [["Customer", c => esc(custName(c.customerId)), "", "customerId"], ["Department", c => esc(c.department), "", "department"], ["Bill-to person", c => refLink("contacts", c.id, c.name), "", "name"],
       ["Email", c => esc(c.email), "", "email"], ["Phone", c => esc(c.phone || "—"), "", "phone"]],
     sort: (a, b) => custName(a.customerId).localeCompare(custName(b.customerId)) || a.department.localeCompare(b.department),
@@ -98,12 +98,12 @@ export const LISTS = {
   },
   // Master data for the Collections form (CCI decision 11, #9 §8)
   costCentres: {
-    filters: { all: ["Cost centres", () => true] },
+    filters: { all: ["Cost centres", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
     cols: [["Code", c => refLink("costCentres", c.id, c.code), "", "code"], ["Name", c => esc(c.name), "wrap", "name"], ["Department", c => esc(c.department), "", "department"], ["Active", c => c.active ? "Yes" : "No", "", "active"]],
     sort: (a, b) => a.code.localeCompare(b.code), text: c => [c.code, c.name, c.department].join(" "), newable: true
   },
   accountCodes: {
-    filters: { all: ["Account codes", () => true] },
+    filters: { all: ["Account codes", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
     cols: [["Code", a => refLink("accountCodes", a.id, a.code), "", "code"], ["Description", a => esc(a.name), "wrap", "name"], ["GST / recovery treatment", a => esc(TABLES.accountCodes.fields.find(f => f.key === "treatment").choices.find(c => c[0] === a.treatment)?.[1] || "—"), "", "treatment"], ["Active", a => a.active ? "Yes" : "No", "", "active"]],
     sort: (a, b) => a.code.localeCompare(b.code), text: a => [a.code, a.name].join(" "), newable: true
   },
@@ -112,10 +112,10 @@ export const LISTS = {
     cols: [["Number", d => refLink("documents", d.id, d.number), "", "number"], ["Customer", d => esc(custName(d.customerId)), "", "customerId"], ["Type", d => esc(DOC_LABEL[d.docType]), "", "docType"],
       ["File", d => `${icon("clip", 13)} ${esc(d.fileName)}`, "wrap", "fileName"], ["For", d => esc(d.contractId ? ctrNo(d.contractId) : d.department || "—"), "", null], ["Received", d => esc(d.received), "", "received"]],
     sort: (a, b) => custName(a.customerId).localeCompare(custName(b.customerId)) || a.docType.localeCompare(b.docType),
-    text: d => [d.number, custName(d.customerId), DOC_LABEL[d.docType], d.fileName].join(" ")
+    text: d => [d.number, custName(d.customerId), DOC_LABEL[d.docType], d.fileName].join(" "), newable: true
   },
   customers: {
-    filters: { all: ["Customers", () => true] },
+    filters: { all: ["Customers", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
     cols: [["Name", c => refLink("customers", c.id, c.name), "", "name"], ["Parent group", c => esc(c.parent || "—"), "", "parent"], ["Terms", c => `Net ${esc(c.terms)}`, "", "terms"],
       ["Open AR", c => fmt(rollup(issuedOf(c.id)).open), "num", "=CUS.open_ar"], ["Overdue", c => { const o = rollup(issuedOf(c.id)).overdue; return o ? `<span class="bad">${fmt(o)}</span>` : fmt(0); }, "num", "=CUS.overdue"]],
     sort: (a, b) => a.name.localeCompare(b.name),
@@ -336,8 +336,8 @@ const LAYOUT = {
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
   deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "bankRef", "payer", "reference"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
-  bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency", "colTypes"]]],
-  customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes"]],
+  bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency", "colTypes", "active"]]],
+  customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes", "active"]],
     ["Agency and point of contact", ["agencyType", "vag", "vagSubBu", "pocName", "pocEmail"]]],
   contracts: [["Contract", ["ctrId", "contractType", "category", "number", "reference", "poNumber", "customerId", "department", "owners", "title", "start", "end", "value", "billing", "notes"]],
     ["Billing terms", ["billingCycle", "billingCycleOther", "invoiceDate", "paymentTerms", "paymentTermsOther", "terms", "discPct", "discDays", "prorate", "prorateFirst", "prorateLast", "typeOfBilling", "bulkDocs"]],
@@ -346,7 +346,7 @@ const LAYOUT = {
     ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
   costCentres: [["Cost centre", ["code", "name", "department", "active"]]],
   accountCodes: [["Account code", ["code", "name", "treatment", "active"]]],
-  contacts: [["Billing contact", ["customerId", "department", "name", "email", "phone", "address", "requestId"]]],
+  contacts: [["Billing contact", ["customerId", "department", "name", "email", "phone", "address", "requestId", "active"]]],
   documents: [["Customer document", ["number", "customerId", "docType", "fileName", "contractId", "department", "requestId", "received"]]],
   schedules: [["Billing schedule", ["number", "contractId", "customerId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "firstAmount", "lastAmount", "requestId"]]],
 };
@@ -560,6 +560,11 @@ function related(table, rec) {
       rt("Billing schedules", "schedules", S.schedules.filter(x => x.contractId === rec.id), [["Number", x => refLink("schedules", x.id, x.number)], ["What is billed", x => esc(x.desc), "wrap"], ["Frequency", x => esc(freqLabel(x.frequency))], ["Next billing", x => esc(nextBilling(x) || "Ended")]], { id: "RL-CON-SCH" }),
       rt("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CON-INV" }),
       rt("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Amount", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CON-REQ" })];
+  }
+  // Cost centre / account code (CCI decision 12): the AR4 allocation rows that use it
+  if (table === "costCentres" || table === "accountCodes") {
+    const k = table === "costCentres" ? "costCentre" : "accountCode", rows = S.colAlloc.filter(x => x[k] === rec.id);
+    return [rt("Amount for Each Account Code", "colAlloc", rows, [["AR request", x => refLink("requests", x.requestId, recById("requests", x.requestId)?.number)], ["Description", x => esc(x.desc), "wrap"], ["Amount", x => fmt(x.amount), "num"]], { id: table === "costCentres" ? "RL-CCT-CAL" : "RL-ACT-CAL" })];
   }
   if (table === "uploads" || table === "bankAccounts") {
     const deps = S.deposits.filter(p => table === "uploads" ? p.uploadId === rec.id : p.bankAccountId === rec.id).sort(LISTS.deposits.sort);

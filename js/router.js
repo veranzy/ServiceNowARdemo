@@ -14,7 +14,7 @@
 //   #/portal/ticket/<number>      a ticket page (also used after submitting)
 import { S } from "./state.js";
 
-const keyOf = (table, r) => r.number || (table === "customers" ? r.name : r.id);
+const keyOf = (table, r) => r.number || r.code || (table === "customers" ? r.name : r.id);   // business key in the URL (code for cost centres / account codes)
 const findRec = (table, key) => (S[table] || []).find(r => keyOf(table, r) === key) || null;
 const enc = s => encodeURIComponent(s).replace(/%2F/gi, "/");
 

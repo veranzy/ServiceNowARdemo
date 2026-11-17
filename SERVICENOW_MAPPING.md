@@ -43,6 +43,7 @@ Custom customer master (not CSM customer_account). Each customer references one 
 | `credit_limit` | Credit limit | Currency |  |
 | `bank_names` | Names seen on bank statements | String (1000) | Comma-separated. Used to rank invoices in the invoice finder. |
 | `notes` | Notes for AR | String (4000) |  |
+| `active` | Active | True/False | Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields. Default: true |
 
 ### Contract — `x_ar_contract`
 
@@ -101,6 +102,7 @@ The department's usual bill-to person at a customer (D11): unique per customer +
 | `phone` | Phone | String |  |
 | `billing_address` | Billing address | String (1000) |  |
 | `source_request` | From AR request | Reference | → `x_ar_request`. Read-only on form |
+| `active` | Active | True/False | Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields. Default: true |
 
 ### Customer document — `x_ar_customer_document`
 
@@ -316,6 +318,7 @@ Company bank accounts that statements are uploaded for. Department and account t
 | `account_type` | Account type | Choice | Choices: Revenue account (`revenue`), Deposit account (`deposit`), Operating account (`operating`). Mandatory |
 | `currency` | Currency | String | Read-only on form |
 | `collection_types` | Collection types | List | Choices: AR-iii, AR-iv, AR-v. Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others |
+| `active` | Active | True/False | Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields. Default: true |
 
 ### Statement upload — `sc_req_item`
 
@@ -397,7 +400,7 @@ Master data (CCI decision 11, #9 §8): cost centres per requesting department; o
 | `code` | Code | String | Mandatory |
 | `name` | Name | String | Mandatory |
 | `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory |
-| `active` | Active | True/False |  |
+| `active` | Active | True/False | Inactive records are not offered in forms (CCI decision 12). Default: true |
 
 ### Account code — `x_ar_account_code`
 
@@ -408,7 +411,7 @@ Master data (CCI decision 11, #9 §8): account codes for AR4 allocations with th
 | `code` | Code | String | Mandatory |
 | `description` | Description | String | Mandatory |
 | `gst_treatment` | GST / recovery treatment | Choice | Choices: GST applicable (`gst`), No GST (`no_gst`), Recovery (`recovery`) |
-| `active` | Active | True/False |  |
+| `active` | Active | True/False | Inactive records are not offered in forms (CCI decision 12). Default: true |
 
 ## Portal (project team)
 

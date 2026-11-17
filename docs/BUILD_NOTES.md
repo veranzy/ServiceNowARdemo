@@ -46,6 +46,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON-GIRO` | Tab GIRO history on the contract (and on no-contract shells): related list x_ar_request where contract = this contract and ar_form = AR-ix; columns AR-ix case, Type of request, Purpose of GIRO/DDA request, Amount, Requested by, Updated, GIRO (Active = contract.giro_case, Completed, Open, Contract to link, Rejected) |
 | `SCH-PER` | Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming; no action column (drafts come from JOB-DAILYINV) |
 | `JOB-DAILYINV` | Scheduled job Daily invoice check (daily, D12 amended 2026-11-16): for each x_ar_billing_schedule period with no non-cancelled invoice and invoice date within 5 working days (Mon–Fri) of today, insert a draft x_ar_invoice (billing_schedule, billing_period, contract, customer, ar_request and request_line from the schedule) and add a work note on the AR-i case. Issuing stays manual (Issue invoice). Demo: shown as mock data only (the draft on ARQ0001009); no demo button |
+| `INV-PDF` | Invoice document (CCI decision 13): HTML template rendered with PDF Generation Utilities (sn_pdfgeneratorutils) when AR issues the invoice and attached to the invoice; the workspace tab shows the same template as a preview (DRAFT / CANCELLED watermark when not issued). Template wording is a draft |
 
 ## AR request record
 
@@ -745,6 +746,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-CUS-new` | UI action: New (list action) |
 | `UA-CON-new` | UI action: New (list action) |
 | `UA-CCT-new` | UI action: New (list action) |
+| `UA-INV-pdf` | UI action: Print or save as PDF: opens the invoice document for printing (in ServiceNow: download the generated PDF attachment) |
 | `UA-DOC-new` | UI action: New (list action): AR files a customer document by hand (D31) |
 | `UA-DOC-insert` | UI action: Submit (insert) |
 | `UA-DOC-save` | UI action: Save (update) |

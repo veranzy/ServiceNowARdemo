@@ -122,3 +122,11 @@ The prototype records the terms only. Nothing calculates or charges interest yet
 - Contracts have no flag: their status comes from the start and end dates.
 - Cost centres and account codes open by code (`#/ws/costCentres/CC-ENG-100`) and list the AR4 allocations using
   them (`RL-CCT-CAL`, `RL-ACT-CAL`). Customer documents can be added by hand (*New*, D31).
+
+## Invoice block (decision 13)
+
+Invoices are made by the system (the AR-i's 1st invoice on Closed complete; later periods by the daily job from
+the billing schedule). The record page: header, ribbon (Amount, Amount due, Due), Details, Allocations, **Invoice
+preview**, Record history; actions *Issue invoice* (approval date required) and *Cancel invoice*. The preview is
+the invoice document as the PDF would show it; ServiceNow: an HTML template rendered with PDF Generation
+Utilities on Issue and attached to the invoice (`INV-PDF`, `UA-INV-pdf`). Template wording is a draft.

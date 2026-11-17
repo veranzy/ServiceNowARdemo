@@ -645,3 +645,18 @@ button.ws-tab[aria-selected="true"],.ws-tab.rec.on{background:transparent;color:
 .mrvs td .ferr { display: block; }
 .mrvs tfoot th, .mrvs tfoot td { border-top: 1px solid var(--line); }
 .radios{display:flex;gap:16px;flex-wrap:wrap}.radios .fcheck{font-weight:400}
+/* Invoice preview (CCI decision 13): an A4-like document; always dark text on white, also in dark mode and print */
+.invdoc-wrap{display:grid;gap:12px}
+.invdoc{position:relative;background:#fff;color:#1b1f24;border:1px solid var(--line);border-radius:6px;padding:28px;max-width:760px;width:100%;box-sizing:border-box;overflow:hidden;font-size:13px}
+.invdoc h2{font-size:20px;margin:0 0 6px;color:#1b1f24}.invdoc h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#5b6570;margin:0 0 4px}
+.invdoc-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:2px solid #1b1f24;padding-bottom:12px}
+.invdoc-co{display:block;font-size:16px}.invdoc-head span{color:#5b6570}
+.invdoc-title dl{display:grid;grid-template-columns:auto auto;gap:2px 12px;margin:0}.invdoc-title dt{color:#5b6570}.invdoc-title dd{margin:0}
+.invdoc-to{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:16px 0}.invdoc-to p{margin:0}
+.invdoc-lines{width:100%;border-collapse:collapse}.invdoc-lines th,.invdoc-lines td{border-bottom:1px solid #d8dde3;padding:8px 6px;text-align:left;color:#1b1f24}
+.invdoc-lines .num{text-align:right}.invdoc-lines .muted{color:#5b6570}.invdoc-lines tfoot th,.invdoc-lines tfoot td{border-bottom:0;font-size:14px}
+.invdoc-foot{margin-top:18px;color:#5b6570}
+.invdoc-mark{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:72px;font-weight:800;color:rgba(200,30,30,.12);pointer-events:none}
+body.invprint{background:#fff;padding:0;margin:0}body.invprint .invdoc{border:0;max-width:none}
+@media print{body.invprint .invdoc{padding:0}}
+.invdoc-lines th{background:transparent;font-weight:700}

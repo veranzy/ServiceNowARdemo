@@ -245,6 +245,12 @@ document.addEventListener("click", e => {
   }
   if (d.list) { const [table, filter] = d.list.split(":"); return showMain({ kind: "list", table, filter }); }
   if (d.open) { const [table, id] = d.open.split(":"); return openTab(table, id); }
+  if (d.printinv) {   // CCI decision 13: print the invoice preview (browser print → Save as PDF)
+    const doc = $(`invdoc-${d.printinv}`); if (!doc) return;
+    const w = window.open("", "_blank", "width=820,height=1000"); if (!w) return toast("Allow pop-ups to print the invoice.");
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${document.title}</title><link rel="stylesheet" href="${new URL("css/styles.css", location.href)}"></head><body class="invprint">${doc.outerHTML}</body></html>`);
+    w.document.close(); w.onload = () => w.print(); return;
+  }
   if (d.tab) { W().active = d.tab; render(); return window.scrollTo(0, 0); }
   if (d.closetab) return closeTab(d.closetab);
   if (d.new && d.prefillContract) {   // New billing schedule (CCI decisions 8–9): contract, customer, monthly, first billing date on the next cycle day

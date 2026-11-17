@@ -493,6 +493,24 @@ const giroHistory = (k, id) => sec(id, "GIRO history", giroCases(k).length, `<se
   ${giroCases(k).length ? `<div class="tablewrap"><table><thead><tr><th>AR-ix case</th><th>Type of request</th><th>Purpose of GIRO/DDA request</th><th>Amount</th><th>Requested by</th><th>Updated</th><th>GIRO</th></tr></thead><tbody>
   ${giroCases(k).map(r => `<tr><td>${refLink("requests", r.id, r.number)}</td><td>${esc(r.giroType === "remove" ? "Remove" : "Add")}</td><td>${esc(GIRO_PURPOSE[r.giroPurpose] || "")}<span class="desc">${esc(r.carplate || r.giroLocation || r.giroPurposeOther || "")}</span></td><td>${esc(r.giroAmount || "—")}</td><td>${esc(userById(r.requestedBy)?.name || "")}</td><td>${esc(r.updated || r.opened)}</td><td>${giroCaseChip(r)}</td></tr>`).join("")}
   </tbody></table></div>` : `<p class="empty small">No AR-ix cases on this contract yet.</p>`}</section>`);
+/** Invoice document (CCI decision 13): what the PDF generated on Issue would show. Draft template, wording to confirm. */
+export function invoiceDoc(i) {
+  const c = recById("customers", i.customerId), k = recById("contracts", i.contractId), its = i.requestId ? S.items.filter(x => x.requestId === i.requestId).sort((a, b) => a.seq - b.seq) : [];
+  const pay = S.bankAccounts.find(a => a.accountType === "revenue" && a.active !== false), billTo = k?.billToName ? [k.billToName, k.billToAddress, k.billToEmail] : [c?.pocName, c?.address, c?.pocEmail];
+  return `<div class="invdoc-wrap"><div class="row end"><button type="button" class="btn" data-printinv="${i.id}"${sn("UA-INV-pdf")}>${icon("doc", 15)} Print or save as PDF</button></div>
+  <article class="invdoc" id="invdoc-${i.id}"${sn("INV-PDF")}>
+    ${i.state !== "issued" ? `<div class="invdoc-mark" aria-hidden="true">${i.state === "cancelled" ? "CANCELLED" : "DRAFT"}</div>` : ""}
+    <header class="invdoc-head"><div><b class="invdoc-co">Corpex Group Pte Ltd</b><span>Accounts Receivable · ar@corp.example</span></div>
+      <div class="invdoc-title"><h2>Tax invoice</h2><dl><dt>Invoice no.</dt><dd class="mono">${esc(i.number)}</dd><dt>Invoice date</dt><dd>${esc(i.date || "—")}</dd><dt>Due date</dt><dd>${esc(i.due || "—")}</dd></dl></div></header>
+    <section class="invdoc-to"><div><h3>Bill to</h3><p><b>${esc(c?.name || i.customer || "—")}</b>${c?.uen ? `<br>UEN ${esc(c.uen)}` : ""}${billTo.filter(Boolean).map(x => `<br>${esc(x)}`).join("")}</p></div>
+      <div><h3>Reference</h3><p>${k ? `Contract ${esc(k.number)}${k.ctrId ? ` (${esc(k.ctrId)})` : ""}` : "—"}${k?.poNumber ? `<br>PO ${esc(k.poNumber)}` : ""}${i.requestId ? `<br>AR request ${esc(recById("requests", i.requestId)?.number || "")}` : ""}</p></div></section>
+    <table class="invdoc-lines"><thead><tr><th>Description</th><th class="num">Amount (SGD)</th></tr></thead>
+      <tbody><tr><td>${esc(i.desc || "—")}</td><td class="num">${fmt(i.amount)}</td></tr>
+      ${its.length ? `<tr><td colspan="2" class="small muted">Breakdown on the AR request: ${its.map(x => `item ${x.seq} ${fmt(x.amount)} + GST ${fmt(x.gst)} = ${fmt(x.total)}`).map(esc).join("; ")}</td></tr>` : ""}</tbody>
+      <tfoot><tr><th>Total</th><td class="num"><b>SGD ${fmt(i.amount)}</b></td></tr></tfoot></table>
+    <footer class="invdoc-foot"><p>Please pay by the due date${pay ? ` to ${esc(BANKS[pay.bank].name)} account ${esc(pay.number)}` : ""}, quoting the invoice number.</p></footer>
+  </article></div>`;
+}
 const rt = (title, table, rows, cols, opts) => ({ key: opts.id, label: title, n: rows.length, html: relatedTable(title, table, rows, cols, opts) });
 const sec = (key, label, n, html) => ({ key, label, n, html });
 
@@ -580,7 +598,9 @@ function related(table, rec) {
     const cols = table === "invoices"
       ? [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]]
       : [["Invoice", x => tgt(x.a)], ["Customer", x => esc(x.a.requestId ? custName(recById("requests", x.a.requestId)?.customerId) : recById("invoices", x.a.invoiceId)?.customer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]];
-    return [rt("Allocations", "allocations", rows, cols, { id: table === "invoices" ? "RL-INV-ALC" : "RL-DEP-ALC" })];
+    const alc = rt("Allocations", "allocations", rows, cols, { id: table === "invoices" ? "RL-INV-ALC" : "RL-DEP-ALC" });
+    // Invoice block (CCI decision 13): a preview of the invoice document, printable to PDF
+    return table === "invoices" ? [alc, { key: "INV-PDF", label: "Invoice preview", html: invoiceDoc(rec) }] : [alc];
   }
   return [];
 }

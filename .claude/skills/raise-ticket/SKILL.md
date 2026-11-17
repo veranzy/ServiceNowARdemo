@@ -7,6 +7,7 @@ description: Use when a reader agent wants to ask for a change, report a doc mis
 
 You read; you never edit, commit or push. Follow `docs/AGENT_GUIDE.md`.
 
+0. Sanitise the input with `docs/MOCK_COMPANY.md`: no real company, people, customers, UENs, banks or systems in the ticket.
 1. Read `docs/README.md` to find the module, then its `README.md`, `DECISIONS.md`, `OPEN_QUESTIONS.md`.
 2. Check the Lock column in `docs/modules/README.md` and `docs/DECISIONS.md` for any decision the point reverses.
 3. Search issues first: `gh api "repos/veranzy/ServiceNowARdemo/issues?state=all&per_page=100" --jq '.[]|[.number,.state,.title]|@tsv'`.

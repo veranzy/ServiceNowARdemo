@@ -77,7 +77,8 @@ sections, fields, labels, choices, hints, help, validation, show / hide rules, d
 live demo and its open questions are answered or explicitly deferred. Keep the status column in
 `docs/modules/README.md` current; that table is the sign-off checklist.
 
-**Style.** Plain English, short sentences. Sample or anonymised data only (the demo is public).
+**Style.** Plain English, short sentences. Sample or anonymised data only (the demo is public); the mock
+company for examples and sanitising is in [`docs/MOCK_COMPANY.md`](docs/MOCK_COMPANY.md).
 Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 
 **Instruction changes**
@@ -104,6 +105,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-17 | Agents and roles: reader agents raise issues only; Claude is the only writer; no documentation agent. Domain model and code layout moved to `docs/ARCHITECTURE.md`; reader entry `docs/README.md`, guide `docs/AGENT_GUIDE.md`, issue templates per type, module labels; check warns on spec drift. | Owner |
 | 2026-11-17 | Personas: AR-iii, AR-iv and AR-v are one Collections form, type chosen first (D30). | Owner |
 | 2026-11-17 | Core flow: Link to customer retired; AR sets up master data by hand and links cases with the Link section (D31). | Owner |
+| 2026-11-17 | Style: mock company background `docs/MOCK_COMPANY.md` for sanitising requirements and sample data. | Owner |
 
 ## How we work: modules, one at a time
 

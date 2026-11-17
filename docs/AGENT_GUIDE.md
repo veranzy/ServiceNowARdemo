@@ -35,4 +35,5 @@ Add the **module label** too (`AR-00`, `AR-i`, `AR-iii`, `AR-ix`, `CCI`, `BSU`, 
 - Say **why** in the Context section: who uses it, an example.
 - For rules, write **when … then …**: *When Purpose is Carpark, then the reference field is hidden.*
 - Mark what is **not decided** as a question rather than guessing.
-- Sample data only: the repo and demo are public. No real names, emails, account numbers or UENs.
+- **Sanitise first** with [`MOCK_COMPANY.md`](MOCK_COMPANY.md): the repo and demo are public. Translate real names, people,
+  customers, UENs, banks, amounts and systems into the mock company before writing anything.

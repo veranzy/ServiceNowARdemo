@@ -18,6 +18,7 @@ Sample data is fictional (Singapore, SGD).
 | What a build-note ID (`PT-33`, `REQ.giro_type`) maps to | [`BUILD_NOTES.md`](BUILD_NOTES.md) (generated from [`../js/notes.js`](../js/notes.js)) | Turn on **Show IDs** in the demo bar to see the IDs on screen. |
 | Tables, money rules, code layout | [`ARCHITECTURE.md`](ARCHITECTURE.md) | |
 | How a client ticket becomes a change | [`ENHANCEMENT_SOP.md`](ENHANCEMENT_SOP.md), triage files in [`enhancements/`](enhancements/) | |
+| The mock company (for sanitising real requirements) | [`MOCK_COMPANY.md`](MOCK_COMPANY.md) | Read before writing any example or ticket. |
 | Rules for the builder (labels and logic, locks, git) | [`../CLAUDE.md`](../CLAUDE.md), [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) | |
 | What's next | [`../ROADMAP.md`](../ROADMAP.md), open [GitHub issues](https://github.com/veranzy/ServiceNowARdemo/issues) | |
 

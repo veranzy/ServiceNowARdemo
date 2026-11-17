@@ -102,6 +102,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-17 | Client enhancement tickets follow `docs/ENHANCEMENT_SOP.md` (triage file per ticket, issue template). | Owner |
 | 2026-11-17 | Core flow: Collections category (AR-iii, AR-iv, AR-v, D28); BSU deposits can be matched to open Collections cases (D29). | Owner |
 | 2026-11-17 | Agents and roles: reader agents raise issues only; Claude is the only writer; no documentation agent. Domain model and code layout moved to `docs/ARCHITECTURE.md`; reader entry `docs/README.md`, guide `docs/AGENT_GUIDE.md`, issue templates per type, module labels; check warns on spec drift. | Owner |
+| 2026-11-17 | Personas: AR-iii, AR-iv and AR-v are one Collections form, type chosen first (D30). | Owner |
 
 ## How we work: modules, one at a time
 
@@ -157,7 +158,7 @@ rebuilt later from this codebase. Do not add Claude/LLM calls here unless the ow
 
 | Persona | Role | UI | Does |
 |---|---|---|---|
-| Company project team | `x_ar.project_team` | **Portal only** (Service Portal / Employee Center look) | Picks from **16 AR forms (AR-i … AR-xvi)**; defined so far: AR-i *New AR request* (customer search, contract, invoice details) and AR-ix *GIRO authorisation*. Every form starts with **General information** (D19). Follows **My requests** (own cases and cases they are CC'd on), replies on the ticket page |
+| Company project team | `x_ar.project_team` | **Portal only** (Service Portal / Employee Center look) | Picks from **16 AR forms (AR-i … AR-xvi)**; defined so far: AR-i *New AR request* (customer search, contract, invoice details), AR-ix *GIRO authorisation*, and one *Collections* form for AR-iii, AR-iv and AR-v (type chosen first, D30; shell). Every form starts with **General information** (D19). Follows **My requests** (own cases and cases they are CC'd on), replies on the ticket page |
 | Accounts receivable team | `x_ar.ar_team` | **Workspace only** (configurable workspace look) | Works AR request **cases**, creates and issues invoices, uploads bank statements (**BSU**), matches deposits to invoices **manually**, maintains customers, contracts and bank accounts |
 
 Core flow: project team submits **AR-i**: searches the customer and adds it as new only if not found

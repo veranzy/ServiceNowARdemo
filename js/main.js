@@ -257,7 +257,10 @@ document.addEventListener("click", e => {
     const k = S.contracts.find(x => x.id === d.prefillContract);
     return newTab(d.new, { contractId: k?.id, customerId: k?.customerId, department: k?.department || "", frequency: "monthly", firstDate: nextCycleDate(k), lastDate: k?.end || "" });
   }
-  if (d.new === "uploads") return showMain({ kind: "bsu" });   // New upload RITM: the upload form (BSU decision 16)
+  if (d.new === "uploads") return showMain({ kind: "bsu" });
+  // #10: New billing line / invoice from the contract's tabs, prefilled with the contract (and its customer)
+  if (d.new && d.prefillContractRef) { const k = S.contracts.find(x => x.id === d.prefillContractRef);
+    return newTab(d.new, d.new === "invoices" ? { contractId: k?.id, customerId: k?.customerId } : { contractId: k?.id }); }   // New upload RITM: the upload form (BSU decision 16)
   if (d.new) return newTab(d.new, d.prefillCustomer ? { customerId: d.prefillCustomer } : d.prefillAccount ? { bankAccountId: d.prefillAccount } : null);
   if (d.ui) return uiAction(d.ui);
   if (d.ckind) { const tab = activeTab(); const c = W().composer[tab.id] ||= { kind: "work_note", text: "" }; c.kind = d.ckind; c.text = $("composer-" + tab.id)?.value || c.text; return render(); }

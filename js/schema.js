@@ -328,6 +328,7 @@ export const TABLES = {
     note: "The department's usual bill-to person at a customer (D11): unique per customer + department. Used to prefill the bill-to on a new contract or shell; the bill-to used for invoicing is on the contract (D16).",
     fields: [
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
+      { key: "requestor", name: "requestor", label: "Requestor", type: "Reference", ref: "users", refFilter: "project", help: "Project-team user who gave this contact (#10 E10.1, CCI decision 15)" },
       { key: "department", name: "department", label: "Department", type: "Choice", choices: DEPT_CHOICES, mandatory: true },
       { key: "name", name: "contact_name", label: "Bill-to person", type: "String", mandatory: true },
       { key: "email", name: "email", label: "Email", type: "String", mandatory: true },
@@ -343,6 +344,7 @@ export const TABLES = {
     fields: [
       { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "DOC0001000" },
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", readonly: true },
+      { key: "requestor", name: "requestor", label: "Requestor", type: "Reference", ref: "users", refFilter: "project", help: "Project-team user who gave this document (#10 E10.2, CCI decision 15)" },
       { key: "docType", name: "document_type", label: "Document type", type: "Choice", choices: DOC_TYPES, readonly: true },
       { key: "fileName", name: "file_name", label: "File", type: "String", readonly: true },
       { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", readonly: true, help: "For signed contract / PO" },

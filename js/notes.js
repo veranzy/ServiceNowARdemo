@@ -153,7 +153,7 @@ export const UI_ACTIONS = {
   "UA-BSU-sample": "Demo only: generate a sample CSV in the bank's layout",
   "UA-BNK-upload": "Upload statement → opens the BSU page for this account",
   "UA-CUS-save": "Save (update)", "UA-CON-save": "Save (update)", "UA-BNK-save": "Save (update)",
-  "UA-CUS-new": "New (list action)", "UA-CON-new": "New (list action)", "UA-CCT-new": "New (list action)", "UA-INV-pdf": "Print or save as PDF: opens the invoice document for printing (in ServiceNow: download the generated PDF attachment)", "UA-BNK-newmode": "New payment mode (on the bank account): opens a new payment mode with the bank account filled in", "UA-PMD-new": "New (list action)", "UA-PMD-insert": "Submit (insert)", "UA-PMD-save": "Save (update)", "UA-DOC-new": "New (list action): AR files a customer document by hand (D31)", "UA-DOC-insert": "Submit (insert)", "UA-DOC-save": "Save (update)", "UA-ACT-new": "New (list action)", "UA-CCT-save": "Save (update)", "UA-CCT-insert": "Submit (insert)", "UA-ACT-save": "Save (update)", "UA-ACT-insert": "Submit (insert)", "UA-BNK-new": "New (list action)",
+  "UA-CUS-new": "New (list action)", "UA-CON-new": "New (list action)", "UA-CCT-new": "New (list action)", "UA-INV-pdf": "Print or save as PDF: opens the invoice document for printing (in ServiceNow: download the generated PDF attachment)", "UA-BNK-newmode": "New payment mode (on the bank account): opens a new payment mode with the bank account filled in", "UA-PMD-new": "New (list action)", "UA-PMD-insert": "Submit (insert)", "UA-PMD-save": "Save (update)", "UA-RQL-newrel": "New billing line on the contract's Billing lines tab (#10 E10.7): AR copies the AR-i line; contract filled in", "UA-INV-newrel": "New invoice on the contract's Invoices tab (#10 E10.10, CCI decision 14): draft invoice with customer and contract filled in", "UA-BCT-newrel": "Add billing contact on the customer's Billing contacts tab", "UA-INV-insert": "Submit (insert)", "UA-RQL-insert": "Submit (insert)", "UA-DOC-new": "New (list action): AR files a customer document by hand (D31)", "UA-DOC-insert": "Submit (insert)", "UA-DOC-save": "Save (update)", "UA-ACT-new": "New (list action)", "UA-CCT-save": "Save (update)", "UA-CCT-insert": "Submit (insert)", "UA-ACT-save": "Save (update)", "UA-ACT-insert": "Submit (insert)", "UA-BNK-new": "New (list action)",
   "UA-CUS-insert": "Submit (insert)", "UA-CON-insert": "Submit (insert)", "UA-SCH-insert": "Submit (insert) of a billing schedule created from the contract (CCI decision 8)", "UA-BNK-insert": "Submit (insert)",
   "UA-CON-newschedule": "New billing schedule (contract record, CCI decision 8) → new x_ar_billing_schedule form with contract (and customer) prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case (source_request)",
   "UA-CUS-newcontract": "New contract → new contract form with customer prefilled"
@@ -165,7 +165,7 @@ export const RELATED = {
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",
-  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request", "RL-CCT-CAL": "cost_centre", "RL-BNK-PMD": "bank_account", "RL-ACT-CAL": "account_code",
+  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request", "RL-CCT-CAL": "cost_centre", "RL-INV-RQL": "invoice", "RL-BNK-PMD": "bank_account", "RL-ACT-CAL": "account_code",
   "RL-BSU-DEP": "bsu", "RL-BNK-BSU": "bank_account", "RL-BNK-DEP": "bank_account"
 };
 
@@ -185,6 +185,7 @@ export const CALC_COLS = {
   "SCH.next_billing_date": "Calculated: first period on or after today without an invoice",
   "SCH.periods_due": "Calculated: periods up to today without an invoice",
   "BNK.last_statement": `Calculated: latest ${TABLES.uploads.table}.statement_date for the account`,
+  "INV.aging": "Calculated (#10 E10.11): Current / 1–30 / 31–60 / 61–90 / 90+ days past the due date, for issued invoices with an amount due",
   "PMD.deposit_id_pattern": "Calculated for display: <prefix>-DDMMYY-<suffix> (BSU decision 18)",
   "PMD.bank_name": "Dot-walk: bank_account.bank (Bank name)",
   "PMD.bank_account_name": "Dot-walk: bank_account.account_name (Bank account name)"

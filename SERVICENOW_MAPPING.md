@@ -96,6 +96,7 @@ The department's usual bill-to person at a customer (D11): unique per customer +
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
+| `requestor` | Requestor | Reference | → `sys_user` (users with x_ar.project_team). Project-team user who gave this contact (#10 E10.1, CCI decision 15) |
 | `department` | Department | Choice | Choices: Engineering, Marine, Digital, Infrastructure, Energy, Facilities, Logistics, Healthcare, Environmental, Rail, Advisory. Mandatory |
 | `contact_name` | Bill-to person | String | Mandatory |
 | `email` | Email | String | Mandatory |
@@ -112,6 +113,7 @@ Documents supplied once per customer (D10). The file itself is a sys_attachment 
 |---|---|---|---|
 | `number` | Number | String | Read-only on form |
 | `customer` | Customer | Reference | → `x_ar_customer`. Read-only on form |
+| `requestor` | Requestor | Reference | → `sys_user` (users with x_ar.project_team). Project-team user who gave this document (#10 E10.2, CCI decision 15) |
 | `document_type` | Document type | Choice | Choices: Signed contract / PO (`contract`), Company registration (ACRA / UEN) (`acra`), Billing contact & address form (`billing_form`). Read-only on form |
 | `file_name` | File | String | Read-only on form |
 | `contract` | Contract | Reference | → `x_ar_contract`. Read-only on form. For signed contract / PO |

@@ -1,7 +1,7 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
 import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
-import { isARi, DOC_LABEL, reqItems, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById, freeCompanies } from "../records.js";
+import { draftDate, isARi, DOC_LABEL, reqItems, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById, freeCompanies } from "../records.js";
 import { CODE } from "../notes.js";
 import { COLLECTION_FORMS, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
@@ -39,13 +39,14 @@ export const LISTS = {
   invoices: {
     filters: {
       draft: ["Drafts", i => i.state === "draft"],
+      issued: ["Issued", i => i.state === "issued"],   // #10 E10.11: approved = issued (approval date set)
       open: ["Issued, unpaid", i => i.state === "issued" && invMoney(i).open > 0],
       overdue: ["Overdue", i => invMoney(i).late],
       all: ["All", () => true]
     },
     cols: [["Number", i => refLink("invoices", i.id, i.number), "", "number"], ["Customer", i => esc(i.customer), "", "customerId"], ["Contract", i => esc(ctrNo(i.contractId)), "", "contractId"],
       ["Description", i => esc(i.desc), "wrap", "desc"], ["Amount", i => fmt(i.amount), "num", "amount"], ["Amount due", i => fmt(invMoney(i).open), "num", "=INV.amount_due"],
-      ["Due", i => `${esc(i.due || "—")}${invMoney(i).late ? `<span class="desc bad">${esc(daysLabel(i.due))}</span>` : ""}`, "", "due"], ["Status", i => invChip(i), "", "=INV.payment_status"]],
+      ["Due", i => `${esc(i.due || "—")}${invMoney(i).late ? `<span class="desc bad">${esc(daysLabel(i.due))}</span>` : ""}`, "", "due"], ["Status", i => invChip(i), "", "=INV.payment_status"], ["Aging", i => esc(agingOf(i)), "", "=INV.aging"]],
     sort: (a, b) => String(b.number).localeCompare(String(a.number)),
     text: i => [i.number, i.customer, i.desc, ctrNo(i.contractId)].join(" ")
   },
@@ -360,8 +361,8 @@ const LAYOUT = {
     ["Bill-to", ["billToName", "billToEmail", "billToPhone", "billToAddress"]]],
   costCentres: [["Cost centre", ["code", "name", "department", "active"]]],
   accountCodes: [["Account code", ["code", "name", "treatment", "active"]]],
-  contacts: [["Billing contact", ["customerId", "department", "name", "email", "phone", "address", "requestId", "active"]]],
-  documents: [["Customer document", ["number", "customerId", "docType", "fileName", "contractId", "department", "requestId", "received"]]],
+  contacts: [["Billing contact", ["customerId", "requestor", "department", "name", "email", "phone", "address", "requestId", "active"]]],
+  documents: [["Customer document", ["number", "customerId", "requestor", "docType", "fileName", "contractId", "department", "requestId", "received"]]],
   schedules: [["Billing schedule", ["number", "contractId", "customerId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "firstAmount", "lastAmount", "requestId"]]],
 };
 /** Fields AR can't edit on the workspace form (set by the portal or by UI actions). */
@@ -513,6 +514,14 @@ const giroHistory = (k, id) => sec(id, "GIRO history", giroCases(k).length, `<se
   ${giroCases(k).length ? `<div class="tablewrap"><table><thead><tr><th>AR-ix case</th><th>Type of request</th><th>Purpose of GIRO/DDA request</th><th>Amount</th><th>Requested by</th><th>Updated</th><th>GIRO</th></tr></thead><tbody>
   ${giroCases(k).map(r => `<tr><td>${refLink("requests", r.id, r.number)}</td><td>${esc(r.giroType === "remove" ? "Remove" : "Add")}</td><td>${esc(GIRO_PURPOSE[r.giroPurpose] || "")}<span class="desc">${esc(r.carplate || r.giroLocation || r.giroPurposeOther || "")}</span></td><td>${esc(r.giroAmount || "—")}</td><td>${esc(userById(r.requestedBy)?.name || "")}</td><td>${esc(r.updated || r.opened)}</td><td>${giroCaseChip(r)}</td></tr>`).join("")}
   </tbody></table></div>` : `<p class="empty small">No AR-ix cases on this contract yet.</p>`}</section>`);
+/** Aging bucket of an issued, open invoice (#10 E10.11), as on the landing page: Current, 1–30 … 90+ days past due. */
+export function agingOf(i) {
+  if (i.state !== "issued" || invMoney(i).open <= 0) return "—";
+  const d = Math.round((today - new Date(i.due + "T00:00:00")) / DAY);
+  return d <= 0 ? "Current" : d <= 30 ? "1–30" : d <= 60 ? "31–60" : d <= 90 ? "61–90" : "90+";
+}
+/** "New" button in a related tab header (#10): opens a new record prefilled with its parent. */
+const newBtn = (table, label, p) => `<button type="button" class="btn small" data-new="${table}"${p.contract ? ` data-prefill-contract-ref="${p.contract}"` : ""}${p.customer ? ` data-prefill-customer="${p.customer}"` : ""}${sn(`UA-${CODE[table]}-newrel`)}>${esc(label)}</button>`;
 /** Invoice document (CCI decision 13): what the PDF generated on Issue would show. Draft template, wording to confirm. */
 export function invoiceDoc(i) {
   const c = recById("customers", i.customerId), k = recById("contracts", i.contractId), its = i.requestId ? S.items.filter(x => x.requestId === i.requestId).sort((a, b) => a.seq - b.seq) : [];
@@ -581,23 +590,29 @@ function related(table, rec) {
   }
   if (table === "customers") {
     const ks = S.contracts.filter(k => k.customerId === rec.id), is = S.invoices.filter(i => i.customerId === rec.id), rs = S.requests.filter(r => r.customerId === rec.id);
-    const extra = [rt("Billing contacts", "contacts", S.contacts.filter(c => c.customerId === rec.id).sort(LISTS.contacts.sort), [["Department", c => esc(c.department)], ["Bill-to person", c => refLink("contacts", c.id, c.name)], ["Email", c => esc(c.email)], ["Billing address", c => esc(c.address || "—"), "wrap"]], { id: "RL-CUS-BCT" }),
-      rt("Customer documents", "documents", S.documents.filter(d => d.customerId === rec.id).sort(LISTS.documents.sort), [["Type", d => esc(DOC_LABEL[d.docType])], ["File", d => refLink("documents", d.id, d.fileName), "wrap"], ["For", d => esc(d.contractId ? ctrNo(d.contractId) : d.department || "—")], ["Received", d => esc(d.received)]], { id: "RL-CUS-DOC" })];
+    const extra = [rt("Billing contacts", "contacts", S.contacts.filter(c => c.customerId === rec.id).sort(LISTS.contacts.sort), [["Requestor", x => esc(userById(x.requestor)?.name || "—")], ["Department", c => esc(c.department)], ["Bill-to person", c => refLink("contacts", c.id, c.name)], ["Email", c => esc(c.email)], ["Billing address", c => esc(c.address || "—"), "wrap"]], { id: "RL-CUS-BCT", actions: newBtn("contacts", "Add billing contact", { customer: rec.id }) }),
+      rt("Customer documents", "documents", S.documents.filter(d => d.customerId === rec.id).sort(LISTS.documents.sort), [["Type", d => esc(DOC_LABEL[d.docType])], ["File", d => refLink("documents", d.id, d.fileName), "wrap"], ["Requestor", x => esc(userById(x.requestor)?.name || "—")], ["Department", d => esc(d.department || "—")], ["For", d => esc(d.contractId ? ctrNo(d.contractId) : "—")], ["Received", d => esc(d.received)]], { id: "RL-CUS-DOC" })];
     // CCI 2026-11-16: Billing hierarchy removed (issue #6, revisit later); billing schedules sit under contracts only
     return [
       rt("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Contract", r => r.contractId ? refLink("contracts", r.contractId) : r.contractOption === "new" ? `${esc(r.newCtrRef || "")} <span class="chip c-warn">New</span>` : "—"], ["Value", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CUS-REQ" }),
-      rt("Contracts", "contracts", ks.sort(LISTS.contracts.sort), [["Number", k => refLink("contracts", k.id, k.number)], ["Type", k => ctrTypeChip(k)], ["Title", k => esc(k.title), "wrap"], ["Bill-to", k => esc(k.billToName || "—")], ["Lines", k => String(S.lines.filter(l => l.contractId === k.id).length), "num"], ["Billed", k => fmt(rollup(S.invoices.filter(i => i.contractId === k.id && i.state === "issued")).billed), "num"]], { id: "RL-CUS-CON" }),
+      rt("Contracts", "contracts", ks.sort(LISTS.contracts.sort), LISTS.contracts.cols.map(([l, fn, cls]) => [l, fn, cls]), { id: "RL-CUS-CON" })   /* #10 E10.3: same columns as the Contracts list */,
       rt("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Contract", i => esc(ctrNo(i.contractId))], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CUS-INV" }), ...extra];
   }
   if (table === "contracts") {
     const is = S.invoices.filter(i => i.contractId === rec.id), rs = S.requests.filter(r => r.contractId === rec.id);
     const r = rollup(is.filter(i => i.state === "issued"));
-    return [rt("Billing lines", "lines", S.lines.filter(l => l.contractId === rec.id), [["Line", l => refLink("lines", l.id, l.number)], ["AR request", l => refLink("requests", l.requestId)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"], ["Value", l => fmt(lineValue(l)), "num"],
-        ["Billed as", l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId); return `${lineChip(l)}${inv ? ` ${refLink("invoices", inv.id, inv.number)}` : ""}${sch ? ` ${refLink("schedules", sch.id, sch.number)}` : ""}`; }]], { id: "RL-CON-RQL" }),
-      giroHistory(rec, "CON-GIRO"),
-      rt("Billing schedules", "schedules", S.schedules.filter(x => x.contractId === rec.id), [["Number", x => refLink("schedules", x.id, x.number)], ["What is billed", x => esc(x.desc), "wrap"], ["Frequency", x => esc(freqLabel(x.frequency))], ["Next billing", x => esc(nextBilling(x) || "Ended")]], { id: "RL-CON-SCH" }),
-      rt("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CON-INV" }),
-      rt("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Amount", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CON-REQ" })];
+    // #10 E10.4: AR requests → Invoices → Billing schedule → Billing lines → GIRO history
+    const per = [];   // E10.8: the schedule's periods (2nd invoice onwards), one row each
+    for (const sch of S.schedules.filter(x => x.contractId === rec.id)) { const ds = periodDates(sch.frequency, sch.firstDate, sch.lastDate), am = periodAmounts(sch, ds);
+      ds.forEach((date, ix) => per.push({ sch, date, amount: am[ix] ?? sch.amount, inv: S.invoices.find(i => i.scheduleId === sch.id && i.periodDate === date && i.state !== "cancelled") })); }
+    per.sort((a, b) => a.date.localeCompare(b.date));
+    return [rt("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Amount", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CON-REQ" }),
+      rt("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CON-INV", actions: newBtn("invoices", "New", { contract: rec.id }) }),
+      rt("Billing schedule", "schedules", per, [["No.", x => String(per.indexOf(x) + 1), "num"], ["Billing date", x => esc(x.date)], ["Draft creation date", x => esc(draftDate(x.date))], ["Linked invoice", x => x.inv ? refLink("invoices", x.inv.id, x.inv.number) : "—"], ["Amount", x => fmt(x.amount), "num"]],
+        { id: "RL-CON-SCH", actions: `${S.schedules.filter(x => x.contractId === rec.id).map(x => refLink("schedules", x.id, x.number)).join(" ")} <button type="button" class="btn small" data-new="schedules" data-prefill-contract="${rec.id}"${sn("UA-CON-newschedule")}>New billing schedule</button>` }),
+      rt("Billing lines", "lines", S.lines.filter(l => l.contractId === rec.id), [["Line", l => refLink("lines", l.id, l.number)], ["AR request", l => refLink("requests", l.requestId)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"], ["Value", l => fmt(lineValue(l)), "num"],
+        ["Billed as", l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId); return `${lineChip(l)}${inv ? ` ${refLink("invoices", inv.id, inv.number)}` : ""}${sch ? ` ${refLink("schedules", sch.id, sch.number)}` : ""}`; }]], { id: "RL-CON-RQL", actions: newBtn("lines", "New", { contract: rec.id }) }),
+      giroHistory(rec, "CON-GIRO")];
   }
   // Cost centre / account code (CCI decision 12): the AR4 allocation rows that use it
   if (table === "costCentres" || table === "accountCodes") {
@@ -621,7 +636,10 @@ function related(table, rec) {
       : [["Invoice", x => tgt(x.a)], ["Customer", x => esc(x.a.requestId ? custName(recById("requests", x.a.requestId)?.customerId) : recById("invoices", x.a.invoiceId)?.customer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]];
     const alc = rt("Allocations", "allocations", rows, cols, { id: table === "invoices" ? "RL-INV-ALC" : "RL-DEP-ALC" });
     // Invoice block (CCI decision 13): a preview of the invoice document, printable to PDF
-    return table === "invoices" ? [alc, { key: "INV-PDF", label: "Invoice preview", html: invoiceDoc(rec) }] : [alc];
+    // #10 E10.11: the invoice's billing line(s): its AR-i / contract line, or the line its schedule bills
+    const bl = table === "invoices" ? S.lines.filter(l => l.id === rec.lineId || l.invoiceId === rec.id || (rec.scheduleId && l.scheduleId === rec.scheduleId)) : [];
+    const blt = rt("Billing lines", "lines", bl, [["Line", l => refLink("lines", l.id, l.number)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"], ["Amount", l => fmt(l.amount), "num"]], { id: "RL-INV-RQL" });
+    return table === "invoices" ? [blt, alc, { key: "INV-PDF", label: "Invoice preview", html: invoiceDoc(rec) }] : [alc];
   }
   return [];
 }
@@ -637,7 +655,7 @@ function recordPage(tab) {
   const canEdit = isNew || editable(table, rec);
   const vals = tab.vals || null;
   const shown = vals ? { ...rec, ...vals } : rec;
-  const ro = RO[table] || [];
+  const ro = isNew ? [] : RO[table] || [];   // a new record (e.g. a billing line added on the contract, #10) sets every field once
   const sections = LAYOUT[table].filter(([, , when]) => !when || isNew || when(shown)).map(([title, keys]) => keys[0] === "@attachments" ? `<fieldset class="fsec"><legend>${esc(title)}</legend>${attList(rec)}</fieldset>` : `<fieldset class="fsec"><legend>${esc(title)}</legend><div class="fgrid">${keys.map(k => def.fields.find(f => f.key === k)).filter(Boolean).filter(f => !(isNew && f.readonly)).filter(f => (table === "requests" && !isCol(shown)) || fieldVisible(table, f, shown)).map(f => fieldHtml(table, f, shown, { prefix: `f-${tab.key}`, readonly: !canEdit || ro.includes(f.key) || (f.key === "substate" && shown.state !== "awaiting_requestor_info"), errors: tab.errors, vals: shown })).join("")}</div></fieldset>`).join("");
   const title = isNew ? `New ${def.label.toLowerCase()}` : displayOf(table, rec);
   const sub = table === "requests" ? rec.title : table === "invoices" ? rec.desc : table === "contracts" ? rec.title : table === "deposits" ? `${rec.payer} · ${acctLabel(acctById(rec.bankAccountId))}`

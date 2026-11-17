@@ -375,5 +375,6 @@ export function loadSample() {
   // AR form cases come from data/AR_form.csv (UIX decision 13); redraw once they are in
   assignContractIds();   // CCI 2026-11-16: system Contract ID on every contract and No contract record
   for (const t of ["customers", "contacts", "bankAccounts"]) for (const r of S[t]) r.active ??= true;   // CCI decision 12
+  S.contacts.forEach((c, n) => { c.requestor ??= n % 2 ? "u_pm2" : "u_pm1"; }); S.documents.forEach((d, n) => { d.requestor ??= n % 2 ? "u_pm1" : "u_pm2"; });   // #10 E10.1–E10.2
   return loadCases().then(n => { if (n) render(); });
 }

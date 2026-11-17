@@ -130,3 +130,13 @@ the billing schedule). The record page: header, ribbon (Amount, Amount due, Due)
 preview**, Record history; actions *Issue invoice* (approval date required) and *Cancel invoice*. The preview is
 the invoice document as the PDF would show it; ServiceNow: an HTML template rendered with PDF Generation
 Utilities on Issue and attached to the invoice (`INV-PDF`, `UA-INV-pdf`). Template wording is a draft.
+
+## Customer, contract and invoice views (#10, decisions 14–17)
+
+- **Customer:** tabs Billing contacts (Requestor, Department, Bill-to person, Email, Billing address; *Add billing contact*),
+  Customer documents (with Requestor and Department), Contracts (same columns as the Contracts list).
+- **Contract:** tabs AR requests → Invoices (*New*: manual draft invoice) → Billing schedule (periods: No., Billing date,
+  Draft creation date, Linked invoice, Amount) → Billing lines (*New*: AR copies the AR-i line) → GIRO history.
+  One *Bill-to* section on Details (D16).
+- **Invoices:** lists Drafts, Issued, Issued unpaid, Overdue, All, with Aging; invoice record tabs Billing lines,
+  Allocations, Invoice preview (PDF), Record history.

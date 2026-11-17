@@ -486,6 +486,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `BCT.customer` | x_ar_billing_contact.customer · Reference → x_ar_customer · mandatory |
+| `BCT.requestor` | x_ar_billing_contact.requestor · Reference → sys_user · Project-team user who gave this contact (#10 E10.1, CCI decision 15) |
 | `BCT.department` | x_ar_billing_contact.department · Choice · mandatory |
 | `BCT.contact_name` | x_ar_billing_contact.contact_name · String · mandatory |
 | `BCT.email` | x_ar_billing_contact.email · String · mandatory |
@@ -509,6 +510,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `DOC.number` | x_ar_customer_document.number · String · read-only |
 | `DOC.customer` | x_ar_customer_document.customer · Reference → x_ar_customer · read-only |
+| `DOC.requestor` | x_ar_customer_document.requestor · Reference → sys_user · Project-team user who gave this document (#10 E10.2, CCI decision 15) |
 | `DOC.document_type` | x_ar_customer_document.document_type · Choice · read-only |
 | `DOC.file_name` | x_ar_customer_document.file_name · String · read-only |
 | `DOC.contract` | x_ar_customer_document.contract · Reference → x_ar_contract · read-only · For signed contract / PO |
@@ -693,6 +695,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `SCH.next_billing_date` | Calculated: first period on or after today without an invoice |
 | `SCH.periods_due` | Calculated: periods up to today without an invoice |
 | `BNK.last_statement` | Calculated: latest sc_req_item.statement_date for the account |
+| `INV.aging` | Calculated (#10 E10.11): Current / 1–30 / 31–60 / 61–90 / 90+ days past the due date, for issued invoices with an amount due |
 | `PMD.deposit_id_pattern` | Calculated for display: <prefix>-DDMMYY-<suffix> (BSU decision 18) |
 | `PMD.bank_name` | Dot-walk: bank_account.bank (Bank name) |
 | `PMD.bank_account_name` | Dot-walk: bank_account.account_name (Bank account name) |
@@ -722,6 +725,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RL-REQ-CTX` | Related list: x_ar_collection_tx where ar_request = this ar request |
 | `RL-REQ-CAL` | Related list: x_ar_collection_allocation where ar_request = this ar request |
 | `RL-CCT-CAL` | Related list: x_ar_collection_allocation where cost_centre = this cost centre |
+| `RL-INV-RQL` | Related list: x_ar_request_line where invoice = this invoice |
 | `RL-BNK-PMD` | Related list: x_ar_payment_mode where bank_account = this bank account |
 | `RL-ACT-CAL` | Related list: x_ar_collection_allocation where account_code = this account code |
 | `RL-BSU-DEP` | Related list: x_ar_bank_statement where bsu = this statement upload |
@@ -779,6 +783,11 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-PMD-new` | UI action: New (list action) |
 | `UA-PMD-insert` | UI action: Submit (insert) |
 | `UA-PMD-save` | UI action: Save (update) |
+| `UA-RQL-newrel` | UI action: New billing line on the contract's Billing lines tab (#10 E10.7): AR copies the AR-i line; contract filled in |
+| `UA-INV-newrel` | UI action: New invoice on the contract's Invoices tab (#10 E10.10, CCI decision 14): draft invoice with customer and contract filled in |
+| `UA-BCT-newrel` | UI action: Add billing contact on the customer's Billing contacts tab |
+| `UA-INV-insert` | UI action: Submit (insert) |
+| `UA-RQL-insert` | UI action: Submit (insert) |
 | `UA-DOC-new` | UI action: New (list action): AR files a customer document by hand (D31) |
 | `UA-DOC-insert` | UI action: Submit (insert) |
 | `UA-DOC-save` | UI action: Save (update) |

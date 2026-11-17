@@ -628,6 +628,10 @@ export function saveRecord(table, id, raw) {
     return { rec: existing };
   }
   const rec = { id: uid(table[0]), ...vals };
+  // read-only values prefilled by the page that opened the new record (e.g. the contract of a new billing line or invoice, #10)
+  for (const f of def.fields) if (f.readonly && !f.auto && f.key in raw && raw[f.key] != null && rec[f.key] === undefined) rec[f.key] = raw[f.key];
+  if (def.prefix && !rec.number) rec.number = nextNumber(table);
+  if (table === "invoices") Object.assign(rec, { state: "draft", customer: custById(rec.customerId)?.name || "", currency: "SGD" });   // manual invoice from the contract (CCI decision 14)
   if (table === "customers") { Object.assign(rec, { aliases: rec.aliases || [], terms: rec.terms || 30 }); withCompany(rec); }
   if (table === "contracts") Object.assign(rec, { terms: rec.terms || custById(rec.customerId)?.terms || 30 });
   if (table === "bankAccounts") rec.currency = "SGD";

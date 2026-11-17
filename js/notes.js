@@ -130,7 +130,7 @@ export const UI_ACTIONS = {
   "UA-REQ-link": "RETIRED 2026-11-17 (D31): AR sets up customers, contracts and documents by hand and links the case with Link Customer Reference / Link Contract Reference. Was: Link to customer → creates or links x_ar_customer; links the existing contract, creates the new contract, or finds/creates the department's no-contract shell; sets contract on every billing line; writes the bill-to to the contract (and the department default contact if none); files documents to x_ar_customer_document (D10, D15, D16)",
   "UA-SCH-raise": "RETIRED 2026-11-16 (D12 amended): Raise invoice. Draft invoices now come from the daily scheduled job JOB-DAILYINV",
   "UA-SCH-save": "Save (update)",
-  "UA-BCT-save": "Save (update)", "UA-BCT-new": "New (list action)", "UA-BCT-insert": "Submit (insert); unique per customer + department",
+  "UA-BCT-save": "Save (update)", "UA-BCT-new": "New (list action)", "UA-BCT-insert": "Submit (insert); several contacts per customer and department allowed (CCI decision 15, D11 amended)",
   "UA-CUS-newcontact": "Add billing contact → new billing contact form with customer prefilled",
   "UA-RQL-invoice": "RETIRED 2026-11-16 (CCI decision 8): Create invoice on a one-off line. The 1st invoice is generated when the AR-i case is set to Closed complete",
   "UA-RQL-schedule": "RETIRED 2026-11-16 (CCI decision 8): Set up billing schedule on a recurring line. AR creates the schedule on the contract (New billing schedule) and picks the AR-i case",

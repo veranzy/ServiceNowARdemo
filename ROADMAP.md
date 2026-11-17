@@ -26,6 +26,13 @@ shipped. Requirement questions still open for the client live in each module's
 
 ## Done
 
+- 2026-11-18 **UIX**: list menu has no Recurring billing group and the landing page no *Billing periods due* card; schedules live under contracts, AR monitors invoice lists (decision 17). Common case page for every form (decision 16).
+- 2026-11-18 **CCI**: master data block (active flag), invoice block with preview and print, cost centre / account code master data; #10 customer, contract and invoice views (New invoice from the contract, contract billing lines, schedule periods tab, aging); customer and contract fields follow AR-i (decisions 11–18).
+- 2026-11-18 **BSU**: each upload is an RITM (D32) on a list page; bank account master (bank name, account number, account name); payment modes per account set the Deposit ID (Prefix-DDMMYY-Suffix), with account code and cost centre; deposits matched to invoices or Collections cases (decisions 12–20).
+- 2026-11-17 **AR-iii**: one Collections form for AR-iii, AR-iv, AR-v (D28–D30); phase 1 portal form from #9 (decisions 8–18).
+- 2026-11-17 **AR-ix**: enhancement set #8 (decisions 17–25), portal form locked again.
+- 2026-11-17 **AR-i / AR-00**: Link section (Link Customer Reference, Link Contract Reference) replaces Link to customer (D31).
+- 2026-11-17 **DOCS**: enhancement SOP, reader agents, issue templates, drift check, mock company (Corpex Group, AR Team).
 - 2026-11-16 **UIX**: AR request lists show All AR-i / All AR-ix (open and closed) instead of Open.
 - 2026-11-16 **CCI**: 1st invoice reviewed manually (suggested invoice date, manual approval date); approval date required to issue any invoice; schedules follow the contract billing cycle day (decision 9).
 - 2026-11-16 **CCI**: Closed complete generates the AR-i's 1st invoice; Approval date on invoices; AR creates the schedule on the contract for the 2nd invoice onwards; Billing schedule tab on recurring AR-i cases (decision 8).

@@ -746,7 +746,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-SCH-save` | UI action: Save (update) |
 | `UA-BCT-save` | UI action: Save (update) |
 | `UA-BCT-new` | UI action: New (list action) |
-| `UA-BCT-insert` | UI action: Submit (insert); unique per customer + department |
+| `UA-BCT-insert` | UI action: Submit (insert); several contacts per customer and department allowed (CCI decision 15, D11 amended) |
 | `UA-CUS-newcontact` | UI action: Add billing contact → new billing contact form with customer prefilled |
 | `UA-RQL-invoice` | UI action: RETIRED 2026-11-16 (CCI decision 8): Create invoice on a one-off line. The 1st invoice is generated when the AR-i case is set to Closed complete |
 | `UA-RQL-schedule` | UI action: RETIRED 2026-11-16 (CCI decision 8): Set up billing schedule on a recurring line. AR creates the schedule on the contract (New billing schedule) and picks the AR-i case |

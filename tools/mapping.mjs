@@ -1,5 +1,6 @@
 // Generates SERVICENOW_MAPPING.md from js/schema.js. Run: node tools/mapping.mjs
 import { writeFileSync } from "node:fs";
+import { UI_ACTIONS } from "../js/notes.js";
 import { BANKS, RECORD_PRODUCER, RECORD_PRODUCER_ARIX, RECORD_PRODUCER_COL, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
 
 const refName = r => r === "users" ? "sys_user" : r === "groups" ? "sys_user_group" : TABLES[r].table;
@@ -65,24 +66,11 @@ md += `## Portal (project team)
 
 ### UI actions
 
-| Table | Action | Effect |
-|---|---|---|
-| AR request | Assign to me | \`assigned_to\` = current user; New → In progress |
-| AR request | Link to customer | Creates or links \`${TABLES.customers.table}\`; links / creates the contract or no-contract shell and sets it on every billing line; writes the bill-to to the contract; files documents (D10, D15, D16) |
-| AR request | Request info (overflow menu) | Requires an additional comment; state → Awaiting info |
-| AR request | Reject (overflow menu) | Requires an additional comment; state → Rejected |
-| Billing line | Create invoice | One-off line: insert draft \`${TABLES.invoices.table}\` (customer, line's contract, description, amount, invoice date, due = date + terms); links \`request_line\` |
-| Billing line | Set up billing schedule | Recurring line: insert \`${TABLES.schedules.table}\` over the line's date range; comment to requester (D12) |
-| Billing schedule | Raise invoice | Draft invoice for one billing period; never automatic (D12) |
-| AR request (AR-ix) | Link contract | Shown while \`contract\` is empty: sets contract and customer from the chosen contract. For a contract not on file, AR processes its AR-i first (AR-ix module) |
-| AR request (AR-ix) | Activate GIRO | Type Add: contract \`giro_status\` = Active and \`giro_case\` = this case; case → Completed. Blocked if the contract already has GIRO active (one per contract, D21) |
-| AR request (AR-ix) | Remove GIRO | Type Remove: contract \`giro_status\` = Not active, \`giro_case\` cleared; case → Completed. Blocked if GIRO is not active |
-| Invoice | Issue invoice | Draft → Issued; posts a requester-visible comment; BR sets the AR request to Billed when every line is invoiced or scheduled |
-| Invoice | Cancel invoice (overflow menu) | Only when no allocations; the line becomes open again and the request goes back to In progress |
-| Deposit | Match to invoice / Find invoice → Apply | Inserts \`${TABLES.allocations.table}\` records (manual); exception = short pay / over pay / multi-invoice |
-| Deposit | Remove match | Removes the deposit's allocations |
-| BSU page | Save to bank statements | Inserts \`${TABLES.uploads.table}\` + one \`${TABLES.deposits.table}\` row per deposit; withdrawals skipped |
-| Bank account | Upload statement | Opens the BSU page for that account |
+Generated from \`UI_ACTIONS\` in \`js/notes.js\` (active actions only; retired IDs are listed in \`docs/BUILD_NOTES.md\`).
+
+| ID | Action and effect |
+|---|---|
+${Object.entries(UI_ACTIONS).filter(([, t]) => !/^RETIRED/.test(t)).map(([id, t]) => `| \`${id}\` | ${t.replace(/\|/g, "\\|").replace(/\n/g, " ")} |`).join("\n")}
 
 ### Matching (manual only)
 

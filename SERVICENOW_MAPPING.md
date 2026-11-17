@@ -456,24 +456,66 @@ Master data (CCI decision 11, #9 §8): account codes for AR4 allocations with th
 
 ### UI actions
 
-| Table | Action | Effect |
-|---|---|---|
-| AR request | Assign to me | `assigned_to` = current user; New → In progress |
-| AR request | Link to customer | Creates or links `x_ar_customer`; links / creates the contract or no-contract shell and sets it on every billing line; writes the bill-to to the contract; files documents (D10, D15, D16) |
-| AR request | Request info (overflow menu) | Requires an additional comment; state → Awaiting info |
-| AR request | Reject (overflow menu) | Requires an additional comment; state → Rejected |
-| Billing line | Create invoice | One-off line: insert draft `x_ar_invoice` (customer, line's contract, description, amount, invoice date, due = date + terms); links `request_line` |
-| Billing line | Set up billing schedule | Recurring line: insert `x_ar_billing_schedule` over the line's date range; comment to requester (D12) |
-| Billing schedule | Raise invoice | Draft invoice for one billing period; never automatic (D12) |
-| AR request (AR-ix) | Link contract | Shown while `contract` is empty: sets contract and customer from the chosen contract. For a contract not on file, AR processes its AR-i first (AR-ix module) |
-| AR request (AR-ix) | Activate GIRO | Type Add: contract `giro_status` = Active and `giro_case` = this case; case → Completed. Blocked if the contract already has GIRO active (one per contract, D21) |
-| AR request (AR-ix) | Remove GIRO | Type Remove: contract `giro_status` = Not active, `giro_case` cleared; case → Completed. Blocked if GIRO is not active |
-| Invoice | Issue invoice | Draft → Issued; posts a requester-visible comment; BR sets the AR request to Billed when every line is invoiced or scheduled |
-| Invoice | Cancel invoice (overflow menu) | Only when no allocations; the line becomes open again and the request goes back to In progress |
-| Deposit | Match to invoice / Find invoice → Apply | Inserts `x_ar_allocation` records (manual); exception = short pay / over pay / multi-invoice |
-| Deposit | Remove match | Removes the deposit's allocations |
-| BSU page | Save to bank statements | Inserts `sc_req_item` + one `x_ar_bank_statement` row per deposit; withdrawals skipped |
-| Bank account | Upload statement | Opens the BSU page for that account |
+Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs are listed in `docs/BUILD_NOTES.md`).
+
+| ID | Action and effect |
+|---|---|
+| `UA-PT-addcol` | Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99) |
+| `UA-PT-addalloc` | Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10) |
+| `UA-REQ-assign` | Assign to me → assigned_to = current user (assignment_group kept, default Accounts Receivable); New → Work in progress. One of only two case actions with Save (AR-00, 2026-11-16) |
+| `UA-SCH-save` | Save (update) |
+| `UA-BCT-save` | Save (update) |
+| `UA-BCT-new` | New (list action) |
+| `UA-BCT-insert` | Submit (insert); several contacts per customer and department allowed (CCI decision 15, D11 amended) |
+| `UA-CUS-newcontact` | Add billing contact → new billing contact form with customer prefilled |
+| `UA-RQL-save` | Save (update, while the line is open) |
+| `UA-PT-newcust` | Portal: Add as new customer (sets new_customer = true, copies the search text into the name) |
+| `UA-PT-additem` | Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row |
+| `UA-REQ-post` | Post work note / additional comment to the activity stream |
+| `UA-REQ-save` | Save (update). On x_ar_request also: state change journalled (system note); substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract; AR-i set to Closed complete generates the 1st invoice as a draft for each line without one (blocked until customer and contract are linked; CCI decision 8) |
+| `UA-INV-issue` | Issue invoice (saves the form first) → state = Issued; blocked until approval_date is set (every invoice, CCI decision 9); posts a comment to the requester on the linked AR request |
+| `UA-INV-cancel` | Cancel invoice → only when no BSU deposit is matched |
+| `UA-INV-save` | Save (update, draft only) |
+| `UA-DEP-match` | Match to invoice → opens the invoice finder for this deposit |
+| `UA-DEP-find` | Find invoice → opens the invoice finder |
+| `UA-DEP-confirm` | Confirm match → inserts x_ar_allocation records (manual), with invoice or, for a Collections case, request set (D29) |
+| `UA-DEP-remove` | Remove match → deletes the deposit's allocations |
+| `UA-DEP-export` | Export matches to CSV |
+| `UA-BSU-new` | New (list action on Statement uploads): opens the upload form (catalog item Bank statement upload) |
+| `UA-BSU-save` | Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete |
+| `UA-BSU-sample` | Demo only: generate a sample CSV in the bank's layout |
+| `UA-BNK-upload` | Upload statement → opens the BSU page for this account |
+| `UA-CUS-save` | Save (update) |
+| `UA-CON-save` | Save (update) |
+| `UA-BNK-save` | Save (update) |
+| `UA-CUS-new` | New (list action) |
+| `UA-CON-new` | New (list action) |
+| `UA-CCT-new` | New (list action) |
+| `UA-INV-pdf` | Print or save as PDF: opens the invoice document for printing (in ServiceNow: download the generated PDF attachment) |
+| `UA-BNK-newmode` | New payment mode (on the bank account): opens a new payment mode with the bank account filled in |
+| `UA-PMD-new` | New (list action) |
+| `UA-PMD-insert` | Submit (insert) |
+| `UA-PMD-save` | Save (update) |
+| `UA-RQL-newrel` | New billing line on the contract's Billing lines tab (#10 E10.7): AR copies the AR-i line; contract filled in |
+| `UA-INV-newrel` | New invoice on the contract's Invoices tab (#10 E10.10, CCI decision 14): draft invoice with customer and contract filled in |
+| `UA-BCT-newrel` | Add billing contact on the customer's Billing contacts tab |
+| `UA-INV-insert` | Submit (insert) |
+| `UA-RQL-insert` | Submit (insert) |
+| `UA-DOC-new` | New (list action): AR files a customer document by hand (D31) |
+| `UA-DOC-insert` | Submit (insert) |
+| `UA-DOC-save` | Save (update) |
+| `UA-ACT-new` | New (list action) |
+| `UA-CCT-save` | Save (update) |
+| `UA-CCT-insert` | Submit (insert) |
+| `UA-ACT-save` | Save (update) |
+| `UA-ACT-insert` | Submit (insert) |
+| `UA-BNK-new` | New (list action) |
+| `UA-CUS-insert` | Submit (insert) |
+| `UA-CON-insert` | Submit (insert) |
+| `UA-SCH-insert` | Submit (insert) of a billing schedule created from the contract (CCI decision 8) |
+| `UA-BNK-insert` | Submit (insert) |
+| `UA-CON-newschedule` | New billing schedule (contract record, CCI decision 8) → new x_ar_billing_schedule form with contract (and customer) prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case (source_request) |
+| `UA-CUS-newcontract` | New contract → new contract form with customer prefilled |
 
 ### Matching (manual only)
 

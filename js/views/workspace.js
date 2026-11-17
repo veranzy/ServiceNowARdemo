@@ -100,7 +100,9 @@ export const LISTS = {
   // Payment modes per bank account (BSU decision 18)
   paymentModes: {
     filters: { all: ["Payment modes", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
-    cols: [["Payment mode", m => refLink("paymentModes", m.id, m.name), "", "name"], ["Bank account", m => esc(acctLabel(acctById(m.bankAccountId))), "", "bankAccountId"], ["Transaction ID", m => `<span class="mono">${esc(m.txnId)}</span>`, "", "txnId"],
+    // BSU decision 17 applied here too: bank name, bank account number and bank account name in their own columns
+    cols: [["Payment mode", m => refLink("paymentModes", m.id, m.name), "", "name"], ["Bank name", m => esc(BANKS[acctById(m.bankAccountId)?.bank]?.name || "—"), "", "=PMD.bank_name"],
+      ["Bank account number", m => refLink("bankAccounts", m.bankAccountId, acctById(m.bankAccountId)?.number), "", "bankAccountId"], ["Bank account name", m => esc(acctById(m.bankAccountId)?.name || "—"), "", "=PMD.bank_account_name"], ["Transaction ID", m => `<span class="mono">${esc(m.txnId)}</span>`, "", "txnId"],
       ["Deposit ID", m => `<span class="mono">${esc(m.prefix)}-DDMMYY-${esc(m.suffix)}</span>`, "", "=PMD.deposit_id_pattern"], ["Active", m => m.active !== false ? "Yes" : "No", "", "active"]],
     sort: (a, b) => String(acctLabel(acctById(a.bankAccountId))).localeCompare(acctLabel(acctById(b.bankAccountId))) || a.name.localeCompare(b.name),
     text: m => [m.name, m.txnId, m.prefix, m.suffix, acctLabel(acctById(m.bankAccountId))].join(" "), newable: true

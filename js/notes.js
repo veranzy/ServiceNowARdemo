@@ -185,7 +185,9 @@ export const CALC_COLS = {
   "SCH.next_billing_date": "Calculated: first period on or after today without an invoice",
   "SCH.periods_due": "Calculated: periods up to today without an invoice",
   "BNK.last_statement": `Calculated: latest ${TABLES.uploads.table}.statement_date for the account`,
-  "PMD.deposit_id_pattern": "Calculated for display: <prefix>-DDMMYY-<suffix> (BSU decision 18)"
+  "PMD.deposit_id_pattern": "Calculated for display: <prefix>-DDMMYY-<suffix> (BSU decision 18)",
+  "PMD.bank_name": "Dot-walk: bank_account.bank (Bank name)",
+  "PMD.bank_account_name": "Dot-walk: bank_account.account_name (Bank account name)"
 };
 
 function fieldText(table, f) {

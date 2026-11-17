@@ -693,6 +693,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `SCH.periods_due` | Calculated: periods up to today without an invoice |
 | `BNK.last_statement` | Calculated: latest sc_req_item.statement_date for the account |
 | `PMD.deposit_id_pattern` | Calculated for display: <prefix>-DDMMYY-<suffix> (BSU decision 18) |
+| `PMD.bank_name` | Dot-walk: bank_account.bank (Bank name) |
+| `PMD.bank_account_name` | Dot-walk: bank_account.account_name (Bank account name) |
 
 ## Related lists
 

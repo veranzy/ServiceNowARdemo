@@ -671,6 +671,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PMD.name` | x_ar_payment_mode.name · String · mandatory · The code in the bank statement's transaction column for this payment mode, e.g. GIRO, FAST, CHQ, TT; a statement line matches it exactly, not case-sensitive (BSU decision 19) |
 | `PMD.prefix` | x_ar_payment_mode.prefix · String · mandatory · Start of the Deposit ID, e.g. AAA |
 | `PMD.suffix` | x_ar_payment_mode.suffix · String · mandatory · End of the Deposit ID |
+| `PMD.account_code` | x_ar_payment_mode.account_code · Reference → x_ar_account_code · Optional. Active account codes (CCI decision 11). Purpose to be confirmed (BSU open question 11) |
+| `PMD.cost_centre` | x_ar_payment_mode.cost_centre · Reference → x_ar_cost_centre · Optional. Active cost centres (CCI decision 11). Purpose to be confirmed (BSU open question 11) |
 | `PMD.active` | x_ar_payment_mode.active · True/False · Inactive payment modes are not used for new uploads (CCI decision 12) |
 
 ## Calculated columns

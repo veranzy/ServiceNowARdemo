@@ -270,6 +270,9 @@ export const TABLES = {
       { key: "name", name: "name", label: "Payment mode", type: "String", mandatory: true, help: "The code in the bank statement's transaction column for this payment mode, e.g. GIRO, FAST, CHQ, TT; a statement line matches it exactly, not case-sensitive (BSU decision 19)" },
       { key: "prefix", name: "prefix", label: "Prefix", type: "String", mandatory: true, help: "Start of the Deposit ID, e.g. AAA" },
       { key: "suffix", name: "suffix", label: "Suffix", type: "String", mandatory: true, help: "End of the Deposit ID" },
+      // BSU decision 20: purpose to be checked with the client (BSU open question 11)
+      { key: "accountCode", name: "account_code", label: "Account code", type: "Reference", ref: "accountCodes", tooltip: "To check: why is it needed?", help: "Optional. Active account codes (CCI decision 11). Purpose to be confirmed (BSU open question 11)" },
+      { key: "costCentre", name: "cost_centre", label: "Cost centre", type: "Reference", ref: "costCentres", tooltip: "To check: why is it needed?", help: "Optional. Active cost centres (CCI decision 11). Purpose to be confirmed (BSU open question 11)" },
       { key: "active", name: "active", label: "Active", type: "True/False", default: true, help: "Inactive payment modes are not used for new uploads (CCI decision 12)" }
     ]
   },

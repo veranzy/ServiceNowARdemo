@@ -379,6 +379,8 @@ Payment modes per bank account (BSU decisions 18–19), defined by AR. A stateme
 | `name` | Payment mode | String | Mandatory. The code in the bank statement's transaction column for this payment mode, e.g. GIRO, FAST, CHQ, TT; a statement line matches it exactly, not case-sensitive (BSU decision 19) |
 | `prefix` | Prefix | String | Mandatory. Start of the Deposit ID, e.g. AAA |
 | `suffix` | Suffix | String | Mandatory. End of the Deposit ID |
+| `account_code` | Account code | Reference | → `x_ar_account_code`. Optional. Active account codes (CCI decision 11). Purpose to be confirmed (BSU open question 11). Tooltip: "To check: why is it needed?" |
+| `cost_centre` | Cost centre | Reference | → `x_ar_cost_centre`. Optional. Active cost centres (CCI decision 11). Purpose to be confirmed (BSU open question 11). Tooltip: "To check: why is it needed?" |
 | `active` | Active | True/False | Inactive payment modes are not used for new uploads (CCI decision 12). Default: true |
 
 ### Collection — `x_ar_collection_tx`

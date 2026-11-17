@@ -10,3 +10,4 @@
 8. How to track upload completeness (which bank accounts have no RITM for a statement day). Decided later (decision 16). (Owner)
 9. Fallback Deposit ID for lines with no payment mode: `UNK-DDMMYY-XX` is a placeholder. What prefix and suffix? (Owner)
 10. Deposit IDs repeat within a payment mode and day (decision 18). Is another unique reference needed when AR or the bank quotes a deposit? (Owner)
+11. Why do payment modes need an account code and a cost centre (decision 20)? E.g. default posting for deposits of that mode, or for Collections? Mandatory once confirmed? (Owner)

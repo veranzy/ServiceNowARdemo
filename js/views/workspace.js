@@ -103,7 +103,8 @@ export const LISTS = {
     // BSU decision 17 applied here too: bank name, bank account number and bank account name in their own columns
     cols: [["Payment mode", m => refLink("paymentModes", m.id, m.name), "", "name"], ["Bank name", m => esc(BANKS[acctById(m.bankAccountId)?.bank]?.name || "—"), "", "=PMD.bank_name"],
       ["Bank account number", m => refLink("bankAccounts", m.bankAccountId, acctById(m.bankAccountId)?.number), "", "bankAccountId"], ["Bank account name", m => esc(acctById(m.bankAccountId)?.name || "—"), "", "=PMD.bank_account_name"],
-      ["Deposit ID", m => `<span class="mono">${esc(m.prefix)}-DDMMYY-${esc(m.suffix)}</span>`, "", "=PMD.deposit_id_pattern"], ["Active", m => m.active !== false ? "Yes" : "No", "", "active"]],
+      ["Deposit ID", m => `<span class="mono">${esc(m.prefix)}-DDMMYY-${esc(m.suffix)}</span>`, "", "=PMD.deposit_id_pattern"],
+      ["Account code", m => esc(S.accountCodes.find(a => a.id === m.accountCode)?.code || "—"), "", "accountCode"], ["Cost centre", m => esc(S.costCentres.find(c => c.id === m.costCentre)?.code || "—"), "", "costCentre"], ["Active", m => m.active !== false ? "Yes" : "No", "", "active"]],
     sort: (a, b) => String(acctLabel(acctById(a.bankAccountId))).localeCompare(acctLabel(acctById(b.bankAccountId))) || a.name.localeCompare(b.name),
     text: m => [m.name, m.prefix, m.suffix, acctLabel(acctById(m.bankAccountId))].join(" "), newable: true
   },
@@ -306,7 +307,8 @@ function listView(table, filter, menuOpen) {
       <div class="seg" role="group" aria-label="Filter">${segFilters.map(([k, [l]]) => `<button type="button" data-list="${table}:${k}" aria-pressed="${k === filter}">${esc(l)}</button>`).join("")}</div>
       <label class="listq">${icon("search", 15)}<input type="search" id="listQ" value="${esc(W().q)}" placeholder="Search in list" aria-label="Search in list"></label>
     </div>
-    <div class="panel"${sn(formList ? formList.note : `LST-${CODE[table]}`)}><div class="tablewrap"><table class="list"><thead><tr>${cols.map(c => `<th class="${c[2]}"${c[3] ? sn(c[3].startsWith("=") ? c[3].slice(1) : `${CODE[table]}.${t.fields.find(f => f.key === c[3])?.name}`) : ""}>${esc(c[0])}</th>`).join("")}</tr></thead>
+    <div class="panel"${sn(formList ? formList.note : `LST-${CODE[table]}`)}><div class="tablewrap"><table class="list"><thead><tr>${cols.map(c => { const tf = c[3] && !c[3].startsWith("=") ? t.fields.find(f => f.key === c[3]) : null;   // a field's tooltip also shows on its list column
+      return `<th class="${c[2]}"${c[3] ? sn(c[3].startsWith("=") ? c[3].slice(1) : `${CODE[table]}.${tf?.name}`) : ""}>${esc(c[0])}${tf?.tooltip ? ` <span class="ftip" tabindex="0" role="img" aria-label="${esc(tf.tooltip)}" data-tip="${esc(tf.tooltip)}">i</span>` : ""}</th>`; }).join("")}</tr></thead>
       <tbody id="listBody">${html}</tbody></table></div></div>
   </div>`;
 }
@@ -346,7 +348,7 @@ const LAYOUT = {
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
   deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "txnId", "paymentModeId", "bankRef", "payer", "reference"]]],
-  paymentModes: [["Payment mode", ["bankAccountId", "name", "prefix", "suffix", "active"]]],
+  paymentModes: [["Payment mode", ["bankAccountId", "name", "prefix", "suffix", "accountCode", "costCentre", "active"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
   bankAccounts: [["Bank account", ["bank", "number", "name", "department", "accountType", "currency", "colTypes", "active"]]],
   customers: [["Customer", ["companyId", "name", "uen", "parent", "address", "terms", "creditLimit", "aliases", "notes", "active"]],

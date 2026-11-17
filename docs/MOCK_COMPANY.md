@@ -16,13 +16,13 @@ Everything here is **fictional**. Any resemblance to a real organisation is unin
 | **What it does** | Multi-disciplinary engineering, infrastructure and services group: projects, rentals (retail units, carparks), managed services and advisory. |
 | **Currency and tax** | SGD; GST 9% (a system property in the app, D25). |
 | **Email domain** | `@corp.example` for staff (e.g. `priya.nair@corp.example`). Customers use `@<customer>.example`. |
-| **Finance team** | **Finance Shared Services Centre (FSSC)**; its **Accounts Receivable (AR) team** works every AR case. "FSSC" and "AR team" mean the same people here. |
+| **AR Team** | The **AR Team** (Accounts Receivable, in Finance) works every AR case. Always call it "AR Team"; don't use other names for it (e.g. FSSC). |
 | **System** | A ServiceNow scoped app `x_ar` (this prototype): **portal** for project teams, **workspace** for the AR team. The app is the system of record for invoices (D2). Other systems are named generically: "the ERP", "the bank portal", "the document store". |
 
 ## Organisation
 
 **11 operational departments**, each with three sub-BUs (from `js/schema.js`). Finance is a 12th unit that owns
-bank accounts and the AR team.
+bank accounts and the AR Team.
 
 | Department | Sub-BUs |
 |---|---|
@@ -44,8 +44,8 @@ bank accounts and the AR team.
 |---|---|---|---|
 | Priya Nair | Project manager | Project team · Digital | Portal (the demo's portal user) |
 | Marcus Wong | Project manager | Project team · Logistics | Portal |
-| Daniel Lim | AR specialist | FSSC · Accounts Receivable | Workspace (the demo's workspace user) |
-| Siti Rahman | AR specialist | FSSC · Accounts Receivable | Workspace |
+| Daniel Lim | AR specialist | AR Team · Finance | Workspace (the demo's workspace user) |
+| Siti Rahman | AR specialist | AR Team · Finance | Workspace |
 
 Assignment group: **Accounts Receivable**. Use these four, or a role ("a project manager in Marine", "an AR
 officer"), never a real person.
@@ -88,6 +88,7 @@ Replace before you write anything into the repo or an issue:
 | Real amounts from contracts or invoices | Round, plausible SGD amounts |
 | Real addresses, unit numbers, car plates | Fictional Singapore-style ones (`#01-23, 3 Jurong Gateway Road`, `SNB 4821 K`) |
 | Internal system names (ERP, DMS, bank portals) | "the ERP", "the document store", "the bank portal" |
+| Internal team names for AR (e.g. FSSC) | AR Team |
 | Internal form codes or form names | The AR form codes (AR-i … AR-xvi) and their names in the catalogue |
 | Screenshots | Re-take them from the live demo, or describe them; never post real screens |
 

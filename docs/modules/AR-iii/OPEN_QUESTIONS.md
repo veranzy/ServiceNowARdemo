@@ -8,3 +8,5 @@ parked ones link their GitHub issue (label `AR-iii`).
 3. ~~What does AR do with the case when the deposit is matched?~~ Nothing automatic: AR sets the state by hand (BSU decision 11, 2026-11-17).
 4. Can one deposit cover several collection cases, or one case be paid by several deposits? Built as for invoices (both allowed); mixing invoices and cases is BSU open question 5. (Owner)
 5. ~~Should Collection type move above General information?~~ No: it stays right after General information (decision 8, 2026-11-17).
+6. AR3 has no amount (only transaction counts). What does AR match a BSU deposit to for an AR3 case (D29 uses the Request value)? ([#9](https://github.com/veranzy/ServiceNowARdemo/issues/9) E9.5) (Owner)
+7. Shared-part changes from #9, one by one: CC Count + up to 10 CC fields (E9.3), round-robin assignment (E9.13), clarification with reopened fields (E9.14), AR Approver role and approval (E9.15), state *Awaiting Internal Information* (E9.16, E9.20), withdrawal (E9.17), closure codes (E9.18), bulk close (E9.19), system-generated cases (E9.12). Parked by decision 10. (Owner)

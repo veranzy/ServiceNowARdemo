@@ -13,3 +13,6 @@ it replaces, and the old row is struck through. Cross-module decisions go to `do
 | 6 | Case form value | The case records `ar_form` = **COL** plus `collection_type` (owner: "One code + type field"). | 2026-11-17 |
 | 7 | Shell first | Built now as a shell: General information + Collection type (owner: "Build a shell now"). Form name, choice labels and fields to come ("Tell you later"); codes used meanwhile. | 2026-11-17 |
 | 8 | Order of the first sections | **Collection type comes right after General information** (owner, 2026-11-17), so D19 holds: every form starts with General information. Open question 5 answered. | 2026-11-17 |
+| 9 | Sanitising #9 (ENH-9) | Keep the issue's terms as they are (owner: generic enough). Demo data stays fictional; identity numbers are masked. | 2026-11-17 |
+| 10 | Phasing (ENH-9) | **Form only for now** (phase 1): the portal form's sections after the selector. Workspace processing (clarification modes, approval, withdrawal, bulk close, assignment) and system-generated cases are parked. | 2026-11-17 |
+| 11 | Shared parts (ENH-9) | General information and the AR-iii / AR-iv / AR-v selector **stay as built**; the form continues after the right type is selected. Changes to shared parts (CC count, states, assignment, rejection codes) are taken one by one later. | 2026-11-17 |

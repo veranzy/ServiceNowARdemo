@@ -29,7 +29,9 @@ To be defined with the owner (open question 1). Known so far:
 
 1. Portal: AR-iii form → `x_ar_request` case (`ar_form = AR-iii`), General information as on every form (D19).
 2. Workspace: AR works the case (Assign to me, Save, State dropdown; AR-00 decision 4).
-3. Cash application: AR applies the BSU deposit to the open AR-iii case (D29), manually.
+3. Cash application: AR applies the BSU deposit to the open AR-iii case (D29), manually, against the case's
+   **Request value** (`amount`). **Built** (BSU decision 11); the case lists them on its tab *BSU deposits matched*.
+   Matching doesn't change the case state: AR closes it with the State dropdown.
 
 ## ServiceNow mapping
 

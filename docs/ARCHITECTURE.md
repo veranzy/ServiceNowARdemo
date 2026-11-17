@@ -24,7 +24,7 @@ concept: deposits come from BSU uploads, live in `x_ar_bank_statement` (code key
   calculated from accepted allocations. Only **issued** invoices can receive payments.
 - AR request `state` (AR-00 decision 4): new / work_in_progress / awaiting_requestor_info / closed_complete /
   closed_incomplete / cancelled, set by AR with a dropdown; `substate` (awaiting_input / awaiting_comment) only for
-  awaiting_requestor_info; `assignment_group` (Accounts Receivable). Case actions: Assign to me, Save (AR-i also Link to customer). There is
+  awaiting_requestor_info; `assignment_group` (Accounts Receivable). Case actions: Assign to me, Save. Link section on Details (D31): `linkCustomer` / `linkContract` set `customerId` / `contractId` on save. There is
   no request type field; `amount` is the calculated request value (sum of line values). `activity` holds journal
   entries: `comment` (visible on portal), `work_note` (AR only), `system`.
 - Matches (`S.matches[<deposit id>]`) hold the deposit's allocations; `status: "accepted"` applies them. An allocation

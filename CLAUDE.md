@@ -103,6 +103,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-17 | Core flow: Collections category (AR-iii, AR-iv, AR-v, D28); BSU deposits can be matched to open Collections cases (D29). | Owner |
 | 2026-11-17 | Agents and roles: reader agents raise issues only; Claude is the only writer; no documentation agent. Domain model and code layout moved to `docs/ARCHITECTURE.md`; reader entry `docs/README.md`, guide `docs/AGENT_GUIDE.md`, issue templates per type, module labels; check warns on spec drift. | Owner |
 | 2026-11-17 | Personas: AR-iii, AR-iv and AR-v are one Collections form, type chosen first (D30). | Owner |
+| 2026-11-17 | Core flow: Link to customer retired; AR sets up master data by hand and links cases with the Link section (D31). | Owner |
 
 ## How we work: modules, one at a time
 
@@ -168,8 +169,8 @@ person** (D16, held on the contract), **invoice details** (D13 amended: one bill
 description, attention to, amount per period before GST, preferred invoice date for one-invoice requests (Per Billing Cycle /
 Expedited, optional justification), optional billing line items numbered 1, 2, 3… with GST 9%, D25; submit creates one billing line: recurring monthly to the contract end when the contract type is
 Recurring, else one-off), documents only if not on file → `x_ar_request` case
-(New) in the workspace → AR **Link to customer** (creates/links the customer, links/creates the contract
-or shell and sets it on every line, writes the bill-to to the contract, files documents on the customer) → AR assigns,
+(New) in the workspace → AR sets up the customer / contract / shell, bill-to and documents **by hand**, then fills the case's
+**Link** section (*Link Customer Reference*, *Link Contract Reference*; D31) → AR assigns,
 sets the **State** dropdown (AR-00 decision 4; portal reply on Awaiting requestor information returns it to Work in progress) → **Closed complete** generates
 the **1st invoice** as a draft from the AR-i (CCI decision 8; AR sets its *Approval date* and issues it) → recurring: AR creates the **billing schedule on the
 contract** for the 2nd invoice onwards and picks the case; a daily job drafts each later period 5 working days ahead, shown under the case and the contract,
@@ -213,7 +214,7 @@ deposit (D7), matched manually to invoices or Collections cases (D5, D29).
 Serve with `python3 -m http.server` (modules don't load from `file://`). Click through: portal AR form
 AR-i with each contract option (new contract, existing contract with bill-to, no contract with existing /
 new shell); (search → add new customer with a new recurring contract; existing ad-hoc contract → one invoice;
-existing recurring contract with billing line items, GST calculated; Expedited shows the justification; recurring shows no preferred invoice date) → workspace Link to customer (contract / shell created, lines filed) → State dropdown Closed complete (1st invoice draft on the Invoices tab) → ARQ0001009: Billing schedule tab, issued 1st invoice and the daily job's draft (mock data) → portal ticket shows each line's invoice / schedule; BSU upload
+existing recurring contract with billing line items, GST calculated; Expedited shows the justification; recurring shows no preferred invoice date) → workspace Link section (Link Customer Reference, Link Contract Reference; lines get the contract) → State dropdown Closed complete (1st invoice draft on the Invoices tab) → ARQ0001009: Billing schedule tab, issued 1st invoice and the daily job's draft (mock data) → portal ticket shows each line's invoice / schedule; BSU upload
 (sample file and a real CSV file, wrong-bank error); cash application Find invoice → Apply, Remove match;
 ID tags visible and unclipped; 400px wide in dark mode.
 No console errors.

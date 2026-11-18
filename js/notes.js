@@ -175,7 +175,7 @@ export const CALC_COLS = {
   "INV.payment_status": "Calculated: Unpaid / Part paid / Paid / Overdue",
   "DEP.unmatched_amount": "Calculated: amount − allocations",
   "DEP.match_state": "Calculated: Unmatched / Part matched / Matched",
-  "CUS.open_ar": "Calculated: sum of amount_due on issued invoices",
+  "CUS.open_ar": "RETIRED 2026-11-18 (CCI decision 20): Open AR column on the Customers list. Was: calculated sum of amount_due on issued invoices",
   "CUS.overdue": "Calculated: amount_due on issued invoices past due_date",
   "CON.status": "Calculated: Active / Not started / Ended from start and end dates (shells: Open)",
   "CON.line_count": "Calculated: number of billing lines filed under the contract",

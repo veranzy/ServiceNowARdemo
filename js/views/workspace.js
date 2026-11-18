@@ -129,8 +129,8 @@ export const LISTS = {
   },
   customers: {
     filters: { all: ["Customers", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
-    cols: [["Name", c => refLink("customers", c.id, c.name), "", "name"], ["Parent group", c => esc(c.parent || "—"), "", "parent"],
-      ["Open AR", c => fmt(rollup(issuedOf(c.id)).open), "num", "=CUS.open_ar"], ["Overdue", c => { const o = rollup(issuedOf(c.id)).overdue; return o ? `<span class="bad">${fmt(o)}</span>` : fmt(0); }, "num", "=CUS.overdue"]],
+    cols: [["Name", c => refLink("customers", c.id, c.name), "", "name"], ["Parent group", c => esc(c.parent || "—"), "", "parent"],   // CCI decision 20: Open AR column removed
+      ["Overdue", c => { const o = rollup(issuedOf(c.id)).overdue; return o ? `<span class="bad">${fmt(o)}</span>` : fmt(0); }, "num", "=CUS.overdue"]],
     sort: (a, b) => a.name.localeCompare(b.name),
     text: c => [c.name, c.parent, ...(c.aliases || [])].join(" "),
     newable: true
@@ -171,7 +171,7 @@ const MENU = [
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
   ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"], ["paymentModes", "all"]]],
   ["GIRO", [["requests", "giroall"], ["contracts", "giro"]]],
-  ["Master data", [["customers", "all"], ["contracts", "all"], ["contracts", "shell"], ["contacts", "all"], ["documents", "all"], ["costCentres", "all"], ["accountCodes", "all"]]]
+  ["Master data", [["customers", "all"], ["contracts", "all"], ["costCentres", "all"], ["accountCodes", "all"]]]   // CCI decision 20: one Contracts list (both categories); contacts and documents live on the customer
 ];
 
 // ---------- shell ----------

@@ -39,7 +39,7 @@ invoices ([BSU](../BSU/README.md)).
    (Recurring / Ad-hoc), department, bill-to; form sections *Billing terms*, *Late payment interest (LPI)*,
    *GIRO* (status and active AR-ix case, updated by AR by hand from the AR-ix case); all tabs shown: **Billing
    lines**, **GIRO history** (`CON-GIRO`), **Billing schedules**, **Invoices**, **AR requests**. Action
-   **New billing schedule**. List menu → Master data → filter *No contract* (decisions 5, 8).
+   **New billing schedule**. List menu → Master data → *Contracts*: one list for both categories (Contract and No contract), told apart by the Contract category column (decisions 5, 8, 20).
 3. **Invoice record** → state Draft / Issued / Cancelled; amount, amount due, payment status (Unpaid /
    Part paid / Paid / Overdue, calculated); allocations related list (`RL-INV-ALC`). UI actions **Issue
    invoice** (Draft → Issued; AR closes the AR request by hand, AR-00 decision 4) and
@@ -96,7 +96,8 @@ The prototype records the terms only. Nothing calculates or charges interest yet
   - **Contract ID** (`contract_id`, String, read-only, auto-number CTR0001001 …, on every record).
   - **Contract category** (`contract_type`, Choice, mandatory): `contract` Contract / `shell` No contract. A customer can have several No contract records (D15 amended); a No contract record needs a department.
   - Contract type (`contract_category`: Recurring / Ad-hoc), **Contract number** (`number`: mandatory for Contract; for No contract optional, shows the Contract ID when empty).
-  - Contracts list: columns Contract ID, Number, Contract category, Title, Customer, Department, Bill-to, Value, Lines, Status; filter *No contract*.
+  - Contracts list: columns Contract ID, Number, Contract category, Title, Customer, Department, Bill-to, Value, Lines, Status. One list for both categories; no separate *No contract* menu item (decision 20).
+  - Customers list: columns Name, Parent group, Overdue (no *Open AR*, decision 20). Billing contacts and customer documents have no list menu item; AR sees them on the customer tabs (decision 20).
 - **Billing schedule** (`x_ar_billing_schedule`): **Contract** mandatory; Customer read-only, set from the contract (before-insert/update business rule). Billing periods list has no action column.
 - **Daily invoice check** (scheduled job `JOB-DAILYINV`, daily): for each schedule period with no live invoice whose invoice date is 5 working days (Mon–Fri) away or less, insert a draft `x_ar_invoice` (schedule, period, contract, customer, AR request, request line) and add a work note on the AR-i case. AR issues drafts with *Issue invoice*. The demo shows the result as mock data only (no button).
 - Forecast logic, public holidays and invoice PDF: open questions 11–13.

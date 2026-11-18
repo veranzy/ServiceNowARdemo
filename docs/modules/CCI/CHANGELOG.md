@@ -23,3 +23,4 @@
 | 2026-11-18 | Decision 18: customer / contract field clean-up against AR-i. **Retired IDs:** `CUS.payment_terms`, `CUS.credit_limit`, `CON.discount_percent`, `CON.discount_days`. Customer list loses *Terms*; customer header shows Agency type and POC instead of Payment terms and Credit limit. |
 | 2026-11-18 | Owner: contract *Billing* and *Payment terms (days)* stay for now; AR-i not unlocked (open question 18 kept open). |
 | 2026-11-18 | Decision 19: empty tabs on customer and contract records keep their column headers (owner). No IDs added or retired. |
+| 2026-11-18 | Decision 20: Customers list without *Open AR*; Master data menu without Billing contacts, Customer documents and No contract (one Contracts list). **Retired ID:** `CUS.open_ar`. |

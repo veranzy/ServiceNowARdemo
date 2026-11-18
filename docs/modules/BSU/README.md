@@ -71,11 +71,12 @@ deposit from the list.
    reference, amount fit (exact or within 3%), payer-name similarity (invoices), and the bank account's collection
    types (cases, decision 13). Columns: *Invoice or case* (a case is tagged *Collection case · AR-…*), *Customer*,
    *Due* (a case shows *Opened*), *Open*, *Why suggested* (the signals), and a **Match** button per row (`UA-SUG-match`).
-2. **Match** allocates the smaller of the deposit's unmatched amount and the target's amount due. Nothing is
-   matched until AR presses it.
+2. **Match** opens the *New allocation* form with the deposit and the invoice / case filled in and **Allocation
+   value** prefilled with the smaller of the deposit's unmatched amount and the target's amount due; AR confirms or
+   changes it and saves (decision 22). Nothing is matched until AR saves.
 3. **Allocations** (`RL-DEP-ALC`) lists what is matched; **New** (`UA-DEP-newalloc`, shown while money is left) opens
    the **New allocation** form with the deposit filled in: AR picks an *Invoice* **or** a *Collection case*, may
-   change the *Amount* (empty = the default above) and add a *Reason*, then **Save** (`UA-ALC-insert`) returns to
+   change the *Allocation value* (empty = the default above) and add a *Reason*, then **Save** (`UA-ALC-insert`) returns to
    the deposit. Several allocations cover partial and multi-invoice payments.
 4. **Remove match** (header action, `UA-DEP-remove`) clears the deposit's allocations.
 
@@ -90,6 +91,12 @@ offered (open question 7). Matching never changes the case state: AR closes it w
 and no more than either the deposit's unmatched amount or the target's amount due. The pickers only offer deposits
 with money left, issued invoices with amount due and open Collections cases with an amount still to match.
 
+**Allocation value and delta (decision 22).** An allocation is a child item of both sides: the deposit and the
+invoice or Collections case. Its *Allocation value* is unique to the allocation; the deposit, invoice and case amounts
+are fixed and never change. Each Allocations tab shows a line *Amount · Allocation value · Delta* (`ALC-DELTA`):
+Delta = the record's Amount − the sum of its allocation values. On a deposit, the delta is money to refund or apply
+elsewhere; on an invoice or case, it is still to collect or to offset.
+
 Allocations update each invoice's amount due and payment status (Unpaid / Part paid / Paid / Overdue). Exceptions
 (short pay, overpayment, multi-invoice) are labels set on the match, not separate flows.
 
@@ -97,7 +104,7 @@ Allocations update each invoice's amount due and payment status (Unpaid / Part p
 |---|---|
 | Queue | List *BSU deposits to match*: `x_ar_bank_statement` where unmatched amount > 0. No custom page. |
 | Suggested matches / Suggested BSU deposits | Workspace related-list tabs fed by a data resource (Script Include ranks candidates; suggestion only), row **declarative action** *Match* that inserts one `x_ar_allocation`. |
-| `x_ar_allocation` | Deposit, invoice **or** request (Collection case; exactly one is set, D29), amount (default on insert: smaller of deposit unmatched and target due), status (accepted); reference qualifiers as above; business rule recalculates the invoice's `amount_due` / `payment_status` and the deposit's match state. Form: *New allocation* with the parent prefilled. |
+| `x_ar_allocation` | Deposit, invoice **or** request (Collection case; exactly one is set, D29), *Allocation value* (`amount`, unique to the allocation; default on insert: smaller of deposit unmatched and target due), status (accepted); reference qualifiers as above; business rule recalculates the invoice's `amount_due` / `payment_status` and the deposit's match state. Form: *New allocation* with the parent prefilled. |
 | UI actions | *Match* (row), *New* on the Allocations tabs, *Save* on the allocation, *Remove match* on the deposit. Related lists `RL-INV-ALC`, `RL-DEP-ALC`, `RL-REQ-ALC`. |
 
 ## Bank CSV layouts (mock)

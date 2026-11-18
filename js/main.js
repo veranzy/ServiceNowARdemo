@@ -1,7 +1,9 @@
 // Entry point: delegated event handling for the demo bar, workspace and portal, then boot.
 import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
-import { act, allocate } from "./matching.js";
+import { act, targetById } from "./matching.js";
+import { invoiceState } from "./ledger.js";
+import { depositMoney } from "./views/common.js";
 import { giroPurposesFor, giroContracts, custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
@@ -259,8 +261,9 @@ document.addEventListener("click", e => {
   // BSU decision 21: New allocation from a deposit, invoice or Collections case; Match on a suggested row
   if (d.new === "allocations") { const [tb, id] = (d.allocFrom || "").split(":");
     return newTab("allocations", tb === "deposits" ? { depositId: id } : tb === "invoices" ? { invoiceId: id } : tb === "requests" ? { requestId: id } : null, d.allocFrom); }
-  if (d.sugmatch) { const [pid, tid] = d.sugmatch.split(":"), e = allocate(pid, tid, null, "");
-    if (e) return toast(e); toast(`Matched ${recById("deposits", pid)?.number}.`); return render(); }
+  if (d.sugmatch) { const [pid, tid] = d.sugmatch.split(":"), t = targetById(tid);   // BSU decision 22: AR confirms the Allocation value
+    const amt = Math.min(depositMoney(recById("deposits", pid)).unapplied, invoiceState(t).open);
+    return newTab("allocations", { depositId: pid, [t.kind === "case" ? "requestId" : "invoiceId"]: tid, amount: amt }, d.allocFrom); }
   if (d.new && d.prefillContract) {   // New billing schedule (CCI decisions 8–9): contract, customer, monthly, first billing date on the next cycle day
     const k = S.contracts.find(x => x.id === d.prefillContract);
     return newTab(d.new, { contractId: k?.id, customerId: k?.customerId, department: k?.department || "", frequency: "monthly", firstDate: nextCycleDate(k), lastDate: k?.end || "" });

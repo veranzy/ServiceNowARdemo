@@ -554,21 +554,24 @@ const whyChips = (sg, t) => [sg.ref ? `<span class="chip c-accent">Cited in refe
   sg.acct ? `<span class="chip c-accent">Account receives ${esc(t.form)}</span>` : "",
   sg.exact ? `<span class="chip c-ok">Amount matches</span>` : sg.near ? `<span class="chip c-warn">Within 3% (${sg.diff < 0 ? "short" : "over"} ${fmt(Math.abs(sg.diff))})</span>` : "",
   sg.ns >= .5 ? `<span class="chip c-neutral">Name ${Math.round(sg.ns * 100)}% similar</span>` : ""].join(" ") || `<span class="muted">—</span>`;
-const matchBtn = (pid, tid) => `<button type="button" class="btn small" data-sugmatch="${pid}:${tid}"${sn("UA-SUG-match")}>Match</button>`;
+/** BSU decision 22: the record's fixed amount, the sum of its allocation values, and the delta (refund or offset). */
+const allocDelta = (amount, rows) => { const v = rows.reduce((t, x) => t + x.a.amount, 0);
+  return `<p class="small muted"${sn("ALC-DELTA")}>Amount <b>SGD ${fmt(amount)}</b> · Allocation value <b>SGD ${fmt(v)}</b> · Delta <b>SGD ${fmt(amount - v)}</b></p>`; };
+const matchBtn = (pid, tid, from) => `<button type="button" class="btn small" data-sugmatch="${pid}:${tid}" data-alloc-from="${from}"${sn("UA-SUG-match")}>Match</button>`;   // BSU decision 22: opens New allocation to confirm
 const newAllocBtn = (from, id) => `<button type="button" class="btn small" data-new="allocations" data-alloc-from="${from}"${sn(id)}>New</button>`;
 const tgtLink = i => i.kind === "case" ? `${refLink("requests", i.id, i.number)} <span class="chip c-neutral">Collection case · ${esc(i.form)}</span>` : refLink("invoices", i.id, i.number);
 /** Deposit: ranked open invoices and Collections cases, each with a Match button (applies the default amount). */
 function depositSuggestions(rec) {
   const m = S.matches[rec.id], rows = depositMoney(rec).unapplied > 0 ? candidateList(rec, m).slice(0, 10) : [];
   return rt("Suggested matches", "invoices", rows, [["Invoice or case", x => tgtLink(x.i)], ["Customer", x => esc(x.i.customer || "—")], ["Due", x => dueTxt(x.i)],
-    ["Open", x => fmt(x.st.open), "num"], ["Why suggested", x => whyChips(x.sg, x.i)], ["", x => matchBtn(rec.id, x.i.id)]],
+    ["Open", x => fmt(x.st.open), "num"], ["Why suggested", x => whyChips(x.sg, x.i)], ["", x => matchBtn(rec.id, x.i.id, `deposits:${rec.id}`)]],
     { id: "RL-DEP-SUG", empty: depositMoney(rec).unapplied > 0 ? "No open invoices or Collections cases. Use Allocations › New." : "This deposit is fully matched." });
 }
 /** Invoice or Collections case: ranked BSU deposits with money left, each with a Match button. */
 function targetSuggestions(rec, id) {
   const t = targetById(rec.id), rows = depositCandidates(rec.id).slice(0, 10);
   return rt("Suggested BSU deposits", "deposits", rows, [["BSU deposit", x => refLink("deposits", x.p.id, x.p.number)], ["Date", x => esc(x.p.date)], ["Payer", x => esc(x.p.payer)],
-    ["Reference", x => `<span class="mono small">${esc(x.p.reference || "—")}</span>`, "wrap"], ["Left to match", x => fmt(x.left), "num"], ["Why suggested", x => whyChips(x.sg, t)], ["", x => matchBtn(x.p.id, rec.id)]],
+    ["Reference", x => `<span class="mono small">${esc(x.p.reference || "—")}</span>`, "wrap"], ["Left to match", x => fmt(x.left), "num"], ["Why suggested", x => whyChips(x.sg, t)], ["", x => matchBtn(x.p.id, rec.id, `${t?.kind === "case" ? "requests" : "invoices"}:${rec.id}`)]],
     { id, empty: t && (t.kind === "case" || t.state === "issued") ? "No BSU deposits with money left to match." : "Only issued invoices can be matched." });
 }
 
@@ -582,7 +585,7 @@ function related(table, rec) {
     const extra = rec.colType === "AR-iii" ? [rowTab("colTx", "RL-REQ-CTX")] : rec.colType === "AR-iv" ? [rowTab("colAlloc", "RL-REQ-CAL")] : [];
     const rows = [];
     for (const [pid, m] of Object.entries(S.matches)) { if (!m || m.status !== "accepted") continue; for (const a of m.allocations) if (a.requestId === rec.id) rows.push({ pid, a, m }); }
-    return [...extra, rt("BSU deposits matched", "allocations", rows, [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]], { id: "RL-REQ-ALC", actions: REQ_OPEN.includes(rec.state) && invoiceState(targetById(rec.id)).open > 0 ? newAllocBtn(`requests:${rec.id}`, "UA-REQ-newalloc") : "" }), targetSuggestions(rec, "RL-REQ-SUG")];
+    return [...extra, rt("BSU deposits matched", "allocations", rows, [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Allocation value", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]], { id: "RL-REQ-ALC", intro: allocDelta(rec.amount || 0, rows), actions: REQ_OPEN.includes(rec.state) && invoiceState(targetById(rec.id)).open > 0 ? newAllocBtn(`requests:${rec.id}`, "UA-REQ-newalloc") : "" }), targetSuggestions(rec, "RL-REQ-SUG")];
   }
   if (table === "requests" && isIx(rec)) {
     return rec.contractId ? [giroHistory(ctrById(rec.contractId), "REQ-GIROHIST")] : [];
@@ -662,9 +665,9 @@ function related(table, rec) {
       for (const a of m.allocations) if ((table === "invoices" && a.invoiceId === rec.id) || (table === "deposits" && pid === rec.id)) rows.push({ pid, a, m }); }
     const tgt = a => a.requestId ? refLink("requests", a.requestId, recById("requests", a.requestId)?.number) : refLink("invoices", a.invoiceId);   // D29: or a Collections case
     const cols = table === "invoices"
-      ? [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]]
-      : [["Invoice", x => tgt(x.a)], ["Customer", x => esc(x.a.requestId ? custName(recById("requests", x.a.requestId)?.customerId) : recById("invoices", x.a.invoiceId)?.customer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]];
-    const alc = rt("Allocations", "allocations", rows, cols, { id: table === "invoices" ? "RL-INV-ALC" : "RL-DEP-ALC",
+      ? [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Allocation value", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]]
+      : [["Invoice", x => tgt(x.a)], ["Customer", x => esc(x.a.requestId ? custName(recById("requests", x.a.requestId)?.customerId) : recById("invoices", x.a.invoiceId)?.customer || "")], ["Allocation value", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]];
+    const alc = rt("Allocations", "allocations", rows, cols, { id: table === "invoices" ? "RL-INV-ALC" : "RL-DEP-ALC", intro: allocDelta(rec.amount || 0, rows),
       actions: (table === "invoices" ? rec.state === "issued" && invMoney(rec).open > 0 : depositMoney(rec).unapplied > 0) ? newAllocBtn(`${table}:${rec.id}`, table === "invoices" ? "UA-INV-newalloc" : "UA-DEP-newalloc") : "" });   // New only while something is left to match
     // Invoice block (CCI decision 13): a preview of the invoice document, printable to PDF
     // #10 E10.11: the invoice's billing line(s): its AR-i / contract line, or the line its schedule bills

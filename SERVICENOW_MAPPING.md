@@ -362,7 +362,7 @@ Applies part or all of a BSU deposit to an invoice, or to an open Collections ca
 | `deposit` | BSU deposit | Reference | → `x_ar_bank_statement`. Mandatory. Reference qualifier: BSU deposits with an unmatched amount |
 | `invoice` | Invoice | Reference | → `x_ar_invoice`. Reference qualifier: issued invoices with amount due > 0 |
 | `request` | Collection case | Reference | → `x_ar_request`. Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form = COL, the Collections form for AR-iii, AR-iv, AR-v; D29, D30). Reference qualifier: open Collections cases (ar_form = COL) with an amount still to match |
-| `amount` | Amount | Currency | Defaults on insert to the smaller of the deposit's unmatched amount and the target's amount due (BSU decision 21) |
+| `amount` | Allocation value | Currency | BSU decision 22: the part of the deposit that goes to this invoice or Collections case; unique to the allocation (the deposit and invoice / case amounts never change). Defaults on insert to the smaller of the deposit's unmatched amount and the target's amount due (BSU decision 21) |
 | `state` | State | Choice | Choices: Applied (`accepted`), Removed (`removed`) |
 | `exception` | Exception | Choice | Choices: Exact (`none`), Multi-invoice (`multi_invoice`), Short pay (`short_pay`), Overpayment (`over_pay`), Partial (`partial`), Discount taken (`discount`) |
 | `reason` | Reason | String (1000) |  |
@@ -477,7 +477,7 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 | `UA-INV-cancel` | Cancel invoice → only when no BSU deposit is matched |
 | `UA-INV-save` | Save (update, draft only) |
 | `UA-DEP-remove` | Remove match (header action on the deposit, shown when it has allocations) → deletes the deposit's allocations |
-| `UA-SUG-match` | Match (row action on Suggested matches / Suggested BSU deposits, BSU decision 21) → inserts one x_ar_allocation: amount = the smaller of the deposit's unmatched amount and the target's amount due; exception set from what is left (Exact, Short pay, Overpayment, Multi-invoice) |
+| `UA-SUG-match` | Match (row action on Suggested matches / Suggested BSU deposits, BSU decisions 21–22) → opens the New allocation form with the deposit and the invoice / case filled and Allocation value prefilled with the smaller of the deposit's unmatched amount and the target's amount due; AR confirms or changes it and saves (UA-ALC-insert). Exception set from what is left (Exact, Short pay, Overpayment, Multi-invoice) |
 | `UA-DEP-newalloc` | New on the deposit's Allocations tab (BSU decision 21) → New allocation form with BSU deposit prefilled; AR picks an invoice or a Collection case and may change the amount |
 | `UA-INV-newalloc` | New on the invoice's Allocations tab (BSU decision 21) → New allocation form with Invoice prefilled; AR picks the BSU deposit |
 | `UA-REQ-newalloc` | New on the Collections case's BSU deposits matched tab (BSU decision 21, D29) → New allocation form with Collection case prefilled; AR picks the BSU deposit |

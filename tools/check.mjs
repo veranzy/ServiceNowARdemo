@@ -28,7 +28,7 @@ for (const f of scripts) {
 const { noteText } = await import(join(ROOT, "js/notes.js"));
 for (const f of walk(join(ROOT, "js"), [".js"])) {
   const src = readFileSync(f, "utf8");
-  const ids = [...src.matchAll(/sn\("([^"]+)"\)/g), ...src.matchAll(/\{ ?id: "(RL-[A-Z]+-[A-Z]+)"/g)].map(m => m[1]);
+  const ids = [...src.matchAll(/sn\("([^"]+)"\)/g), ...src.matchAll(/\{ ?id: "(RL-[A-Z0-9]+-[A-Z0-9]+)"/g)].map(m => m[1]);
   for (const id of new Set(ids)) if (noteText(id) === null) errors.push(`Unregistered build-note ID ${id} in ${rel(f)} (add it to js/notes.js)`);
 }
 
@@ -82,7 +82,7 @@ for (const f of walk(ROOT, [".md"])) {
     readFileSync(f, "utf8").split("\n").forEach((line, n) => {
       if (/retir|~~/i.test(line)) return;
       const at = `docs/modules/${code}/README.md:${n + 1}`;
-      for (const m of line.matchAll(/`([A-Z]{2,4})\.([a-z_][a-z0-9_.]*)`/g)) { const c = cols[m[1]]; if (c && !c.has(m[2].split(".")[0]) && noteText(`${m[1]}.${m[2]}`) === null) warnings.push(`Drift: ${at} quotes ${m[1]}.${m[2]}, not in js/schema.js`); }
+      for (const m of line.matchAll(/`([A-Z][A-Z0-9]{1,3})\.([a-z_][a-z0-9_.]*)`/g)) { const c = cols[m[1]]; if (c && !c.has(m[2].split(".")[0]) && noteText(`${m[1]}.${m[2]}`) === null) warnings.push(`Drift: ${at} quotes ${m[1]}.${m[2]}, not in js/schema.js`); }
       for (const m of line.matchAll(/`(x_ar_[a-z_]+)\.([a-z_]+)`/g)) { const c = cols[byTable[m[1]]]; if (c && !c.has(m[2])) warnings.push(`Drift: ${at} quotes ${m[1]}.${m[2]}, not in js/schema.js`); }
       for (const m of line.matchAll(/`((?:PT|UA|CSH|REQ|RL|CON|CUS|INV|BSU|LST|WS|DEP|SCH)-[A-Za-z0-9-]+)`/g)) if (noteText(m[1]) === null) warnings.push(`Drift: ${at} quotes build-note ID ${m[1]}, not registered in js/notes.js`);
     });

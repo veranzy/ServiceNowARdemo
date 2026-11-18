@@ -337,8 +337,8 @@ const LAYOUT = {
     ["5. Attachments", ["@attachments"], isIx],
     // Collections form view (D30, portal: PT-49, PT-50); the rest of the form is to be defined
     ["2. Collection type", ["colType"], isCol],
-    ["3. Collection Details", ["colDate", "colRef", "colCostCentre", "colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "bailorId", "bailorAddress", "ibCase", "caseNumber",
-      "caseStatus", "accusedName", "accusedId", "ar5Amount", "ar5Currency", "ar5Invest", "ar5CurrencyEq"], isCol],
+    ["3. Collection Details", ["colDate", "colRef", "colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "ibCase",
+      "caseStatus", "accusedName", "ar5Forfeit", "ar5CourtOrder", "ar5Invest", "ar5Refund"], isCol],
     ["4. Supporting Documents", ["@attachments"], isCol]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
@@ -414,7 +414,7 @@ function ribbon(table, rec, tab) {
       w("Contract", k ? esc(k.number) : `<span class="bad">Not linked</span>`, k ? (cur ? `GIRO active from ${esc(cur.number)}${cur.id === rec.id ? " (this case)" : ""}` : "GIRO not active") : `Reference given: ${esc(rec.giroReference || "—")}`)];
   } else if (table === "requests" && isCol(rec)) {
     const matched = Object.values(S.matches).filter(m => m && m.status === "accepted").flatMap(m => m.allocations).filter(a => a.requestId === rec.id).reduce((s, a) => s + a.amount, 0);
-    ws = [w("Collection type", esc(rec.colType || "—")), w("Request value", `SGD ${fmt(rec.amount)}`), w("BSU deposits matched", `SGD ${fmt(matched)}`, rec.amount ? `${fmt(Math.max(0, rec.amount - matched))} still to match` : "", bar(matched, rec.amount, "var(--ok)"))];
+    ws = [w("Collection type", esc(rec.colType || "—")), w("Total Amount", `SGD ${fmt(rec.amount)}`), w("BSU deposits matched", `SGD ${fmt(matched)}`, rec.amount ? `${fmt(Math.max(0, rec.amount - matched))} still to match` : "", bar(matched, rec.amount, "var(--ok)"))];
   } else if (table === "requests") {
     const ls = reqLines(rec), done = ls.filter(l => ["invoiced", "scheduled"].includes(lineStatus(l))).length;
     const checks = [!!rec.linkCustomer, !!rec.linkContract], ok = checks.filter(Boolean).length;   // D31 Link section
@@ -582,7 +582,7 @@ function related(table, rec) {
   if (table === "requests" && COLLECTION_FORMS.includes(rec.form)) {
     const rowTab = (k, id) => { const t = TABLES[k], rs = S[k].filter(x => x.requestId === rec.id).sort((a, b) => a.seq - b.seq);
       return rt(t.plural, k, rs, [["Row", x => String(x.seq), "num"], ...t.fields.filter(f => !["requestId", "seq"].includes(f.key)).map(f => [f.label, x => f.type === "Currency" ? fmt(x[f.key]) : f.ref ? esc(displayOf(f.ref, recById(f.ref, x[f.key])) || "—") : esc(String(x[f.key] ?? "")), f.type === "Currency" || f.type === "Integer" ? "num" : ""])], { id }); };
-    const extra = rec.colType === "AR-iii" ? [rowTab("colTx", "RL-REQ-CTX")] : rec.colType === "AR-iv" ? [rowTab("colAlloc", "RL-REQ-CAL")] : [];
+    const extra = rec.colType === "AR-iii" ? [rowTab("colTx", "RL-REQ-CTX")] : rec.colType === "AR-iv" ? [rowTab("colAlloc", "RL-REQ-CAL")] : ["seized", "restitution"].includes(rec.colCategory) ? [rowTab("ar5Lines", "RL-REQ-C5L")] : [];
     const rows = [];
     for (const [pid, m] of Object.entries(S.matches)) { if (!m || m.status !== "accepted") continue; for (const a of m.allocations) if (a.requestId === rec.id) rows.push({ pid, a, m }); }
     return [...extra, rt("BSU deposits matched", "allocations", rows, [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Allocation value", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]], { id: "RL-REQ-ALC", intro: allocDelta(rec.amount || 0, rows), actions: REQ_OPEN.includes(rec.state) && invoiceState(targetById(rec.id)).open > 0 ? newAllocBtn(`requests:${rec.id}`, "UA-REQ-newalloc") : "" }), targetSuggestions(rec, "RL-REQ-SUG")];

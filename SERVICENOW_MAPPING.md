@@ -132,23 +132,18 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `collection_type` | Collection type | Choice | Choices: AR-iii, AR-iv, AR-v. Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording |
 | `collection_date` | Collection Date | Date | Shown when Collection type is AR-iii, AR-iv (UI policy). AR-iii: mandatory. AR-iv: optional (#9 §7, §8) |
 | `collection_reference` | Reference Number | String | Shown when Collection type = AR-iv (UI policy). AR-iv. Optional (#9 §8) |
-| `requesting_cost_centre` | Requesting Department Cost Centre | Reference | → `x_ar_cost_centre`. Shown when Collection type = AR-iv (UI policy). AR-iv. Mandatory. Reference qualifier: active cost centres of the Requesting Department (#9 §8, AC-10) |
 | `ar5_category` | Category | Choice | Choices: Cash Bail (`cash_bail`), Seized Monies (`seized`), Restitution (`restitution`). Shown when Collection type = AR-v (UI policy). AR-v. Chosen first; shows only that category's fields and document guidance (#9 §9). Mandatory |
-| `date_of_collection` | Date of Collection | Date | Shown when Category is Cash Bail, Seized Monies, Restitution (UI policy). AR-v, every category. Optional until confirmed |
-| `g56_receipt_number` | G56 Receipt Number | String | Shown when Category is Cash Bail, Seized Monies, Restitution (UI policy). AR-v, every category. Optional until confirmed |
+| `date_of_collection` | Date of Collection | Date | Shown when Category is Cash Bail, Seized Monies, Restitution (UI policy). AR-v, every category (general). Optional until confirmed |
+| `g56_receipt_number` | G56 Receipt Number | String | Shown when Category = Cash Bail (UI policy). AR-v Cash Bail only (AR-iii decision 19). Optional until confirmed |
 | `bail_amount` | Bail Amount Received | Currency | Shown when Category = Cash Bail (UI policy). AR-v Cash Bail. Sets the Request value |
 | `bailor_name` | Bailor Name | String | Shown when Category = Cash Bail (UI policy) |
-| `bailor_nric` | Bailor NRIC | String | Shown when Category = Cash Bail (UI policy). Protected: masked on display (last 4 shown); validation rule to be approved (#9 §9.4) |
-| `bailor_address` | Bailor Address | String (1000) | Shown when Category = Cash Bail (UI policy) |
 | `ib_case_number` | IB Case Number / WEU Number | String | Shown when Category = Cash Bail (UI policy) |
-| `case_number` | Case Number | String | Shown when Category is Seized Monies, Restitution (UI policy) |
-| `case_status` | Case Status | Choice | Choices: Case Closed (`case_closed`), Refund to Bailor/Accused (`refund`), Case Pending (`pending`), Case Concluded (`concluded`), Forfeit to State with court order (`forfeit_order`), Forfeit to State without court order (`forfeit_no_order`), Case Pending (`pending`), Case Concluded (`concluded`), Forfeit to State with court order (`forfeit_order`), Forfeit to State without court order (`forfeit_no_order`), Case Pending (`pending`). Shown when Category is Cash Bail, Seized Monies, Restitution (UI policy). AR-v. Choices depend on the category (#9 §9; subject to final business confirmation) |
+| `case_status` | Case Status | Choice | Choices: Case Pending (`pending`), Case Closed (`case_closed`), Case Pending (`pending`), Case Closed (`case_closed`), Forfeit to State with court order (`forfeit_order`), Forfeit to State without court order (`forfeit_no_order`), Case Pending (`pending`). Shown when Category = Cash Bail (UI policy). AR-v Cash Bail: one bailor / accused set per case (AR-iii decision 19). Seized Monies and Restitution have a status per case line |
 | `accused_name` | Accused Name | String | Shown when Category = Cash Bail (UI policy) |
-| `accused_id_number` | Accused NRIC / FIN / Passport Number | String | Shown when Category = Cash Bail (UI policy). Protected: masked on display (last 4 shown) |
-| `ar5_amount` | Amount | Currency | Shown when Category is Seized Monies, Restitution (UI policy). AR-v Seized Monies and Restitution. Sets the Request value |
-| `ar5_currency` | Currency | Choice | Choices: SGD, USD, MYR, EUR, GBP, CNY, JPY, AUD. Shown when Category = Seized Monies (UI policy). Controlled list (default list; master list to be decided) |
+| `ar5_forfeit` | Forfeit | True/False | Shown when Category = Seized Monies (UI policy). AR-v Seized Monies: checkbox after the case lines (AR-iii decision 19) |
+| `ar5_court_order` | Court order | True/False | Shown when Category is Seized Monies, Restitution (UI policy). AR-v Seized Monies and Restitution: checkbox after the case lines (AR-iii decision 19) |
 | `ar5_to_be_invested` | Whether the seized monies are to be invested | Choice | Choices: Yes (`yes`), No (`no`). Shown when Category = Seized Monies (UI policy). Yes / No radio buttons (#9 §9.4), where applicable |
-| `ar5_currency_banked` | Currency equivalent when banked in | Choice | Choices: SGD, USD, MYR, EUR, GBP, CNY, JPY, AUD. Shown when Category = Restitution (UI policy). AR-v Restitution (#9 §9.3). Read as a currency choice; to confirm (AR-iii open question 10) |
+| `ar5_refund_required` | Refund required? | Choice | Choices: Yes (`yes`), No (`no`). Shown when Category is Cash Bail, Seized Monies (UI policy). AR-v Cash Bail and Seized Monies (AR-iii decision 19). Yes shows: Please raise a AR10, with a link to the AR10 form |
 | `requester_name` | Requester name | String | General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name. Default: gs.getUser().getFullName() |
 | `requester_email` | Email | String | Read-only on form. General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only. Default: gs.getUser().getEmail() |
 | `department_sub_bu` | Sub-BU | Choice | Choices: Civil & Structural (`ENG-1`), M&E Services (`ENG-2`), Geotechnical (`ENG-3`), Port Works (`MAR-1`), Offshore (`MAR-2`), Dredging (`MAR-3`), Data & AI (`DIG-1`), Platforms (`DIG-2`), Cyber (`DIG-3`), Roads (`INF-1`), Water (`INF-2`), Urban Systems (`INF-3`), Power Grid (`ENE-1`), Solar (`ENE-2`), Gas (`ENE-3`), Property Management (`FAC-1`), Carparks (`FAC-2`), Retail Leasing (`FAC-3`), Warehousing (`LOG-1`), Cold Chain (`LOG-2`), Freight (`LOG-3`), Hospitals (`HEA-1`), Clinics (`HEA-2`), Med Tech (`HEA-3`), Waste (`ENV-1`), Air & Noise (`ENV-2`), Ecology (`ENV-3`), Signalling (`RAI-1`), Rolling Stock (`RAI-2`), Track Works (`RAI-3`), Strategy (`ADV-1`), Transactions (`ADV-2`), Risk (`ADV-3`). General information (all AR forms). Sub-BUs of the chosen department (mock list) |
@@ -383,18 +378,30 @@ Payment modes per bank account (BSU decisions 18–19), defined by AR. A stateme
 
 ### Collection — `x_ar_collection_tx`
 
-AR3 rows of a Collections case (#9 §7): multi-row variable set on the Collections form, copied to this table by the producer script. 1 to 99 rows; total transactions calculated; duplicate collection types allowed (owner).
+AR3 rows of a Collections case (#9 §7): multi-row variable set on the Collections form, copied to this table by the producer script. 1 to 99 rows; duplicate collection types allowed (owner). The Transaction Amount total is the case's Total Amount (amount), used for BSU matching (AR-iii decision 19).
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
 | `row_number` | Row | Integer | Read-only on form |
 | `collection_type` | Collection Type | Choice | Choices: Cashcard, Credit Card, NETS, NETS FlashPay, NETS Scan/QR. Mandatory |
-| `number_of_transactions` | Number of Transactions | Integer | Mandatory. Positive whole number |
+| `transaction_amount` | Transaction Amount | Currency | Mandatory. Positive, at most two decimals (AR-iii decision 19: replaces Number of Transactions). The rows' total is the case's Total Amount |
+
+### Case line — `x_ar_collection_case_line`
+
+AR5 Seized Monies and Restitution lines of a Collections case (AR-iii decision 19): multi-row variable set, copied to this table by the producer script. 0 to 99 rows (no AR5 field mandatory yet, decision 14). The Amount total is the case's Total Amount (amount). Checkboxes Forfeit / Court order and Refund required? sit on the case, after the lines.
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
+| `row_number` | Row | Integer | Read-only on form |
+| `case_number` | Case Number | String |  |
+| `amount` | Amount | Currency | Positive, at most two decimals |
+| `case_status` | Case Status | Choice | Choices: Case Pending (`pending`), Case Closed (`case_closed`), Case Pending (`pending`), Case Closed (`case_closed`), Forfeit to State with court order (`forfeit_order`), Forfeit to State without court order (`forfeit_no_order`), Case Pending (`pending`). Choices depend on the case's category: Seized Monies Case Pending / Case Closed; Restitution to be confirmed (AR-iii open question 12) |
 
 ### Allocation — `x_ar_collection_allocation`
 
-AR4 rows of a Collections case (#9 §8): 1 to 10 rows; the allocation total becomes the case's Request value. Stores the cost centre and account code records (sys_id), not only their labels.
+AR4 rows of a Collections case (#9 §8): 1 to 10 rows; the allocation total becomes the case's Total Amount (amount). Stores the cost centre and account code records (sys_id), not only their labels.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
@@ -402,7 +409,7 @@ AR4 rows of a Collections case (#9 §8): 1 to 10 rows; the allocation total beco
 | `row_number` | Row | Integer | Read-only on form |
 | `description` | Description | String | Mandatory |
 | `amount` | Amount | Currency | Mandatory. Positive, at most two decimals |
-| `cost_centre` | Cost Centre | Reference | → `x_ar_cost_centre`. Mandatory. Reference qualifier: active cost centres of the Requesting Department |
+| `cost_centre` | Cost Centre | Reference | → `x_ar_cost_centre`. Mandatory. Reference qualifier: active cost centres of the Requesting Department (the case's department; the separate Requesting Department Cost Centre field is removed, AR-iii decision 19) |
 | `account_code` | Account Code | Reference | → `x_ar_account_code`. Mandatory. Reference qualifier: active account codes. GST / recovery rule check to be approved (AR-iii open question 11) |
 
 ### Cost centre — `x_ar_cost_centre`
@@ -438,7 +445,7 @@ Master data (CCI decision 11, #9 §8): account codes for AR4 allocations with th
   - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; contract_option = none → current.contract = the customer's no-contract shell for the department, if it exists;`
   - Catalog client script on contract change: prefill applicant name / email / mobile from the contract's bill-to; show active GIRO on the contract.
   - UI policies: Other purpose when Purpose = Others; location and effective start/end for Rental; car plate and parking start/end for Carpark; amount and start date mandatory for Add GIRO.
-- **Record producer "Collections (AR-iii, AR-iv, AR-v)"** on `x_ar_request` (AR-iii module, D30). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `collection_type`, `collection_date`, `collection_reference`, `requesting_cost_centre`, `ar5_category`, `date_of_collection`, `g56_receipt_number`, `bail_amount`, `bailor_name`, `bailor_nric`, `bailor_address`, `ib_case_number`, `case_number`, `case_status`, `accused_name`, `accused_id_number`, `ar5_amount`, `ar5_currency`, `ar5_to_be_invested`, `ar5_currency_banked`.
+- **Record producer "Collections (AR-iii, AR-iv, AR-v)"** on `x_ar_request` (AR-iii module, D30). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `collection_type`, `collection_date`, `collection_reference`, `ar5_category`, `date_of_collection`, `g56_receipt_number`, `bail_amount`, `bailor_name`, `ib_case_number`, `case_status`, `accused_name`, `ar5_forfeit`, `ar5_court_order`, `ar5_to_be_invested`, `ar5_refund_required`.
   - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'COL'; current.collection_type = producer.collection_type; current.short_description = 'Collections – ' + collection_type; current.submission_origin = 'manual'; copies the multi-row sets to x_ar_collection_tx (AR3) / x_ar_collection_allocation (AR4); amount = AR4 allocation total or the AR5 amount (AR3: open question); current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>. Catalogue: three items (AR-iii, AR-iv, AR-v) open this producer with collection_type preset (URL parameter / default value).`
 - **My requests**: list widget on `x_ar_request` where `opened_by = me` **or the user's email is on the CC list** (`watch_list` contains me); CC'd cases are marked *CC*.
 - **Ticket page**: standard ticket conversation (comments only), field summary, attachments; requester can comment. Business rule: requester comment while *Awaiting info* sets state to *In progress*.
@@ -460,6 +467,7 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 
 | ID | Action and effect |
 |---|---|
+| `UA-PT-addcase` | Collections AR-v Seized Monies / Restitution: + Add row in Case lines (multi-row set, max 99) |
 | `UA-PT-addcol` | Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99) |
 | `UA-PT-addalloc` | Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10) |
 | `UA-REQ-assign` | Assign to me → assigned_to = current user (assignment_group kept, default Accounts Receivable); New → Work in progress. One of only two case actions with Save (AR-00, 2026-11-16) |

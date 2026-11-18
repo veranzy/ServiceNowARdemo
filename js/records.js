@@ -117,14 +117,18 @@ export function validateCOL(d) {
   };
   // AR-iii decisions 12–17 (#9 §7–9). AR-v: only the category is required (owner: no AR5 field mandatory yet)
   if (d.colType === "AR-iii") { if (!d.colDate) e.colDate = "Enter the collection date."; rows("colTx", 1, 99); }
-  if (d.colType === "AR-iv") { if (!d.colCostCentre) e.colCostCentre = "Choose the requesting department cost centre."; rows("colAlloc", 1, 10); }
+  if (d.colType === "AR-iv") rows("colAlloc", 1, 10);   // AR-iii decision 19: no Requesting Department Cost Centre
+  if (d.colType === "AR-v" && ["seized", "restitution"].includes(d.colCategory)) rows("ar5Lines", 0, 99);
   if (d.colType === "AR-v" && !d.colCategory) e.colCategory = "Choose the category.";
   return e;
 }
-/** Collections: the Request value (D29 matching). AR-iv: allocation total; AR-v: the amount received; AR-iii: none yet (AR-iii open question 6). */
-export function colValue(r, rows = S.colAlloc.filter(x => x.requestId === r.id)) {
-  if (r.colType === "AR-iv") return rows.reduce((s, x) => s + (x.amount || 0), 0);
-  if (r.colType === "AR-v") return (r.colCategory === "cash_bail" ? r.bailAmount : r.ar5Amount) || 0;
+/** Collections: the Total Amount (amount; D29 matching). AR-iii: Transaction Amount total; AR-iv: allocation total;
+ *  AR-v: Cash Bail the bail amount, Seized Monies / Restitution the case lines' total (AR-iii decision 19). */
+export function colValue(r, rows) {
+  const sum = (k, rs = rows || S[k].filter(x => x.requestId === r.id)) => rs.reduce((s, x) => s + (x.amount || 0), 0);
+  if (r.colType === "AR-iii") return sum("colTx");
+  if (r.colType === "AR-iv") return sum("colAlloc");
+  if (r.colType === "AR-v") return r.colCategory === "cash_bail" ? r.bailAmount || 0 : sum("ar5Lines");
   return 0;
 }
 /** AR-ix decision 22 (E8.5): the existing contracts a requester may pick. The customer's contracts (not No contract) whose
@@ -460,7 +464,7 @@ export function journal(req, kind, text, by) {
 
 /** Record producer submit (portal AR form). `o` overrides the case header when a case is loaded from data/AR_form.csv (UIX decision 13). */
 export function createRequest(vals, o = {}) {
-  const { lines, items = [], colTx = [], colAlloc = [], tile, ...rest } = vals;
+  const { lines, items = [], colTx = [], colAlloc = [], ar5Lines = [], tile, ...rest } = vals;
   clearHidden("requests", rest);
   const by = o.requestedBy || me().id;
   const req = { id: uid("r"), number: o.number || nextNumber("requests"), state: "new", substate: "", requestedBy: by, assignmentGroup: "g_ar", assignedTo: null,
@@ -479,7 +483,8 @@ export function createRequest(vals, o = {}) {
     const put = (k, rs) => rs.forEach((x, i) => S[k].push({ id: uid("cr"), requestId: req.id, seq: i + 1, ...x }));
     if (req.colType === "AR-iii") put("colTx", colTx);
     if (req.colType === "AR-iv") put("colAlloc", colAlloc);
-    req.amount = colValue(req, colAlloc);
+    if (req.colType === "AR-v" && ["seized", "restitution"].includes(req.colCategory)) put("ar5Lines", ar5Lines);
+    req.amount = colValue(req);
     req.title = `Collections – ${req.colType || ""}`;
     S.requests.push(req);
     journal(req, "system", `Submitted from the Collections form (${req.colType}) on the portal.`, req.requestedBy);

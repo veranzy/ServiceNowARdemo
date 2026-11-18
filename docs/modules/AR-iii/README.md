@@ -31,31 +31,33 @@ The three are **one form** (D30, client request): the requester chooses AR-iii, 
    2. **Collection type*** (`collection_type`, `PT-50`), right after General information (decision 8), preselected from the tile.
    3. **Collection Details** (`PT-51`), only the selected type's fields:
       - **AR-iii:** *Collection Date** ; table **Total number of collections for the day*** (`PT-52`, `x_ar_collection_tx`):
-        *Collection Type** (Cashcard, Credit Card, NETS, NETS FlashPay, NETS Scan/QR; duplicates allowed), *Number of
-        Transactions** (whole number > 0); 1–99 rows; *Total transactions* calculated (`PT-56`).
-      - **AR-iv:** *Collection Date*, *Reference Number*, *Requesting Department Cost Centre** (active cost centres of the
-        Requesting Department); table **Amount for Each Account Code*** (`PT-53`, `x_ar_collection_allocation`):
-        *Description**, *Amount** (> 0), *Cost Centre** (same filter), *Account Code** (active); 1–10 rows;
-        *Allocation total* calculated (`PT-57`) and stored as the Request value.
-      - **AR-v:** *Category** first (Cash Bail / Seized Monies / Restitution), then only that category's fields, none
-        mandatory (decision 14):
-        - Cash Bail: Date of Collection, G56 Receipt Number, Bail Amount Received, Bailor Name, Bailor NRIC (masked),
-          Bailor Address, IB Case Number / WEU Number, Case Status, Accused Name, Accused NRIC / FIN / Passport Number (masked).
-        - Seized Monies: Date of Collection, G56 Receipt Number, Case Number, Case Status, Amount, Currency,
-          *Whether the seized monies are to be invested* (Yes / No radios).
-        - Restitution: Date of Collection, G56 Receipt Number, Case Number, Case Status, Amount, Currency equivalent
-          when banked in.
-        - Case Status choices depend on the category (subject to confirmation). Identity numbers show only the last 4
-          characters outside the form.
+        *Collection Type** (Cashcard, Credit Card, NETS, NETS FlashPay, NETS Scan/QR; duplicates allowed), *Transaction
+        Amount** (> 0; replaces Number of Transactions, decision 19); 1–99 rows; *Total Amount* calculated (`PT-56`) and
+        stored as the case's amount.
+      - **AR-iv:** *Collection Date*, *Reference Number* (no *Requesting Department Cost Centre*, decision 19); table
+        **Amount for Each Account Code*** (`PT-53`, `x_ar_collection_allocation`): *Description**, *Amount** (> 0),
+        *Cost Centre** (active cost centres of the Requesting Department), *Account Code** (active); 1–10 rows;
+        *Allocation total* calculated (`PT-57`) and stored as the case's amount.
+      - **AR-v:** *Category** first (Cash Bail / Seized Monies / Restitution), *Date of Collection* (every category), then
+        only that category's fields, none mandatory (decision 14; layout decision 19):
+        - Cash Bail (one bailor / accused set per case): G56 Receipt Number, Bail Amount Received, Bailor Name, IB Case
+          Number / WEU Number, Case Status (Case Pending / Case Closed), Accused Name, **Refund required?** (Yes / No).
+        - Seized Monies: table **Case lines** (`PT-59`, `x_ar_collection_case_line`: Case Number, Amount, Case Status
+          Case Pending / Case Closed; 0–99 rows; *Total Amount* `PT-61`), then checkboxes **Forfeit** and **Court
+          order**, *Whether the seized monies are to be invested* (Yes / No), **Refund required?** (Yes / No).
+        - Restitution: table **Case lines** (Case Status choices to be confirmed, open question 14), then checkbox
+          **Court order**.
+        - **Refund required?** = Yes shows *Please raise a AR10* with a link to the AR10 form (`PT-60`).
+        - No G56 for Seized Monies or Restitution, no currency fields, no identity numbers or bailor address (decision 19).
    4. **Supporting Documents** (`PT-55`): optional attachments; for AR-v, the category's document guidance (`PT-54`).
    - Submit creates an `x_ar_request` case: `ar_form` = **COL**, `collection_type`, `submission_origin` = Manual, title
-     *Collections – AR-iv*; rows copied to their tables; **Request value** = AR-iv allocation total or the AR-v amount
-     (AR-iii: open question 6).
+     *Collections – AR-iv*; rows copied to their tables; the case's amount (**Total Amount**) = AR-iii Transaction
+     Amount total, AR-iv allocation total, AR-v Bail Amount Received (Cash Bail) or the Case lines' total (decision 19).
 3. **Workspace** (AR team): list **All Collections** (`LST-REQ-COL`). Case page (`REQ-FV-COL`): Details with Case
-   (incl. *Submission Origin* and **Request value** = the amount to collect), General information, Collection type, Collection Details, Supporting Documents; tabs *Total number of collections for the day* (`RL-REQ-CTX`) or *Amount for Each Account Code* (`RL-REQ-CAL`); ribbon *Collection type*,
-   *Request value*, *BSU deposits matched*; tab **BSU deposits matched** (`RL-REQ-ALC`). Actions: Assign to me, Save,
+   (incl. *Submission Origin* and **Request value** = the amount to collect), General information, Collection type, Collection Details, Supporting Documents; tabs *Total number of collections for the day* (`RL-REQ-CTX`) or *Amount for Each Account Code* (`RL-REQ-CAL`) or *Case lines* (`RL-REQ-C5L`); ribbon *Collection type*,
+   **Total Amount** (decision 19), *BSU deposits matched*; tab **BSU deposits matched** (`RL-REQ-ALC`). Actions: Assign to me, Save,
    State dropdown (AR-00 decision 4). No billing lines, no Link to customer, no invoice on Closed complete.
-4. **Matching:** AR applies a BSU deposit to the open case from the case (*Suggested BSU deposits*, *BSU deposits matched › New*) or from the deposit (D29, BSU decisions 11 and 21), against its Request value.
+4. **Matching:** AR applies a BSU deposit to the open case from the case (*Suggested BSU deposits*, *BSU deposits matched › New*) or from the deposit (D29, BSU decisions 11 and 21), against its Total Amount (AR-iii cases can now be matched, decision 19).
    Matching doesn't change the case state.
 5. **Portal ticket:** Form, requester, department, Collection type; no customer, contract or billing block yet.
 

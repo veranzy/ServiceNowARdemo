@@ -62,3 +62,4 @@ The requirement's sections are numbered **§1–§22** below.
 | 2026-11-17 | Owner: keep terms (AR-iii decision 9); **form only for now** (10); General information and the selector stay, the form continues after the type (11); AR3 amount → AR-iii open question 6. Shared-part items deferred (open question 7). Phase 1: E9.1, E9.2, E9.4–E9.10, E9.24. |
 | 2026-11-17 | Owner answers (AR-iii decisions 12–17) and phase 1 **built**: E9.1, E9.4–E9.9, E9.24. E9.2 waits for the warning wording; E9.10 not in this demo. |
 | 2026-11-18 | Owner: open questions parked (AR-iii decision 18); portal forms first. |
+| 2026-11-18 | Owner comment on #9 (AR3 / AR4 / AR5 changes): built as AR-iii decision 19; AR-iii open questions 6, 9, 10, 12 answered; 14–16 added. |

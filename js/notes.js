@@ -4,7 +4,7 @@
 import { RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES } from "./schema.js";
 
 /** Short code per table, used as the prefix of field IDs (e.g. INV.due_date) and record-page IDs. */
-export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI", colTx: "CTX", colAlloc: "CAL", costCentres: "CCT", accountCodes: "ACT", paymentModes: "PMD" };
+export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI", colTx: "CTX", colAlloc: "CAL", ar5Lines: "C5L", costCentres: "CCT", accountCodes: "ACT", paymentModes: "PMD" };
 const T = Object.fromEntries(Object.entries(CODE).map(([k, c]) => [c, k]));
 
 /** Screen elements that aren't a field, list, record page, related list or UI action. */
@@ -92,12 +92,15 @@ export const NOTES = {
   "PT-47": "RETIRED 2026-11-17 (AR-ix decision 23, E8.14): variable set Others with Form number (giro_form_number, also retired)",
   "PT-49": "Collections record producer (AR-iii module, D30): one form for AR-iii, AR-iv and AR-v. Catalogue items AR-iii, AR-iv, AR-v open it with collection_type preset. Sections: General information (PT-30), 2. Collection type (PT-50); the rest to be defined",
   "PT-50": "Collections variable set Collection type (D30): collection_type (Choice AR-iii / AR-iv / AR-v, labels to be given), mandatory, preset from the catalogue item",
-  "PT-51": "Collections variable set 3. Collection Details (#9 §7–9): fields of the selected type. AR-iii: Collection Date*. AR-iv: Collection Date, Reference Number, Requesting Department Cost Centre*. AR-v: Category* first, then that category's fields only (UI policies on collection_type and ar5_category); AR-v fields optional until confirmed (AR-iii decision 14)",
-  "PT-52": "Collections AR-iii multi-row variable set Total number of collections for the day (#9 §7): Collection Type* (Choice), Number of Transactions* (positive whole number); 1 to 99 rows; duplicates allowed (owner). Producer script copies rows to x_ar_collection_tx",
+  "PT-51": "Collections variable set 3. Collection Details (#9 §7–9, AR-iii decision 19): fields of the selected type. AR-iii: Collection Date*. AR-iv: Collection Date, Reference Number (no Requesting Department Cost Centre). AR-v: Category* first, Date of Collection (every category), then: Cash Bail: G56 Receipt Number, Bail Amount Received, Bailor Name, IB Case Number / WEU Number, Case Status (Case Pending / Case Closed), Accused Name, Refund required? (one bailor / accused set per case); Seized Monies: Case lines, then Forfeit, Court order, invest radio, Refund required?; Restitution: Case lines, then Court order (UI policies on collection_type and ar5_category)",
+  "PT-52": "Collections AR-iii multi-row variable set Total number of collections for the day (#9 §7, AR-iii decision 19): Collection Type* (Choice), Transaction Amount* (> 0, two decimals); 1 to 99 rows; duplicates allowed (owner). Producer script copies rows to x_ar_collection_tx",
   "PT-53": "Collections AR-iv multi-row variable set Amount for Each Account Code (#9 §8): Description*, Amount* (> 0, two decimals), Cost Centre* (active, Requesting Department), Account Code* (active); 1 to 10 rows. Producer script copies rows to x_ar_collection_allocation; the allocation total becomes amount (Request value)",
   "PT-54": "Collections AR-v supporting-document guidance by category (#9 §9): Cash Bail: G56, Bailor identity document, Bail Bond Form, Bank-in slip or receipt; Seized Monies and Restitution: G56, Case Property List, Bank-in slip or receipt (UI policy / rich-text label per category)",
   "PT-55": "Collections section 4. Supporting Documents (#9 §10): multiple attachments, optional (sc_attachment on the case); file size and type rules documented for the build, not checked in the demo (owner)",
-  "PT-56": "Collections AR-iii total: calculated sum of Number of Transactions across rows (catalog client script; shown in the multi-row set footer)",
+  "PT-56": "Collections AR-iii Total Amount: calculated sum of Transaction Amount across rows (catalog client script; multi-row set footer); stored as amount on the case (AR-iii decision 19)",
+  "PT-59": "Collections AR-v Seized Monies and Restitution multi-row variable set Case lines (AR-iii decision 19): Case Number, Amount, Case Status (choices by category); 0 to 99 rows. Producer script copies rows to x_ar_collection_case_line; the lines' total is the case's amount",
+  "PT-60": "Collections AR-v: message shown when Refund required? = Yes (AR-iii decision 19): 'Please raise a AR10' with a link to the AR10 catalogue item (rich-text label / UI policy on ar5_refund_required)",
+  "PT-61": "Collections AR-v Case lines Total Amount: calculated sum of Amount across rows (catalog client script; multi-row set footer)",
   "PT-57": "Collections AR-iv allocation total: calculated sum of Amount across rows (catalog client script); stored as amount on the case",
   "PT-48": "AR-ix Select Customer hint (decision 17, E8.1): Customer not found? Submit an AR-i to set up the customer first. Shown under the customer search instead of the AR-i add-as-new-customer button (UA-PT-newcust stays on AR-i)",
   "PT-07": "Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include",
@@ -123,6 +126,7 @@ export const NOTES = {
 
 /** UI actions per table: "UA-<CODE>-<action>". */
 export const UI_ACTIONS = {
+  "UA-PT-addcase": "Collections AR-v Seized Monies / Restitution: + Add row in Case lines (multi-row set, max 99)",
   "UA-PT-addcol": "Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99)",
   "UA-PT-addalloc": "Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10)",
   "UA-REQ-assign": "Assign to me → assigned_to = current user (assignment_group kept, default Accounts Receivable); New → Work in progress. One of only two case actions with Save (AR-00, 2026-11-16)",
@@ -175,7 +179,7 @@ export const RELATED = {
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",
-  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request", "RL-CCT-CAL": "cost_centre", "RL-INV-RQL": "invoice", "RL-BNK-PMD": "bank_account", "RL-ACT-CAL": "account_code",
+  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request", "RL-REQ-C5L": "ar_request", "RL-CCT-CAL": "cost_centre", "RL-INV-RQL": "invoice", "RL-BNK-PMD": "bank_account", "RL-ACT-CAL": "account_code",
   "RL-BSU-DEP": "bsu", "RL-BNK-BSU": "bank_account", "RL-BNK-DEP": "bank_account"
 };
 
@@ -212,13 +216,13 @@ export function noteText(id) {
   if (UI_ACTIONS[id]) return `UI action: ${UI_ACTIONS[id]}`;
   if (CALC_COLS[id]) return CALC_COLS[id];
   let m;
-  if ((m = id.match(/^RL-([A-Z]+)-([A-Z]+)$/)) && RELATED[id]) return `Related list: ${TABLES[T[m[2]]].table} where ${RELATED[id]} = this ${TABLES[T[m[1]]].label.toLowerCase()}`;
-  if ((m = id.match(/^(RP|HDR|FRM|LST)-([A-Z]+)$/)) && T[m[2]]) {
+  if ((m = id.match(/^RL-([A-Z][A-Z0-9]*)-([A-Z][A-Z0-9]*)$/)) && RELATED[id]) return `Related list: ${TABLES[T[m[2]]].table} where ${RELATED[id]} = this ${TABLES[T[m[1]]].label.toLowerCase()}`;
+  if ((m = id.match(/^(RP|HDR|FRM|LST)-([A-Z][A-Z0-9]*)$/)) && T[m[2]]) {
     const t = TABLES[T[m[2]]];
     return { RP: `Record page (UI Builder) · ${t.table}${t.extends ? ` extends ${t.extends}` : ""}`, HDR: `Record header: highlighted values of ${t.table}`,
       FRM: `Form view: ${t.table} (Default view)`, LST: `List: ${t.table} · list view layout + list menu condition` }[m[1]];
   }
-  if ((m = id.match(/^([A-Z]+)\.([a-z0-9_.]+)$/)) && T[m[1]]) {   // column names may hold digits (e.g. g56_receipt_number)
+  if ((m = id.match(/^([A-Z][A-Z0-9]*)\.([a-z0-9_.]+)$/)) && T[m[1]]) {   // column names may hold digits (e.g. g56_receipt_number)
     const f = TABLES[T[m[1]]].fields.find(x => x.name === m[2]);
     if (f) return fieldText(T[m[1]], f);
   }

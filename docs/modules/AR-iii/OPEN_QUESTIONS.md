@@ -8,11 +8,14 @@ parked ones link their GitHub issue (label `AR-iii`).
 3. ~~What does AR do with the case when the deposit is matched?~~ Nothing automatic: AR sets the state by hand (BSU decision 11, 2026-11-17).
 4. Can one deposit cover several collection cases, or one case be paid by several deposits? Built as for invoices (both allowed); mixing invoices and cases is BSU open question 5. (Owner)
 5. ~~Should Collection type move above General information?~~ No: it stays right after General information (decision 8, 2026-11-17).
-6. AR3 has no amount (only transaction counts). What does AR match a BSU deposit to for an AR3 case (D29 uses the Request value)? ([#9](https://github.com/veranzy/ServiceNowARdemo/issues/9) E9.5) **Parked** (decision 18, 2026-11-18). (Owner)
+6. ~~AR3 has no amount (only transaction counts). What does AR match a BSU deposit to for an AR3 case (D29 uses the Request value)? ([#9](https://github.com/veranzy/ServiceNowARdemo/issues/9) E9.5) **Parked** (decision 18, 2026-11-18). (Owner)
 7. Shared-part changes from #9, one by one: CC Count + up to 10 CC fields (E9.3), round-robin assignment (E9.13), clarification with reopened fields (E9.14), AR Approver role and approval (E9.15), state *Awaiting Internal Information* (E9.16, E9.20), withdrawal (E9.17), closure codes (E9.18), bulk close (E9.19), system-generated cases (E9.12). Parked by decision 10. (Owner)
 8. Wording of the warning when the collection type is changed after details are entered (#9 §5, E9.2). Owner to give the wording; until then changing the type keeps the other type's entries in the draft and clears them on submit. **Parked** (decision 18, 2026-11-18). (Owner)
-9. Do we need a currency master list, or is the default list enough? **Parked** (decision 18, 2026-11-18). (Owner)
-10. Restitution *Currency equivalent when banked in*: a currency choice (as built) or an SGD amount? **Parked** (decision 18, 2026-11-18). (Owner)
+9. ~~Do we need a currency master list, or is the default list enough?~~ No currency fields any more (decision 19, 2026-11-18).
+10. ~~Restitution *Currency equivalent when banked in*: a currency choice or an SGD amount?~~ Removed (decision 19, 2026-11-18).
 11. AR4 GST / recovery check: which account-code rule applies, and must the allocation total equal a collection total (§8, §22)? Not checked in the demo. **Parked** (decision 18, 2026-11-18). (Owner)
-12. Request value for AR-v when the currency isn't SGD (used for BSU matching, D29). **Parked** (decision 18, 2026-11-18). (Owner)
+12. ~~Request value for AR-v when the currency isn't SGD.~~ No currency fields; amounts are SGD (decision 19, 2026-11-18).
 13. From #9 §22, still open: 7 MB per file or per submission; AR5 mandatory fields per category; final AR5 status lists; AR4 Collection Date optional on purpose; permitted attachment formats. **Parked** (decision 18, 2026-11-18). (Owner)
+14. Restitution *Case Status* choices (TBD). Built with today's list (Forfeit to State with court order, Forfeit to State without court order, Case Pending) until confirmed (decision 19). (Owner)
+15. Instructions per AR5 category (Cash Bail, Seized Monies, Restitution): wording to give. The document guidance per category (`PT-54`) still lists *G56* for Seized Monies and Restitution although their G56 field is removed: keep or drop? (Owner)
+16. Case lines (Seized Monies, Restitution): how many lines at most, and is at least one line required? Built 0–99, none mandatory (decision 14). (Owner)

@@ -340,36 +340,43 @@ const COL_DOCS = { cash_bail: ["G56", "Bailor identity document", "Bail Bond For
 /** Collections section 3. Collection Details: the selected type's fields (#9 §7–9, AR-iii decisions 12–17). */
 function colDetails(d, e, f) {
   const show = k => fieldVisible("requests", reqField(k), d);
-  const keys = { "AR-iii": ["colDate"], "AR-iv": ["colDate", "colRef", "colCostCentre"],
-    "AR-v": ["colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "bailorId", "bailorAddress", "ibCase", "caseNumber", "caseStatus", "accusedName", "accusedId", "ar5Amount", "ar5Currency", "ar5Invest", "ar5CurrencyEq"] }[d.colType] || [];
-  const must = { colDate: d.colType === "AR-iii", colCostCentre: true, colCategory: true };
+  // AR-iii decision 19: AR-iv without Requesting Department Cost Centre; AR-v Cash Bail one bailor / accused set,
+  // Seized Monies and Restitution case lines, then the checkboxes, then Refund required? (Yes: raise an AR10)
+  const keys = { "AR-iii": ["colDate"], "AR-iv": ["colDate", "colRef"],
+    "AR-v": ["colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "ibCase", "caseStatus", "accusedName"] }[d.colType] || [];
+  const after = d.colType === "AR-v" ? ["ar5Forfeit", "ar5CourtOrder", "ar5Invest", "ar5Refund"] : [];
+  const lines = d.colType === "AR-v" && ["seized", "restitution"].includes(d.colCategory);
+  const must = { colDate: d.colType === "AR-iii", colCategory: true };
   return `<fieldset class="psec"${sn("PT-51")}><legend>3. Collection Details</legend>
     <div class="fgrid">${keys.filter(show).map(k => f(k, { mandatory: !!must[k], help: null, ...(k === "colCategory" ? { placeholder: "-- Choose the category --" } : {}), ...(k === "caseStatus" ? { placeholder: "-- Choose the case status --" } : {}) })).join("")}</div>
-    ${d.colType === "AR-iii" ? colRows(d, e, "colTx", { max: 99, total: ["transactions", "Total transactions", false], id: "PT-52" }) : ""}
+    ${d.colType === "AR-iii" ? colRows(d, e, "colTx", { max: 99, total: ["amount", "Total Amount", true], id: "PT-52" }) : ""}
     ${d.colType === "AR-iv" ? colRows(d, e, "colAlloc", { max: 10, total: ["amount", "Allocation total", true], id: "PT-53" }) : ""}
+    ${lines ? colRows(d, e, "ar5Lines", { min: 0, max: 99, total: ["amount", "Total Amount", true], id: "PT-59" }) : ""}
+    ${after.filter(show).length ? `<div class="fgrid">${after.filter(show).map(k => f(k, { help: null })).join("")}</div>` : ""}
+    ${show("ar5Refund") && d.ar5Refund === "yes" ? `<p class="callout small"${sn("PT-60")}>Please raise a <a href="#/portal/form/AR-x">AR10</a></p>` : ""}
   </fieldset>`;
 }
 /** Multi-row variable set for Collections (AR3 collections, AR4 allocations). Rows live in the draft under the table key. */
 export function colRows(d, e, k, o) {
   const t = TABLES[k], cols = t.fields.filter(x => !["requestId", "seq"].includes(x.key)), rows = d[k] || [];
   const cell = (r, i, fl) => { const nm = `crow:${k}:${i}:${fl.key}`, err = e[nm], v = r[fl.key], aria = `aria-label="${esc(fl.label)}, row ${i + 1}"${err ? ` aria-invalid="true"` : ""}`;
-    const opts = fl.type === "Choice" ? fl.choices : fl.ref === "costCentres" ? S.costCentres.filter(c => c.active && c.department === d.department).map(c => [c.id, `${c.code} · ${c.name}`]) : fl.ref === "accountCodes" ? S.accountCodes.filter(a => a.active).map(a => [a.id, `${a.code} · ${a.name}`]) : null;
+    const opts = fl.type === "Choice" ? (fl.choiceDependsOn ? fl.choices.filter(c => c[2] === d[fl.choiceDependsOn]) : fl.choices) : fl.ref === "costCentres" ? S.costCentres.filter(c => c.active && c.department === d.department).map(c => [c.id, `${c.code} · ${c.name}`]) : fl.ref === "accountCodes" ? S.accountCodes.filter(a => a.active).map(a => [a.id, `${a.code} · ${a.name}`]) : null;
     const ctl = opts ? `<select id="cr-${k}-${i}-${fl.key}" name="${nm}" ${aria}><option value="">-- Choose --</option>${opts.map(([x, l]) => `<option value="${esc(x)}"${x === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`
       : fl.type === "Currency" ? `<input type="number" step="0.01" min="0" inputmode="decimal" id="cr-${k}-${i}-${fl.key}" name="${nm}" value="${v ? (v / 100).toFixed(2) : ""}" ${aria}>`
       : fl.type === "Integer" ? `<input type="number" step="1" min="1" id="cr-${k}-${i}-${fl.key}" name="${nm}" value="${v || ""}" ${aria}>`
       : `<input type="text" id="cr-${k}-${i}-${fl.key}" name="${nm}" value="${esc(v || "")}" ${aria}>`;
     return `<td data-label="${esc(fl.label)}"${sn(`${CODE[k]}.${fl.name}`)}>${ctl}${err ? `<span class="ferr">${esc(err)}</span>` : ""}</td>`; };
-  return `<div class="ffield wide${e[k] ? " has-err" : ""}"${sn(o.id)}><span class="flabel"><i class="req" aria-hidden="true">*</i>${esc(t.plural)}</span>
+  return `<div class="ffield wide${e[k] ? " has-err" : ""}"${sn(o.id)}><span class="flabel">${o.min === 0 ? "" : `<i class="req" aria-hidden="true">*</i>`}${esc(t.plural)}</span>
     <div class="tablewrap"><table class="list mrvs"><thead><tr><th>Row</th>${cols.map(c => `<th${c.type === "Currency" || c.type === "Integer" ? ` class="num"` : ""}>${esc(c.label)}</th>`).join("")}<th><span class="sr">Remove</span></th></tr></thead>
     <tbody>${rows.map((r, i) => `<tr><td class="mono" data-label="Row">${i + 1}</td>${cols.map(c => cell(r, i, c)).join("")}<td><button type="button" class="linkish small" data-crdel="${k}:${i}">Remove</button></td></tr>`).join("")}</tbody>
     ${colTotal(d, k, o.total)}</table></div>
     ${e[k] ? `<span class="ferr">${esc(e[k])}</span>` : ""}
-    <div class="row start">${rows.length < o.max ? `<button type="button" class="btn small" data-cradd="${k}"${sn(k === "colTx" ? "UA-PT-addcol" : "UA-PT-addalloc")}>+ Add row</button>` : ""}<span class="fhelp">1 to ${o.max} rows.</span></div></div>`;
+    <div class="row start">${rows.length < o.max ? `<button type="button" class="btn small" data-cradd="${k}"${sn({ colTx: "UA-PT-addcol", colAlloc: "UA-PT-addalloc", ar5Lines: "UA-PT-addcase" }[k])}>+ Add row</button>` : ""}<span class="fhelp">${o.min ?? 1} to ${o.max} rows.</span></div></div>`;
 }
-export function colTotal(d, k, [key, label, money] = k === "colTx" ? ["transactions", "Total transactions", false] : ["amount", "Allocation total", true]) {
+export function colTotal(d, k, [key, label, money] = k === "colAlloc" ? ["amount", "Allocation total", true] : ["amount", "Total Amount", true]) {
   const cols = TABLES[k].fields.filter(x => !["requestId", "seq"].includes(x.key)), at = cols.findIndex(c => c.key === key);
   const n = (d[k] || []).reduce((s, r) => s + (+r[key] || 0), 0);
-  return `<tfoot id="pfTot-${k}"${sn(k === "colTx" ? "PT-56" : "PT-57")}><tr><th scope="row" colspan="${at + 1}">${esc(label)}</th><td class="num mono"><b>${money ? fmt(n) : n}</b></td><td colspan="${cols.length - at}"></td></tr></tfoot>`;
+  return `<tfoot id="pfTot-${k}"${sn({ colTx: "PT-56", colAlloc: "PT-57", ar5Lines: "PT-61" }[k])}><tr><th scope="row" colspan="${at + 1}">${esc(label)}</th><td class="num mono"><b>${money ? fmt(n) : n}</b></td><td colspan="${cols.length - at}"></td></tr></tfoot>`;
 }
 
 /** AR-ix Type help text, owner's wording exactly (AR-ix decision 14). */

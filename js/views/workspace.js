@@ -1,6 +1,6 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
-import { ctrById, ctrStatus, custById, rollup } from "../ledger.js";
+import { ctrById, ctrStatus, custById, invoiceState, rollup } from "../ledger.js";
 import { draftDate, isARi, DOC_LABEL, reqItems, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById, freeCompanies } from "../records.js";
 import { CODE } from "../notes.js";
 import { COLLECTION_FORMS, ROLES, TABLES, fieldVisible } from "../schema.js";
@@ -9,7 +9,7 @@ import { DAY, esc, fmt, nameSim, today } from "../util.js";
 import { acctById, acctLabel, yesterday } from "../bsu.js";
 import { BANKS } from "../schema.js";
 import { acctType, bsuPage } from "./bsu.js";
-import { cashPage } from "./cash.js";
+import { allocate, candidateList, depositCandidates, targetById } from "../matching.js";
 import { reqCustName, custName, ctrNo, daysLabel, fieldHtml, icon, initials, invChip, invMoney, meterRow, depositChip, depositMoney, refLink, relatedTable, reqChip, sn } from "./common.js";
 
 const W = () => S.ui.ws;
@@ -178,7 +178,6 @@ const MENU = [
 function mainLabel() {
   const m = W().main;
   if (m.kind === "home") return "Home";
-  if (m.kind === "cash") return "Cash application";
   if (m.kind === "bsu") return "Bank statement upload";
   return `${TABLES[m.table].plural}: ${LISTS[m.table].filters[m.filter][0]}`;
 }
@@ -190,7 +189,7 @@ function tabLabel(t) {
 
 export function workspaceView() {
   const w = W(), m = w.main, u = me();
-  const rail = [["home", "Home", "home"], ["list", "Lists", "list"], ["bsu", "Bank statement upload (BSU)", "upload"], ["cash", "Cash application", "cash"]];
+  const rail = [["home", "Home", "home"], ["list", "Lists", "list"], ["bsu", "Bank statement upload (BSU)", "upload"]];   // BSU decision 21: Cash application page retired
   const bsuList = m.kind === "list" && m.table === "uploads";   // BSU decision 16
   const railActive = k => w.active === "main" && (k === "list" ? m.kind === "list" && !bsuList : k === "bsu" ? m.kind === "bsu" || bsuList : m.kind === k);
   const counts = { new: S.requests.filter(LISTS.requests.filters.new[1]).length };
@@ -217,7 +216,6 @@ export function workspaceView() {
 
 function mainContent() {
   const m = W().main;
-  if (m.kind === "cash") return cashPage();
   if (m.kind === "bsu") return bsuPage();
   if (m.kind === "list") return listPage(m.table, m.filter);
   return homePage();
@@ -228,16 +226,14 @@ function homePage() {
   const u = me();
   const f = LISTS.requests.filters, fi = LISTS.invoices.filters;
   const overdue = S.invoices.filter(fi.overdue[1]);
-  const unappliedPays = S.deposits.filter(p => depositMoney(p).unapplied > 0);
   const cards = [
     ["New AR requests", S.requests.filter(f.new[1]).length, "Unassigned cases from the portal", "list", "requests:new"],
     ["Assigned to me", S.requests.filter(f.mine[1]).length, "Open cases you own", "list", "requests:mine"],
     ["Awaiting requestor information", S.requests.filter(f.awaiting[1]).length, "Waiting on the project team", "list", "requests:awaiting"],
     ["Customer setup pending", S.requests.filter(f.setup[1]).length, "AR-i to link to the customer master", "list", "requests:setup"],
     ["Draft invoices", S.invoices.filter(fi.draft[1]).length, "Created, not yet issued", "list", "invoices:draft"],
-    ["Overdue", `SGD ${fmt(overdue.reduce((s, i) => s + invMoney(i).open, 0))}`, `${overdue.length} invoices past due`, "list", "invoices:overdue"],
-    ["BSU deposits to match", `SGD ${fmt(unappliedPays.reduce((s, p) => s + depositMoney(p).unapplied, 0))}`, `${unappliedPays.length} deposits from bank statements`, "cash", ""]
-  ];
+    ["Overdue", `SGD ${fmt(overdue.reduce((s, i) => s + invMoney(i).open, 0))}`, `${overdue.length} invoices past due`, "list", "invoices:overdue"]
+  ];   // BSU decision 21: no BSU deposits to match card (Bank statements list instead)
   // aging of issued, open invoices
   const buckets = [["Current", 0], ["1–30", 0], ["31–60", 0], ["61–90", 0], ["90+", 0]];
   for (const i of S.invoices) { if (i.state !== "issued") continue; const o = invMoney(i).open; if (o <= 0) continue;
@@ -347,6 +343,7 @@ const LAYOUT = {
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
+  allocations: [["Allocation", ["depositId", "invoiceId", "requestId", "amount", "reason"]]],   // BSU decision 21: New allocation form
   deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "txnId", "paymentModeId", "bankRef", "payer", "reference"]]],
   paymentModes: [["Payment mode", ["bankAccountId", "name", "prefix", "suffix", "accountCode", "costCentre", "active"]]],
   uploads: [["Statement upload", ["number", "bankAccountId", "statementDate", "fileName", "uploadedBy", "uploadedAt", "depositCount", "depositTotal", "skippedCount"]]],
@@ -461,7 +458,8 @@ function actionsFor(table, rec, isNew, canEdit) {
     if (rec.state === "draft") a.push(action(table, "Issue invoice", "issue", { primary: true }));
     if (rec.state !== "cancelled") a.push(action(table, "Cancel invoice", "cancel", { danger: true, ovf: true }));
   }
-  if (table === "deposits" && depositMoney(rec).unapplied > 0) a.push(btn(`<button type="button" class="btn primary" data-matchdep="${rec.id}"${sn("UA-DEP-match")}>Match to invoice</button>`));
+  // BSU decision 21: matching happens on the record tabs (Suggested matches, Allocations › New); Remove match clears them
+  if (table === "deposits" && depositMoney(rec).applied > 0) a.push(btn(`<button type="button" class="btn" data-act="remove" data-id="${rec.id}"${sn("UA-DEP-remove")}>Remove match</button>`));
   if (table === "uploads") a.push(btn(`<button type="button" class="btn" data-new="uploads"${sn("UA-BSU-new")}>Upload another</button>`));
   if (table === "bankAccounts") a.push(btn(`<button type="button" class="btn" data-bsu-acct="${rec.id}"${sn("UA-BNK-upload")}>Upload statement</button>`));
   if (table === "bankAccounts") a.push(btn(`<button type="button" class="btn" data-new="paymentModes" data-prefill-account="${rec.id}"${sn("UA-BNK-newmode")}>New payment mode</button>`, true));   // BSU decision 18
@@ -548,6 +546,32 @@ let KEEP_COLS = false;
 const rt = (title, table, rows, cols, opts) => ({ key: opts.id, label: title, n: rows.length, html: relatedTable(title, table, rows, cols, { keepCols: KEEP_COLS, ...opts }) });
 const sec = (key, label, n, html) => ({ key, label, n, html });
 
+// ---------- BSU decision 21: matching on standard record tabs (no Cash application page; manual only, D5) ----------
+const dueTxt = i => { if (i.kind === "case") return `Opened ${esc(i.date || "—")}`;
+  const d = new Date(i.due); if (isNaN(d)) return esc(i.due || "—"); const n = Math.round((today - d) / DAY);
+  return n > 0 ? `<span class="bad">${n} day${n > 1 ? "s" : ""} overdue</span>` : n === 0 ? "Due today" : `Due in ${-n} day${n < -1 ? "s" : ""}`; };
+const whyChips = (sg, t) => [sg.ref ? `<span class="chip c-accent">Cited in reference</span>` : "",
+  sg.acct ? `<span class="chip c-accent">Account receives ${esc(t.form)}</span>` : "",
+  sg.exact ? `<span class="chip c-ok">Amount matches</span>` : sg.near ? `<span class="chip c-warn">Within 3% (${sg.diff < 0 ? "short" : "over"} ${fmt(Math.abs(sg.diff))})</span>` : "",
+  sg.ns >= .5 ? `<span class="chip c-neutral">Name ${Math.round(sg.ns * 100)}% similar</span>` : ""].join(" ") || `<span class="muted">—</span>`;
+const matchBtn = (pid, tid) => `<button type="button" class="btn small" data-sugmatch="${pid}:${tid}"${sn("UA-SUG-match")}>Match</button>`;
+const newAllocBtn = (from, id) => `<button type="button" class="btn small" data-new="allocations" data-alloc-from="${from}"${sn(id)}>New</button>`;
+const tgtLink = i => i.kind === "case" ? `${refLink("requests", i.id, i.number)} <span class="chip c-neutral">Collection case · ${esc(i.form)}</span>` : refLink("invoices", i.id, i.number);
+/** Deposit: ranked open invoices and Collections cases, each with a Match button (applies the default amount). */
+function depositSuggestions(rec) {
+  const m = S.matches[rec.id], rows = depositMoney(rec).unapplied > 0 ? candidateList(rec, m).slice(0, 10) : [];
+  return rt("Suggested matches", "invoices", rows, [["Invoice or case", x => tgtLink(x.i)], ["Customer", x => esc(x.i.customer || "—")], ["Due", x => dueTxt(x.i)],
+    ["Open", x => fmt(x.st.open), "num"], ["Why suggested", x => whyChips(x.sg, x.i)], ["", x => matchBtn(rec.id, x.i.id)]],
+    { id: "RL-DEP-SUG", empty: depositMoney(rec).unapplied > 0 ? "No open invoices or Collections cases. Use Allocations › New." : "This deposit is fully matched." });
+}
+/** Invoice or Collections case: ranked BSU deposits with money left, each with a Match button. */
+function targetSuggestions(rec, id) {
+  const t = targetById(rec.id), rows = depositCandidates(rec.id).slice(0, 10);
+  return rt("Suggested BSU deposits", "deposits", rows, [["BSU deposit", x => refLink("deposits", x.p.id, x.p.number)], ["Date", x => esc(x.p.date)], ["Payer", x => esc(x.p.payer)],
+    ["Reference", x => `<span class="mono small">${esc(x.p.reference || "—")}</span>`, "wrap"], ["Left to match", x => fmt(x.left), "num"], ["Why suggested", x => whyChips(x.sg, t)], ["", x => matchBtn(x.p.id, rec.id)]],
+    { id, empty: t && (t.kind === "case" || t.state === "issued") ? "No BSU deposits with money left to match." : "Only issued invoices can be matched." });
+}
+
 /** Record tabs after Details: related items and one tab per related list (Horizon record page). */
 function related(table, rec) {
   KEEP_COLS = table === "customers" || table === "contracts";
@@ -558,7 +582,7 @@ function related(table, rec) {
     const extra = rec.colType === "AR-iii" ? [rowTab("colTx", "RL-REQ-CTX")] : rec.colType === "AR-iv" ? [rowTab("colAlloc", "RL-REQ-CAL")] : [];
     const rows = [];
     for (const [pid, m] of Object.entries(S.matches)) { if (!m || m.status !== "accepted") continue; for (const a of m.allocations) if (a.requestId === rec.id) rows.push({ pid, a, m }); }
-    return [...extra, rt("BSU deposits matched", "allocations", rows, [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]], { id: "RL-REQ-ALC" })];
+    return [...extra, rt("BSU deposits matched", "allocations", rows, [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]], { id: "RL-REQ-ALC", actions: REQ_OPEN.includes(rec.state) && invoiceState(targetById(rec.id)).open > 0 ? newAllocBtn(`requests:${rec.id}`, "UA-REQ-newalloc") : "" }), targetSuggestions(rec, "RL-REQ-SUG")];
   }
   if (table === "requests" && isIx(rec)) {
     return rec.contractId ? [giroHistory(ctrById(rec.contractId), "REQ-GIROHIST")] : [];
@@ -640,12 +664,13 @@ function related(table, rec) {
     const cols = table === "invoices"
       ? [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]]
       : [["Invoice", x => tgt(x.a)], ["Customer", x => esc(x.a.requestId ? custName(recById("requests", x.a.requestId)?.customerId) : recById("invoices", x.a.invoiceId)?.customer || "")], ["Amount", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]];
-    const alc = rt("Allocations", "allocations", rows, cols, { id: table === "invoices" ? "RL-INV-ALC" : "RL-DEP-ALC" });
+    const alc = rt("Allocations", "allocations", rows, cols, { id: table === "invoices" ? "RL-INV-ALC" : "RL-DEP-ALC",
+      actions: (table === "invoices" ? rec.state === "issued" && invMoney(rec).open > 0 : depositMoney(rec).unapplied > 0) ? newAllocBtn(`${table}:${rec.id}`, table === "invoices" ? "UA-INV-newalloc" : "UA-DEP-newalloc") : "" });   // New only while something is left to match
     // Invoice block (CCI decision 13): a preview of the invoice document, printable to PDF
     // #10 E10.11: the invoice's billing line(s): its AR-i / contract line, or the line its schedule bills
     const bl = table === "invoices" ? S.lines.filter(l => l.id === rec.lineId || l.invoiceId === rec.id || (rec.scheduleId && l.scheduleId === rec.scheduleId)) : [];
     const blt = rt("Billing lines", "lines", bl, [["Line", l => refLink("lines", l.id, l.number)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"], ["Amount", l => fmt(l.amount), "num"]], { id: "RL-INV-RQL" });
-    return table === "invoices" ? [blt, alc, { key: "INV-PDF", label: "Invoice preview", html: invoiceDoc(rec) }] : [alc];
+    return table === "invoices" ? [blt, alc, targetSuggestions(rec, "RL-INV-SUG"), { key: "INV-PDF", label: "Invoice preview", html: invoiceDoc(rec) }] : [depositSuggestions(rec), alc];
   }
   return [];
 }

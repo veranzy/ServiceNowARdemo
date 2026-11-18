@@ -2,6 +2,7 @@
 // Each function mirrors a ServiceNow UI action or business rule (named in the comments).
 import { companyById, ctrById, custById, invoiceUse, withCompany } from "./ledger.js";
 import { CONTRACT_CATEGORIES, DOC_TYPES, FREQUENCIES, GIRO_PURPOSES, GIRO_TYPES, GST_RATE, TABLES, clearHidden } from "./schema.js";
+import { allocate } from "./matching.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, today, uid } from "./util.js";
 
@@ -560,6 +561,15 @@ export function cancelInvoice(id) {
 
 /** Generic form save: coerce values by field type, validate, write. Returns {errors} or {rec}. */
 export function saveRecord(table, id, raw) {
+  // BSU decision 21: New allocation (from a deposit, invoice or Collections case). Manual only (D5); stored on the deposit's match.
+  if (table === "allocations") {
+    const errors = {}, tid = raw.invoiceId || raw.requestId || null;
+    if (!raw.depositId) errors.depositId = "Choose a BSU deposit.";
+    if (!raw.invoiceId === !raw.requestId) errors.invoiceId = "Choose either an invoice or a Collection case.";
+    const amt = raw.amount === undefined || raw.amount === "" ? null : typeof raw.amount === "number" ? raw.amount : cents(raw.amount);
+    if (!Object.keys(errors).length) { const e = allocate(raw.depositId, tid, amt, raw.reason); if (e) errors.amount = e; }
+    return Object.keys(errors).length ? { errors } : { rec: { id: raw.depositId }, alloc: true };
+  }
   const def = TABLES[table], vals = {};
   for (const f of def.fields) {
     if (!(f.key in raw) || f.readonly) continue;

@@ -1,8 +1,8 @@
 // Shared view helpers: state chips, form fields from the schema, related lists, icons, build-note attributes.
 import { ctrById, custById, invoiceUse } from "../ledger.js";
-import { REQ_STATE, displayOf, recById, userById } from "../records.js";
+import { REQ_OPEN, REQ_STATE, displayOf, recById, userById } from "../records.js";
 import { CODE, noteText } from "../notes.js";
-import { BANKS, TABLES } from "../schema.js";
+import { BANKS, COLLECTION_FORMS, TABLES } from "../schema.js";
 import { S } from "../state.js";
 import { DAY, esc, fmt, today } from "../util.js";
 
@@ -60,6 +60,11 @@ function refOptions(f, rec, formVals) {
   return refOptionsAll(f, rec, formVals).filter(([id]) => id === cur || (Array.isArray(cur) && cur.includes(id)) || (S[f.ref] || []).find(x => x.id === id)?.active !== false);
 }
 function refOptionsAll(f, rec, formVals) {
+  // BSU decision 21: New allocation offers only what can still be matched (reference qualifiers)
+  if (f.qual && f.ref === "deposits") return S.deposits.filter(p => depositMoney(p).unapplied > 0).map(p => [p.id, `${p.number} · ${p.payer} · ${fmt(depositMoney(p).unapplied)} left`]);
+  if (f.qual && f.ref === "invoices") return S.invoices.filter(i => i.state === "issued" && invMoney(i).open > 0).map(i => [i.id, `${i.number} · ${i.customer} · ${fmt(invMoney(i).open)} due`]);
+  if (f.qual && f.ref === "requests") { const { applied } = invoiceUse();
+    return S.requests.filter(r => COLLECTION_FORMS.includes(r.form) && REQ_OPEN.includes(r.state) && (r.amount || 0) - (applied[r.id] || 0) > 0).map(r => [r.id, `${r.number} · ${r.colType || r.form} · ${fmt(r.amount - (applied[r.id] || 0))} to match`]); }
   if (f.ref === "bankAccounts") return S.bankAccounts.map(a => [a.id, `${BANKS[a.bank].name} · ${a.number} · ${a.name}`]);
   if (f.ref === "groups") return S.groups.map(g => [g.id, g.name]);
   if (f.ref === "users") return S.users.filter(u => !f.refFilter || u.team === f.refFilter).map(u => [u.id, u.name]);
@@ -137,8 +142,8 @@ export function relatedTable(title, table, rows, cols, opts = {}) {
     <header><h3>${esc(title)} <span class="count">${rows.length}</span></h3>${opts.actions || ""}</header>
     ${rows.length || opts.keepCols ? `<div class="tablewrap"><table><thead><tr>${cols.map(c => `<th class="${c[2] || ""}">${esc(c[0])}</th>`).join("")}</tr></thead>
       <tbody>${rows.length ? rows.map(r => `<tr>${cols.map(c => `<td class="${c[2] || ""}">${c[1](r)}</td>`).join("")}</tr>`).join("")
-        : `<tr><td colspan="${cols.length}" class="empty small">No ${esc(t.plural.toLowerCase())}.</td></tr>`}</tbody></table></div>`
-      : `<p class="empty small">No ${esc(t.plural.toLowerCase())}.</p>`}
+        : `<tr><td colspan="${cols.length}" class="empty small">${esc(opts.empty || `No ${t.plural.toLowerCase()}.`)}</td></tr>`}</tbody></table></div>`
+      : `<p class="empty small">${esc(opts.empty || `No ${t.plural.toLowerCase()}.`)}</p>`}
   </section>`;
 }
 

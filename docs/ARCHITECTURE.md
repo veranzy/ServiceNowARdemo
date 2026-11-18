@@ -14,7 +14,7 @@ contract → GIRO status + active AR-ix case (`giro_status`, `giro_case`; max on
 
 **Money received is only ever a BSU deposit (D7).** There is no payments table or "payment received"
 concept: deposits come from BSU uploads, live in `x_ar_bank_statement` (code key `deposits`,
-`S.deposits`, `TABLES.deposits`) and are matched to invoices or Collections cases (D29) on the Cash application page. Say
+`S.deposits`, `TABLES.deposits`) and are matched to invoices or Collections cases (D29) on the deposit, invoice or case record (BSU decision 21). Say
 "BSU deposit" in the UI and docs, never "payment".
 
 - **`js/schema.js` is the single source** for tables, columns, types, choices, roles and the record
@@ -29,7 +29,7 @@ concept: deposits come from BSU uploads, live in `x_ar_bank_statement` (code key
   entries: `comment` (visible on portal), `work_note` (AR only), `system`.
 - Matches (`S.matches[<deposit id>]`) hold the deposit's allocations; `status: "accepted"` applies them. An allocation
   has `invoiceId` or, for a Collections case, `requestId` (`allocKey()` in `js/ledger.js`).
-  Only manual matching creates them (invoice finder → Apply); *Remove match* clears them.
+  Only manual matching creates them (*Match* on a Suggested tab, or *New* allocation; BSU decision 21); *Remove match* clears them.
 - Bank accounts have bank (MB/OB/US mock aliases), department and account type. Each bank's CSV
   layout is in `BANKS` in `js/schema.js`.
 
@@ -49,7 +49,7 @@ js/records.js           lifecycle: createRequest, requestAction (assign), issueI
                         schedules: schedulePeriods, periodsDue, nextBilling, cycleDay, nextCycleDate,
                         draftDate, runDailyInvoiceCheck (the daily job)
 js/ledger.js            ledger reads: invoiceUse (applied/reserved), rollup, lookups
-js/matching.js          manual allocation (act: manual/remove), allocationPlan, finder ranking (signals)
+js/matching.js          manual matching (BSU decision 21): allocate, act (remove), candidateList / depositCandidates ranking (signals)
 js/bsu.js               BSU: parse bank CSV by template, Deposit IDs, saveUpload, sample CSV per bank
 js/io.js                CSV parser, matches CSV export
 js/sample-data.js       users, customers, contracts, invoices, BSU data (dates shift to today); no AR requests
@@ -59,9 +59,7 @@ js/views/app.js         render(): demo bar + active persona; toast; setStatus
 js/router.js            page URLs (#/ws/…, #/portal/…): URL → screen on load and Back / Forward, screen → URL after render (UIX decision 14)
 js/views/workspace.js   workspace shell, landing page, list pages (LISTS), record pages (LAYOUT, UI actions, activity)
 js/views/portal.js      portal home, AR forms catalogue (AR-i … AR-xvi), AR-i form, confirmation, My requests, ticket page
-js/views/cash.js        cash application page (manual matching of deposits)
 js/views/bsu.js         BSU page: statement-day checklist, upload + preview, recent uploads
-js/views/finder.js      invoice finder (ranked candidates + allocation preview)
 js/views/common.js      sn() build-note attribute, fieldHtml (forms from schema), chips, related lists, icons
 tools/mapping.mjs       generates SERVICENOW_MAPPING.md from the schema
 js/notes.js             build-note ID registry (table codes, element notes, UI actions, related lists)

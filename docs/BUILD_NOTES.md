@@ -47,6 +47,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `SCH-PER` | Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming; no action column (drafts come from JOB-DAILYINV) |
 | `JOB-DAILYINV` | Scheduled job Daily invoice check (daily, D12 amended 2026-11-16): for each x_ar_billing_schedule period with no non-cancelled invoice and invoice date within 5 working days (Mon–Fri) of today, insert a draft x_ar_invoice (billing_schedule, billing_period, contract, customer, ar_request and request_line from the schedule) and add a work note on the AR-i case. Issuing stays manual (Issue invoice). Demo: shown as mock data only (the draft on ARQ0001009); no demo button |
 | `INV-PDF` | Invoice document (CCI decision 13): HTML template rendered with PDF Generation Utilities (sn_pdfgeneratorutils) when AR issues the invoice and attached to the invoice; the workspace tab shows the same template as a preview (DRAFT / CANCELLED watermark when not issued). Template wording is a draft |
+| `RL-DEP-SUG` | Suggested matches tab on x_ar_bank_statement (BSU decision 21): workspace data resource (script) listing up to 10 issued invoices with amount due and open Collections cases (ar_form = COL) not yet on this deposit, ranked by: invoice / case number or reference cited in the bank reference, amount fit (exact or within 3%), payer-name similarity, and the bank account's collection types. Column Why suggested shows the signals. A suggestion only: nothing is matched until AR presses Match (D5) |
+| `RL-INV-SUG` | Suggested BSU deposits tab on x_ar_invoice (BSU decision 21): up to 10 x_ar_bank_statement records with an unmatched amount, ranked with the same signals; only for issued invoices with amount due. Match on a row allocates (D5: manual) |
+| `RL-REQ-SUG` | Suggested BSU deposits tab on Collections cases (x_ar_request, ar_form = COL; BSU decision 21, D29): as RL-INV-SUG, against the case's Request value still to match |
 
 ## AR request record
 
@@ -74,12 +77,12 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 
 | ID | ServiceNow |
 |---|---|
-| `CSH-01` | Cash application page (UI Builder custom page) |
-| `CSH-02` | Single-score cards over x_ar_bank_statement / x_ar_allocation |
-| `CSH-03` | List of x_ar_bank_statement with match state; filter tabs To match / Matched / All |
-| `CSH-04` | Invoice finder (modal or side panel): ranked issued invoices and open Collections cases (ar_form = COL: AR-iii, AR-iv, AR-v; D29, D30) + allocation preview before confirming |
-| `CSH-06` | Finder tag Account receives AR-… (BSU decision 13): the deposit's bank account lists the case's collection type in collection_types; adds to the ranking score, never hides other candidates |
-| `CSH-05` | Collection case tag in the invoice finder and preview (D29): the candidate is an open x_ar_request with ar_form = COL (tag shows its collection_type, D30) and Request value (amount) not yet matched; its allocation sets request instead of invoice |
+| `CSH-01` | RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Cash application page (UI Builder custom page) |
+| `CSH-02` | RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Single-score cards over x_ar_bank_statement / x_ar_allocation |
+| `CSH-03` | RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: List of x_ar_bank_statement with match state; filter tabs To match / Matched / All |
+| `CSH-04` | RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Invoice finder (modal or side panel): ranked issued invoices and open Collections cases (ar_form = COL: AR-iii, AR-iv, AR-v; D29, D30) + allocation preview before confirming |
+| `CSH-06` | RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Finder tag Account receives AR-… (BSU decision 13): the deposit's bank account lists the case's collection type in collection_types; adds to the ranking score, never hides other candidates |
+| `CSH-05` | RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Collection case tag in the invoice finder and preview (D29): the candidate is an open x_ar_request with ar_form = COL (tag shows its collection_type, D30) and Request value (amount) not yet matched; its allocation sets request instead of invoice |
 
 ## BSU page
 
@@ -359,11 +362,24 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `BNK.collection_types` | x_ar_bank_account.collection_types · List · Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others |
 | `BNK.active` | x_ar_bank_account.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields |
 
+## Allocation
+
+| ID | ServiceNow |
+|---|---|
+| `LST-ALC` | List: x_ar_allocation · list view layout + list menu condition |
+| `RP-ALC` | Record page (UI Builder) · x_ar_allocation |
+| `HDR-ALC` | Record header: highlighted values of x_ar_allocation |
+| `FRM-ALC` | Form view: x_ar_allocation (Default view) |
+| `LST-CAL` | List: x_ar_collection_allocation · list view layout + list menu condition |
+| `RP-CAL` | Record page (UI Builder) · x_ar_collection_allocation |
+| `HDR-CAL` | Record header: highlighted values of x_ar_collection_allocation |
+| `FRM-CAL` | Form view: x_ar_collection_allocation (Default view) |
+
 ## Allocation fields
 
 | ID | ServiceNow |
 |---|---|
-| `ALC.deposit` | x_ar_allocation.deposit · Reference → x_ar_bank_statement |
+| `ALC.deposit` | x_ar_allocation.deposit · Reference → x_ar_bank_statement · mandatory |
 | `ALC.invoice` | x_ar_allocation.invoice · Reference → x_ar_invoice |
 | `ALC.request` | x_ar_allocation.request · Reference → x_ar_request · Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form = COL, the Collections form for AR-iii, AR-iv, AR-v; D29, D30) |
 | `ALC.amount` | x_ar_allocation.amount · Currency |
@@ -607,15 +623,6 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CTX.collection_type` | x_ar_collection_tx.collection_type · Choice · mandatory |
 | `CTX.number_of_transactions` | x_ar_collection_tx.number_of_transactions · Integer · mandatory · Positive whole number |
 
-## Allocation
-
-| ID | ServiceNow |
-|---|---|
-| `LST-CAL` | List: x_ar_collection_allocation · list view layout + list menu condition |
-| `RP-CAL` | Record page (UI Builder) · x_ar_collection_allocation |
-| `HDR-CAL` | Record header: highlighted values of x_ar_collection_allocation |
-| `FRM-CAL` | Form view: x_ar_collection_allocation (Default view) |
-
 ## Cost centre
 
 | ID | ServiceNow |
@@ -759,11 +766,16 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-INV-issue` | UI action: Issue invoice (saves the form first) → state = Issued; blocked until approval_date is set (every invoice, CCI decision 9); posts a comment to the requester on the linked AR request |
 | `UA-INV-cancel` | UI action: Cancel invoice → only when no BSU deposit is matched |
 | `UA-INV-save` | UI action: Save (update, draft only) |
-| `UA-DEP-match` | UI action: Match to invoice → opens the invoice finder for this deposit |
-| `UA-DEP-find` | UI action: Find invoice → opens the invoice finder |
-| `UA-DEP-confirm` | UI action: Confirm match → inserts x_ar_allocation records (manual), with invoice or, for a Collections case, request set (D29) |
-| `UA-DEP-remove` | UI action: Remove match → deletes the deposit's allocations |
-| `UA-DEP-export` | UI action: Export matches to CSV |
+| `UA-DEP-match` | UI action: RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Match to invoice → opens the invoice finder for this deposit |
+| `UA-DEP-find` | UI action: RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Find invoice → opens the invoice finder |
+| `UA-DEP-confirm` | UI action: RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Confirm match → inserts x_ar_allocation records (manual), with invoice or, for a Collections case, request set (D29) |
+| `UA-DEP-remove` | UI action: Remove match (header action on the deposit, shown when it has allocations) → deletes the deposit's allocations |
+| `UA-SUG-match` | UI action: Match (row action on Suggested matches / Suggested BSU deposits, BSU decision 21) → inserts one x_ar_allocation: amount = the smaller of the deposit's unmatched amount and the target's amount due; exception set from what is left (Exact, Short pay, Overpayment, Multi-invoice) |
+| `UA-DEP-newalloc` | UI action: New on the deposit's Allocations tab (BSU decision 21) → New allocation form with BSU deposit prefilled; AR picks an invoice or a Collection case and may change the amount |
+| `UA-INV-newalloc` | UI action: New on the invoice's Allocations tab (BSU decision 21) → New allocation form with Invoice prefilled; AR picks the BSU deposit |
+| `UA-REQ-newalloc` | UI action: New on the Collections case's BSU deposits matched tab (BSU decision 21, D29) → New allocation form with Collection case prefilled; AR picks the BSU deposit |
+| `UA-ALC-insert` | UI action: Submit (insert) of x_ar_allocation (BSU decision 21): exactly one of invoice or request; amount empty = default (smaller of deposit unmatched and target due); blocked above either; returns to the record it was opened from |
+| `UA-DEP-export` | UI action: RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Export matches to CSV |
 | `UA-BSU-new` | UI action: New (list action on Statement uploads): opens the upload form (catalog item Bank statement upload) |
 | `UA-BSU-save` | UI action: Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete |
 | `UA-BSU-sample` | UI action: Demo only: generate a sample CSV in the bank's layout |

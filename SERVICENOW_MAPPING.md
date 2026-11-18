@@ -359,10 +359,10 @@ Applies part or all of a BSU deposit to an invoice, or to an open Collections ca
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
-| `deposit` | BSU deposit | Reference | → `x_ar_bank_statement` |
-| `invoice` | Invoice | Reference | → `x_ar_invoice` |
-| `request` | Collection case | Reference | → `x_ar_request`. Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form = COL, the Collections form for AR-iii, AR-iv, AR-v; D29, D30) |
-| `amount` | Amount | Currency |  |
+| `deposit` | BSU deposit | Reference | → `x_ar_bank_statement`. Mandatory. Reference qualifier: BSU deposits with an unmatched amount |
+| `invoice` | Invoice | Reference | → `x_ar_invoice`. Reference qualifier: issued invoices with amount due > 0 |
+| `request` | Collection case | Reference | → `x_ar_request`. Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form = COL, the Collections form for AR-iii, AR-iv, AR-v; D29, D30). Reference qualifier: open Collections cases (ar_form = COL) with an amount still to match |
+| `amount` | Amount | Currency | Defaults on insert to the smaller of the deposit's unmatched amount and the target's amount due (BSU decision 21) |
 | `state` | State | Choice | Choices: Applied (`accepted`), Removed (`removed`) |
 | `exception` | Exception | Choice | Choices: Exact (`none`), Multi-invoice (`multi_invoice`), Short pay (`short_pay`), Overpayment (`over_pay`), Partial (`partial`), Discount taken (`discount`) |
 | `reason` | Reason | String (1000) |  |
@@ -452,7 +452,7 @@ Master data (CCI decision 11, #9 §8): account codes for AR4 allocations with th
 - **List page** (Horizon list page template): **list menu** on the left, list on the right. Menu: AR requests (one list per AR form, UIX decision 15); Invoices (Drafts, Issued unpaid, Overdue, All); Bank statements (Statement uploads, BSU deposits to match, All BSU deposits, Bank accounts, Payment modes); GIRO; Master data (Customers, Contracts (both categories, CCI decision 20), Cost centres, Account codes; billing contacts and customer documents are tabs on the customer). No Recurring billing group: schedules are under contracts (UIX decision 17).
 - **Record pages** (Horizon Record page template): header (record name, description, label-value pairs, form record presence, **UI action bar** with overflow menu) › **ribbon** of metric widgets (collapsible) › **resizable pane** with record tabs (Details first, then related items, then one tab per related list; extra tabs in a More menu) and the **contextual side bar** (vertical icon tabs). AR request side bar: Customer setup, Activity stream, Attachments (side bar tools for other records: open, GitHub issue #1). Last tab on every record: **Record history** (sys_audit; turn Audit on for every `x_ar_` table). Theme: the default workspace theme.
 - **BSU (bank statement upload)** custom page: daily checklist of bank accounts for the statement date, upload form (bank account, statement date, CSV), preview of deposits with Deposit IDs, *Save to bank statements*, recent uploads. See `docs/modules/BSU/README.md`.
-- **Cash application** custom page: deposits from the Bank statements table with match state; **manual matching only** through the invoice finder with allocation preview (modal or side panel).
+- **Matching** (BSU decision 21): no custom page. Deposit, invoice and Collections case record pages get a *Suggested* related-list tab (ranked, row action *Match*) and an *Allocations* tab with *New* (allocation form). The queue is the list *BSU deposits to match*.
 
 ### UI actions
 
@@ -476,11 +476,12 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 | `UA-INV-issue` | Issue invoice (saves the form first) → state = Issued; blocked until approval_date is set (every invoice, CCI decision 9); posts a comment to the requester on the linked AR request |
 | `UA-INV-cancel` | Cancel invoice → only when no BSU deposit is matched |
 | `UA-INV-save` | Save (update, draft only) |
-| `UA-DEP-match` | Match to invoice → opens the invoice finder for this deposit |
-| `UA-DEP-find` | Find invoice → opens the invoice finder |
-| `UA-DEP-confirm` | Confirm match → inserts x_ar_allocation records (manual), with invoice or, for a Collections case, request set (D29) |
-| `UA-DEP-remove` | Remove match → deletes the deposit's allocations |
-| `UA-DEP-export` | Export matches to CSV |
+| `UA-DEP-remove` | Remove match (header action on the deposit, shown when it has allocations) → deletes the deposit's allocations |
+| `UA-SUG-match` | Match (row action on Suggested matches / Suggested BSU deposits, BSU decision 21) → inserts one x_ar_allocation: amount = the smaller of the deposit's unmatched amount and the target's amount due; exception set from what is left (Exact, Short pay, Overpayment, Multi-invoice) |
+| `UA-DEP-newalloc` | New on the deposit's Allocations tab (BSU decision 21) → New allocation form with BSU deposit prefilled; AR picks an invoice or a Collection case and may change the amount |
+| `UA-INV-newalloc` | New on the invoice's Allocations tab (BSU decision 21) → New allocation form with Invoice prefilled; AR picks the BSU deposit |
+| `UA-REQ-newalloc` | New on the Collections case's BSU deposits matched tab (BSU decision 21, D29) → New allocation form with Collection case prefilled; AR picks the BSU deposit |
+| `UA-ALC-insert` | Submit (insert) of x_ar_allocation (BSU decision 21): exactly one of invoice or request; amount empty = default (smaller of deposit unmatched and target due); blocked above either; returns to the record it was opened from |
 | `UA-BSU-new` | New (list action on Statement uploads): opens the upload form (catalog item Bank statement upload) |
 | `UA-BSU-save` | Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete |
 | `UA-BSU-sample` | Demo only: generate a sample CSV in the bank's layout |
@@ -519,7 +520,7 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 
 ### Matching (manual only)
 
-There is **no auto-matching** (decision D5). The invoice finder ranks issued invoices for a deposit by
+There is **no auto-matching** (decision D5). The *Suggested* tabs rank issued invoices for a deposit by
 invoice number in the bank reference, amount fit and payer-name similarity (customer name, parent group,
 bank-statement names), purely as a suggestion. The AR team always chooses and applies the allocation.
 Only **issued** invoices receive deposits.

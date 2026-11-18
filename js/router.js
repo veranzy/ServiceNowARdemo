@@ -5,7 +5,7 @@
 //
 //   #/ws                          workspace landing page
 //   #/ws/list/<table>/<filter>    a list, e.g. #/ws/list/requests/open
-//   #/ws/bsu   #/ws/cash          bank statement upload, cash application
+//   #/ws/bsu                      bank statement upload (#/ws/cash, retired, opens BSU deposits to match)
 //   #/ws/<table>/<key>            a record; key = its number (ARQ0001004, HL-2026-01) or, for customers, its name
 //   #/portal                      portal home
 //   #/portal/forms                AR forms catalogue
@@ -39,7 +39,7 @@ export function routeOf() {
   }
   const m = w.main;
   if (m.kind === "list") return `#/ws/list/${m.table}/${m.filter}`;
-  if (m.kind === "bsu" || m.kind === "cash") return `#/ws/${m.kind}`;
+  if (m.kind === "bsu") return `#/ws/${m.kind}`;
   return "#/ws";
 }
 
@@ -63,7 +63,8 @@ export function applyRoute(hash) {
   S.ui.persona = area === "ws" ? "ar" : S.ui.persona;
   const w = S.ui.ws;
   if (!a) { if (area === "ws") { w.main = { kind: "home" }; w.active = "main"; } return null; }
-  if (a === "bsu" || a === "cash") { w.main = { kind: a }; w.active = "main"; return null; }
+  if (a === "cash") { w.main = { kind: "list", table: "deposits", filter: "unapplied" }; w.active = "main"; return null; }   // BSU decision 21: page retired; old links open BSU deposits to match
+  if (a === "bsu") { w.main = { kind: a }; w.active = "main"; return null; }
   if (a === "list" && b) { w.main = { kind: "list", table: b, filter: c || "all" }; w.active = "main"; return null; }
   if (b && S[a] && b !== "new") {
     const r = findRec(a, b);

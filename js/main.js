@@ -1,15 +1,13 @@
 // Entry point: delegated event handling for the demo bar, workspace and portal, then boot.
 import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
-import { exportCSV } from "./io.js";
-import { act } from "./matching.js";
+import { act, allocate } from "./matching.js";
 import { giroPurposesFor, giroContracts, custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
 import { cents, fmt, uid } from "./util.js";
-import { render, setStatus, syncBarHeight, toast } from "./views/app.js";
-import { refreshPicker } from "./views/finder.js";
+import { render, syncBarHeight, toast } from "./views/app.js";
 import { colTotal, contractBox, custResults, formAlert, formSide, invSum, itemTotals } from "./views/portal.js";
 import { listRows } from "./views/workspace.js";
 
@@ -24,10 +22,10 @@ function openTab(table, id) {
   W().active = key;
   render(); window.scrollTo(0, 0);
 }
-function newTab(table, prefill) {
+function newTab(table, prefill, from) {
   const id = "new" + uid(""), key = `${table}:${id}`;
   const defaults = Object.fromEntries((TABLES[table]?.fields || []).filter(f => f.default !== undefined).map(f => [f.key, f.default]));   // e.g. Active = true
-  W().tabs.push({ key, table, id, draft: {}, vals: { ...defaults, ...(prefill || {}) } });
+  W().tabs.push({ key, table, id, draft: {}, vals: { ...defaults, ...(prefill || {}) }, from });
   W().active = key; render(); window.scrollTo(0, 0);
 }
 function closeTab(key) {
@@ -44,6 +42,11 @@ function saveActive(tab, { quiet } = {}) {
   const res = saveRecord(tab.table, tab.id, tab.vals || {});
   if (res.errors) { tab.errors = res.errors; tab.msg = { kind: "err", text: "Fix the highlighted fields, then try again." }; return false; }
   tab.errors = {}; tab.vals = {}; tab.msg = null;
+  if (res.alloc) {   // BSU decision 21: back to the record the allocation was made from
+    const w = W(); w.tabs = w.tabs.filter(t => t !== tab); w.active = tab.from && w.tabs.some(t => t.key === tab.from) ? tab.from : "main";
+    if (!quiet) toast("Allocation saved.");
+    return true;
+  }
   if (tab.id.startsWith("new")) { const old = tab.key; tab.id = res.rec.id; tab.key = `${tab.table}:${res.rec.id}`; delete tab.draft; if (W().active === old) W().active = tab.key; }
   if (!quiet) toast(`${TABLES[tab.table].label} saved.`);
   return true;
@@ -253,6 +256,11 @@ document.addEventListener("click", e => {
   }
   if (d.tab) { W().active = d.tab; render(); return window.scrollTo(0, 0); }
   if (d.closetab) return closeTab(d.closetab);
+  // BSU decision 21: New allocation from a deposit, invoice or Collections case; Match on a suggested row
+  if (d.new === "allocations") { const [tb, id] = (d.allocFrom || "").split(":");
+    return newTab("allocations", tb === "deposits" ? { depositId: id } : tb === "invoices" ? { invoiceId: id } : tb === "requests" ? { requestId: id } : null, d.allocFrom); }
+  if (d.sugmatch) { const [pid, tid] = d.sugmatch.split(":"), e = allocate(pid, tid, null, "");
+    if (e) return toast(e); toast(`Matched ${recById("deposits", pid)?.number}.`); return render(); }
   if (d.new && d.prefillContract) {   // New billing schedule (CCI decisions 8–9): contract, customer, monthly, first billing date on the next cycle day
     const k = S.contracts.find(x => x.id === d.prefillContract);
     return newTab(d.new, { contractId: k?.id, customerId: k?.customerId, department: k?.department || "", frequency: "monthly", firstDate: nextCycleDate(k), lastDate: k?.end || "" });
@@ -274,14 +282,7 @@ document.addEventListener("click", e => {
     toast(what === "schedule" ? `Billing schedule ${res.opened.number} set up. The requester can see it on the portal.` : `Draft invoice ${res.opened.number} created for this line.`);
     return openTab(what === "schedule" ? "schedules" : "invoices", res.opened.id);
   }
-  if (d.matchdep) { S.pick[d.matchdep] = { open: true, q: "", sel: [], note: "" }; S.filter = "open"; showMain({ kind: "cash" }); return document.querySelector(`[data-pickopen="${d.matchdep}"]`)?.scrollIntoView({ block: "start" }); }
-  if (t.id === "exportBtn") return exportCSV();
-  if (t.id === "dismissBtn") { setStatus(); return render(); }
-  if (d.f) { S.filter = d.f; return render(); }
-  if (d.act) return act(d.id, d.act);
-  if (d.pickopen) { const pid = d.pickopen; if (S.pick[pid]?.open) delete S.pick[pid]; else S.pick[pid] = { open: true, q: "", sel: [], note: "" }; render(); return S.pick[pid] && $("pkq-" + pid)?.focus(); }
-  if (d.apply) return act(d.apply, "manual", { ids: S.pick[d.apply]?.sel || [], note: S.pick[d.apply]?.note });
-  if (d.pickclear) { S.pick[d.pickclear].sel = []; return refreshPicker(d.pickclear); }
+  if (d.act) return act(d.id, d.act);   // Remove match (deposit record)
 });
 
 // Horizon resizable pane: drag the handle between record tabs and the contextual side bar
@@ -312,10 +313,6 @@ document.addEventListener("change", e => {
   if (el.id === "bsuFile") { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { S.bsu.text = String(r.result); S.bsu.fileName = f.name; parseCurrent(); render(); }; r.readAsText(f); el.value = ""; return; }
   if (el.id === "pfAttach") { P().draft.attachments.push(...[...el.files].map(f => f.name)); return render(); }
   if (el.id === "pfBulk") { const d = P().draft; d.docBulk = [...(d.docBulk || []), ...[...el.files].map(f => f.name)]; return render(); }
-  const cb = el.closest("[data-pick]");
-  if (cb) { const pk = S.pick[cb.dataset.pick]; if (!pk) return;
-    pk.sel = cb.checked ? [...pk.sel.filter(x => x !== cb.value), cb.value] : pk.sel.filter(x => x !== cb.value);
-    cb.closest(".cand")?.classList.toggle("on", cb.checked); return refreshPicker(cb.dataset.pick, "preview"); }
   // portal AR form: billing line item fields
   if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
   if (el.closest("#arForm") && el.name?.startsWith("crow:")) { const [, t, i, k] = el.name.split(":"); P().draft[t][+i][k] = t && TABLES[t].fields.find(x => x.key === k)?.type === "Integer" ? (el.value === "" ? 0 : Math.trunc(+el.value)) : coerce(t, k, el); return colRowUpdated(el, t); }
@@ -356,8 +353,6 @@ document.addEventListener("input", e => {
   const el = e.target;
   if (el.id === "listQ") { W().q = el.value; const m = W().main; const { rows, html } = listRows(m.table, m.filter); $("listBody").innerHTML = html; $("listCount").textContent = rows.length; return; }
   if (el.dataset.composer) { const c = W().composer[el.dataset.composer] ||= { kind: "work_note", text: "" }; c.text = el.value; return; }
-  if (el.dataset.pickq && S.pick[el.dataset.pickq]) { S.pick[el.dataset.pickq].q = el.value; return refreshPicker(el.dataset.pickq, "list"); }
-  if (el.dataset.picknote && S.pick[el.dataset.picknote]) { S.pick[el.dataset.picknote].note = el.value; return; }
   if (el.id === "pfCustQ") { P().draft.custQ = el.value; const n = $("pfCustResults"); if (n) n.outerHTML = custResults(P().draft); return; }
   if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
   if (el.closest("#arForm") && el.name?.startsWith("crow:")) { const [, t, i, k] = el.name.split(":"); P().draft[t][+i][k] = t && TABLES[t].fields.find(x => x.key === k)?.type === "Integer" ? (el.value === "" ? 0 : Math.trunc(+el.value)) : coerce(t, k, el); return colRowUpdated(el, t); }

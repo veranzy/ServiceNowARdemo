@@ -280,10 +280,10 @@ export const TABLES = {
     table: `${SCOPE}_allocation`, label: "Allocation", plural: "Allocations", display: "number",
     note: "Applies part or all of a BSU deposit to an invoice, or to an open Collections case (AR-iii, AR-iv, AR-v; D29). Exactly one of invoice or request is set. Always created manually by the AR team from the invoice finder (no auto-matching, D5).",
     fields: [
-      { key: "depositId", name: "deposit", label: "BSU deposit", type: "Reference", ref: "deposits" },
-      { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices" },
-      { key: "requestId", name: "request", label: "Collection case", type: "Reference", ref: "requests", help: "Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form = COL, the Collections form for AR-iii, AR-iv, AR-v; D29, D30)" },
-      { key: "amount", name: "amount", label: "Amount", type: "Currency" },
+      { key: "depositId", name: "deposit", label: "BSU deposit", type: "Reference", ref: "deposits", mandatory: true, qual: "BSU deposits with an unmatched amount" },
+      { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices", qual: "issued invoices with amount due > 0" },
+      { key: "requestId", name: "request", label: "Collection case", type: "Reference", ref: "requests", qual: "open Collections cases (ar_form = COL) with an amount still to match", help: "Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form = COL, the Collections form for AR-iii, AR-iv, AR-v; D29, D30)" },
+      { key: "amount", name: "amount", label: "Amount", type: "Currency", how: "Defaults on insert to the smaller of the deposit's unmatched amount and the target's amount due (BSU decision 21)" },
       { key: "status", name: "state", label: "State", type: "Choice", choices: [["accepted", "Applied"], ["removed", "Removed"]] },
       { key: "exception", name: "exception", label: "Exception", type: "Choice", choices: [["none", "Exact"], ["multi_invoice", "Multi-invoice"], ["short_pay", "Short pay"], ["over_pay", "Overpayment"], ["partial", "Partial"], ["discount", "Discount taken"]] },
       { key: "reason", name: "reason", label: "Reason", type: "String (1000)" }

@@ -30,7 +30,7 @@ for (const k of order) {
   for (const f of t.fields) {
     const notes = [f.ref ? `→ \`${refName(f.ref)}\`${f.refFilter ? ` (users with ${ROLES[f.refFilter].role})` : ""}${f.dependsOn ? ", filtered by customer" : ""}` : "",
       f.choices ? "Choices: " + f.choices.map(c => c[0] === c[1] ? c[1] : `${c[1]} (\`${c[0]}\`)`).join(", ") : "",
-      f.showIf ? showIfText(k, f) + " (UI policy)" : "", f.mandatory ? "Mandatory" : "", f.readonly ? "Read-only on form" : "", f.help || "", f.tooltip ? `Tooltip: "${f.tooltip}"` : "", f.default ? `Default: ${f.default}` : ""].filter(Boolean).join(". ");
+      f.showIf ? showIfText(k, f) + " (UI policy)" : "", f.mandatory ? "Mandatory" : "", f.readonly ? "Read-only on form" : "", f.help || "", f.tooltip ? `Tooltip: "${f.tooltip}"` : "", f.default ? `Default: ${f.default}` : "", f.qual ? `Reference qualifier: ${f.qual}` : "", f.how || ""].filter(Boolean).join(". ");
     md += `| \`${f.name}\` | ${f.label} | ${f.type} | ${notes} |\n`;
   }
   for (const c of t.calculated || []) md += `| \`${c.name}\` | ${c.label} | ${c.type} | Calculated: ${c.how} |\n`;
@@ -62,7 +62,7 @@ md += `## Portal (project team)
 - **List page** (Horizon list page template): **list menu** on the left, list on the right. Menu: AR requests (one list per AR form, UIX decision 15); Invoices (Drafts, Issued unpaid, Overdue, All); Bank statements (Statement uploads, BSU deposits to match, All BSU deposits, Bank accounts, Payment modes); GIRO; Master data (Customers, Contracts (both categories, CCI decision 20), Cost centres, Account codes; billing contacts and customer documents are tabs on the customer). No Recurring billing group: schedules are under contracts (UIX decision 17).
 - **Record pages** (Horizon Record page template): header (record name, description, label-value pairs, form record presence, **UI action bar** with overflow menu) › **ribbon** of metric widgets (collapsible) › **resizable pane** with record tabs (Details first, then related items, then one tab per related list; extra tabs in a More menu) and the **contextual side bar** (vertical icon tabs). AR request side bar: Customer setup, Activity stream, Attachments (side bar tools for other records: open, GitHub issue #1). Last tab on every record: **Record history** (sys_audit; turn Audit on for every \`x_ar_\` table). Theme: the default workspace theme.
 - **BSU (bank statement upload)** custom page: daily checklist of bank accounts for the statement date, upload form (bank account, statement date, CSV), preview of deposits with Deposit IDs, *Save to bank statements*, recent uploads. See \`docs/modules/BSU/README.md\`.
-- **Cash application** custom page: deposits from the Bank statements table with match state; **manual matching only** through the invoice finder with allocation preview (modal or side panel).
+- **Matching** (BSU decision 21): no custom page. Deposit, invoice and Collections case record pages get a *Suggested* related-list tab (ranked, row action *Match*) and an *Allocations* tab with *New* (allocation form). The queue is the list *BSU deposits to match*.
 
 ### UI actions
 
@@ -74,7 +74,7 @@ ${Object.entries(UI_ACTIONS).filter(([, t]) => !/^RETIRED/.test(t)).map(([id, t]
 
 ### Matching (manual only)
 
-There is **no auto-matching** (decision D5). The invoice finder ranks issued invoices for a deposit by
+There is **no auto-matching** (decision D5). The *Suggested* tabs rank issued invoices for a deposit by
 invoice number in the bank reference, amount fit and payer-name similarity (customer name, parent group,
 bank-statement names), purely as a suggestion. The AR team always chooses and applies the allocation.
 Only **issued** invoices receive deposits.

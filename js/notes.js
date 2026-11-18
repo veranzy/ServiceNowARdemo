@@ -45,15 +45,19 @@ export const NOTES = {
   "SCH-PER": "Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming; no action column (drafts come from JOB-DAILYINV)",
   "JOB-DAILYINV": "Scheduled job Daily invoice check (daily, D12 amended 2026-11-16): for each x_ar_billing_schedule period with no non-cancelled invoice and invoice date within 5 working days (Mon–Fri) of today, insert a draft x_ar_invoice (billing_schedule, billing_period, contract, customer, ar_request and request_line from the schedule) and add a work note on the AR-i case. Issuing stays manual (Issue invoice). Demo: shown as mock data only (the draft on ARQ0001009); no demo button",
   "REQ-ATT": `Attachments: sys_attachment on ${TABLES.requests.table} (added on the portal form)`,
-  // cash application
-  "CSH-01": `Cash application page (UI Builder custom page)`,
-  "CSH-02": `Single-score cards over ${TABLES.deposits.table} / ${TABLES.allocations.table}`,
-  "CSH-03": `List of ${TABLES.deposits.table} with match state; filter tabs To match / Matched / All`,
-  "CSH-04": "Invoice finder (modal or side panel): ranked issued invoices and open Collections cases (ar_form = COL: AR-iii, AR-iv, AR-v; D29, D30) + allocation preview before confirming",
+  // cash application: page retired 2026-11-18 (BSU decision 21)
+  "CSH-01": `RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Cash application page (UI Builder custom page)`,
+  "CSH-02": `RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Single-score cards over ${TABLES.deposits.table} / ${TABLES.allocations.table}`,
+  "CSH-03": `RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: List of ${TABLES.deposits.table} with match state; filter tabs To match / Matched / All`,
+  "CSH-04": "RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Invoice finder (modal or side panel): ranked issued invoices and open Collections cases (ar_form = COL: AR-iii, AR-iv, AR-v; D29, D30) + allocation preview before confirming",
   "INV-PDF": "Invoice document (CCI decision 13): HTML template rendered with PDF Generation Utilities (sn_pdfgeneratorutils) when AR issues the invoice and attached to the invoice; the workspace tab shows the same template as a preview (DRAFT / CANCELLED watermark when not issued). Template wording is a draft",
   "BSU-08": "Preview tag No payment mode (BSU decision 18): the line's transaction ID matches no active payment mode of the bank account; it is saved with the fallback Deposit ID UNK-<DDMMYY>-XX",
-  "CSH-06": "Finder tag Account receives AR-… (BSU decision 13): the deposit's bank account lists the case's collection type in collection_types; adds to the ranking score, never hides other candidates",
-  "CSH-05": "Collection case tag in the invoice finder and preview (D29): the candidate is an open x_ar_request with ar_form = COL (tag shows its collection_type, D30) and Request value (amount) not yet matched; its allocation sets request instead of invoice",
+  "CSH-06": "RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Finder tag Account receives AR-… (BSU decision 13): the deposit's bank account lists the case's collection type in collection_types; adds to the ranking score, never hides other candidates",
+  "CSH-05": "RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Collection case tag in the invoice finder and preview (D29): the candidate is an open x_ar_request with ar_form = COL (tag shows its collection_type, D30) and Request value (amount) not yet matched; its allocation sets request instead of invoice",
+  // BSU decision 21: matching on the standard workspace record pages (manual only, D5)
+  "RL-DEP-SUG": `Suggested matches tab on ${TABLES.deposits.table} (BSU decision 21): workspace data resource (script) listing up to 10 issued invoices with amount due and open Collections cases (ar_form = COL) not yet on this deposit, ranked by: invoice / case number or reference cited in the bank reference, amount fit (exact or within 3%), payer-name similarity, and the bank account's collection types. Column Why suggested shows the signals. A suggestion only: nothing is matched until AR presses Match (D5)`,
+  "RL-INV-SUG": `Suggested BSU deposits tab on ${TABLES.invoices.table} (BSU decision 21): up to 10 ${TABLES.deposits.table} records with an unmatched amount, ranked with the same signals; only for issued invoices with amount due. Match on a row allocates (D5: manual)`,
+  "RL-REQ-SUG": `Suggested BSU deposits tab on Collections cases (${TABLES.requests.table}, ar_form = COL; BSU decision 21, D29): as RL-INV-SUG, against the case's Request value still to match`,
   // BSU page
   "BSU-01": `BSU upload form (BSU decision 16): opened by New on the Statement uploads list (the BSU rail item opens that list of upload RITMs); upload form, preview, save opens the new RITM`,
   "BSU-02": `RETIRED 2026-11-18 (BSU decision 16): statement-day checklist; upload completeness tracking to be decided`,
@@ -143,11 +147,16 @@ export const UI_ACTIONS = {
   "UA-INV-issue": "Issue invoice (saves the form first) → state = Issued; blocked until approval_date is set (every invoice, CCI decision 9); posts a comment to the requester on the linked AR request",
   "UA-INV-cancel": "Cancel invoice → only when no BSU deposit is matched",
   "UA-INV-save": "Save (update, draft only)",
-  "UA-DEP-match": "Match to invoice → opens the invoice finder for this deposit",
-  "UA-DEP-find": "Find invoice → opens the invoice finder",
-  "UA-DEP-confirm": `Confirm match → inserts ${TABLES.allocations.table} records (manual), with invoice or, for a Collections case, request set (D29)`,
-  "UA-DEP-remove": "Remove match → deletes the deposit's allocations",
-  "UA-DEP-export": "Export matches to CSV",
+  "UA-DEP-match": "RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Match to invoice → opens the invoice finder for this deposit",
+  "UA-DEP-find": "RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Find invoice → opens the invoice finder",
+  "UA-DEP-confirm": `RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Confirm match → inserts ${TABLES.allocations.table} records (manual), with invoice or, for a Collections case, request set (D29)`,
+  "UA-DEP-remove": "Remove match (header action on the deposit, shown when it has allocations) → deletes the deposit's allocations",
+  "UA-SUG-match": `Match (row action on Suggested matches / Suggested BSU deposits, BSU decision 21) → inserts one ${TABLES.allocations.table}: amount = the smaller of the deposit's unmatched amount and the target's amount due; exception set from what is left (Exact, Short pay, Overpayment, Multi-invoice)`,
+  "UA-DEP-newalloc": `New on the deposit's Allocations tab (BSU decision 21) → New allocation form with BSU deposit prefilled; AR picks an invoice or a Collection case and may change the amount`,
+  "UA-INV-newalloc": `New on the invoice's Allocations tab (BSU decision 21) → New allocation form with Invoice prefilled; AR picks the BSU deposit`,
+  "UA-REQ-newalloc": `New on the Collections case's BSU deposits matched tab (BSU decision 21, D29) → New allocation form with Collection case prefilled; AR picks the BSU deposit`,
+  "UA-ALC-insert": `Submit (insert) of ${TABLES.allocations.table} (BSU decision 21): exactly one of invoice or request; amount empty = default (smaller of deposit unmatched and target due); blocked above either; returns to the record it was opened from`,
+  "UA-DEP-export": "RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Export matches to CSV",
   "UA-BSU-new": "New (list action on Statement uploads): opens the upload form (catalog item Bank statement upload)",
   "UA-BSU-save": `Save to bank statements → submits the catalog item: creates the RITM (${TABLES.uploads.table}, one per bank account per day); a flow parses the CSV with the bank's template, inserts one ${TABLES.deposits.table} row per deposit referencing the RITM, and closes the RITM complete`,
   "UA-BSU-sample": "Demo only: generate a sample CSV in the bank's layout",
@@ -222,7 +231,7 @@ export function allNotes() {
   for (const id of Object.keys(NOTES)) add(id, id.startsWith("PT") ? "Portal" : id.startsWith("BSU") ? "BSU page" : id.startsWith("CSH") ? "Cash application" : id.startsWith("REQ") ? "AR request record" : id.startsWith("CUS") ? "Customer record" : "Workspace");
   for (const [key, code] of Object.entries(CODE)) {
     const label = TABLES[key].label;
-    for (const p of ["LST", "RP", "HDR", "FRM"]) if (!(key === "allocations")) add(`${p}-${code}`, label);
+    for (const p of ["LST", "RP", "HDR", "FRM"]) add(`${p}-${code}`, label);
     for (const f of TABLES[key].fields) add(`${code}.${f.name}`, `${label} fields`);
   }
   for (const id of Object.keys(CALC_COLS)) add(id, "Calculated columns");

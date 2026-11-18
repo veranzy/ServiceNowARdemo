@@ -13,7 +13,7 @@ Files in this folder: this spec, [DECISIONS.md](DECISIONS.md), [OPEN_QUESTIONS.m
 AR-iii, AR-iv and AR-v are the category **Collections** (D28): money collected **without an invoice**.
 Compare AR-i, where AR bills the customer and the money is matched to the invoice. On a collection there is
 no invoice: the project team tells AR to expect money, and AR matches the BSU deposit to the collection case
-on Cash application (D29). Money received is still only ever a BSU deposit (D7), matched by hand (D5).
+on the case or the deposit record (D29, BSU decision 21). Money received is still only ever a BSU deposit (D7), matched by hand (D5).
 
 The three are **one form** (D30, client request): the requester chooses AR-iii, AR-iv or AR-v first.
 
@@ -55,7 +55,7 @@ The three are **one form** (D30, client request): the requester chooses AR-iii, 
    (incl. *Submission Origin* and **Request value** = the amount to collect), General information, Collection type, Collection Details, Supporting Documents; tabs *Total number of collections for the day* (`RL-REQ-CTX`) or *Amount for Each Account Code* (`RL-REQ-CAL`); ribbon *Collection type*,
    *Request value*, *BSU deposits matched*; tab **BSU deposits matched** (`RL-REQ-ALC`). Actions: Assign to me, Save,
    State dropdown (AR-00 decision 4). No billing lines, no Link to customer, no invoice on Closed complete.
-4. **Cash application:** AR applies a BSU deposit to the open case (D29, BSU decision 11), against its Request value.
+4. **Matching:** AR applies a BSU deposit to the open case from the case (*Suggested BSU deposits*, *BSU deposits matched › New*) or from the deposit (D29, BSU decisions 11 and 21), against its Request value.
    Matching doesn't change the case state.
 5. **Portal ticket:** Form, requester, department, Collection type; no customer, contract or billing block yet.
 

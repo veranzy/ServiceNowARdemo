@@ -1,5 +1,5 @@
-// Cash application: manual matching only (decision D5, no auto-match). Remove/manual actions, allocation planning,
-// and candidate ranking for the invoice finder.
+// Matching in the standard workspace (BSU decision 21): manual only (D5, no auto-match). Allocations are added from
+// a deposit, an invoice or a Collections case (Suggested matches tabs and New allocation); ranking is a suggestion only.
 import { allocKey, custById, invById, invoiceState, invoiceUse, payerSim } from "./ledger.js";
 import { REQ_OPEN } from "./records.js";
 import { COLLECTION_FORMS } from "./schema.js";
@@ -19,19 +19,7 @@ export function targetById(id) { const i = invById(id); if (i) return i; const r
 
 export function act(pid, what, extra) {
   const m = S.matches[pid];
-  if (what === "remove" && m) { S.matches[pid] = { status: "unmatched", allocations: [], reason: "Allocations removed. Match again with Find invoice." }; }
-  if (what === "manual") {
-    const p = S.deposits.find(x => x.id === pid); if (!p) return;
-    const plan = allocationPlan(p, m, extra.ids); if (!plan.total) return;
-    const prev = m && m.status === "accepted" ? m.allocations : [];
-    const all = [...prev, ...plan.rows.filter(r => r.alloc > 0).map(r => r.i.kind === "case" ? { requestId: r.i.id, amount: r.alloc } : { invoiceId: r.i.id, amount: r.alloc })];
-    const leftOnInvoices = plan.rows.some(r => r.after > 0);
-    const exception = plan.unapplied > 0 ? "over_pay" : leftOnInvoices ? "short_pay" : all.length > 1 ? "multi_invoice" : "none";
-    const note = (extra.note || "").trim();
-    S.matches[pid] = { status: "accepted", method: "manual", exception, allocations: all,
-      reason: "Matched manually" + (note ? `: ${note}` : "."), by: S.ui.persona === "ar" ? "u_ar1" : null };
-    delete S.pick[pid];
-  }
+  if (what === "remove" && m) { S.matches[pid] = { status: "unmatched", allocations: [], reason: "Allocations removed. Match again from Suggested matches or New." }; }
   render();
 }
 
@@ -58,9 +46,33 @@ export function candidateList(p, m) {
     .filter(x => x.st.open > 0).sort((a, b) => b.sg.score - a.sg.score || (a.i.due || "9999").localeCompare(b.i.due || "9999"));
 }
 
-export function allocationPlan(p, m, ids) {
-  let avail = remainingToApply(p, m); const rows = [];
-  for (const id of ids) { const i = targetById(id); if (!i) continue; const st = invoiceState(i);
-    const alloc = Math.max(0, Math.min(st.open, avail)); avail -= alloc; rows.push({ i, st, alloc, after: st.open - alloc }); }
-  return { rows, total: rows.reduce((s, r) => s + r.alloc, 0), unapplied: avail, toApply: remainingToApply(p, m) };
+
+/** BSU decision 21: one manual allocation of a deposit to an invoice or Collections case. `amount` in cents, or null for
+ *  the default: the smaller of what is left on the deposit and what is open on the target. Returns an error text or null. */
+export function allocate(pid, targetId, amount, note) {
+  const p = S.deposits.find(x => x.id === pid), t = targetId && targetById(targetId);
+  if (!p) return "Choose a BSU deposit.";
+  if (!t) return "Choose an issued invoice or an open Collections case.";
+  const m = S.matches[pid], left = remainingToApply(p, m), open = invoiceState(t).open;
+  if (left <= 0) return `${p.number} is fully matched already.`;
+  if (open <= 0) return `${t.number} has nothing left to match.`;
+  const amt = amount == null || amount === "" ? Math.min(left, open) : amount;
+  if (!(amt > 0)) return "Enter an amount above zero.";
+  if (amt > left) return `Only ${(left / 100).toFixed(2)} is left on ${p.number}.`;
+  if (amt > open) return `Only ${(open / 100).toFixed(2)} is open on ${t.number}.`;
+  const prev = m && m.status === "accepted" ? m.allocations : [];
+  const all = [...prev, t.kind === "case" ? { requestId: t.id, amount: amt } : { invoiceId: t.id, amount: amt }];
+  const exception = left - amt > 0 ? "over_pay" : open - amt > 0 ? "short_pay" : all.length > 1 ? "multi_invoice" : "none";
+  const n = (note || "").trim();
+  S.matches[pid] = { status: "accepted", method: "manual", exception, allocations: all,
+    reason: "Matched manually" + (n ? `: ${n}` : "."), by: S.ui.persona === "ar" ? "u_ar1" : null };
+  return null;
+}
+
+/** BSU decision 21: deposits with money left, ranked for an invoice or Collections case (same signals, reversed). */
+export function depositCandidates(targetId) {
+  const t = targetById(targetId); if (!t) return [];
+  const open = invoiceState(t).open; if (open <= 0 || (t.kind !== "case" && t.state !== "issued")) return [];
+  return S.deposits.map(p => ({ p, left: remainingToApply(p, S.matches[p.id]) })).filter(x => x.left > 0)
+    .map(x => ({ ...x, sg: signals(x.p, t, open, x.left) })).sort((a, b) => b.sg.score - a.sg.score || String(b.p.date).localeCompare(String(a.p.date)));
 }

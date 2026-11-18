@@ -135,8 +135,9 @@ export function relatedTable(title, table, rows, cols, opts = {}) {
   const t = TABLES[table];
   return `<section class="rel"${opts.id ? sn(opts.id) : ""}>
     <header><h3>${esc(title)} <span class="count">${rows.length}</span></h3>${opts.actions || ""}</header>
-    ${rows.length ? `<div class="tablewrap"><table><thead><tr>${cols.map(c => `<th class="${c[2] || ""}">${esc(c[0])}</th>`).join("")}</tr></thead>
-      <tbody>${rows.map(r => `<tr>${cols.map(c => `<td class="${c[2] || ""}">${c[1](r)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`
+    ${rows.length || opts.keepCols ? `<div class="tablewrap"><table><thead><tr>${cols.map(c => `<th class="${c[2] || ""}">${esc(c[0])}</th>`).join("")}</tr></thead>
+      <tbody>${rows.length ? rows.map(r => `<tr>${cols.map(c => `<td class="${c[2] || ""}">${c[1](r)}</td>`).join("")}</tr>`).join("")
+        : `<tr><td colspan="${cols.length}" class="empty small">No ${esc(t.plural.toLowerCase())}.</td></tr>`}</tbody></table></div>`
       : `<p class="empty small">No ${esc(t.plural.toLowerCase())}.</p>`}
   </section>`;
 }

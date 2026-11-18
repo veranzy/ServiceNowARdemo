@@ -511,10 +511,12 @@ function activity(rec) {
 }
 
 /** GIRO history: the AR-ix cases filed on a contract (D21). */
-const giroHistory = (k, id) => sec(id, "GIRO history", giroCases(k).length, `<section class="rel"${sn(id)}><header><h3>GIRO history <span class="count">${giroCases(k).length}</span></h3><span class="muted small">AR-ix cases on ${esc(k.number)}; at most one GIRO active at a time</span></header>
-  ${giroCases(k).length ? `<div class="tablewrap"><table><thead><tr><th>AR-ix case</th><th>Type of request</th><th>Purpose of GIRO/DDA request</th><th>Amount</th><th>Requested by</th><th>Updated</th><th>GIRO</th></tr></thead><tbody>
+const giroHistory = (k, id, keep = KEEP_COLS) => giroCases(k).length || keep ? sec(id, "GIRO history", giroCases(k).length, `<section class="rel"${sn(id)}><header><h3>GIRO history <span class="count">${giroCases(k).length}</span></h3><span class="muted small">AR-ix cases on ${esc(k.number)}; at most one GIRO active at a time</span></header>
+  <div class="tablewrap"><table><thead><tr><th>AR-ix case</th><th>Type of request</th><th>Purpose of GIRO/DDA request</th><th>Amount</th><th>Requested by</th><th>Updated</th><th>GIRO</th></tr></thead><tbody>
   ${giroCases(k).map(r => `<tr><td>${refLink("requests", r.id, r.number)}</td><td>${esc(r.giroType === "remove" ? "Remove" : "Add")}</td><td>${esc(GIRO_PURPOSE[r.giroPurpose] || "")}<span class="desc">${esc(r.carplate || r.giroLocation || r.giroPurposeOther || "")}</span></td><td>${esc(r.giroAmount || "—")}</td><td>${esc(userById(r.requestedBy)?.name || "")}</td><td>${esc(r.updated || r.opened)}</td><td>${giroCaseChip(r)}</td></tr>`).join("")}
-  </tbody></table></div>` : `<p class="empty small">No AR-ix cases on this contract yet.</p>`}</section>`);
+  ${giroCases(k).length ? "" : `<tr><td colspan="7" class="empty small">No AR-ix cases on this contract yet.</td></tr>`}
+  </tbody></table></div></section>`)   // CCI decision 19: columns shown when empty (customers, contracts)
+  : sec(id, "GIRO history", 0, `<section class="rel"${sn(id)}><header><h3>GIRO history <span class="count">0</span></h3></header><p class="empty small">No AR-ix cases on this contract yet.</p></section>`);
 /** Aging bucket of an issued, open invoice (#10 E10.11), as on the landing page: Current, 1–30 … 90+ days past due. */
 export function agingOf(i) {
   if (i.state !== "issued" || invMoney(i).open <= 0) return "—";
@@ -541,11 +543,14 @@ export function invoiceDoc(i) {
     <footer class="invdoc-foot"><p>Please pay by the due date${pay ? ` to ${esc(BANKS[pay.bank].name)} account ${esc(pay.number)}` : ""}, quoting the invoice number.</p></footer>
   </article></div>`;
 }
-const rt = (title, table, rows, cols, opts) => ({ key: opts.id, label: title, n: rows.length, html: relatedTable(title, table, rows, cols, opts) });
+// CCI decision 19: customer and contract tabs keep their column headers when empty
+let KEEP_COLS = false;
+const rt = (title, table, rows, cols, opts) => ({ key: opts.id, label: title, n: rows.length, html: relatedTable(title, table, rows, cols, { keepCols: KEEP_COLS, ...opts }) });
 const sec = (key, label, n, html) => ({ key, label, n, html });
 
 /** Record tabs after Details: related items and one tab per related list (Horizon record page). */
 function related(table, rec) {
+  KEEP_COLS = table === "customers" || table === "contracts";
   // D29: a Collections case lists the BSU deposits matched to it; #9: its AR3 / AR4 rows
   if (table === "requests" && COLLECTION_FORMS.includes(rec.form)) {
     const rowTab = (k, id) => { const t = TABLES[k], rs = S[k].filter(x => x.requestId === rec.id).sort((a, b) => a.seq - b.seq);

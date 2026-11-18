@@ -84,8 +84,8 @@ deposit from the list.
 (`RL-INV-ALC`, *New* `UA-INV-newalloc`) and **Suggested BSU deposits** (`RL-INV-SUG`: deposits with money left,
 same signals; columns *BSU deposit*, *Date*, *Payer*, *Reference*, *Left to match*, *Why suggested*, **Match**);
 only issued invoices with amount due get suggestions. A Collections case has **BSU deposits matched** (`RL-REQ-ALC`,
-*New* `UA-REQ-newalloc`) and **Suggested BSU deposits** (`RL-REQ-SUG`). AR-iii cases have no amount yet and are not
-offered (open question 7). Matching never changes the case state: AR closes it with the State dropdown (decision 11).
+*New* `UA-REQ-newalloc`) and **Suggested BSU deposits** (`RL-REQ-SUG`). AR-iii cases are matched against their
+Total Amount (AR-iii decision 19). Matching never changes the case state: AR closes it with the State dropdown (decision 11).
 
 **Validation on Save:** a BSU deposit, and exactly one of Invoice or Collection case; the amount must be above zero
 and no more than either the deposit's unmatched amount or the target's amount due. The pickers only offer deposits

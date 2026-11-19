@@ -1,7 +1,7 @@
 // Record lifecycle: AR request cases, invoices, journal entries, numbering, generic save.
 // Each function mirrors a ServiceNow UI action or business rule (named in the comments).
 import { companyById, ctrById, custById, invoiceUse, withCompany } from "./ledger.js";
-import { CONTRACT_CATEGORIES, DOC_TYPES, FREQUENCIES, GIRO_PURPOSES, GIRO_TYPES, GST_RATE, TABLES, clearHidden } from "./schema.js";
+import { CONTRACT_CATEGORIES, DOC_TYPES, FREQUENCIES, GIRO_PURPOSES, GIRO_TYPES, GST_RATE, TABLES, clearHidden, NO_CUSTOMER_BILLING } from "./schema.js";
 import { allocate } from "./matching.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, today, uid } from "./util.js";
@@ -208,9 +208,11 @@ export function validateARi(d) {
   if (d.form === "COL") return validateCOL(d);
   const e = {}, need = (k, msg) => { const v = d[k]; if (v === undefined || v === null || v === "" || v === false) e[k] = msg; };
   generalInfoErrors(d, e);
-  if (d.newCustomer) need("newCustName", "Enter the new customer's name.");
+  const noCust = NO_CUSTOMER_BILLING.includes(d.typeOfBilling);   // AR-i decision 43: Type of billing 5 / 6 has no customer or contract
+  if (noCust) { /* Customer and Contract sections hidden */ }
+  else if (d.newCustomer) need("newCustName", "Enter the new customer's name.");
   else need("customerId", "Search for the customer, or add it as a new customer.");
-  if (d.newCustomer || d.customerId) {
+  if (!noCust && (d.newCustomer || d.customerId)) {
     need("contractOption", "Choose an existing contract, a new contract, or No contract required.");
     if (d.contractOption === "existing") need("contractId", "Choose the contract.");
     if (d.contractOption === "new") {
@@ -263,7 +265,7 @@ export function draftLine(d) {
 }
 /** GST on an amount in cents (GST_RATE %), rounded to the cent. */
 export const gstOf = amt => Math.round((amt || 0) * GST_RATE / 100);
-export const itemCalc = it => ({ ...it, gst: gstOf(it.amount), total: (it.amount || 0) + gstOf(it.amount) });
+export const itemCalc = it => { const g = it.gstApplicable === "no" ? 0 : gstOf(it.amount); return { ...it, gst: g, total: (it.amount || 0) + g }; };   // AR-i decision 43: GST Yes / No
 export const reqItems = r => (S.items || []).filter(x => x.requestId === r.id);
 
 /** Errors for one billing line. */
@@ -490,15 +492,16 @@ export function createRequest(vals, o = {}) {
     journal(req, "system", `Submitted from the Collections form (${req.colType}) on the portal.`, req.requestedBy);
     return req;
   }
+  if (NO_CUSTOMER_BILLING.includes(req.typeOfBilling)) Object.assign(req, { customerId: null, newCustomer: false, contractOption: "", contractId: null });   // AR-i decision 43
   const line = draftLine(req);
   req.amount = lineValue(line, draftPro(req));
   req.giroOnContract = giroOnContractOf(req);
-  if (req.contractOption === "existing") { const k = ctrById(req.contractId); req.typeOfBilling = k?.typeOfBilling || ""; req.docBulk = []; }
+  if (req.contractOption === "existing") { const k = ctrById(req.contractId); req.typeOfBilling = k?.typeOfBilling || req.typeOfBilling || ""; }
   S.requests.push(req);
   S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, contractId: req.contractOption === "existing" ? req.contractId || null : null, ...line, invoiceId: null, scheduleId: null });
   if (line.lineType === "recurring") { req.invoiceTiming = ""; req.expediteReason = ""; }
   // Billing line items are numbered 1, 2, 3… in row order (AR-i decision 37)
-  if (req.needItems === "yes") items.forEach((it, i) => S.items.push({ id: uid("q"), requestId: req.id, ...itemCalc({ seq: i + 1, amount: it.amount || 0, lpiRate: it.lpiRate || 0, accountCode: it.accountCode || "" }) }));
+  if (req.needItems === "yes") items.forEach((it, i) => S.items.push({ id: uid("q"), requestId: req.id, ...itemCalc({ seq: i + 1, amount: it.amount || 0, lpiRate: it.lpiRate || 0, accountCode: it.accountCode || "", costCenter: it.costCenter || "", gstApplicable: it.gstApplicable || "yes" }) }));
   const ctrText = req.contractOption === "existing" ? `under contract ${ctrById(req.contractId)?.number}` : req.contractOption === "new" ? `under new contract ${req.newCtrNumber}` : "with no contract";
   journal(req, "system", `Submitted from ${req.form || "AR-i"} on the portal${req.newCustomer ? " for a new customer" : ""} ${ctrText}, with ${linesLabel(req)}.`, req.requestedBy);
   return req;

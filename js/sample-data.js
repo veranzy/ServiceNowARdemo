@@ -280,9 +280,9 @@ export function loadSample() {
   const kb = (n, o) => kid[n] && Object.assign(kid[n], o);
   // Contract type drives AR-i billing (AR-i decision 31): monthly contracts are Recurring, the rest Ad-hoc
   for (const k of S.contracts) if (!k.contractType || k.contractType === "contract") k.category ||= k.billing === "Monthly" ? "recurring" : "ad_hoc";
-  kb("TR-TA-2025-14", { category: "recurring", reference: "TA/JG/0123", poNumber: "", billingCycle: "first", invoiceDate: shiftDate("2025-12-01"), paymentTerms: "30", prorate: "no", typeOfBilling: "A" });
-  kb("HL-2026-01", { category: "recurring", reference: "HL-WMS-26", poNumber: "HL-PO-4410", billingCycle: "fifteenth", invoiceDate: shiftDate("2026-04-15"), paymentTerms: "30", prorate: "yes", prorateFirst: cents(6240), prorateLast: cents(6240), typeOfBilling: "C", bulkDocs: ["HL-usage-breakdown-template.xlsx"] });
-  kb("KE-2026-03", { category: "ad_hoc", reference: "KE-RFQ-2026-011", poNumber: "KE-PO-7781", paymentTerms: "30", prorate: "no", typeOfBilling: "B" });
+  kb("TR-TA-2025-14", { category: "recurring", reference: "TA/JG/0123", poNumber: "", billingCycle: "first", invoiceDate: shiftDate("2025-12-01"), paymentTerms: "30", prorate: "no", typeOfBilling: "rental" });
+  kb("HL-2026-01", { category: "recurring", reference: "HL-WMS-26", poNumber: "HL-PO-4410", billingCycle: "fifteenth", invoiceDate: shiftDate("2026-04-15"), paymentTerms: "30", prorate: "yes", prorateFirst: cents(6240), prorateLast: cents(6240), typeOfBilling: "general" });
+  kb("KE-2026-03", { category: "ad_hoc", reference: "KE-RFQ-2026-011", poNumber: "KE-PO-7781", paymentTerms: "30", prorate: "no", typeOfBilling: "general" });
   kb("NB-2026-05", { category: "ad_hoc", poNumber: "NB-PO-2210", paymentTerms: "others", paymentTermsOther: "45 days from acceptance", prorate: "no" });
   const hl = kOf("HL-2026-01"), nb = kOf("NB-2026-05"), ta = kOf("TR-TA-2025-14");
   const pm1 = S.users.find(u => u.id === "u_pm1"), pm2 = S.users.find(u => u.id === "u_pm2");

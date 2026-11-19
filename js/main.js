@@ -6,7 +6,7 @@ import { invoiceState } from "./ledger.js";
 import { depositMoney } from "./views/common.js";
 import { giroPurposesFor, giroContracts, custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
 import { loadSample } from "./sample-data.js";
-import { TABLES, clearHidden, fieldVisible } from "./schema.js";
+import { BILLING_KINDS, TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
 import { cents, fmt, uid } from "./util.js";
 import { render, syncBarHeight, toast } from "./views/app.js";
@@ -229,10 +229,10 @@ document.addEventListener("click", e => {
   // Collections multi-row sets (#9: AR3 collections, AR4 allocations)
   if (d.cradd !== undefined) { const dr = P().draft, k = d.cradd; (dr[k] ||= []).push(k === "colTx" ? { collectionType: "", amount: 0 } : k === "ar5Lines" ? { caseNumber: "", amount: 0, caseStatus: "" } : { desc: "", amount: 0, costCentre: "", accountCode: "" }); delete P().errors[k]; render(); return $(`cr-${k}-${dr[k].length - 1}-${k === "colTx" ? "collectionType" : "desc"}`)?.focus(); }
   if (d.crdel !== undefined) { const [k, i] = d.crdel.split(":"); P().draft[k].splice(+i, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([x]) => !x.startsWith(`crow:${k}:`))); return render(); }
-  if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ amount: 0, lpiRate: 0, accountCode: "", costCenter: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
+  if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ amount: 0, gstApplicable: "yes", lpiRate: 0, accountCode: "", costCenter: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
+  if (d.tobok !== undefined) { delete P().tobNotice; return render(); }   // AR-i decision 43: Type of billing popup
   if (d.iremove !== undefined) { P().draft.items.splice(+d.iremove, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith("item:"))); return render(); }
   if (d.unattach !== undefined) { P().draft.attachments.splice(+d.unattach, 1); return render(); }
-  if (d.unbulk !== undefined) { P().draft.docBulk.splice(+d.unbulk, 1); return render(); }
   // workspace navigation
   if (d.rail) {
     if (d.rail === "list") { if (W().main.kind === "list") { W().active = "main"; return render(); } return showMain({ kind: "list", table: "requests", filter: "all_ari" }); }
@@ -314,7 +314,6 @@ document.addEventListener("change", e => {
   if (el.id === "bsuDate") { S.bsu.date = el.value; parseCurrent(); return render(); }
   if (el.id === "bsuFile") { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { S.bsu.text = String(r.result); S.bsu.fileName = f.name; parseCurrent(); render(); }; r.readAsText(f); el.value = ""; return; }
   if (el.id === "pfAttach") { P().draft.attachments.push(...[...el.files].map(f => f.name)); return render(); }
-  if (el.id === "pfBulk") { const d = P().draft; d.docBulk = [...(d.docBulk || []), ...[...el.files].map(f => f.name)]; return render(); }
   // portal AR form: billing line item fields
   if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
   if (el.closest("#arForm") && el.name?.startsWith("crow:")) { const [, t, i, k] = el.name.split(":"); P().draft[t][+i][k] = t && TABLES[t].fields.find(x => x.key === k)?.type === "Integer" ? (el.value === "" ? 0 : Math.trunc(+el.value)) : coerce(t, k, el); return colRowUpdated(el, t); }
@@ -322,7 +321,12 @@ document.addEventListener("change", e => {
   if (el.closest("#arForm") && el.name) {
     const d = P().draft; d[el.name] = coerce("requests", el.name, el);
     if (el.name === "customerId" && d.contractId && S.contracts.find(k => k.id === d.contractId)?.customerId !== d.customerId) d.contractId = null;
-    if (el.name === "contractId" && d.contractId) { const k = S.contracts.find(x => x.id === d.contractId); if (k && !d.customerId) d.customerId = k.customerId; }
+    if (el.name === "contractId" && d.contractId) { const k = S.contracts.find(x => x.id === d.contractId); if (k && !d.customerId) d.customerId = k.customerId;
+      // AR-i decision 43: the contract's Type of billing wins; tell the requester when it replaces their choice
+      if (d.form !== "AR-ix" && d.form !== "COL" && k?.typeOfBilling && k.typeOfBilling !== d.typeOfBilling) {
+        const lab = v => BILLING_KINDS.find(c => c[0] === v)?.[1] || v;
+        if (d.typeOfBilling) P().tobNotice = `The contract ${k.number} has Type of billing ${lab(k.typeOfBilling)}. Your choice ${lab(d.typeOfBilling)} has been replaced with ${lab(k.typeOfBilling)}.`;
+        d.typeOfBilling = k.typeOfBilling; } }
     if (el.name === "department" && d.deptSubBu && !d.deptSubBu.startsWith(String(d.department).slice(0, 3).toUpperCase())) d.deptSubBu = "";
     if (el.name === "contractId" || el.name === "department") contractChanged(d);
     if (el.name === "needItems" && d.needItems === "yes" && !(d.items || []).length) d.items = [{ amount: 0, lpiRate: 0, accountCode: "" }];
@@ -391,7 +395,7 @@ document.addEventListener("submit", e => {
     if (vals.needItems !== "yes") vals.items = [];
     if (!needBillTo(vals)) Object.assign(vals, { billToName: "", billToEmail: "", billToPhone: "", billToAddress: "" });
     if (vals.contractOption !== "new") Object.assign(vals, { newCtrType: "", newCtrNumber: "", newCtrRef: "", newCtrPo: "", newCtrTitle: "", newCtrStart: "", newCtrEnd: "", newCtrValue: 0, newCtrCycle: "", newCtrCycleOther: "",
-      newCtrInvDate: "", newCtrTerms: "", newCtrTermsOther: "", newCtrProrate: "", newCtrProFirst: 0, newCtrProLast: 0, typeOfBilling: "", docBulk: [] });
+      newCtrInvDate: "", newCtrTerms: "", newCtrTermsOther: "", newCtrProrate: "", newCtrProFirst: 0, newCtrProLast: 0, typeOfBilling: "" });
     if (vals.contractOption !== "existing") vals.contractId = null;
     if (vals.newCustomer) vals.customerId = null; else { vals.newCustName = ""; vals.newCustUen = ""; vals.newCustAddress = ""; }
     const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;

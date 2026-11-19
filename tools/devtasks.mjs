@@ -22,7 +22,7 @@ const ELEMENT_MODULE = {
   "AR-00": ["PT-01", "PT-02", "PT-04", "PT-08", "PT-09", "PT-10", "PT-11", "PT-13", "PT-14", "PT-16", "PT-30", "REQ-ACT", "REQ-ATT",
     "UA-REQ-assign", "UA-REQ-post", "UA-REQ-save", "LST-REQ"],
   "AR-i": ["PT-03", "PT-05", "PT-07", "PT-15", "PT-19", "PT-20", "PT-23", "PT-25", "PT-27", "PT-28", "PT-29", "PT-36", "PT-37", "PT-39",
-    "PT-40", "PT-41", "PT-42", "PT-43", "REQ-FV-ARI", "LST-REQ-ARI", "UA-PT-newcust", "UA-PT-additem"],
+    "PT-40", "PT-41", "PT-42", "PT-43", "PT-62", "PT-63", "REQ-FV-ARI", "LST-REQ-ARI", "UA-PT-newcust", "UA-PT-additem"],
   "AR-ix": ["PT-31", "PT-32", "PT-33", "PT-34", "PT-35", "PT-44", "PT-45", "PT-46", "PT-48", "REQ-GIRO", "REQ-GIROHIST", "REQ-FV-ARIX", "LST-REQ-ARIX"],
   "AR-iii": ["PT-49", "PT-50", "PT-51", "PT-52", "PT-53", "PT-54", "PT-55", "PT-56", "PT-57", "PT-59", "PT-60", "PT-61", "REQ-FV-COL", "LST-REQ-COL",
     "UA-PT-addcase", "UA-PT-addcol", "UA-PT-addalloc"],

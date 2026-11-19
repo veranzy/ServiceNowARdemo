@@ -2,7 +2,7 @@
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
 import { giroPurposesFor, giroContracts, DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, billingMode, giroTarget, giroTypesFor, canViewReq, draftLine, draftPro, itemCalc, reqItems, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
-import { COLLECTION_TILES, COLLECTIONS_FORM, GIRO_PURPOSES, AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, GIRO_TYPES, GST_RATE, ROLES, TABLES, fieldVisible } from "../schema.js";
+import { COLLECTION_TILES, COLLECTIONS_FORM, GIRO_PURPOSES, AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, GIRO_TYPES, GST_RATE, NO_CUSTOMER_BILLING, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { CODE } from "../notes.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
@@ -78,7 +78,7 @@ function catalogPage() {
 
 const reqField = k => TABLES.requests.fields.find(f => f.key === k);
 /** Finance coding variables (request level, all optional). */
-export const FIN_KEYS = ["agencyType", "vag", "subBu", "typeOfBilling", "docBulk"];
+export const FIN_KEYS = ["agencyType", "vag", "subBu", "typeOfBilling"];
 /** AR-i customer details (D23), in form order after name / UEN / address. */
 const CUST_KEYS = ["agencyType", "vag", "subBu", "pocName", "pocEmail"];
 /** Finance coding fields that sit in Invoice details. */
@@ -154,10 +154,7 @@ function contractStep(d, e, f) {
         ${f("billToName", { mandatory: true, help: d.billToPrefilled ? `Prefilled from the ${d.department} department's usual bill-to person` : null, label: "Contract bill-to person" })}${f("billToEmail", { mandatory: true, label: "Contract bill-to email" })}${f("billToPhone", { label: "Contract bill-to phone number" })}
         ${fl("newCtrCycle")}${fl("newCtrCycleOther", { mandatory: true })}${fl("newCtrInvDate")}${fl("newCtrTerms")}${fl("newCtrTermsOther", { mandatory: true })}
         ${fl("newCtrProrate")}${fl("newCtrProFirst", { mandatory: true })}${fl("newCtrProLast", { mandatory: true })}
-        ${f("typeOfBilling", { help: null })}</div>
-      ${["C", "D", "E"].includes(d.typeOfBilling) ? `<div class="ffield wide"${sn("REQ.bulk_supporting_docs")}><span class="flabel">Supporting documents (bulk upload)</span>
-        <div><label class="btn small" for="pfBulk">${icon("clip", 15)} Upload files</label><input type="file" id="pfBulk" multiple hidden></div>
-        ${d.docBulk?.length ? `<ul class="attlist">${d.docBulk.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unbulk="${ix}">Remove</button></li>`).join("")}</ul>` : ""}</div>` : ""}`;
+        </div>`;   // Type of billing moved to section 2 (AR-i decision 43); bulk upload removed
   }
   else if (d.contractOption === "none") body = `<div class="pt-info"${sn("PT-28")}><b>No contract required</b><p class="small">AR files this billing under ${shell ? `the customer's no-contract shell <b class="mono">${esc(shell.number)}</b>` : `a new no-contract shell for ${esc(d.department || "your department")}`}, so the customer › contract › billing lines › invoices hierarchy stays complete.</p></div>`;
   const bt = d.contractOption !== "none" ? "" : `<div class="pbill"${sn("PT-19")}><h3 class="small">Bill-to person${tgt ? ` on ${esc(tgt.number)}` : " for the no-contract shell"}</h3>
@@ -175,10 +172,10 @@ function contractRo(k) {
   const val = key => { const f = F(key), v = k[key]; if (v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length)) return "";
     return f.type === "Currency" ? `SGD ${fmt(v)}` : f.choices ? (f.choices.find(c => c[0] === v) || [, v])[1] : Array.isArray(v) ? `${v.length} file(s): ${v.join(", ")}` : v; };
   const vis = key => fieldVisible("contracts", F(key), k);
-  const ro = (key, label) => vis(key) ? `<div class="ffield${["title", "bulkDocs"].includes(key) ? " wide" : ""}"${sn(`CON.${F(key).name}`)}><span class="flabel">${esc(label || F(key).label)}</span><div class="fro">${val(key) ? esc(val(key)) : `<span class="muted">Not on file</span>`}</div></div>` : "";
+  const ro = (key, label) => vis(key) ? `<div class="ffield${["title"].includes(key) ? " wide" : ""}"${sn(`CON.${F(key).name}`)}><span class="flabel">${esc(label || F(key).label)}</span><div class="fro">${val(key) ? esc(val(key)) : `<span class="muted">Not on file</span>`}</div></div>` : "";
   return `<div class="fgrid custro"${sn("PT-41")}>${ro("category")}${ro("number", "Contract number")}${ro("reference")}${ro("poNumber")}${ro("title", "Contract title")}${ro("start", "Contract start date")}${ro("end", "Contract end date")}${ro("value", "Contract value (SGD)")}
     ${ro("billToName", "Contract bill-to person")}${ro("billToEmail", "Contract bill-to email")}${ro("billToPhone", "Contract bill-to phone number")}${ro("billingCycle")}${ro("billingCycleOther")}${ro("invoiceDate")}${ro("paymentTerms")}${ro("paymentTermsOther")}
-    ${ro("prorate")}${ro("prorateFirst")}${ro("prorateLast")}${ro("typeOfBilling")}${ro("bulkDocs")}</div>`;
+    ${ro("prorate")}${ro("prorateFirst")}${ro("prorateLast")}${ro("typeOfBilling")}</div>`;
 }
 
 /** AR-i Invoice details summary (AR-i decision 31): what AR will bill from the contract type and the amount per period. */
@@ -202,18 +199,19 @@ function itemsTable(d, e) {
   const inp = (i, k, it) => { const f = itemField(k), err = e[`item:${i}:${k}`], v = it[k];
     const ctl = f.type === "Currency" ? `<input type="number" step="0.01" min="0" inputmode="decimal" id="pi${i}-${k}" name="item:${i}:${k}" value="${v ? (v / 100).toFixed(2) : ""}"${err ? ` aria-invalid="true"` : ""} aria-label="${esc(f.label)}, item ${i + 1}">`
       : f.type === "Decimal" ? `<input type="number" step="0.01" min="0" id="pi${i}-${k}" name="item:${i}:${k}" value="${v ? esc(v) : ""}" aria-label="${esc(f.label)}, item ${i + 1}">`
+      : f.type === "Choice" ? `<select id="pi${i}-${k}" name="item:${i}:${k}" aria-label="${esc(f.label)}, item ${i + 1}">${f.choices.map(([v, l]) => `<option value="${v}"${(v || "") === (it[k] || "yes") ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`
       : `<input type="text" id="pi${i}-${k}" name="item:${i}:${k}" value="${esc(v || "")}"${err ? ` aria-invalid="true"` : ""} aria-label="${esc(f.label)}, item ${i + 1}">`;
     return `<td data-label="${esc(f.label)}"${sn(`RQI.${f.name}`)}>${ctl}${err ? `<span class="ferr">${esc(err)}</span>` : ""}</td>`; };
   return `<div class="ffield wide${e.items ? " has-err" : ""}"${sn("PT-43")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Billing line items</span>
-    <div class="tablewrap"><table class="list mrvs" id="pfItems"><thead><tr><th>Item</th><th class="num">Amount (w/o GST)</th><th class="num">GST amount (${GST_RATE}%)</th><th class="num">Total amount</th><th>Late payment interest (%)</th><th>Account code</th><th>Cost center <span class="ftip" tabindex="0" role="img" aria-label="To be filled by GA" data-tip="To be filled by GA">i</span></th><th><span class="sr">Remove</span></th></tr></thead>
-    <tbody>${items.map((it, i) => { const c = itemCalc(it); return `<tr><td class="mono" data-label="Item number" id="pfItemNo-${i}"${sn("RQI.item_number")}>${i + 1}</td>${inp(i, "amount", it)}<td class="num mono" data-label="GST amount" id="pfItemGst-${i}"${sn("RQI.gst_amount")}>${fmt(c.gst)}</td><td class="num mono" data-label="Total amount" id="pfItemTot-${i}"${sn("RQI.total_amount")}>${fmt(c.total)}</td>${inp(i, "lpiRate", it)}${inp(i, "accountCode", it)}${inp(i, "costCenter", it)}<td><button type="button" class="linkish small" data-iremove="${i}" aria-label="Remove item ${i + 1}">Remove</button></td></tr>`; }).join("")}</tbody>
+    <div class="tablewrap"><table class="list mrvs" id="pfItems"><thead><tr><th>Item</th><th class="num">Amount (w/o GST)</th><th>GST</th><th class="num">GST amount (${GST_RATE}%)</th><th class="num">Total amount</th><th>Late payment interest (%)</th><th>Account code</th><th>Cost center <span class="ftip" tabindex="0" role="img" aria-label="To be filled by GA" data-tip="To be filled by GA">i</span></th><th><span class="sr">Remove</span></th></tr></thead>
+    <tbody>${items.map((it, i) => { const c = itemCalc(it); return `<tr><td class="mono" data-label="Item number" id="pfItemNo-${i}"${sn("RQI.item_number")}>${i + 1}</td>${inp(i, "amount", it)}${inp(i, "gstApplicable", it)}<td class="num mono" data-label="GST amount" id="pfItemGst-${i}"${sn("RQI.gst_amount")}>${fmt(c.gst)}</td><td class="num mono" data-label="Total amount" id="pfItemTot-${i}"${sn("RQI.total_amount")}>${fmt(c.total)}</td>${inp(i, "lpiRate", it)}${inp(i, "accountCode", it)}${inp(i, "costCenter", it)}<td><button type="button" class="linkish small" data-iremove="${i}" aria-label="Remove item ${i + 1}">Remove</button></td></tr>`; }).join("")}</tbody>
     ${itemTotals(d)}</table></div>
     ${e.items ? `<span class="ferr">${esc(e.items)}</span>` : ""}
     <div class="row start"><button type="button" class="btn small" data-iadd${sn("UA-PT-additem")}>+ Add item</button><span class="fhelp">GST and total are calculated at ${GST_RATE}%. Late payment interest is a rate in % (to be confirmed).</span></div></div>`;
 }
 export function itemTotals(d) {
   const t = (d.items || []).reduce((a, it) => { const c = itemCalc(it); return { amount: a.amount + c.amount, gst: a.gst + c.gst, total: a.total + c.total }; }, { amount: 0, gst: 0, total: 0 });
-  return `<tfoot id="pfItemTotals"><tr><th scope="row">Total</th><td class="num mono" data-label="Amount (w/o GST)">${fmt(t.amount)}</td><td class="num mono" data-label="GST">${fmt(t.gst)}</td><td class="num mono" data-label="Total"><b>${fmt(t.total)}</b></td><td colspan="4"></td></tr></tfoot>`;
+  return `<tfoot id="pfItemTotals"><tr><th scope="row">Total</th><td class="num mono" data-label="Amount (w/o GST)">${fmt(t.amount)}</td><td></td><td class="num mono" data-label="GST">${fmt(t.gst)}</td><td class="num mono" data-label="Total"><b>${fmt(t.total)}</b></td><td colspan="4"></td></tr></tfoot>`;
 }
 
 /** AR-i GIRO subsection inside Contract (D22): existing DDA? read-only, from the contract's GIRO status (set only by an AR-ix). */
@@ -255,7 +253,8 @@ function formPage() {
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
   const nErr = Object.keys(e).length;
   const haveCust = d.newCustomer || d.customerId;
-  let sec = 2; const n = () => ++sec;
+  let sec = 1; const n = () => ++sec;   // AR-i decision 43: 2. Type of billing; Customer and Contract hidden for 5 / 6
+  const noCust = NO_CUSTOMER_BILLING.includes(d.typeOfBilling);
   return `<div class="pt-inner pt-body">
     <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <button type="button" class="linkish" data-pnav="forms">AR forms</button> › <span>AR-i</span></nav>
     <div class="pt-item">
@@ -263,16 +262,22 @@ function formPage() {
         <div><span class="ft-code">AR-i</span><h1>New AR request</h1></div>
         <p class="pt-lead">Ask Accounts Receivable to bill a customer. Billing is contract level: choose the contract (or No contract required), then the invoice details. A recurring contract is billed every month until it ends, so you only submit once.</p>
         <div id="pfAlert">${formAlert(nErr)}</div>
+        ${P().tobNotice ? `<div class="pt-modal" role="alertdialog" aria-modal="true" aria-labelledby="tobTitle"${sn("PT-63")}><div class="pt-modal-box"><h2 id="tobTitle">Type of billing changed</h2><p>${esc(P().tobNotice)}</p><button type="button" class="btn primary" data-tobok autofocus>OK</button></div></div>` : ""}
 
         ${generalInfo(d, e, f)}
 
-        <fieldset class="psec"${sn("PT-25")}><legend>2. Customer</legend>
+        <fieldset class="psec"${sn("PT-62")}><legend>${n()}. Type of billing</legend>
+          <div class="fgrid">${f("typeOfBilling", { help: null })}</div>
+          ${noCust ? `<p class="pt-hint">Type of billing ${esc(d.typeOfBilling)}: no customer or contract needed.</p>` : ""}
+        </fieldset>
+        ${noCust ? "" : `
+        <fieldset class="psec"${sn("PT-25")}><legend>${n()}. Customer</legend>
           ${customerStep(d, e, f, { details: true })}
         </fieldset>
 
         <fieldset class="psec"${sn("PT-20")}><legend>${n()}. Contract and bill-to</legend>
           ${haveCust ? contractStep(d, e, f) : `<p class="pt-hint">Select a customer above to see the contract options.</p>`}
-        </fieldset>
+        </fieldset>`}
 
         <fieldset class="psec"${sn("PT-37")}><legend>${n()}. Invoice details</legend>
           ${(() => { const bm = billingMode(d), k = targetContract(d); return d.contractOption ? `<p class="pt-hint">Billed under ${d.contractOption === "new" ? `new contract ${esc(d.newCtrNumber || "")}` : k ? esc(ctrLabel(k)) : d.contractOption === "none" ? "the no-contract shell" : "the chosen contract"}: ${bm.recurring ? "<b>recurring contract</b>, so the amount below is billed every month until the contract ends" : "<b>one invoice</b>"}.</p>` : ""; })()}

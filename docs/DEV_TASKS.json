@@ -46,7 +46,9 @@
   "id": "PT-40",
   "text": "AR-i new contract variables, in order: new_contract_type (Recurring / Ad-hoc), new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle (+ suggested billing cycle when Others), new_contract_invoice_date, new_contract_payment_terms (+ other terms when Others), new_contract_proration (+ 1st / last month amounts when Yes), type_of_billing (+ bulk upload when C / D / E). AR creates x_ar_contract from them by hand, then links it with Link Contract Reference (D31)",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "replaced by a changed task"
  },
  {
   "module": "AR-i",
@@ -433,14 +435,18 @@
   "id": "REQ.type_of_billing",
   "text": "x_ar_request.type_of_billing · Choice · Contract level: entered for a new contract (AR copies it to the contract by hand, D31); read-only copy of the contract's value for an existing one",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "replaced by a changed task"
  },
  {
   "module": "AR-i",
   "id": "REQ.bulk_supporting_docs",
   "text": "x_ar_request.bulk_supporting_docs · Attachment · Optional; several files at once",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "no longer in this module"
  },
  {
   "module": "AR-i",
@@ -650,7 +656,9 @@
   "id": "RQI.gst_amount",
   "text": "x_ar_request_item.gst_amount · Currency · read-only · Calculated: amount × GST rate (9%), rounded to the cent",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "replaced by a changed task"
  },
  {
   "module": "AR-i",
@@ -2451,7 +2459,9 @@
   "id": "CON.bulk_supporting_docs",
   "text": "x_ar_contract.bulk_supporting_docs · Attachment",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "no longer in this module"
  },
  {
   "module": "CCI",
@@ -3837,7 +3847,9 @@
   "id": "PT-43",
   "text": "AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code, cost_center (right of account_code, optional, tooltip To be filled by GA; AR-i decision 42). At least one row when Yes",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "replaced by a changed task"
  },
  {
   "module": "AR-i",
@@ -3864,6 +3876,55 @@
   "module": "AR-i",
   "id": "RQI.cost_center",
   "text": "x_ar_request_item.cost_center · String · Optional, free text. To be filled by GA (AR-i decision 42: moved from the request to each item, right of Account code)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.type_of_billing",
+  "text": "x_ar_request.type_of_billing · Choice · AR-i section 2 (AR-i decision 43), before Customer. Contract level: AR copies it to the contract by hand (D31). When an existing contract with a different Type of billing is chosen, the form replaces the value with the contract's and tells the requester (popup). 5 and 6: no Customer or Contract sections",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "RQI.gst_amount",
+  "text": "x_ar_request_item.gst_amount · Currency · read-only · Calculated: amount × GST rate (9%), rounded to the cent; 0 when GST = No (AR-i decision 43)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "RQI.gst_applicable",
+  "text": "x_ar_request_item.gst_applicable · Choice · Yes / No, default Yes (AR-i decision 43). No: GST amount 0 and Total amount = Amount",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-40",
+  "text": "AR-i new contract variables, in order: new_contract_type (Recurring / Ad-hoc), new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle (+ suggested billing cycle when Others), new_contract_invoice_date, new_contract_payment_terms (+ other terms when Others), new_contract_proration (+ 1st / last month amounts when Yes) (type_of_billing moved to section 2, AR-i decision 43). AR creates x_ar_contract from them by hand, then links it with Link Contract Reference (D31)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-62",
+  "text": "AR-i variable set 2. Type of billing (AR-i decision 43), right after General information: type_of_billing (General, Rental, Carpark, Courses, 5, 6). UI policy: 5 or 6 hides the Customer and Contract and bill-to variable sets (no customer or contract on the request); Customer documents and Invoice details stay. Stored on the request; AR copies it to the contract by hand (D31)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-63",
+  "text": "AR-i popup (AR-i decision 43): when the chosen existing contract's type_of_billing differs from the requester's choice, a catalog client script (onChange contract, GlideAjax) replaces the value with the contract's and shows a modal (spModal.alert) titled Type of billing changed",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-43",
+  "text": "AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), gst_applicable (GST Yes / No, default Yes; No sets gst_amount 0, AR-i decision 43), late_payment_interest (rate %), account_code, cost_center (right of account_code, optional, tooltip To be filled by GA; AR-i decision 42). At least one row when Yes",
   "added": "2026-11-19",
   "state": "todo"
  }

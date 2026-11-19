@@ -67,7 +67,9 @@ export const AR5_STATUS = [   // AR-iii decision 19: Cash Bail and Seized Monies
   ["forfeit_order", "Forfeit to State with court order", "restitution"], ["forfeit_no_order", "Forfeit to State without court order", "restitution"], ["pending", "Case Pending", "restitution"]
 ];
 const AR5_ALL = ["cash_bail", "seized", "restitution"];
-const BILLING_KINDS = ["A", "B", "C", "D", "E"].map(x => [x, x]);
+/** Type of billing (AR-i decision 43). 5 and 6: no customer or contract on the AR-i. */
+export const BILLING_KINDS = [["general", "General"], ["rental", "Rental"], ["carpark", "Carpark"], ["courses", "Courses"], ["5", "5"], ["6", "6"]];
+export const NO_CUSTOMER_BILLING = ["5", "6"];
 export const CONTRACT_CATEGORIES = [["recurring", "Recurring"], ["ad_hoc", "Ad-hoc"]];
 /** AR-i invoice timing for one-invoice requests (AR-i decision 38). */
 export const INVOICE_TIMING = [["per_cycle", "Per Billing Cycle"], ["expedited", "Expedited"]];
@@ -153,8 +155,7 @@ export const TABLES = {
       { key: "agencyType", name: "agency_type", label: "Agency type", type: "Choice", choices: AGENCY_TYPES, help: "AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master" },
       { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "agencyType", eq: "SB" }, help: "AR-i customer details, optional; only for Agency type SB (AR-i decision 42). Found customer: read-only from the customer master" },
       { key: "subBu", name: "sub_bu", label: "V@G sub-BU", type: "String", showIf: { key: "vag", eq: "yes" }, help: "Optional, free text" },
-      { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, help: "Contract level: entered for a new contract (AR copies it to the contract by hand, D31); read-only copy of the contract's value for an existing one" },
-      { key: "docBulk", name: "bulk_supporting_docs", label: "Supporting documents (bulk upload)", type: "Attachment", multiple: true, showIf: { key: "typeOfBilling", in: ["C", "D", "E"] }, help: "Optional; several files at once" },
+      { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, help: "AR-i section 2 (AR-i decision 43), before Customer. Contract level: AR copies it to the contract by hand (D31). When an existing contract with a different Type of billing is chosen, the form replaces the value with the contract's and tells the requester (popup). 5 and 6: no Customer or Contract sections" },
       { key: "giroOnContract", name: "giro_on_contract", label: "GIRO on this contract", type: "Choice", choices: YES_NO, readonly: true, help: "Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21)", tooltip: "GIRO is set by an AR-ix (GIRO authorisation). Raise an AR-ix if this contract needs GIRO." },
       // AR-ix GIRO authorisation (record producer variables; mandatory rules enforced on the form, see AR-ix module)
       // AR-ix decision 14: Type comes first and is limited by the contract. Decisions 17–21, 24 (enhancement set #8): the reference follows Purpose (Add) or Type (Remove);
@@ -308,8 +309,9 @@ export const TABLES = {
       { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
       { key: "seq", name: "item_number", label: "Item number", type: "Integer", readonly: true, help: "System number 1, 2, 3… in row order within the AR request; set by the producer script, never typed (AR-i decision 37)" },
       { key: "amount", name: "amount_excl_gst", label: "Amount (w/o GST)", type: "Currency", mandatory: true },
-      { key: "gst", name: "gst_amount", label: "GST amount", type: "Currency", readonly: true, help: "Calculated: amount × GST rate (9%), rounded to the cent" },
+      { key: "gst", name: "gst_amount", label: "GST amount", type: "Currency", readonly: true, help: "Calculated: amount × GST rate (9%), rounded to the cent; 0 when GST = No (AR-i decision 43)" },
       { key: "total", name: "total_amount", label: "Total amount", type: "Currency", readonly: true, help: "Calculated: amount + GST" },
+      { key: "gstApplicable", name: "gst_applicable", label: "GST", type: "Choice", choices: YES_NO, default: "yes", help: "Yes / No, default Yes (AR-i decision 43). No: GST amount 0 and Total amount = Amount" },
       { key: "lpiRate", name: "late_payment_interest", label: "Late payment interest (%)", type: "Decimal", help: "Rate % (to be confirmed with the users)" },
       { key: "accountCode", name: "account_code", label: "Account code", type: "String" },
       { key: "costCenter", name: "cost_center", label: "Cost center", type: "String", help: "Optional, free text. To be filled by GA (AR-i decision 42: moved from the request to each item, right of Account code)", tooltip: "To be filled by GA" }
@@ -476,7 +478,6 @@ export const TABLES = {
       { key: "prorateFirst", name: "proration_first", label: "Proration for 1st month", type: "Currency", showIf: { key: "prorate", eq: "yes" } },
       { key: "prorateLast", name: "proration_last", label: "Proration for last month", type: "Currency", showIf: { key: "prorate", eq: "yes" } },
       { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS },
-      { key: "bulkDocs", name: "bulk_supporting_docs", label: "Supporting documents (bulk upload)", type: "Attachment", multiple: true, showIf: { key: "typeOfBilling", in: ["C", "D", "E"] } },
       { key: "giroStatus", name: "giro_status", label: "GIRO status", type: "Choice", choices: GIRO_STATUS, help: "Updated by AR on the contract from the AR-ix case (manual, AR-ix decision 11). At most one active GIRO per contract (D21)" },
       { key: "giroCaseId", name: "giro_case", label: "Active GIRO case", type: "Reference", ref: "requests", help: "AR links the AR-ix case whose GIRO is active (reference qualifier: ar_form = AR-ix, giro_type = Add GIRO and contract = this contract). Mandatory when GIRO status is Active; cleared when Not active" },
       { key: "billToName", name: "bill_to_name", label: "Bill-to person", type: "String" },
@@ -544,7 +545,7 @@ export const RECORD_PRODUCER = {
     "contractOption", "contractId", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther",
     "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast",
     "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "needItems", "poNumber",
-    "pocName", "pocEmail", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
+    "pocName", "pocEmail", "agencyType", "vag", "subBu", "typeOfBilling", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "items",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item"
 };

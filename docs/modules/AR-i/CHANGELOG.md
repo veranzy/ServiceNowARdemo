@@ -36,3 +36,4 @@
 | 2026-11-19 | AR-i portal form locked again by the owner after decision 42. |
 | 2026-11-19 | AR-i portal form unlocked by the owner for decision 43: section 2 Type of billing (General, Rental, Carpark, Courses, 5, 6), 5 / 6 hide Customer and Contract, popup when the contract's Type of billing replaces the choice, bulk upload removed, GST Yes / No on billing line items. **New IDs:** `PT-62`, `PT-63`, `RQI.gst_applicable`. **Retired IDs:** `REQ.bulk_supporting_docs`. Demo data: Type of billing A → Rental, bulk_supporting_docs column dropped. Open question 27 added. |
 | 2026-11-19 | Open question 27: owner context for Type of billing 5 / 6 (Excel with multiple customers for the same service, monthly); flows to follow. No build change. |
+| 2026-11-19 | AR-i portal form locked again by the owner after decision 43. Further AR-i changes (incl. Type of billing 5 / 6) are post-submission, in the workspace. |

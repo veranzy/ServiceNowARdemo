@@ -1,9 +1,9 @@
 // Generates docs/DEV_TASKS.md: the developer task list for the ServiceNow build, one section per module.
 // Run: node tools/devtasks.mjs (tools/check.mjs runs it). Source: js/schema.js, js/notes.js and the module index
-// (docs/modules/README.md). Only modules whose status is Agreed or Ready for build get their tasks listed (owner, 2026-11-19).
-// Add-only (owner, 2026-11-19): once a module's tasks are listed they are never deleted. They are kept in the ledger
-// docs/DEV_TASKS.json; a later prototype change adds a new task (Changed / Retired) instead of rewriting the old one.
-// Ticks ([x]) made in docs/DEV_TASKS.md are read back into the ledger, so they survive regeneration.
+// (docs/modules/README.md). Every module's tasks are generated as requirements are updated (owner, 2026-11-19).
+// Add-only: tasks are never deleted; they are kept in the ledger docs/DEV_TASKS.json. A task whose item is retired or
+// changed in the prototype gets the state Redundant (with its date); a changed item also gets a new task.
+// Ticks ([x]) made in docs/DEV_TASKS.md are read back into the ledger (state Done), so they survive regeneration.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,7 +11,6 @@ import { RECORD_PRODUCER, RECORD_PRODUCER_ARIX, RECORD_PRODUCER_COL, TABLES } fr
 import { CODE, allNotes } from "../js/notes.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const isListed = status => /^(Agreed|Ready for build)/.test(status);
 const LEDGER = join(ROOT, "docs/DEV_TASKS.json"), MD = join(ROOT, "docs/DEV_TASKS.md");
 const today = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);   // Singapore date
 
@@ -78,7 +77,8 @@ const SIDES = [
 ];
 
 const clean = t => t.replace(/\s+/g, " ").replace(/^UI action: /, "");
-const line = e => `\`${e.id}\` ${e.change === "new" ? "" : `**${e.change === "changed" ? "Changed" : "Retired"} ${e.added}:** `}${e.text}`;
+const line = e => `\`${e.id}\` ${e.text}`;
+const render = e => e.state === "redundant" ? `- ~~${line(e)}~~ **Redundant ${e.redundantOn}**${e.why ? ` (${e.why})` : ""}` : `- [${e.state === "done" ? "x" : " "}] ${line(e)}`;
 
 /** Returns the new ledger (old entries kept, new ones appended) and the markdown. Pure: writes nothing. */
 export function build(ledger = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, "utf8")) : [], mdNow = existsSync(MD) ? readFileSync(MD, "utf8") : "") {
@@ -92,23 +92,23 @@ export function build(ledger = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDG
   const count = code => tasks.filter(t => t.module === code).length;
   const split = code => [0, 1, 2].map(i => tasks.filter(t => t.module === code && sideOf(t.id) === i).length);
 
+  // 0. ledger format: { module, id, text, added, state: todo | done | redundant, redundantOn, why }
+  ledger = ledger.map(({ change, release, done, ...e }) => ({ ...e, state: e.state || (done ? "done" : "todo") }));
   // 1. ticks made in the markdown go back into the ledger
   const ticked = new Set([...mdNow.matchAll(/^- \[[xX]\] (.+)$/gm)].map(m => m[1]));
-  ledger = ledger.map(e => ({ ...e, done: e.done || ticked.has(line(e)) }));
-  // 2. add-only: listed modules get new / changed / retired entries appended, nothing removed
-  for (const m of mods.filter(x => isListed(x.status))) {
-    const release = (m.status.match(/\(([^)]+)\)/) || [])[1] || m.status;
-    const last = id => [...ledger].reverse().find(e => e.module === m.code && e.id === id);
-    for (const t of tasks.filter(x => x.module === m.code)) {
-      const l = last(t.id);
-      if (!l || l.change === "retired") ledger.push({ module: m.code, id: t.id, text: t.text, change: "new", release, added: today() });
-      else if (l.text !== t.text) ledger.push({ module: m.code, id: t.id, text: t.text, change: "changed", release, added: today() });
-    }
-    for (const id of [...new Set(ledger.filter(e => e.module === m.code).map(e => e.id))]) {
-      const l = last(id);
-      if (l.change !== "retired" && !tasks.some(t => t.id === id && t.module === m.code)) ledger.push({ module: m.code, id, text: retiredText(id), change: "retired", release, added: today() });
-    }
+  ledger.forEach(e => { if (e.state === "todo" && ticked.has(line(e))) e.state = "done"; });
+  // 2. add-only, every module: new items add a task; a changed item makes its task Redundant and adds a new one;
+  //    a retired item makes its task Redundant. Nothing is deleted.
+  const live = e => e.state !== "redundant";
+  const redundant = (e, why) => Object.assign(e, { state: "redundant", redundantOn: today(), why });
+  for (const t of tasks.filter(x => x.module)) {
+    const cur = ledger.find(e => e.module === t.module && e.id === t.id && live(e));
+    if (cur && cur.text === t.text) continue;
+    if (cur) redundant(cur, "replaced by a changed task");
+    ledger.push({ module: t.module, id: t.id, text: t.text, added: today(), state: "todo" });
   }
+  for (const e of ledger.filter(live)) if (!tasks.some(t => t.id === e.id && t.module === e.module))
+    redundant(e, /RETIRED/.test(all.find(n => n.id === e.id)?.text || "") ? "retired in the prototype" : "no longer in this module");
 
   const withTasks = mods.filter(m => ledger.some(e => e.module === m.code));
   let md = `# Developer task list (ServiceNow build)
@@ -120,13 +120,12 @@ the ID and what to build. Inside each module the tasks are split into **AR porta
 team sees), **AR workspace** (what the AR team uses) and **Data and logic** (tables, fields and jobs both use).
 Specs: \`docs/modules/<CODE>/README.md\`; full mapping: \`SERVICENOW_MAPPING.md\`; all IDs: \`docs/BUILD_NOTES.md\`.
 
-**Only released modules are listed.** A module's tasks appear when its status in
-[\`docs/modules/README.md\`](modules/README.md) is *Agreed* or *Ready for build* (e.g. *Ready for build (Release 1)*).
-Until then it shows *waiting for sign-off* with its task count, because its screens may still change.
+**Every module is listed, and tasks are added as requirements change.** The module's status (e.g. *Ready for build
+(Release 1)* or *In prototype*) shows how settled its tasks are; see [\`docs/modules/README.md\`](modules/README.md).
 
-**Add-only.** Listed tasks are never deleted or rewritten. When the prototype changes later, a new task is added:
-**Changed** (build the new version of that item) or **Retired** (remove it from the build), with its date. Tick a
-box (\`- [x]\`) when a task is done: ticks are kept when the file is regenerated.
+**Add-only.** Tasks are never deleted. When an item changes in the prototype, its old task becomes
+~~struck through~~ **Redundant** (with the date) and a new task is added; when an item is retired, its task becomes
+Redundant. Tick a box (\`- [x]\`) when a task is done: ticks are kept when the file is regenerated.
 
 ## Setup (before any module)
 
@@ -140,11 +139,10 @@ box (\`- [x]\`) when a task is done: ticks are kept when the file is regenerated
 
 | Module | Status | AR portal forms | AR workspace | Data and logic | Tasks |
 |---|---|---|---|---|---|
-${mods.map(m => { const n = ledger.filter(e => e.module === m.code), open = n.filter(e => !e.done).length;
-  return `| ${m.code} | ${m.status} | ${split(m.code).join(" | ")} | ${n.length ? `[${n.length} listed, ${open} open](#${m.code.toLowerCase()})` : `${count(m.code)} (waiting for sign-off)`} |`; }).join("\n")}
+${mods.map(m => { const n = ledger.filter(e => e.module === m.code), st = k => n.filter(e => e.state === k).length;
+  return `| ${m.code} | ${m.status} | ${split(m.code).join(" | ")} | [${st("todo")} to do, ${st("done")} done, ${st("redundant")} redundant](#${m.code.toLowerCase()}) |`; }).join("\n")}
 
 `;
-  if (!withTasks.length) md += `## Waiting for sign-off\n\nNo module is released yet, so no tasks are listed.\n`;
   for (const m of withTasks) {
     md += `\n## ${m.code}\n\n${m.name}. Status: ${m.status}. Spec: \`docs/modules/${m.code}/README.md\`.\n`;
     const es = ledger.filter(e => e.module === m.code);
@@ -152,7 +150,7 @@ ${mods.map(m => { const n = ledger.filter(e => e.module === m.code), open = n.fi
       let part = "";
       for (const [kind] of kinds) {
         const ts = es.filter(e => kindOf(e.id) === kind);
-        if (ts.length) part += `\n#### ${kind}\n\n${ts.map(e => `- [${e.done ? "x" : " "}] ${line(e)}`).join("\n")}\n`;
+        if (ts.length) part += `\n#### ${kind}\n\n${ts.map(render).join("\n")}\n`;
       }
       if (part) md += `\n### ${side}\n${part}`;
     }

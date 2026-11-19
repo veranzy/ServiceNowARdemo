@@ -7,13 +7,12 @@ the ID and what to build. Inside each module the tasks are split into **AR porta
 team sees), **AR workspace** (what the AR team uses) and **Data and logic** (tables, fields and jobs both use).
 Specs: `docs/modules/<CODE>/README.md`; full mapping: `SERVICENOW_MAPPING.md`; all IDs: `docs/BUILD_NOTES.md`.
 
-**Only released modules are listed.** A module's tasks appear when its status in
-[`docs/modules/README.md`](modules/README.md) is *Agreed* or *Ready for build* (e.g. *Ready for build (Release 1)*).
-Until then it shows *waiting for sign-off* with its task count, because its screens may still change.
+**Every module is listed, and tasks are added as requirements change.** The module's status (e.g. *Ready for build
+(Release 1)* or *In prototype*) shows how settled its tasks are; see [`docs/modules/README.md`](modules/README.md).
 
-**Add-only.** Listed tasks are never deleted or rewritten. When the prototype changes later, a new task is added:
-**Changed** (build the new version of that item) or **Retired** (remove it from the build), with its date. Tick a
-box (`- [x]`) when a task is done: ticks are kept when the file is regenerated.
+**Add-only.** Tasks are never deleted. When an item changes in the prototype, its old task becomes
+~~struck through~~ **Redundant** (with the date) and a new task is added; when an item is retired, its task becomes
+Redundant. Tick a box (`- [x]`) when a task is done: ticks are kept when the file is regenerated.
 
 ## Setup (before any module)
 
@@ -27,14 +26,79 @@ box (`- [x]`) when a task is done: ticks are kept when the file is regenerated.
 
 | Module | Status | AR portal forms | AR workspace | Data and logic | Tasks |
 |---|---|---|---|---|---|
-| AR-00 | In prototype | 11 | 9 | 20 | 40 (waiting for sign-off) |
-| AR-i | Ready for build (Release 1) | 20 | 17 | 68 | [105 listed, 105 open](#ar-i) |
-| AR-iii | In prototype | 15 | 17 | 30 | 62 (waiting for sign-off) |
-| AR-ix | Ready for build (Release 1) | 9 | 4 | 13 | [26 listed, 26 open](#ar-ix) |
-| CCI | In prototype | 0 | 83 | 110 | 193 (waiting for sign-off) |
-| BSU | In prototype | 0 | 54 | 48 | 102 (waiting for sign-off) |
-| UIX | In prototype | 0 | 16 | 0 | 16 (waiting for sign-off) |
+| AR-00 | In prototype | 11 | 9 | 20 | [40 to do, 0 done, 0 redundant](#ar-00) |
+| AR-i | Ready for build (Release 1) | 20 | 17 | 68 | [105 to do, 0 done, 0 redundant](#ar-i) |
+| AR-iii | In prototype | 15 | 17 | 30 | [62 to do, 0 done, 0 redundant](#ar-iii) |
+| AR-ix | Ready for build (Release 1) | 9 | 4 | 13 | [26 to do, 0 done, 0 redundant](#ar-ix) |
+| CCI | In prototype | 0 | 83 | 110 | [193 to do, 0 done, 0 redundant](#cci) |
+| BSU | In prototype | 0 | 54 | 48 | [102 to do, 0 done, 0 redundant](#bsu) |
+| UIX | In prototype | 0 | 16 | 0 | [16 to do, 0 done, 0 redundant](#uix) |
 
+
+## AR-00
+
+AR forms, shared parts. Status: In prototype. Spec: `docs/modules/AR-00/README.md`.
+
+### AR portal forms
+
+#### Catalogue, record producers and portal widgets
+
+- [ ] `PT-01` Service Portal header (sp_header_footer), audience role x_ar.project_team
+- [ ] `PT-02` Portal homepage: search + quick links widgets
+- [ ] `PT-04` Quick link to My Requests
+- [ ] `PT-30` Variable set General information (D19), first section of every AR form record producer: requester_name (default current user's name), requester_email (from SSO, read-only), department, cc_list (emails; copied to the case watch_list so they can view it on the portal)
+- [ ] `PT-08` Variable attachments → sys_attachment on the created x_ar_request
+- [ ] `PT-09` Submit → inserts x_ar_request (state New, assignment group AR team). Automation to be defined
+- [ ] `PT-10` My Requests widget: x_ar_request where opened_by = me (ACL: project team reads own records)
+- [ ] `PT-11` Ticket page: conversation widget (comments only; work notes hidden)
+- [ ] `PT-13` Ticket fields widget: read-only summary of the request
+- [ ] `PT-14` Service catalog category "AR forms": 16 record producers AR-i … AR-xvi (D9)
+- [ ] `PT-16` Catalog item placeholder AR-ii … AR-xvi (inactive until defined)
+
+### AR workspace
+
+#### Lists, record pages and forms
+
+- [ ] `LST-REQ` List: x_ar_request · list view layout + list menu condition
+- [ ] `RP-REQ` Record page (UI Builder) · x_ar_request extends task
+- [ ] `HDR-REQ` Record header: highlighted values of x_ar_request
+- [ ] `FRM-REQ` Form view: x_ar_request (Default view)
+
+#### UI actions
+
+- [ ] `UA-REQ-assign` Assign to me → assigned_to = current user (assignment_group kept, default Accounts Receivable); New → Work in progress. One of only two case actions with Save (AR-00, 2026-11-16)
+- [ ] `UA-REQ-post` Post work note / additional comment to the activity stream
+- [ ] `UA-REQ-save` Save (update). On x_ar_request also: state change journalled (system note); substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract; AR-i set to Closed complete generates the 1st invoice as a draft for each line without one (blocked until customer and contract are linked; CCI decision 8)
+
+#### Panels, tabs and other workspace items
+
+- [ ] `REQ-ACT` Activity stream: comments (visible to requester) + work_notes (AR only) + field changes
+- [ ] `REQ-ATT` Attachments: sys_attachment on x_ar_request (added on the portal form)
+
+### Data and logic
+
+#### Tables and fields
+
+- [ ] `REQ.number` x_ar_request.number · String · read-only
+- [ ] `REQ.state` x_ar_request.state · Choice · mandatory · Set by AR with the dropdown on the case and Save (AR-00 decision, 2026-11-16). Assign to me moves New to Work in progress; a portal reply moves Awaiting requestor information to Work in progress
+- [ ] `REQ.substate` x_ar_request.substate · Choice · Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal)
+- [ ] `REQ.opened_by` x_ar_request.opened_by · Reference → sys_user · read-only
+- [ ] `REQ.ar_form` x_ar_request.ar_form · Choice · read-only · Collections cases: COL, with the type in collection_type (D30)
+- [ ] `REQ.submission_origin` x_ar_request.submission_origin · Choice · read-only · Collections (#9 §6). System-managed: Manual for portal submissions; system-generated cases are a later phase (AR-iii decision 10)
+- [ ] `REQ.requester_name` x_ar_request.requester_name · String · General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name
+- [ ] `REQ.requester_email` x_ar_request.requester_email · String · read-only · General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only
+- [ ] `REQ.department_sub_bu` x_ar_request.department_sub_bu · Choice · General information (all AR forms). Sub-BUs of the chosen department (mock list)
+- [ ] `REQ.cc_list` x_ar_request.cc_list · String (1000) · General information (all AR forms). Emails separated by commas; these people can view the case on the portal (Watch list)
+- [ ] `REQ.department` x_ar_request.department · Choice · mandatory
+- [ ] `REQ.customer` x_ar_request.customer · Reference → x_ar_customer · Mandatory unless New customer is ticked
+- [ ] `REQ.contract_option` x_ar_request.contract_option · Choice · mandatory · Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15)
+- [ ] `REQ.link_customer` x_ar_request.link_customer · Reference → x_ar_customer · AR-i, workspace Link section (D31). x_ar_customer, display value UEN (reference auto-complete shows UEN and name). Saving sets the case's customer. Mandatory before Closed complete
+- [ ] `REQ.link_contract` x_ar_request.link_contract · Reference → x_ar_contract · AR-i and AR-ix, workspace Link section (D31). x_ar_contract, display value Contract ID (CTR…). Reference qualifier: contracts of the linked customer (AR-i) or of the case's customer (AR-ix). Saving sets the case's contract (AR-i: also every billing line's contract). AR-i: mandatory before Closed complete
+- [ ] `REQ.contract` x_ar_request.contract · Reference → x_ar_contract · Existing contract; otherwise set when AR saves Link Contract Reference (D31). Read-only in the workspace
+- [ ] `REQ.amount` x_ar_request.amount · Currency · read-only · AR-i: calculated, one-off lines + recurring amount × number of periods. Collections (AR-iii, AR-iv, AR-v): the amount to collect; BSU deposits are matched against it on Cash application (D29)
+- [ ] `REQ.assignment_group` x_ar_request.assignment_group · Reference → sys_user_group · Platform sys_user_group. One group for now: Accounts Receivable, set on every new case (record producer script)
+- [ ] `REQ.assigned_to` x_ar_request.assigned_to · Reference → sys_user · Reference qualifier: members of the assignment group
+- [ ] `REQ.opened_at` x_ar_request.opened_at · Date · read-only
 
 ## AR-i
 
@@ -166,6 +230,90 @@ AR-i New AR request. Status: Ready for build (Release 1). Spec: `docs/modules/AR
 - [ ] `RQL.line_value` Calculated: one-off amount, or recurring amount × number of periods
 - [ ] `RQL.periods` Calculated: number of billing dates between From and To at the frequency
 
+## AR-iii
+
+Collections form. Status: In prototype. Spec: `docs/modules/AR-iii/README.md`.
+
+### AR portal forms
+
+#### Catalogue, record producers and portal widgets
+
+- [ ] `PT-49` Collections record producer (AR-iii module, D30): one form for AR-iii, AR-iv and AR-v. Catalogue items AR-iii, AR-iv, AR-v open it with collection_type preset. Sections: General information (PT-30), 2. Collection type (PT-50); the rest to be defined
+- [ ] `PT-50` Collections variable set Collection type (D30): collection_type (Choice AR-iii / AR-iv / AR-v, labels to be given), mandatory, preset from the catalogue item
+- [ ] `PT-51` Collections variable set 3. Collection Details (#9 §7–9, AR-iii decision 19): fields of the selected type. AR-iii: Collection Date*. AR-iv: Collection Date, Reference Number (no Requesting Department Cost Centre). AR-v: Category* first, Date of Collection (every category), then: Cash Bail: G56 Receipt Number, Bail Amount Received, Bailor Name, IB Case Number / WEU Number, Case Status (Case Pending / Case Closed), Accused Name, Refund required? (one bailor / accused set per case); Seized Monies: Case lines, then Forfeit, Court order, invest radio, Refund required?; Restitution: Case lines, then Court order (UI policies on collection_type and ar5_category)
+- [ ] `PT-52` Collections AR-iii multi-row variable set Total number of collections for the day (#9 §7, AR-iii decision 19): Collection Type* (Choice), Transaction Amount* (> 0, two decimals); 1 to 99 rows; duplicates allowed (owner). Producer script copies rows to x_ar_collection_tx
+- [ ] `PT-53` Collections AR-iv multi-row variable set Amount for Each Account Code (#9 §8): Description*, Amount* (> 0, two decimals), Cost Centre* (active, Requesting Department), Account Code* (active); 1 to 10 rows. Producer script copies rows to x_ar_collection_allocation; the allocation total becomes amount (Request value)
+- [ ] `PT-54` Collections AR-v supporting-document guidance by category (#9 §9): Cash Bail: G56, Bailor identity document, Bail Bond Form, Bank-in slip or receipt; Seized Monies and Restitution: G56, Case Property List, Bank-in slip or receipt (UI policy / rich-text label per category)
+- [ ] `PT-55` Collections section 4. Supporting Documents (#9 §10): multiple attachments, optional (sc_attachment on the case); file size and type rules documented for the build, not checked in the demo (owner)
+- [ ] `PT-56` Collections AR-iii Total Amount: calculated sum of Transaction Amount across rows (catalog client script; multi-row set footer); stored as amount on the case (AR-iii decision 19)
+- [ ] `PT-59` Collections AR-v Seized Monies and Restitution multi-row variable set Case lines (AR-iii decision 19): Case Number, Amount, Case Status (choices by category); 0 to 99 rows. Producer script copies rows to x_ar_collection_case_line; the lines' total is the case's amount
+- [ ] `PT-60` Collections AR-v: message shown when Refund required? = Yes (AR-iii decision 19): 'Please raise a AR10' with a link to the AR10 catalogue item (rich-text label / UI policy on ar5_refund_required)
+- [ ] `PT-61` Collections AR-v Case lines Total Amount: calculated sum of Amount across rows (catalog client script; multi-row set footer)
+- [ ] `PT-57` Collections AR-iv allocation total: calculated sum of Amount across rows (catalog client script); stored as amount on the case
+- [ ] `UA-PT-addcase` Collections AR-v Seized Monies / Restitution: + Add row in Case lines (multi-row set, max 99)
+- [ ] `UA-PT-addcol` Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99)
+- [ ] `UA-PT-addalloc` Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10)
+
+### AR workspace
+
+#### Lists, record pages and forms
+
+- [ ] `REQ-FV-COL` Form view collections on x_ar_request (view rule: ar_form = COL), Details tab: sections Case (with Request value, the amount to collect, D29), 1. General information, 2. Collection type; ribbon Collection type, Request value, BSU deposits matched (sum of accepted allocations with request = this case)
+- [ ] `LST-REQ-COL` Workspace list All Collections (D30): x_ar_request, condition ar_form = COL; default columns as the other AR form lists
+- [ ] `LST-CTX` List: x_ar_collection_tx · list view layout + list menu condition
+- [ ] `RP-CTX` Record page (UI Builder) · x_ar_collection_tx
+- [ ] `HDR-CTX` Record header: highlighted values of x_ar_collection_tx
+- [ ] `FRM-CTX` Form view: x_ar_collection_tx (Default view)
+- [ ] `LST-CAL` List: x_ar_collection_allocation · list view layout + list menu condition
+- [ ] `RP-CAL` Record page (UI Builder) · x_ar_collection_allocation
+- [ ] `HDR-CAL` Record header: highlighted values of x_ar_collection_allocation
+- [ ] `FRM-CAL` Form view: x_ar_collection_allocation (Default view)
+- [ ] `LST-C5L` List: x_ar_collection_case_line · list view layout + list menu condition
+- [ ] `RP-C5L` Record page (UI Builder) · x_ar_collection_case_line
+- [ ] `HDR-C5L` Record header: highlighted values of x_ar_collection_case_line
+- [ ] `FRM-C5L` Form view: x_ar_collection_case_line (Default view)
+
+#### Related lists
+
+- [ ] `RL-REQ-CTX` Related list: x_ar_collection_tx where ar_request = this ar request
+- [ ] `RL-REQ-CAL` Related list: x_ar_collection_allocation where ar_request = this ar request
+- [ ] `RL-REQ-C5L` Related list: x_ar_collection_case_line where ar_request = this ar request
+
+### Data and logic
+
+#### Tables and fields
+
+- [ ] `REQ.collection_type` x_ar_request.collection_type · Choice · Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording
+- [ ] `REQ.collection_date` x_ar_request.collection_date · Date · AR-iii: mandatory. AR-iv: optional (#9 §7, §8)
+- [ ] `REQ.collection_reference` x_ar_request.collection_reference · String · AR-iv. Optional (#9 §8)
+- [ ] `REQ.ar5_category` x_ar_request.ar5_category · Choice · AR-v. Chosen first; shows only that category's fields and document guidance (#9 §9). Mandatory
+- [ ] `REQ.date_of_collection` x_ar_request.date_of_collection · Date · AR-v, every category (general). Optional until confirmed
+- [ ] `REQ.g56_receipt_number` x_ar_request.g56_receipt_number · String · AR-v Cash Bail only (AR-iii decision 19). Optional until confirmed
+- [ ] `REQ.bail_amount` x_ar_request.bail_amount · Currency · AR-v Cash Bail. Sets the Request value
+- [ ] `REQ.bailor_name` x_ar_request.bailor_name · String
+- [ ] `REQ.ib_case_number` x_ar_request.ib_case_number · String
+- [ ] `REQ.case_status` x_ar_request.case_status · Choice · AR-v Cash Bail: one bailor / accused set per case (AR-iii decision 19). Seized Monies and Restitution have a status per case line
+- [ ] `REQ.accused_name` x_ar_request.accused_name · String
+- [ ] `REQ.ar5_forfeit` x_ar_request.ar5_forfeit · True/False · AR-v Seized Monies: checkbox after the case lines (AR-iii decision 19)
+- [ ] `REQ.ar5_court_order` x_ar_request.ar5_court_order · True/False · AR-v Seized Monies and Restitution: checkbox after the case lines (AR-iii decision 19)
+- [ ] `REQ.ar5_to_be_invested` x_ar_request.ar5_to_be_invested · Choice · Yes / No radio buttons (#9 §9.4), where applicable
+- [ ] `REQ.ar5_refund_required` x_ar_request.ar5_refund_required · Choice · AR-v Cash Bail and Seized Monies (AR-iii decision 19). Yes shows: Please raise a AR10, with a link to the AR10 form
+- [ ] `CTX.ar_request` x_ar_collection_tx.ar_request · Reference → x_ar_request · read-only
+- [ ] `CTX.row_number` x_ar_collection_tx.row_number · Integer · read-only
+- [ ] `CTX.collection_type` x_ar_collection_tx.collection_type · Choice · mandatory
+- [ ] `CTX.transaction_amount` x_ar_collection_tx.transaction_amount · Currency · mandatory · Positive, at most two decimals (AR-iii decision 19: replaces Number of Transactions). The rows' total is the case's Total Amount
+- [ ] `CAL.ar_request` x_ar_collection_allocation.ar_request · Reference → x_ar_request · read-only
+- [ ] `CAL.row_number` x_ar_collection_allocation.row_number · Integer · read-only
+- [ ] `CAL.description` x_ar_collection_allocation.description · String · mandatory
+- [ ] `CAL.amount` x_ar_collection_allocation.amount · Currency · mandatory · Positive, at most two decimals
+- [ ] `CAL.cost_centre` x_ar_collection_allocation.cost_centre · Reference → x_ar_cost_centre · mandatory · Reference qualifier: active cost centres of the Requesting Department (the case's department; the separate Requesting Department Cost Centre field is removed, AR-iii decision 19)
+- [ ] `CAL.account_code` x_ar_collection_allocation.account_code · Reference → x_ar_account_code · mandatory · Reference qualifier: active account codes. GST / recovery rule check to be approved (AR-iii open question 11)
+- [ ] `C5L.ar_request` x_ar_collection_case_line.ar_request · Reference → x_ar_request · read-only
+- [ ] `C5L.row_number` x_ar_collection_case_line.row_number · Integer · read-only
+- [ ] `C5L.case_number` x_ar_collection_case_line.case_number · String
+- [ ] `C5L.amount` x_ar_collection_case_line.amount · Currency · Positive, at most two decimals
+- [ ] `C5L.case_status` x_ar_collection_case_line.case_status · Choice · Choices depend on the case's category: Seized Monies Case Pending / Case Closed; Restitution to be confirmed (AR-iii open question 12)
+
 ## AR-ix
 
 AR-ix GIRO authorisation. Status: Ready for build (Release 1). Spec: `docs/modules/AR-ix/README.md`.
@@ -213,3 +361,372 @@ AR-ix GIRO authorisation. Status: Ready for build (Release 1). Spec: `docs/modul
 - [ ] `REQ.giro_end_date` x_ar_request.giro_end_date · Date · AR-ix Remove GIRO. Mandatory; the only Remove GIRO detail (AR-ix decision 18, E8.8)
 - [ ] `REQ.giro_carplate` x_ar_request.giro_carplate · String · AR-ix carpark. Mandatory; one vehicle per form
 - [ ] `REQ.giro_amount` x_ar_request.giro_amount · String · AR-ix Rental and Carpark. Optional free text; not used by any other field or calculation (AR-ix decisions 13, 21; E8.13, E8.15)
+
+## CCI
+
+Customers, contracts and invoices. Status: In prototype. Spec: `docs/modules/CCI/README.md`.
+
+### AR workspace
+
+#### Lists, record pages and forms
+
+- [ ] `LST-INV` List: x_ar_invoice · list view layout + list menu condition
+- [ ] `RP-INV` Record page (UI Builder) · x_ar_invoice
+- [ ] `HDR-INV` Record header: highlighted values of x_ar_invoice
+- [ ] `FRM-INV` Form view: x_ar_invoice (Default view)
+- [ ] `LST-CMP` List: core_company · list view layout + list menu condition
+- [ ] `RP-CMP` Record page (UI Builder) · core_company
+- [ ] `HDR-CMP` Record header: highlighted values of core_company
+- [ ] `FRM-CMP` Form view: core_company (Default view)
+- [ ] `LST-CUS` List: x_ar_customer · list view layout + list menu condition
+- [ ] `RP-CUS` Record page (UI Builder) · x_ar_customer
+- [ ] `HDR-CUS` Record header: highlighted values of x_ar_customer
+- [ ] `FRM-CUS` Form view: x_ar_customer (Default view)
+- [ ] `LST-CON` List: x_ar_contract · list view layout + list menu condition
+- [ ] `RP-CON` Record page (UI Builder) · x_ar_contract
+- [ ] `HDR-CON` Record header: highlighted values of x_ar_contract
+- [ ] `FRM-CON` Form view: x_ar_contract (Default view)
+- [ ] `LST-BCT` List: x_ar_billing_contact · list view layout + list menu condition
+- [ ] `RP-BCT` Record page (UI Builder) · x_ar_billing_contact
+- [ ] `HDR-BCT` Record header: highlighted values of x_ar_billing_contact
+- [ ] `FRM-BCT` Form view: x_ar_billing_contact (Default view)
+- [ ] `LST-DOC` List: x_ar_customer_document · list view layout + list menu condition
+- [ ] `RP-DOC` Record page (UI Builder) · x_ar_customer_document
+- [ ] `HDR-DOC` Record header: highlighted values of x_ar_customer_document
+- [ ] `FRM-DOC` Form view: x_ar_customer_document (Default view)
+- [ ] `LST-SCH` List: x_ar_billing_schedule · list view layout + list menu condition
+- [ ] `RP-SCH` Record page (UI Builder) · x_ar_billing_schedule
+- [ ] `HDR-SCH` Record header: highlighted values of x_ar_billing_schedule
+- [ ] `FRM-SCH` Form view: x_ar_billing_schedule (Default view)
+- [ ] `LST-CCT` List: x_ar_cost_centre · list view layout + list menu condition
+- [ ] `RP-CCT` Record page (UI Builder) · x_ar_cost_centre
+- [ ] `HDR-CCT` Record header: highlighted values of x_ar_cost_centre
+- [ ] `FRM-CCT` Form view: x_ar_cost_centre (Default view)
+- [ ] `LST-ACT` List: x_ar_account_code · list view layout + list menu condition
+- [ ] `RP-ACT` Record page (UI Builder) · x_ar_account_code
+- [ ] `HDR-ACT` Record header: highlighted values of x_ar_account_code
+- [ ] `FRM-ACT` Form view: x_ar_account_code (Default view)
+
+#### Related lists
+
+- [ ] `RL-CUS-BCT` Related list: x_ar_billing_contact where customer = this customer
+- [ ] `RL-CUS-DOC` Related list: x_ar_customer_document where customer = this customer
+- [ ] `RL-CUS-SCH` Related list: x_ar_billing_schedule where customer = this customer
+- [ ] `RL-SCH-INV` Related list: x_ar_invoice where billing_schedule = this billing schedule
+- [ ] `RL-CUS-CON` Related list: x_ar_contract where customer = this customer
+- [ ] `RL-CUS-INV` Related list: x_ar_invoice where customer = this customer
+- [ ] `RL-CUS-REQ` Related list: x_ar_request where customer = this customer
+- [ ] `RL-CON-INV` Related list: x_ar_invoice where contract = this contract
+- [ ] `RL-CON-REQ` Related list: x_ar_request where contract = this contract
+- [ ] `RL-CON-RQL` Related list: x_ar_request_line where contract = this contract
+- [ ] `RL-CON-SCH` Related list: x_ar_billing_schedule where contract = this contract
+- [ ] `RL-CCT-CAL` Related list: x_ar_collection_allocation where cost_centre = this cost centre
+- [ ] `RL-INV-RQL` Related list: x_ar_request_line where invoice = this invoice
+- [ ] `RL-ACT-CAL` Related list: x_ar_collection_allocation where account_code = this account code
+
+#### UI actions
+
+- [ ] `UA-SCH-save` Save (update)
+- [ ] `UA-BCT-save` Save (update)
+- [ ] `UA-BCT-new` New (list action)
+- [ ] `UA-BCT-insert` Submit (insert); several contacts per customer and department allowed (CCI decision 15, D11 amended)
+- [ ] `UA-CUS-newcontact` Add billing contact → new billing contact form with customer prefilled
+- [ ] `UA-INV-issue` Issue invoice (saves the form first) → state = Issued; blocked until approval_date is set (every invoice, CCI decision 9); posts a comment to the requester on the linked AR request
+- [ ] `UA-INV-cancel` Cancel invoice → only when no BSU deposit is matched
+- [ ] `UA-INV-save` Save (update, draft only)
+- [ ] `UA-CUS-save` Save (update)
+- [ ] `UA-CON-save` Save (update)
+- [ ] `UA-CUS-new` New (list action)
+- [ ] `UA-CON-new` New (list action)
+- [ ] `UA-CCT-new` New (list action)
+- [ ] `UA-INV-pdf` Print or save as PDF: opens the invoice document for printing (in ServiceNow: download the generated PDF attachment)
+- [ ] `UA-INV-newrel` New invoice on the contract's Invoices tab (#10 E10.10, CCI decision 14): draft invoice with customer and contract filled in
+- [ ] `UA-BCT-newrel` Add billing contact on the customer's Billing contacts tab
+- [ ] `UA-INV-insert` Submit (insert)
+- [ ] `UA-DOC-new` New (list action): AR files a customer document by hand (D31)
+- [ ] `UA-DOC-insert` Submit (insert)
+- [ ] `UA-DOC-save` Save (update)
+- [ ] `UA-ACT-new` New (list action)
+- [ ] `UA-CCT-save` Save (update)
+- [ ] `UA-CCT-insert` Submit (insert)
+- [ ] `UA-ACT-save` Save (update)
+- [ ] `UA-ACT-insert` Submit (insert)
+- [ ] `UA-CUS-insert` Submit (insert)
+- [ ] `UA-CON-insert` Submit (insert)
+- [ ] `UA-SCH-insert` Submit (insert) of a billing schedule created from the contract (CCI decision 8)
+- [ ] `UA-CON-newschedule` New billing schedule (contract record, CCI decision 8) → new x_ar_billing_schedule form with contract (and customer) prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case (source_request)
+- [ ] `UA-CUS-newcontract` New contract → new contract form with customer prefilled
+
+#### Panels, tabs and other workspace items
+
+- [ ] `CON-GIRO` Tab GIRO history on the contract (and on no-contract shells): related list x_ar_request where contract = this contract and ar_form = AR-ix; columns AR-ix case, Type of request, Purpose of GIRO/DDA request, Amount, Requested by, Updated, GIRO (Active = contract.giro_case, Completed, Open, Contract to link, Rejected)
+- [ ] `SCH-PER` Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming; no action column (drafts come from JOB-DAILYINV)
+- [ ] `INV-PDF` Invoice document (CCI decision 13): HTML template rendered with PDF Generation Utilities (sn_pdfgeneratorutils) when AR issues the invoice and attached to the invoice; the workspace tab shows the same template as a preview (DRAFT / CANCELLED watermark when not issued). Template wording is a draft
+
+### Data and logic
+
+#### Tables and fields
+
+- [ ] `INV.number` x_ar_invoice.number · String · read-only
+- [ ] `INV.state` x_ar_invoice.state · Choice · read-only
+- [ ] `INV.customer` x_ar_invoice.customer · Reference → x_ar_customer · mandatory
+- [ ] `INV.contract` x_ar_invoice.contract · Reference → x_ar_contract
+- [ ] `INV.ar_request` x_ar_invoice.ar_request · Reference → x_ar_request · read-only
+- [ ] `INV.request_line` x_ar_invoice.request_line · Reference → x_ar_request_line · read-only
+- [ ] `INV.billing_schedule` x_ar_invoice.billing_schedule · Reference → x_ar_billing_schedule · read-only
+- [ ] `INV.billing_period` x_ar_invoice.billing_period · Date · read-only
+- [ ] `INV.short_description` x_ar_invoice.short_description · String · mandatory
+- [ ] `INV.amount` x_ar_invoice.amount · Currency · mandatory
+- [ ] `INV.invoice_date` x_ar_invoice.invoice_date · Date
+- [ ] `INV.approval_date` x_ar_invoice.approval_date · Date · Set manually by the AR team (CCI decision 8)
+- [ ] `INV.due_date` x_ar_invoice.due_date · Date · Defaults to invoice date + contract payment terms
+- [ ] `CMP.name` core_company.name · String · mandatory
+- [ ] `CUS.company` x_ar_customer.company · Reference → core_company · mandatory · The core_company record for this customer. One customer per company. Display field of the table
+- [ ] `CUS.company.name` x_ar_customer.company.name · String · read-only · Dot-walked from company.name (core_company); not a column on this table (D26)
+- [ ] `CUS.uen` x_ar_customer.uen · String
+- [ ] `CUS.parent_group` x_ar_customer.parent_group · String
+- [ ] `CUS.registered_address` x_ar_customer.registered_address · String (1000)
+- [ ] `CUS.agency_type` x_ar_customer.agency_type · Choice · Master data; AR copies it by hand from the AR-i that set the customer up (D23 as amended by D31)
+- [ ] `CUS.vag` x_ar_customer.vag · Choice
+- [ ] `CUS.vag_sub_bu` x_ar_customer.vag_sub_bu · String
+- [ ] `CUS.poc_name` x_ar_customer.poc_name · String
+- [ ] `CUS.poc_email` x_ar_customer.poc_email · String
+- [ ] `CUS.bank_names` x_ar_customer.bank_names · String (1000) · Comma-separated. Used to rank invoices in the invoice finder.
+- [ ] `CUS.notes` x_ar_customer.notes · String (4000)
+- [ ] `CUS.active` x_ar_customer.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields
+- [ ] `CON.contract_id` x_ar_contract.contract_id · String · read-only · System contract ID, auto-numbered for every record, Contract or No contract (CCI, 2026-11-16)
+- [ ] `CON.contract_type` x_ar_contract.contract_type · Choice · mandatory · Contract or No contract (D15 amended 2026-11-16: a customer can have several No contract records)
+- [ ] `CON.number` x_ar_contract.number · String · The customer's contract number. Mandatory when Contract category = Contract
+- [ ] `CON.contract_category` x_ar_contract.contract_category · Choice · Recurring or Ad-hoc
+- [ ] `CON.customer` x_ar_contract.customer · Reference → x_ar_customer · mandatory
+- [ ] `CON.department` x_ar_contract.department · Choice · Owning department
+- [ ] `CON.contract_owners` x_ar_contract.contract_owners · List → sys_user · Project team users who can pick this contract on an AR-ix even when it belongs to another department (List of sys_user, several owners; CCI decision 10, E8.5)
+- [ ] `CON.reference_number` x_ar_contract.reference_number · String
+- [ ] `CON.po_number` x_ar_contract.po_number · String
+- [ ] `CON.short_description` x_ar_contract.short_description · String · mandatory
+- [ ] `CON.billing_type` x_ar_contract.billing_type · Choice
+- [ ] `CON.contract_value` x_ar_contract.contract_value · Currency
+- [ ] `CON.start_date` x_ar_contract.start_date · Date
+- [ ] `CON.end_date` x_ar_contract.end_date · Date
+- [ ] `CON.payment_terms` x_ar_contract.payment_terms · Integer
+- [ ] `CON.lpi_applicable` x_ar_contract.lpi_applicable · True/False · Late payment interest is charged on overdue invoices under this contract
+- [ ] `CON.lpi_min_rate` x_ar_contract.lpi_min_rate · Decimal · Mandatory when LPI applicable. % per annum; must not exceed the LPI rate
+- [ ] `CON.lpi_rate` x_ar_contract.lpi_rate · Decimal · Mandatory when LPI applicable. % per annum
+- [ ] `CON.billing_cycle` x_ar_contract.billing_cycle · Choice
+- [ ] `CON.billing_cycle_other` x_ar_contract.billing_cycle_other · String
+- [ ] `CON.preferred_invoice_date` x_ar_contract.preferred_invoice_date · Date
+- [ ] `CON.payment_terms_choice` x_ar_contract.payment_terms_choice · Choice · 30 days sets terms (days) = 30
+- [ ] `CON.payment_terms_other` x_ar_contract.payment_terms_other · String
+- [ ] `CON.proration` x_ar_contract.proration · Choice · Yes: the first and last period of each recurring billing schedule use the proration amounts
+- [ ] `CON.proration_first` x_ar_contract.proration_first · Currency
+- [ ] `CON.proration_last` x_ar_contract.proration_last · Currency
+- [ ] `CON.type_of_billing` x_ar_contract.type_of_billing · Choice
+- [ ] `CON.bulk_supporting_docs` x_ar_contract.bulk_supporting_docs · Attachment
+- [ ] `CON.giro_status` x_ar_contract.giro_status · Choice · Updated by AR on the contract from the AR-ix case (manual, AR-ix decision 11). At most one active GIRO per contract (D21)
+- [ ] `CON.giro_case` x_ar_contract.giro_case · Reference → x_ar_request · AR links the AR-ix case whose GIRO is active (reference qualifier: ar_form = AR-ix, giro_type = Add GIRO and contract = this contract). Mandatory when GIRO status is Active; cleared when Not active
+- [ ] `CON.bill_to_name` x_ar_contract.bill_to_name · String
+- [ ] `CON.bill_to_email` x_ar_contract.bill_to_email · String
+- [ ] `CON.bill_to_phone` x_ar_contract.bill_to_phone · String
+- [ ] `CON.bill_to_address` x_ar_contract.bill_to_address · String (1000)
+- [ ] `CON.notes` x_ar_contract.notes · String (4000)
+- [ ] `BCT.customer` x_ar_billing_contact.customer · Reference → x_ar_customer · mandatory
+- [ ] `BCT.requestor` x_ar_billing_contact.requestor · Reference → sys_user · Project-team user who gave this contact (#10 E10.1, CCI decision 15)
+- [ ] `BCT.department` x_ar_billing_contact.department · Choice · mandatory
+- [ ] `BCT.contact_name` x_ar_billing_contact.contact_name · String · mandatory
+- [ ] `BCT.email` x_ar_billing_contact.email · String · mandatory
+- [ ] `BCT.phone` x_ar_billing_contact.phone · String
+- [ ] `BCT.billing_address` x_ar_billing_contact.billing_address · String (1000)
+- [ ] `BCT.source_request` x_ar_billing_contact.source_request · Reference → x_ar_request · read-only
+- [ ] `BCT.active` x_ar_billing_contact.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields
+- [ ] `DOC.number` x_ar_customer_document.number · String · read-only
+- [ ] `DOC.customer` x_ar_customer_document.customer · Reference → x_ar_customer · read-only
+- [ ] `DOC.requestor` x_ar_customer_document.requestor · Reference → sys_user · Project-team user who gave this document (#10 E10.2, CCI decision 15)
+- [ ] `DOC.document_type` x_ar_customer_document.document_type · Choice · read-only
+- [ ] `DOC.file_name` x_ar_customer_document.file_name · String · read-only
+- [ ] `DOC.contract` x_ar_customer_document.contract · Reference → x_ar_contract · read-only · For signed contract / PO
+- [ ] `DOC.department` x_ar_customer_document.department · Choice · read-only · For billing contact & address forms
+- [ ] `DOC.source_request` x_ar_customer_document.source_request · Reference → x_ar_request · read-only
+- [ ] `DOC.received_on` x_ar_customer_document.received_on · Date · read-only
+- [ ] `SCH.number` x_ar_billing_schedule.number · String · read-only
+- [ ] `SCH.contract` x_ar_billing_schedule.contract · Reference → x_ar_contract · mandatory
+- [ ] `SCH.customer` x_ar_billing_schedule.customer · Reference → x_ar_customer · read-only · From the contract
+- [ ] `SCH.department` x_ar_billing_schedule.department · Choice · mandatory
+- [ ] `SCH.short_description` x_ar_billing_schedule.short_description · String · mandatory
+- [ ] `SCH.frequency` x_ar_billing_schedule.frequency · Choice · mandatory
+- [ ] `SCH.amount` x_ar_billing_schedule.amount · Currency · mandatory
+- [ ] `SCH.first_billing_date` x_ar_billing_schedule.first_billing_date · Date · mandatory
+- [ ] `SCH.last_billing_date` x_ar_billing_schedule.last_billing_date · Date · mandatory
+- [ ] `SCH.first_period_amount` x_ar_billing_schedule.first_period_amount · Currency · Empty = amount per period
+- [ ] `SCH.last_period_amount` x_ar_billing_schedule.last_period_amount · Currency · Empty = amount per period
+- [ ] `SCH.source_request` x_ar_billing_schedule.source_request · Reference → x_ar_request · AR picks the recurring AR-i case (reference qualifier: AR-i cases with a recurring line on this contract). Invoices from this schedule are linked to that case (CCI decision 8)
+- [ ] `SCH.source_line` x_ar_billing_schedule.source_line · Reference → x_ar_request_line · read-only · Set from the AR request's recurring line
+- [ ] `CCT.code` x_ar_cost_centre.code · String · mandatory
+- [ ] `CCT.name` x_ar_cost_centre.name · String · mandatory
+- [ ] `CCT.department` x_ar_cost_centre.department · Choice · mandatory
+- [ ] `CCT.active` x_ar_cost_centre.active · True/False · Inactive records are not offered in forms (CCI decision 12)
+- [ ] `ACT.code` x_ar_account_code.code · String · mandatory
+- [ ] `ACT.description` x_ar_account_code.description · String · mandatory
+- [ ] `ACT.gst_treatment` x_ar_account_code.gst_treatment · Choice
+- [ ] `ACT.active` x_ar_account_code.active · True/False · Inactive records are not offered in forms (CCI decision 12)
+- [ ] `INV.amount_due` Calculated: amount − matched BSU deposits
+- [ ] `INV.payment_status` Calculated: Unpaid / Part paid / Paid / Overdue
+- [ ] `CUS.overdue` Calculated: amount_due on issued invoices past due_date
+- [ ] `CON.status` Calculated: Active / Not started / Ended from start and end dates (shells: Open)
+- [ ] `CON.line_count` Calculated: number of billing lines filed under the contract
+- [ ] `SCH.next_billing_date` Calculated: first period on or after today without an invoice
+- [ ] `SCH.periods_due` Calculated: periods up to today without an invoice
+- [ ] `INV.aging` Calculated (#10 E10.11): Current / 1–30 / 31–60 / 61–90 / 90+ days past the due date, for issued invoices with an amount due
+
+#### Jobs and other items
+
+- [ ] `JOB-DAILYINV` Scheduled job Daily invoice check (daily, D12 amended 2026-11-16): for each x_ar_billing_schedule period with no non-cancelled invoice and invoice date within 5 working days (Mon–Fri) of today, insert a draft x_ar_invoice (billing_schedule, billing_period, contract, customer, ar_request and request_line from the schedule) and add a work note on the AR-i case. Issuing stays manual (Issue invoice). Demo: shown as mock data only (the draft on ARQ0001009); no demo button
+
+## BSU
+
+Bank statement upload and cash application. Status: In prototype. Spec: `docs/modules/BSU/README.md`.
+
+### AR workspace
+
+#### Lists, record pages and forms
+
+- [ ] `LST-DEP` List: x_ar_bank_statement · list view layout + list menu condition
+- [ ] `RP-DEP` Record page (UI Builder) · x_ar_bank_statement
+- [ ] `HDR-DEP` Record header: highlighted values of x_ar_bank_statement
+- [ ] `FRM-DEP` Form view: x_ar_bank_statement (Default view)
+- [ ] `LST-BSU` List: sc_req_item · list view layout + list menu condition
+- [ ] `RP-BSU` Record page (UI Builder) · sc_req_item
+- [ ] `HDR-BSU` Record header: highlighted values of sc_req_item
+- [ ] `FRM-BSU` Form view: sc_req_item (Default view)
+- [ ] `LST-BNK` List: x_ar_bank_account · list view layout + list menu condition
+- [ ] `RP-BNK` Record page (UI Builder) · x_ar_bank_account
+- [ ] `HDR-BNK` Record header: highlighted values of x_ar_bank_account
+- [ ] `FRM-BNK` Form view: x_ar_bank_account (Default view)
+- [ ] `LST-ALC` List: x_ar_allocation · list view layout + list menu condition
+- [ ] `RP-ALC` Record page (UI Builder) · x_ar_allocation
+- [ ] `HDR-ALC` Record header: highlighted values of x_ar_allocation
+- [ ] `FRM-ALC` Form view: x_ar_allocation (Default view)
+- [ ] `LST-PMD` List: x_ar_payment_mode · list view layout + list menu condition
+- [ ] `RP-PMD` Record page (UI Builder) · x_ar_payment_mode
+- [ ] `HDR-PMD` Record header: highlighted values of x_ar_payment_mode
+- [ ] `FRM-PMD` Form view: x_ar_payment_mode (Default view)
+
+#### Related lists
+
+- [ ] `RL-DEP-SUG` Suggested matches tab on x_ar_bank_statement (BSU decision 21): workspace data resource (script) listing up to 10 issued invoices with amount due and open Collections cases (ar_form = COL) not yet on this deposit, ranked by: invoice / case number or reference cited in the bank reference, amount fit (exact or within 3%), payer-name similarity, and the bank account's collection types. Column Why suggested shows the signals. A suggestion only: nothing is matched until AR presses Match (D5)
+- [ ] `RL-INV-SUG` Suggested BSU deposits tab on x_ar_invoice (BSU decision 21): up to 10 x_ar_bank_statement records with an unmatched amount, ranked with the same signals; only for issued invoices with amount due. Match on a row allocates (D5: manual)
+- [ ] `RL-REQ-SUG` Suggested BSU deposits tab on Collections cases (x_ar_request, ar_form = COL; BSU decision 21, D29): as RL-INV-SUG, against the case's Request value still to match
+- [ ] `RL-INV-ALC` Related list: x_ar_allocation where invoice = this invoice
+- [ ] `RL-DEP-ALC` Related list: x_ar_allocation where deposit = this bsu deposit
+- [ ] `RL-REQ-ALC` Related list: x_ar_allocation where request = this ar request
+- [ ] `RL-BNK-PMD` Related list: x_ar_payment_mode where bank_account = this bank account
+- [ ] `RL-BSU-DEP` Related list: x_ar_bank_statement where bsu = this statement upload
+- [ ] `RL-BNK-BSU` Related list: sc_req_item where bank_account = this bank account
+- [ ] `RL-BNK-DEP` Related list: x_ar_bank_statement where bank_account = this bank account
+
+#### UI actions
+
+- [ ] `UA-DEP-remove` Remove match (header action on the deposit, shown when it has allocations) → deletes the deposit's allocations
+- [ ] `UA-SUG-match` Match (row action on Suggested matches / Suggested BSU deposits, BSU decisions 21–22) → opens the New allocation form with the deposit and the invoice / case filled and Allocation value prefilled with the smaller of the deposit's unmatched amount and the target's amount due; AR confirms or changes it and saves (UA-ALC-insert). Exception set from what is left (Exact, Short pay, Overpayment, Multi-invoice)
+- [ ] `UA-DEP-newalloc` New on the deposit's Allocations tab (BSU decision 21) → New allocation form with BSU deposit prefilled; AR picks an invoice or a Collection case and may change the amount
+- [ ] `UA-INV-newalloc` New on the invoice's Allocations tab (BSU decision 21) → New allocation form with Invoice prefilled; AR picks the BSU deposit
+- [ ] `UA-REQ-newalloc` New on the Collections case's BSU deposits matched tab (BSU decision 21, D29) → New allocation form with Collection case prefilled; AR picks the BSU deposit
+- [ ] `UA-ALC-insert` Submit (insert) of x_ar_allocation (BSU decision 21): exactly one of invoice or request; amount empty = default (smaller of deposit unmatched and target due); blocked above either; returns to the record it was opened from
+- [ ] `UA-BSU-new` New (list action on Statement uploads): opens the upload form (catalog item Bank statement upload)
+- [ ] `UA-BSU-save` Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete
+- [ ] `UA-BSU-sample` Demo only: generate a sample CSV in the bank's layout
+- [ ] `UA-BNK-upload` Upload statement → opens the BSU page for this account
+- [ ] `UA-BNK-save` Save (update)
+- [ ] `UA-BNK-newmode` New payment mode (on the bank account): opens a new payment mode with the bank account filled in
+- [ ] `UA-PMD-new` New (list action)
+- [ ] `UA-PMD-insert` Submit (insert)
+- [ ] `UA-PMD-save` Save (update)
+- [ ] `UA-BNK-new` New (list action)
+- [ ] `UA-BNK-insert` Submit (insert)
+
+#### Panels, tabs and other workspace items
+
+- [ ] `BSU-08` Preview tag No payment mode (BSU decision 18): the line's transaction ID matches no active payment mode of the bank account; it is saved with the fallback Deposit ID UNK-<DDMMYY>-XX
+- [ ] `ALC-DELTA` Summary line on the Allocations tabs (deposit, invoice, Collections case; BSU decision 22): Amount (the record's own fixed amount: deposit amount, invoice amount, case Request value), Allocation value (sum of its x_ar_allocation amounts), Delta (Amount − Allocation value): on a deposit the money to refund or apply elsewhere, on an invoice / case the amount still to collect or offset. Calculated, not stored
+- [ ] `BSU-01` BSU upload form (BSU decision 16): opened by New on the Statement uploads list (the BSU rail item opens that list of upload RITMs); upload form, preview, save opens the new RITM
+- [ ] `BSU-03` Upload form = catalog item 'Bank statement upload' rendered in the workspace (D32): variables bank account, statement date, CSV attachment; submit creates the RITM
+- [ ] `BSU-04` CSV file kept as sys_attachment on sc_req_item
+- [ ] `BSU-05` Bank template: column mapping per bank (config table x_ar_bank_template or system properties)
+- [ ] `BSU-06` Preview before insert: deposits with Deposit IDs, skipped withdrawals, totals
+
+### Data and logic
+
+#### Tables and fields
+
+- [ ] `DEP.deposit_id` x_ar_bank_statement.deposit_id · String · read-only · Set by before-insert business rule (BSU decision 18): the payment mode's prefix, the deposit (value) date as DDMMYY and the payment mode's suffix. Not unique: deposits of one payment mode on one day share it. No matching payment mode: UNK-<DDMMYY>-XX
+- [ ] `DEP.bank_account` x_ar_bank_statement.bank_account · Reference → x_ar_bank_account · read-only
+- [ ] `DEP.bsu` x_ar_bank_statement.bsu · Reference → sc_req_item · read-only
+- [ ] `DEP.value_date` x_ar_bank_statement.value_date · Date · read-only
+- [ ] `DEP.amount` x_ar_bank_statement.amount · Currency · read-only
+- [ ] `DEP.payer_name` x_ar_bank_statement.payer_name · String · read-only
+- [ ] `DEP.bank_reference` x_ar_bank_statement.bank_reference · String · read-only
+- [ ] `DEP.bank_transaction_ref` x_ar_bank_statement.bank_transaction_ref · String · read-only
+- [ ] `DEP.transaction_id` x_ar_bank_statement.transaction_id · String · read-only · From the bank's transaction-code column (BSU decisions 18–19); matched to a payment mode of the bank account
+- [ ] `DEP.payment_mode` x_ar_bank_statement.payment_mode · Reference → x_ar_payment_mode · read-only · Payment mode equal to the statement line's transaction code (BSU decision 19); empty when none matched (fallback Deposit ID)
+- [ ] `BSU.number` sc_req_item.number · String · read-only
+- [ ] `BSU.bank_account` sc_req_item.bank_account · Reference → x_ar_bank_account · read-only
+- [ ] `BSU.statement_date` sc_req_item.statement_date · Date · read-only
+- [ ] `BSU.file_name` sc_req_item.file_name · String · read-only
+- [ ] `BSU.uploaded_by` sc_req_item.uploaded_by · Reference → sys_user · read-only
+- [ ] `BSU.uploaded_at` sc_req_item.uploaded_at · String · read-only
+- [ ] `BSU.deposit_count` sc_req_item.deposit_count · Integer · read-only
+- [ ] `BSU.deposit_total` sc_req_item.deposit_total · Currency · read-only
+- [ ] `BSU.withdrawals_skipped` sc_req_item.withdrawals_skipped · Integer · read-only
+- [ ] `BNK.bank` x_ar_bank_account.bank · Choice · mandatory · BSU decision 17: shown apart from the bank account number. Mock aliases for Singapore's three largest banks; each has its own CSV layout
+- [ ] `BNK.account_number` x_ar_bank_account.account_number · String · mandatory
+- [ ] `BNK.account_name` x_ar_bank_account.account_name · String · mandatory · Describes the sub-account type under the department, so the department understands it (e.g. Project deposits, Retention and deposits) (BSU decision 17)
+- [ ] `BNK.department` x_ar_bank_account.department · Choice · mandatory
+- [ ] `BNK.account_type` x_ar_bank_account.account_type · Choice · mandatory
+- [ ] `BNK.currency` x_ar_bank_account.currency · String · read-only
+- [ ] `BNK.collection_types` x_ar_bank_account.collection_types · List · Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others
+- [ ] `BNK.active` x_ar_bank_account.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields
+- [ ] `ALC.deposit` x_ar_allocation.deposit · Reference → x_ar_bank_statement · mandatory
+- [ ] `ALC.invoice` x_ar_allocation.invoice · Reference → x_ar_invoice
+- [ ] `ALC.request` x_ar_allocation.request · Reference → x_ar_request · Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form = COL, the Collections form for AR-iii, AR-iv, AR-v; D29, D30)
+- [ ] `ALC.amount` x_ar_allocation.amount · Currency
+- [ ] `ALC.state` x_ar_allocation.state · Choice
+- [ ] `ALC.exception` x_ar_allocation.exception · Choice
+- [ ] `ALC.reason` x_ar_allocation.reason · String (1000)
+- [ ] `PMD.bank_account` x_ar_payment_mode.bank_account · Reference → x_ar_bank_account · mandatory
+- [ ] `PMD.name` x_ar_payment_mode.name · String · mandatory · The code in the bank statement's transaction column for this payment mode, e.g. GIRO, FAST, CHQ, TT; a statement line matches it exactly, not case-sensitive (BSU decision 19)
+- [ ] `PMD.prefix` x_ar_payment_mode.prefix · String · mandatory · Start of the Deposit ID, e.g. AAA
+- [ ] `PMD.suffix` x_ar_payment_mode.suffix · String · mandatory · End of the Deposit ID
+- [ ] `PMD.account_code` x_ar_payment_mode.account_code · Reference → x_ar_account_code · Optional. Active account codes (CCI decision 11). Purpose to be confirmed (BSU open question 11)
+- [ ] `PMD.cost_centre` x_ar_payment_mode.cost_centre · Reference → x_ar_cost_centre · Optional. Active cost centres (CCI decision 11). Purpose to be confirmed (BSU open question 11)
+- [ ] `PMD.active` x_ar_payment_mode.active · True/False · Inactive payment modes are not used for new uploads (CCI decision 12)
+- [ ] `DEP.unmatched_amount` Calculated: amount − allocations
+- [ ] `DEP.match_state` Calculated: Unmatched / Part matched / Matched
+- [ ] `BSU.department` Dot-walk: bank_account.department
+- [ ] `BNK.last_statement` Calculated: latest sc_req_item.statement_date for the account
+- [ ] `PMD.deposit_id_pattern` Calculated for display: <prefix>-DDMMYY-<suffix> (BSU decision 18)
+- [ ] `PMD.bank_name` Dot-walk: bank_account.bank (Bank name)
+- [ ] `PMD.bank_account_name` Dot-walk: bank_account.account_name (Bank account name)
+
+## UIX
+
+Workspace look and layout aligned to the Horizon Design System (app shell, list page, record page). Status: In prototype. Spec: `docs/modules/UIX/README.md`.
+
+### AR workspace
+
+#### Lists, record pages and forms
+
+- [ ] `WS-01` Unified navigation header (Next Experience). Workspace "Receivables Workspace", role x_ar.ar_team
+- [ ] `WS-02` Global search: AR request, invoice, Deposit ID and contract numbers, customer names
+- [ ] `WS-03` Workspace sidebar: Home, Lists, BSU page, Cash application page
+- [ ] `WS-04` List menu (sys_ux_list_menu_config): categories and lists with conditions
+- [ ] `WS-05` Workspace tabs: landing / list tab plus one tab per opened record
+- [ ] `WS-06` Landing page: single-score data visualisations, each linked to a list menu module
+- [ ] `WS-07` Data visualisation: bar chart of x_ar_invoice.amount_due grouped by days past due_date
+- [ ] `WS-08` Landing page list: new AR requests
+- [ ] `WS-09` Landing page list: overdue invoices
+- [ ] `WS-11` Record header UI action bar (Horizon Record page template): primary UI actions as buttons, the rest in the overflow menu. Visible vs overflow is set per UI action in the workspace action configuration
+- [ ] `WS-12` Record ribbon (Horizon Record page template): collapsible row of up to 12 widgets with key metrics; configured per table in UI Builder (data resources over the record and its related tables)
+- [ ] `WS-13` Record tabs in the resizable pane (Horizon Record page template): Details (form) first, then related items, then one tab per related list; extra tabs move to the More menu, except on customer and contract records, which show every tab (CCI 2026-11-16)
+- [ ] `WS-14` Contextual side bar (Horizon pattern): vertical icon tabs on the right of the record tab, open by default, collapsible and resizable; holds Customer setup, Activity stream and Attachments for AR requests
+- [ ] `WS-15` Form record presence: avatars of users viewing the record (out-of-box on the Horizon Record page template)
+- [ ] `WS-17` Record history tab (out-of-box on the Record page template): sys_audit / sys_history_line for the record. Turn on Audit in the dictionary of every x_ar table; shows when, who, field, old and new value
+- [ ] `WS-16` List page template (Horizon): list menu on the left, list on the right; the menu selection drives the list. Menu can be hidden

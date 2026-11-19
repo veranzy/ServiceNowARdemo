@@ -3,1179 +3,3808 @@
   "module": "AR-i",
   "id": "REQ-FV-ARI",
   "text": "Form view ar_i on x_ar_request (view rule: ar_form = AR-i), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Customer, 3. Contract and bill-to, 4. Invoice details, 5. Customer documents, 6. Others, in the AR-i portal order; every field of each section on the form, empty when not answered; editable while the case is open",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "LST-REQ-ARI",
   "text": "Workspace list All AR-i (UIX decision 15, amended 2026-11-16): x_ar_request, condition ar_form = AR-i (every state, open and closed); list view ar_i_all with its own columns (for now: number, ar_form, short_description, customer, department, amount, state, assigned_to, opened_by, opened_at); list menu category AR requests",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-03",
   "text": "Quick link to catalog item: record producer \"AR-i New AR request\"",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-05",
   "text": "Record producer \"AR-i New AR request\" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-39",
   "text": "AR-i Customer section, found customer (D23): read-only customer details in this order: name, UEN, address (from x_ar_customer), agency type, V@G, V@G sub-BU, POC name, POC email (copied from x_ar_customer into the request variables by a catalog client script; variables read-only via UI policy). New customer: the same fields are editable; AR copies them to the customer by hand (D23 as amended by D31)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-36",
   "text": "AR-i GIRO subsection inside Contract (D22): 'Is there an existing DDA?' read-only Yes / No (variable giro_on_contract) from the chosen contract's giro_status (GlideAjax), plus the active AR-ix case number when Yes. Greyed out with a tooltip for a new contract or no-contract billing: raise an AR-ix once AR has set up the contract",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-40",
   "text": "AR-i new contract variables, in order: new_contract_type (Recurring / Ad-hoc), new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle (+ suggested billing cycle when Others), new_contract_invoice_date, new_contract_payment_terms (+ other terms when Others), new_contract_proration (+ 1st / last month amounts when Yes), type_of_billing (+ bulk upload when C / D / E). AR creates x_ar_contract from them by hand, then links it with Link Contract Reference (D31)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-41",
   "text": "AR-i existing contract: every contract detail read-only from x_ar_contract, in the same order as a new contract (catalog client script / read-only HTML widget)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-37",
   "text": "AR-i variable set Invoice details (AR-i decisions 31–33): short_description (invoice description), attention_name / attention_email (prefilled from the contract bill-to), amount_per_period (before GST), preferred_invoice_date_choice (label 'Preferred invoice date': Per Billing Cycle / Expedited, optional; only for a one-invoice request, UI policy hides and clears it for a recurring contract) and preferred_invoice_date_justification (shown when Expedited, optional), billing_line_items_required (Yes / No → multi-row variable set PT-43). Catalog client script shows the billing summary: recurring contract → monthly to the contract end date (with contract proration); otherwise one invoice. The producer script creates one x_ar_request_line from these",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-07",
   "text": "Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-15",
   "text": "Catalog item AR-i New AR request (active record producer)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-19",
   "text": "Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one (new contract, or a shell without one), prefilled from the department's x_ar_billing_contact. An existing contract's bill-to is read-only (PT-41); AR changes it in the workspace (D22)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-20",
   "text": "Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, bill-to. UI policies per option. Always shown; until a customer is selected it shows only the hint 'Select a customer above to see the contract options.' (AR-i decision 40)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-42",
   "text": "AR-i variable set Others (after Customer documents; final placement to be decided by the owner): cost_center, agent_name, po_number. All optional (invoice_breakdown and account_code removed, AR-i decision 39)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-43",
   "text": "AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code. At least one row when Yes",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-28",
   "text": "No contract required: info message (UI policy on contract_option = none). AR creates the customer's no-contract shell for the department by hand if needed (x_ar_contract, contract_type = shell) and links it with Link Contract Reference, which files the lines under it (D31)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-25",
   "text": "Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-27",
   "text": "Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-29",
   "text": "Finance coding variables (all optional): cost_center (tooltip: to be filled by GA), agent_name. Now in the Others section (PT-42); type of billing and the bulk upload are on the contract (PT-40)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "PT-23",
   "text": "Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_customer",
   "text": "x_ar_request.new_customer · True/False",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_customer_name",
   "text": "x_ar_request.new_customer_name · String · Mandatory when New customer",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_customer_uen",
   "text": "x_ar_request.new_customer_uen · String",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_customer_address",
   "text": "x_ar_request.new_customer_address · String (1000)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_type",
   "text": "x_ar_request.new_contract_type · Choice · Mandatory for a new contract",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_number",
   "text": "x_ar_request.new_contract_number · String · Mandatory for a new contract",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_ref",
   "text": "x_ar_request.new_contract_ref · String · AR-i, optional for a new contract. Not on AR-ix (AR-ix decision 25: the GIRO reference giro_reference is used instead)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_po",
   "text": "x_ar_request.new_contract_po · String · Optional",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_title",
   "text": "x_ar_request.new_contract_title · String · Mandatory for a new contract",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_start",
   "text": "x_ar_request.new_contract_start · Date · Mandatory for a new contract",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_end",
   "text": "x_ar_request.new_contract_end · Date",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_value",
   "text": "x_ar_request.new_contract_value · Currency · Mandatory for a new contract",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_billing_cycle",
   "text": "x_ar_request.new_contract_billing_cycle · Choice · Optional",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_billing_cycle_other",
   "text": "x_ar_request.new_contract_billing_cycle_other · String · Mandatory when the billing cycle is Others",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_invoice_date",
   "text": "x_ar_request.new_contract_invoice_date · Date · Optional",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_payment_terms",
   "text": "x_ar_request.new_contract_payment_terms · Choice · Default 30 days",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_payment_terms_other",
   "text": "x_ar_request.new_contract_payment_terms_other · String · Mandatory when payment terms is Others",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_proration",
   "text": "x_ar_request.new_contract_proration · Choice · Default No",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_proration_first",
   "text": "x_ar_request.new_contract_proration_first · Currency · Mandatory when proration is Yes",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.new_contract_proration_last",
   "text": "x_ar_request.new_contract_proration_last · Currency · Mandatory when proration is Yes",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.bill_to_name",
   "text": "x_ar_request.bill_to_name · String · Mandatory when the contract (or shell) has no bill-to person yet; AR copies it to the contract by hand (D16 as amended by D31)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.bill_to_email",
   "text": "x_ar_request.bill_to_email · String",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.bill_to_phone",
   "text": "x_ar_request.bill_to_phone · String",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.bill_to_address",
   "text": "x_ar_request.bill_to_address · String (1000)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.short_description",
   "text": "x_ar_request.short_description · String · mandatory · What the invoice is for; becomes the case's short description and the billing line's description",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.attention_name",
   "text": "x_ar_request.attention_name · String · Optional. Prefilled from the contract's bill-to person",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.attention_email",
   "text": "x_ar_request.attention_email · String · Optional; must be a valid email. Prefilled from the contract's bill-to email",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.amount_per_period",
   "text": "x_ar_request.amount_per_period · Currency · mandatory · Before GST. Recurring contract: billed every period; ad-hoc or no contract: one invoice of this amount",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.preferred_invoice_date_choice",
   "text": "x_ar_request.preferred_invoice_date_choice · Choice · One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Optional (AR-i decision 38)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.preferred_invoice_date_justification",
   "text": "x_ar_request.preferred_invoice_date_justification · String (1000) · Shown when Expedited; optional",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.billing_line_items_required",
   "text": "x_ar_request.billing_line_items_required · Choice · Yes shows the billing line items table (multi-row variable set)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.po_number",
   "text": "x_ar_request.po_number · String",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.customer_poc_name",
   "text": "x_ar_request.customer_poc_name · String · AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in; AR copies it to the customer by hand (D23 as amended by D31)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.customer_poc_email",
   "text": "x_ar_request.customer_poc_email · String · AR-i customer details; must be a valid email. Same rule as POC name",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.cost_center",
   "text": "x_ar_request.cost_center · String · Optional, free text. To be filled by GA",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.agent_name",
   "text": "x_ar_request.agent_name · String · Optional, free text",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.agency_type",
   "text": "x_ar_request.agency_type · Choice · AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.vag",
   "text": "x_ar_request.vag · Choice · AR-i customer details, optional. Found customer: read-only from the customer master",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.sub_bu",
   "text": "x_ar_request.sub_bu · String · Optional, free text",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.type_of_billing",
   "text": "x_ar_request.type_of_billing · Choice · Contract level: entered for a new contract (AR copies it to the contract by hand, D31); read-only copy of the contract's value for an existing one",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.bulk_supporting_docs",
   "text": "x_ar_request.bulk_supporting_docs · Attachment · Optional; several files at once",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.giro_on_contract",
   "text": "x_ar_request.giro_on_contract · Choice · read-only · Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.doc_contract_po",
   "text": "x_ar_request.doc_contract_po · Attachment · Optional, offered for a new contract only",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.doc_acra",
   "text": "x_ar_request.doc_acra · Attachment · Only when not already on file",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.doc_billing_form",
   "text": "x_ar_request.doc_billing_form · Attachment · Only when not already on file for this department",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "REQ.description",
   "text": "x_ar_request.description · String (4000)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "LST-RQL",
   "text": "List: x_ar_request_line · list view layout + list menu condition",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RP-RQL",
   "text": "Record page (UI Builder) · x_ar_request_line",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "HDR-RQL",
   "text": "Record header: highlighted values of x_ar_request_line",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "FRM-RQL",
   "text": "Form view: x_ar_request_line (Default view)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.number",
   "text": "x_ar_request_line.number · String · read-only",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.ar_request",
   "text": "x_ar_request_line.ar_request · Reference → x_ar_request · read-only",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.contract",
   "text": "x_ar_request_line.contract · Reference → x_ar_contract · read-only · Billing lines are contract level (D15). Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.line_type",
   "text": "x_ar_request_line.line_type · Choice · mandatory",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.short_description",
   "text": "x_ar_request_line.short_description · String · mandatory",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.amount",
   "text": "x_ar_request_line.amount · Currency · mandatory · Recurring: amount per period",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.preferred_invoice_date",
   "text": "x_ar_request_line.preferred_invoice_date · Date · One-off only",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.frequency",
   "text": "x_ar_request_line.frequency · Choice · Recurring only; Monthly by default (decision 10)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.start_date",
   "text": "x_ar_request_line.start_date · Date · Recurring only: first billing date",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.end_date",
   "text": "x_ar_request_line.end_date · Date · Recurring only: last billing date",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.remarks",
   "text": "x_ar_request_line.remarks · String · Recurring only, optional",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.invoice",
   "text": "x_ar_request_line.invoice · Reference → x_ar_invoice · read-only",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.billing_schedule",
   "text": "x_ar_request_line.billing_schedule · Reference → x_ar_billing_schedule · read-only",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "LST-RQI",
   "text": "List: x_ar_request_item · list view layout + list menu condition",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RP-RQI",
   "text": "Record page (UI Builder) · x_ar_request_item",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "HDR-RQI",
   "text": "Record header: highlighted values of x_ar_request_item",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "FRM-RQI",
   "text": "Form view: x_ar_request_item (Default view)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQI.ar_request",
   "text": "x_ar_request_item.ar_request · Reference → x_ar_request · read-only",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQI.item_number",
   "text": "x_ar_request_item.item_number · Integer · read-only · System number 1, 2, 3… in row order within the AR request; set by the producer script, never typed (AR-i decision 37)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQI.amount_excl_gst",
   "text": "x_ar_request_item.amount_excl_gst · Currency · mandatory",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQI.gst_amount",
   "text": "x_ar_request_item.gst_amount · Currency · read-only · Calculated: amount × GST rate (9%), rounded to the cent",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQI.total_amount",
   "text": "x_ar_request_item.total_amount · Currency · read-only · Calculated: amount + GST",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQI.late_payment_interest",
   "text": "x_ar_request_item.late_payment_interest · Decimal · Rate % (to be confirmed with the users)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQI.account_code",
   "text": "x_ar_request_item.account_code · String",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.line_value",
   "text": "Calculated: one-off amount, or recurring amount × number of periods",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RQL.periods",
   "text": "Calculated: number of billing dates between From and To at the frequency",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RL-REQ-RQL",
   "text": "Related list: x_ar_request_line where ar_request = this ar request",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RL-REQ-RQI",
   "text": "Related list: x_ar_request_item where ar_request = this ar request",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RL-REQ-INV",
   "text": "Related list: x_ar_invoice where ar_request = this ar request",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "RL-REQ-SCH",
   "text": "Related list: x_ar_billing_schedule where contract (the case's contract; read-only on the case) = this ar request",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "UA-RQL-save",
   "text": "Save (update, while the line is open)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "UA-PT-newcust",
   "text": "Portal: Add as new customer (sets new_customer = true, copies the search text into the name)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "UA-PT-additem",
   "text": "Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "UA-RQL-newrel",
   "text": "New billing line on the contract's Billing lines tab (#10 E10.7): AR copies the AR-i line; contract filled in",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-i",
   "id": "UA-RQL-insert",
   "text": "Submit (insert)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ-GIRO",
   "text": "GIRO setup panel (AR-ix case, contextual side bar): contract set? (for No contract required: the customer's no-contract shell for the department, set as Contract on the case); the contract's GIRO status and active case; reminder to update GIRO status and Active GIRO case on the contract record, then set State = Closed complete (AR-ix decision 11, AR-00 2026-11-16)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ-GIROHIST",
   "text": "Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ-FV-ARIX",
   "text": "Form view ar_ix on x_ar_request (view rule: ar_form = AR-ix), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Select Customer, 3. Select Contract, 4. GIRO details, 5. Attachments (attachment list), in the AR-ix portal order (section 6 Others removed 2026-11-17, AR-ix decision 23); every field shown, empty when not answered; editable while the case is open",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "LST-REQ-ARIX",
   "text": "Workspace list All AR-ix (UIX decision 15, amended 2026-11-16): x_ar_request, condition ar_form = AR-ix (every state); list view ar_ix_all with its own columns (for now the same as All AR-i); list menu category AR requests",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "PT-31",
   "text": "Record producer \"AR-ix GIRO authorisation\" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; contract_option = none → current.contract = the customer's no-contract shell for the department, if it exists;",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "PT-32",
   "text": "AR-ix variable set Select Contract (AR-ix decision 12): Existing contract, New contract (no reference asked here since 2026-11-17, decision 25: the GIRO details reference giro_reference is used) or No contract required (producer script sets contract = the customer's no-contract shell for the department when it exists). Existing contract reference qualifier (decision 22, E8.5): the customer's contracts, not No contract, where contract.department = the form's Department OR the requester is in contract.contract_owners; a Department change clears a contract that no longer qualifies (catalog client script)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "PT-33",
   "text": "AR-ix variable set GIRO details (decisions 14, 15 amended, 18–21): Type of request first, choices filtered by the contract (catalog client script: new / no contract → Add GIRO; existing contract → Add GIRO when giro_status is Not active, Remove GIRO only when Active), with the owner's help text. Contract / tenancy agreement / reference (optional): Remove GIRO after Type; Add GIRO right after Purpose, hidden when Purpose = Carpark (decision 24). Remove GIRO: reference, Effective end date (mandatory), nothing more. Add GIRO (UI policies): purpose (placeholder \"-- Choose the purpose --\", no default; choices by contract option, decision 25: No contract required → Carpark, Others; existing or new contract → Rental, Others; a contract change clears a purpose that no longer fits), reference, other purpose, Effective start date (mandatory); Customer name / email / mobile (prefilled from the contract's or shell's bill-to); remarks; rental → location (mandatory), amount; carpark → car plate, location (mandatory), amount; others → nothing more. Attachments is a separate section (PT-46)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "PT-34",
   "text": "Info message on AR-ix: the chosen contract's (or no-contract shell's) GIRO status and active case (GlideAjax read of x_ar_contract.giro_status / giro_case). Active → the form offers only Remove GIRO (decision 14)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "PT-35",
   "text": "Ticket page block for AR-ix: GIRO request summary and its outcome (contract to be linked / with AR / completed / GIRO active when the contract's giro_case is this case)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "PT-44",
   "text": "AR-ix variable set Select Customer (AR-ix decisions 12, 17): customer search showing the customer name only; existing customers only (no new customer on AR-ix, E8.1), with the hint PT-48",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "PT-45",
   "text": "AR-ix info message for No contract required: the customer's no-contract shell for the department (x_ar_contract, contract_type = shell) the GIRO goes on, or that AR links it once the shell is set up",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "PT-46",
   "text": "AR-ix section Attachments (decision 16, modelled on AR-i Customer documents): supporting documents (sc_attachment on the case), optional, for Add and Remove GIRO",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "PT-48",
   "text": "AR-ix Select Customer hint (decision 17, E8.1): Customer not found? Submit an AR-i to set up the customer first. Shown under the customer search instead of the AR-i add-as-new-customer button (UA-PT-newcust stays on AR-i)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_type",
   "text": "x_ar_request.giro_type · Choice · AR-ix. Mandatory. New contract or no contract: Add GIRO only. Existing contract: Add GIRO when GIRO is not active, Remove GIRO only when it is (catalog client script filters the choices)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_reference",
   "text": "x_ar_request.giro_reference · String · AR-ix, Add and Remove GIRO. Optional. Add GIRO: right after Purpose of GIRO/DDA request, hidden when Purpose = Carpark; Remove GIRO: after Type of request (UI policy; AR-ix decisions 19, 24; E8.9–E8.12)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_purpose",
   "text": "x_ar_request.giro_purpose · Choice · AR-ix Add GIRO. Mandatory. Choices by contract (catalog client script, AR-ix decision 25): No contract required → Carpark, Others; existing or new contract → Rental, Others",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_purpose_other",
   "text": "x_ar_request.giro_purpose_other · String · AR-ix. Mandatory when Purpose = Others",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_applicant_name",
   "text": "x_ar_request.giro_applicant_name · String · AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to (label: AR-ix decision 20, E8.6)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_applicant_email",
   "text": "x_ar_request.giro_applicant_email · String · AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to (label: AR-ix decision 20, E8.6)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_applicant_mobile",
   "text": "x_ar_request.giro_applicant_mobile · String · AR-ix Add GIRO. Prefilled from the contract's bill-to phone (label: AR-ix decision 20, E8.6)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_remarks",
   "text": "x_ar_request.giro_remarks · String (1000) · AR-ix Add GIRO, all purposes. Optional",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_location",
   "text": "x_ar_request.giro_location · String · AR-ix Rental and Carpark. Mandatory (AR-ix decision 21, E8.15)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_start_date",
   "text": "x_ar_request.giro_start_date · Date · AR-ix Add GIRO, every purpose. Mandatory (AR-ix decision 18, E8.7)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_end_date",
   "text": "x_ar_request.giro_end_date · Date · AR-ix Remove GIRO. Mandatory; the only Remove GIRO detail (AR-ix decision 18, E8.8)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_carplate",
   "text": "x_ar_request.giro_carplate · String · AR-ix carpark. Mandatory; one vehicle per form",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
  },
  {
   "module": "AR-ix",
   "id": "REQ.giro_amount",
   "text": "x_ar_request.giro_amount · String · AR-ix Rental and Carpark. Optional free text; not used by any other field or calculation (AR-ix decisions 13, 21; E8.13, E8.15)",
-  "change": "new",
-  "release": "Release 1",
   "added": "2026-11-19",
-  "done": false
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-01",
+  "text": "Unified navigation header (Next Experience). Workspace \"Receivables Workspace\", role x_ar.ar_team",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-02",
+  "text": "Global search: AR request, invoice, Deposit ID and contract numbers, customer names",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-03",
+  "text": "Workspace sidebar: Home, Lists, BSU page, Cash application page",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-04",
+  "text": "List menu (sys_ux_list_menu_config): categories and lists with conditions",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-05",
+  "text": "Workspace tabs: landing / list tab plus one tab per opened record",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-06",
+  "text": "Landing page: single-score data visualisations, each linked to a list menu module",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-07",
+  "text": "Data visualisation: bar chart of x_ar_invoice.amount_due grouped by days past due_date",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-08",
+  "text": "Landing page list: new AR requests",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-09",
+  "text": "Landing page list: overdue invoices",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-11",
+  "text": "Record header UI action bar (Horizon Record page template): primary UI actions as buttons, the rest in the overflow menu. Visible vs overflow is set per UI action in the workspace action configuration",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-12",
+  "text": "Record ribbon (Horizon Record page template): collapsible row of up to 12 widgets with key metrics; configured per table in UI Builder (data resources over the record and its related tables)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-13",
+  "text": "Record tabs in the resizable pane (Horizon Record page template): Details (form) first, then related items, then one tab per related list; extra tabs move to the More menu, except on customer and contract records, which show every tab (CCI 2026-11-16)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-14",
+  "text": "Contextual side bar (Horizon pattern): vertical icon tabs on the right of the record tab, open by default, collapsible and resizable; holds Customer setup, Activity stream and Attachments for AR requests",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-15",
+  "text": "Form record presence: avatars of users viewing the record (out-of-box on the Horizon Record page template)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-17",
+  "text": "Record history tab (out-of-box on the Record page template): sys_audit / sys_history_line for the record. Turn on Audit in the dictionary of every x_ar table; shows when, who, field, old and new value",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "UIX",
+  "id": "WS-16",
+  "text": "List page template (Horizon): list menu on the left, list on the right; the menu selection drives the list. Menu can be hidden",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ-ACT",
+  "text": "Activity stream: comments (visible to requester) + work_notes (AR only) + field changes",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ-FV-COL",
+  "text": "Form view collections on x_ar_request (view rule: ar_form = COL), Details tab: sections Case (with Request value, the amount to collect, D29), 1. General information, 2. Collection type; ribbon Collection type, Request value, BSU deposits matched (sum of accepted allocations with request = this case)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "LST-REQ-COL",
+  "text": "Workspace list All Collections (D30): x_ar_request, condition ar_form = COL; default columns as the other AR form lists",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON-GIRO",
+  "text": "Tab GIRO history on the contract (and on no-contract shells): related list x_ar_request where contract = this contract and ar_form = AR-ix; columns AR-ix case, Type of request, Purpose of GIRO/DDA request, Amount, Requested by, Updated, GIRO (Active = contract.giro_case, Completed, Open, Contract to link, Rejected)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH-PER",
+  "text": "Billing periods of the schedule (computed list, or child table x_ar_billing_period in the build) with status Invoiced / Due / Upcoming; no action column (drafts come from JOB-DAILYINV)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "JOB-DAILYINV",
+  "text": "Scheduled job Daily invoice check (daily, D12 amended 2026-11-16): for each x_ar_billing_schedule period with no non-cancelled invoice and invoice date within 5 working days (Mon–Fri) of today, insert a draft x_ar_invoice (billing_schedule, billing_period, contract, customer, ar_request and request_line from the schedule) and add a work note on the AR-i case. Issuing stays manual (Issue invoice). Demo: shown as mock data only (the draft on ARQ0001009); no demo button",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ-ATT",
+  "text": "Attachments: sys_attachment on x_ar_request (added on the portal form)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV-PDF",
+  "text": "Invoice document (CCI decision 13): HTML template rendered with PDF Generation Utilities (sn_pdfgeneratorutils) when AR issues the invoice and attached to the invoice; the workspace tab shows the same template as a preview (DRAFT / CANCELLED watermark when not issued). Template wording is a draft",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU-08",
+  "text": "Preview tag No payment mode (BSU decision 18): the line's transaction ID matches no active payment mode of the bank account; it is saved with the fallback Deposit ID UNK-<DDMMYY>-XX",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RL-DEP-SUG",
+  "text": "Suggested matches tab on x_ar_bank_statement (BSU decision 21): workspace data resource (script) listing up to 10 issued invoices with amount due and open Collections cases (ar_form = COL) not yet on this deposit, ranked by: invoice / case number or reference cited in the bank reference, amount fit (exact or within 3%), payer-name similarity, and the bank account's collection types. Column Why suggested shows the signals. A suggestion only: nothing is matched until AR presses Match (D5)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "ALC-DELTA",
+  "text": "Summary line on the Allocations tabs (deposit, invoice, Collections case; BSU decision 22): Amount (the record's own fixed amount: deposit amount, invoice amount, case Request value), Allocation value (sum of its x_ar_allocation amounts), Delta (Amount − Allocation value): on a deposit the money to refund or apply elsewhere, on an invoice / case the amount still to collect or offset. Calculated, not stored",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RL-INV-SUG",
+  "text": "Suggested BSU deposits tab on x_ar_invoice (BSU decision 21): up to 10 x_ar_bank_statement records with an unmatched amount, ranked with the same signals; only for issued invoices with amount due. Match on a row allocates (D5: manual)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RL-REQ-SUG",
+  "text": "Suggested BSU deposits tab on Collections cases (x_ar_request, ar_form = COL; BSU decision 21, D29): as RL-INV-SUG, against the case's Request value still to match",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU-01",
+  "text": "BSU upload form (BSU decision 16): opened by New on the Statement uploads list (the BSU rail item opens that list of upload RITMs); upload form, preview, save opens the new RITM",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU-03",
+  "text": "Upload form = catalog item 'Bank statement upload' rendered in the workspace (D32): variables bank account, statement date, CSV attachment; submit creates the RITM",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU-04",
+  "text": "CSV file kept as sys_attachment on sc_req_item",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU-05",
+  "text": "Bank template: column mapping per bank (config table x_ar_bank_template or system properties)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU-06",
+  "text": "Preview before insert: deposits with Deposit IDs, skipped withdrawals, totals",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-01",
+  "text": "Service Portal header (sp_header_footer), audience role x_ar.project_team",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-02",
+  "text": "Portal homepage: search + quick links widgets",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-04",
+  "text": "Quick link to My Requests",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-30",
+  "text": "Variable set General information (D19), first section of every AR form record producer: requester_name (default current user's name), requester_email (from SSO, read-only), department, cc_list (emails; copied to the case watch_list so they can view it on the portal)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-49",
+  "text": "Collections record producer (AR-iii module, D30): one form for AR-iii, AR-iv and AR-v. Catalogue items AR-iii, AR-iv, AR-v open it with collection_type preset. Sections: General information (PT-30), 2. Collection type (PT-50); the rest to be defined",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-50",
+  "text": "Collections variable set Collection type (D30): collection_type (Choice AR-iii / AR-iv / AR-v, labels to be given), mandatory, preset from the catalogue item",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-51",
+  "text": "Collections variable set 3. Collection Details (#9 §7–9, AR-iii decision 19): fields of the selected type. AR-iii: Collection Date*. AR-iv: Collection Date, Reference Number (no Requesting Department Cost Centre). AR-v: Category* first, Date of Collection (every category), then: Cash Bail: G56 Receipt Number, Bail Amount Received, Bailor Name, IB Case Number / WEU Number, Case Status (Case Pending / Case Closed), Accused Name, Refund required? (one bailor / accused set per case); Seized Monies: Case lines, then Forfeit, Court order, invest radio, Refund required?; Restitution: Case lines, then Court order (UI policies on collection_type and ar5_category)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-52",
+  "text": "Collections AR-iii multi-row variable set Total number of collections for the day (#9 §7, AR-iii decision 19): Collection Type* (Choice), Transaction Amount* (> 0, two decimals); 1 to 99 rows; duplicates allowed (owner). Producer script copies rows to x_ar_collection_tx",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-53",
+  "text": "Collections AR-iv multi-row variable set Amount for Each Account Code (#9 §8): Description*, Amount* (> 0, two decimals), Cost Centre* (active, Requesting Department), Account Code* (active); 1 to 10 rows. Producer script copies rows to x_ar_collection_allocation; the allocation total becomes amount (Request value)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-54",
+  "text": "Collections AR-v supporting-document guidance by category (#9 §9): Cash Bail: G56, Bailor identity document, Bail Bond Form, Bank-in slip or receipt; Seized Monies and Restitution: G56, Case Property List, Bank-in slip or receipt (UI policy / rich-text label per category)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-55",
+  "text": "Collections section 4. Supporting Documents (#9 §10): multiple attachments, optional (sc_attachment on the case); file size and type rules documented for the build, not checked in the demo (owner)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-56",
+  "text": "Collections AR-iii Total Amount: calculated sum of Transaction Amount across rows (catalog client script; multi-row set footer); stored as amount on the case (AR-iii decision 19)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-59",
+  "text": "Collections AR-v Seized Monies and Restitution multi-row variable set Case lines (AR-iii decision 19): Case Number, Amount, Case Status (choices by category); 0 to 99 rows. Producer script copies rows to x_ar_collection_case_line; the lines' total is the case's amount",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-60",
+  "text": "Collections AR-v: message shown when Refund required? = Yes (AR-iii decision 19): 'Please raise a AR10' with a link to the AR10 catalogue item (rich-text label / UI policy on ar5_refund_required)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-61",
+  "text": "Collections AR-v Case lines Total Amount: calculated sum of Amount across rows (catalog client script; multi-row set footer)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "PT-57",
+  "text": "Collections AR-iv allocation total: calculated sum of Amount across rows (catalog client script); stored as amount on the case",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-08",
+  "text": "Variable attachments → sys_attachment on the created x_ar_request",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-09",
+  "text": "Submit → inserts x_ar_request (state New, assignment group AR team). Automation to be defined",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-10",
+  "text": "My Requests widget: x_ar_request where opened_by = me (ACL: project team reads own records)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-11",
+  "text": "Ticket page: conversation widget (comments only; work notes hidden)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-13",
+  "text": "Ticket fields widget: read-only summary of the request",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-14",
+  "text": "Service catalog category \"AR forms\": 16 record producers AR-i … AR-xvi (D9)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "PT-16",
+  "text": "Catalog item placeholder AR-ii … AR-xvi (inactive until defined)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "LST-REQ",
+  "text": "List: x_ar_request · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "RP-REQ",
+  "text": "Record page (UI Builder) · x_ar_request extends task",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "HDR-REQ",
+  "text": "Record header: highlighted values of x_ar_request",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "FRM-REQ",
+  "text": "Form view: x_ar_request (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.number",
+  "text": "x_ar_request.number · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.state",
+  "text": "x_ar_request.state · Choice · mandatory · Set by AR with the dropdown on the case and Save (AR-00 decision, 2026-11-16). Assign to me moves New to Work in progress; a portal reply moves Awaiting requestor information to Work in progress",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.substate",
+  "text": "x_ar_request.substate · Choice · Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.opened_by",
+  "text": "x_ar_request.opened_by · Reference → sys_user · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.ar_form",
+  "text": "x_ar_request.ar_form · Choice · read-only · Collections cases: COL, with the type in collection_type (D30)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.submission_origin",
+  "text": "x_ar_request.submission_origin · Choice · read-only · Collections (#9 §6). System-managed: Manual for portal submissions; system-generated cases are a later phase (AR-iii decision 10)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.collection_type",
+  "text": "x_ar_request.collection_type · Choice · Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.collection_date",
+  "text": "x_ar_request.collection_date · Date · AR-iii: mandatory. AR-iv: optional (#9 §7, §8)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.collection_reference",
+  "text": "x_ar_request.collection_reference · String · AR-iv. Optional (#9 §8)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.ar5_category",
+  "text": "x_ar_request.ar5_category · Choice · AR-v. Chosen first; shows only that category's fields and document guidance (#9 §9). Mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.date_of_collection",
+  "text": "x_ar_request.date_of_collection · Date · AR-v, every category (general). Optional until confirmed",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.g56_receipt_number",
+  "text": "x_ar_request.g56_receipt_number · String · AR-v Cash Bail only (AR-iii decision 19). Optional until confirmed",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.bail_amount",
+  "text": "x_ar_request.bail_amount · Currency · AR-v Cash Bail. Sets the Request value",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.bailor_name",
+  "text": "x_ar_request.bailor_name · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.ib_case_number",
+  "text": "x_ar_request.ib_case_number · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.case_status",
+  "text": "x_ar_request.case_status · Choice · AR-v Cash Bail: one bailor / accused set per case (AR-iii decision 19). Seized Monies and Restitution have a status per case line",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.accused_name",
+  "text": "x_ar_request.accused_name · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.ar5_forfeit",
+  "text": "x_ar_request.ar5_forfeit · True/False · AR-v Seized Monies: checkbox after the case lines (AR-iii decision 19)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.ar5_court_order",
+  "text": "x_ar_request.ar5_court_order · True/False · AR-v Seized Monies and Restitution: checkbox after the case lines (AR-iii decision 19)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.ar5_to_be_invested",
+  "text": "x_ar_request.ar5_to_be_invested · Choice · Yes / No radio buttons (#9 §9.4), where applicable",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "REQ.ar5_refund_required",
+  "text": "x_ar_request.ar5_refund_required · Choice · AR-v Cash Bail and Seized Monies (AR-iii decision 19). Yes shows: Please raise a AR10, with a link to the AR10 form",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.requester_name",
+  "text": "x_ar_request.requester_name · String · General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.requester_email",
+  "text": "x_ar_request.requester_email · String · read-only · General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.department_sub_bu",
+  "text": "x_ar_request.department_sub_bu · Choice · General information (all AR forms). Sub-BUs of the chosen department (mock list)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.cc_list",
+  "text": "x_ar_request.cc_list · String (1000) · General information (all AR forms). Emails separated by commas; these people can view the case on the portal (Watch list)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.department",
+  "text": "x_ar_request.department · Choice · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.customer",
+  "text": "x_ar_request.customer · Reference → x_ar_customer · Mandatory unless New customer is ticked",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.contract_option",
+  "text": "x_ar_request.contract_option · Choice · mandatory · Billing is contract level: every billing line sits under a contract, or under the customer's no-contract shell (D15)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.link_customer",
+  "text": "x_ar_request.link_customer · Reference → x_ar_customer · AR-i, workspace Link section (D31). x_ar_customer, display value UEN (reference auto-complete shows UEN and name). Saving sets the case's customer. Mandatory before Closed complete",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.link_contract",
+  "text": "x_ar_request.link_contract · Reference → x_ar_contract · AR-i and AR-ix, workspace Link section (D31). x_ar_contract, display value Contract ID (CTR…). Reference qualifier: contracts of the linked customer (AR-i) or of the case's customer (AR-ix). Saving sets the case's contract (AR-i: also every billing line's contract). AR-i: mandatory before Closed complete",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.contract",
+  "text": "x_ar_request.contract · Reference → x_ar_contract · Existing contract; otherwise set when AR saves Link Contract Reference (D31). Read-only in the workspace",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.amount",
+  "text": "x_ar_request.amount · Currency · read-only · AR-i: calculated, one-off lines + recurring amount × number of periods. Collections (AR-iii, AR-iv, AR-v): the amount to collect; BSU deposits are matched against it on Cash application (D29)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.assignment_group",
+  "text": "x_ar_request.assignment_group · Reference → sys_user_group · Platform sys_user_group. One group for now: Accounts Receivable, set on every new case (record producer script)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.assigned_to",
+  "text": "x_ar_request.assigned_to · Reference → sys_user · Reference qualifier: members of the assignment group",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "REQ.opened_at",
+  "text": "x_ar_request.opened_at · Date · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "LST-INV",
+  "text": "List: x_ar_invoice · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RP-INV",
+  "text": "Record page (UI Builder) · x_ar_invoice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "HDR-INV",
+  "text": "Record header: highlighted values of x_ar_invoice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "FRM-INV",
+  "text": "Form view: x_ar_invoice (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.number",
+  "text": "x_ar_invoice.number · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.state",
+  "text": "x_ar_invoice.state · Choice · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.customer",
+  "text": "x_ar_invoice.customer · Reference → x_ar_customer · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.contract",
+  "text": "x_ar_invoice.contract · Reference → x_ar_contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.ar_request",
+  "text": "x_ar_invoice.ar_request · Reference → x_ar_request · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.request_line",
+  "text": "x_ar_invoice.request_line · Reference → x_ar_request_line · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.billing_schedule",
+  "text": "x_ar_invoice.billing_schedule · Reference → x_ar_billing_schedule · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.billing_period",
+  "text": "x_ar_invoice.billing_period · Date · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.short_description",
+  "text": "x_ar_invoice.short_description · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.amount",
+  "text": "x_ar_invoice.amount · Currency · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.invoice_date",
+  "text": "x_ar_invoice.invoice_date · Date",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.approval_date",
+  "text": "x_ar_invoice.approval_date · Date · Set manually by the AR team (CCI decision 8)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.due_date",
+  "text": "x_ar_invoice.due_date · Date · Defaults to invoice date + contract payment terms",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "LST-DEP",
+  "text": "List: x_ar_bank_statement · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RP-DEP",
+  "text": "Record page (UI Builder) · x_ar_bank_statement",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "HDR-DEP",
+  "text": "Record header: highlighted values of x_ar_bank_statement",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "FRM-DEP",
+  "text": "Form view: x_ar_bank_statement (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.deposit_id",
+  "text": "x_ar_bank_statement.deposit_id · String · read-only · Set by before-insert business rule (BSU decision 18): the payment mode's prefix, the deposit (value) date as DDMMYY and the payment mode's suffix. Not unique: deposits of one payment mode on one day share it. No matching payment mode: UNK-<DDMMYY>-XX",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.bank_account",
+  "text": "x_ar_bank_statement.bank_account · Reference → x_ar_bank_account · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.bsu",
+  "text": "x_ar_bank_statement.bsu · Reference → sc_req_item · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.value_date",
+  "text": "x_ar_bank_statement.value_date · Date · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.amount",
+  "text": "x_ar_bank_statement.amount · Currency · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.payer_name",
+  "text": "x_ar_bank_statement.payer_name · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.bank_reference",
+  "text": "x_ar_bank_statement.bank_reference · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.bank_transaction_ref",
+  "text": "x_ar_bank_statement.bank_transaction_ref · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.transaction_id",
+  "text": "x_ar_bank_statement.transaction_id · String · read-only · From the bank's transaction-code column (BSU decisions 18–19); matched to a payment mode of the bank account",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.payment_mode",
+  "text": "x_ar_bank_statement.payment_mode · Reference → x_ar_payment_mode · read-only · Payment mode equal to the statement line's transaction code (BSU decision 19); empty when none matched (fallback Deposit ID)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "LST-BSU",
+  "text": "List: sc_req_item · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RP-BSU",
+  "text": "Record page (UI Builder) · sc_req_item",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "HDR-BSU",
+  "text": "Record header: highlighted values of sc_req_item",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "FRM-BSU",
+  "text": "Form view: sc_req_item (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU.number",
+  "text": "sc_req_item.number · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU.bank_account",
+  "text": "sc_req_item.bank_account · Reference → x_ar_bank_account · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU.statement_date",
+  "text": "sc_req_item.statement_date · Date · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU.file_name",
+  "text": "sc_req_item.file_name · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU.uploaded_by",
+  "text": "sc_req_item.uploaded_by · Reference → sys_user · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU.uploaded_at",
+  "text": "sc_req_item.uploaded_at · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU.deposit_count",
+  "text": "sc_req_item.deposit_count · Integer · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU.deposit_total",
+  "text": "sc_req_item.deposit_total · Currency · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU.withdrawals_skipped",
+  "text": "sc_req_item.withdrawals_skipped · Integer · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "LST-BNK",
+  "text": "List: x_ar_bank_account · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RP-BNK",
+  "text": "Record page (UI Builder) · x_ar_bank_account",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "HDR-BNK",
+  "text": "Record header: highlighted values of x_ar_bank_account",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "FRM-BNK",
+  "text": "Form view: x_ar_bank_account (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BNK.bank",
+  "text": "x_ar_bank_account.bank · Choice · mandatory · BSU decision 17: shown apart from the bank account number. Mock aliases for Singapore's three largest banks; each has its own CSV layout",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BNK.account_number",
+  "text": "x_ar_bank_account.account_number · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BNK.account_name",
+  "text": "x_ar_bank_account.account_name · String · mandatory · Describes the sub-account type under the department, so the department understands it (e.g. Project deposits, Retention and deposits) (BSU decision 17)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BNK.department",
+  "text": "x_ar_bank_account.department · Choice · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BNK.account_type",
+  "text": "x_ar_bank_account.account_type · Choice · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BNK.currency",
+  "text": "x_ar_bank_account.currency · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BNK.collection_types",
+  "text": "x_ar_bank_account.collection_types · List · Collections forms whose money arrives in this account (BSU decision 13). The invoice finder ranks open Collections cases of these types first; it never hides the others",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BNK.active",
+  "text": "x_ar_bank_account.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "LST-ALC",
+  "text": "List: x_ar_allocation · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RP-ALC",
+  "text": "Record page (UI Builder) · x_ar_allocation",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "HDR-ALC",
+  "text": "Record header: highlighted values of x_ar_allocation",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "FRM-ALC",
+  "text": "Form view: x_ar_allocation (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "ALC.deposit",
+  "text": "x_ar_allocation.deposit · Reference → x_ar_bank_statement · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "ALC.invoice",
+  "text": "x_ar_allocation.invoice · Reference → x_ar_invoice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "ALC.request",
+  "text": "x_ar_allocation.request · Reference → x_ar_request · Set instead of Invoice when the deposit is matched to a Collections case (reference qualifier: ar_form = COL, the Collections form for AR-iii, AR-iv, AR-v; D29, D30)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "ALC.amount",
+  "text": "x_ar_allocation.amount · Currency",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "ALC.state",
+  "text": "x_ar_allocation.state · Choice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "ALC.exception",
+  "text": "x_ar_allocation.exception · Choice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "ALC.reason",
+  "text": "x_ar_allocation.reason · String (1000)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "LST-CMP",
+  "text": "List: core_company · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RP-CMP",
+  "text": "Record page (UI Builder) · core_company",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "HDR-CMP",
+  "text": "Record header: highlighted values of core_company",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "FRM-CMP",
+  "text": "Form view: core_company (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CMP.name",
+  "text": "core_company.name · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "LST-CUS",
+  "text": "List: x_ar_customer · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RP-CUS",
+  "text": "Record page (UI Builder) · x_ar_customer",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "HDR-CUS",
+  "text": "Record header: highlighted values of x_ar_customer",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "FRM-CUS",
+  "text": "Form view: x_ar_customer (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.company",
+  "text": "x_ar_customer.company · Reference → core_company · mandatory · The core_company record for this customer. One customer per company. Display field of the table",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.company.name",
+  "text": "x_ar_customer.company.name · String · read-only · Dot-walked from company.name (core_company); not a column on this table (D26)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.uen",
+  "text": "x_ar_customer.uen · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.parent_group",
+  "text": "x_ar_customer.parent_group · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.registered_address",
+  "text": "x_ar_customer.registered_address · String (1000)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.agency_type",
+  "text": "x_ar_customer.agency_type · Choice · Master data; AR copies it by hand from the AR-i that set the customer up (D23 as amended by D31)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.vag",
+  "text": "x_ar_customer.vag · Choice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.vag_sub_bu",
+  "text": "x_ar_customer.vag_sub_bu · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.poc_name",
+  "text": "x_ar_customer.poc_name · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.poc_email",
+  "text": "x_ar_customer.poc_email · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.bank_names",
+  "text": "x_ar_customer.bank_names · String (1000) · Comma-separated. Used to rank invoices in the invoice finder.",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.notes",
+  "text": "x_ar_customer.notes · String (4000)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.active",
+  "text": "x_ar_customer.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "LST-CON",
+  "text": "List: x_ar_contract · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RP-CON",
+  "text": "Record page (UI Builder) · x_ar_contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "HDR-CON",
+  "text": "Record header: highlighted values of x_ar_contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "FRM-CON",
+  "text": "Form view: x_ar_contract (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.contract_id",
+  "text": "x_ar_contract.contract_id · String · read-only · System contract ID, auto-numbered for every record, Contract or No contract (CCI, 2026-11-16)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.contract_type",
+  "text": "x_ar_contract.contract_type · Choice · mandatory · Contract or No contract (D15 amended 2026-11-16: a customer can have several No contract records)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.number",
+  "text": "x_ar_contract.number · String · The customer's contract number. Mandatory when Contract category = Contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.contract_category",
+  "text": "x_ar_contract.contract_category · Choice · Recurring or Ad-hoc",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.customer",
+  "text": "x_ar_contract.customer · Reference → x_ar_customer · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.department",
+  "text": "x_ar_contract.department · Choice · Owning department",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.contract_owners",
+  "text": "x_ar_contract.contract_owners · List → sys_user · Project team users who can pick this contract on an AR-ix even when it belongs to another department (List of sys_user, several owners; CCI decision 10, E8.5)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.reference_number",
+  "text": "x_ar_contract.reference_number · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.po_number",
+  "text": "x_ar_contract.po_number · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.short_description",
+  "text": "x_ar_contract.short_description · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.billing_type",
+  "text": "x_ar_contract.billing_type · Choice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.contract_value",
+  "text": "x_ar_contract.contract_value · Currency",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.start_date",
+  "text": "x_ar_contract.start_date · Date",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.end_date",
+  "text": "x_ar_contract.end_date · Date",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.payment_terms",
+  "text": "x_ar_contract.payment_terms · Integer",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.lpi_applicable",
+  "text": "x_ar_contract.lpi_applicable · True/False · Late payment interest is charged on overdue invoices under this contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.lpi_min_rate",
+  "text": "x_ar_contract.lpi_min_rate · Decimal · Mandatory when LPI applicable. % per annum; must not exceed the LPI rate",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.lpi_rate",
+  "text": "x_ar_contract.lpi_rate · Decimal · Mandatory when LPI applicable. % per annum",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.billing_cycle",
+  "text": "x_ar_contract.billing_cycle · Choice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.billing_cycle_other",
+  "text": "x_ar_contract.billing_cycle_other · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.preferred_invoice_date",
+  "text": "x_ar_contract.preferred_invoice_date · Date",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.payment_terms_choice",
+  "text": "x_ar_contract.payment_terms_choice · Choice · 30 days sets terms (days) = 30",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.payment_terms_other",
+  "text": "x_ar_contract.payment_terms_other · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.proration",
+  "text": "x_ar_contract.proration · Choice · Yes: the first and last period of each recurring billing schedule use the proration amounts",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.proration_first",
+  "text": "x_ar_contract.proration_first · Currency",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.proration_last",
+  "text": "x_ar_contract.proration_last · Currency",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.type_of_billing",
+  "text": "x_ar_contract.type_of_billing · Choice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.bulk_supporting_docs",
+  "text": "x_ar_contract.bulk_supporting_docs · Attachment",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.giro_status",
+  "text": "x_ar_contract.giro_status · Choice · Updated by AR on the contract from the AR-ix case (manual, AR-ix decision 11). At most one active GIRO per contract (D21)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.giro_case",
+  "text": "x_ar_contract.giro_case · Reference → x_ar_request · AR links the AR-ix case whose GIRO is active (reference qualifier: ar_form = AR-ix, giro_type = Add GIRO and contract = this contract). Mandatory when GIRO status is Active; cleared when Not active",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.bill_to_name",
+  "text": "x_ar_contract.bill_to_name · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.bill_to_email",
+  "text": "x_ar_contract.bill_to_email · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.bill_to_phone",
+  "text": "x_ar_contract.bill_to_phone · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.bill_to_address",
+  "text": "x_ar_contract.bill_to_address · String (1000)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.notes",
+  "text": "x_ar_contract.notes · String (4000)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "LST-BCT",
+  "text": "List: x_ar_billing_contact · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RP-BCT",
+  "text": "Record page (UI Builder) · x_ar_billing_contact",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "HDR-BCT",
+  "text": "Record header: highlighted values of x_ar_billing_contact",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "FRM-BCT",
+  "text": "Form view: x_ar_billing_contact (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "BCT.customer",
+  "text": "x_ar_billing_contact.customer · Reference → x_ar_customer · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "BCT.requestor",
+  "text": "x_ar_billing_contact.requestor · Reference → sys_user · Project-team user who gave this contact (#10 E10.1, CCI decision 15)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "BCT.department",
+  "text": "x_ar_billing_contact.department · Choice · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "BCT.contact_name",
+  "text": "x_ar_billing_contact.contact_name · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "BCT.email",
+  "text": "x_ar_billing_contact.email · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "BCT.phone",
+  "text": "x_ar_billing_contact.phone · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "BCT.billing_address",
+  "text": "x_ar_billing_contact.billing_address · String (1000)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "BCT.source_request",
+  "text": "x_ar_billing_contact.source_request · Reference → x_ar_request · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "BCT.active",
+  "text": "x_ar_billing_contact.active · True/False · Master data never gets deleted (CCI decision 12): inactive records stay for history and are not offered in forms or reference fields",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "LST-DOC",
+  "text": "List: x_ar_customer_document · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RP-DOC",
+  "text": "Record page (UI Builder) · x_ar_customer_document",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "HDR-DOC",
+  "text": "Record header: highlighted values of x_ar_customer_document",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "FRM-DOC",
+  "text": "Form view: x_ar_customer_document (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "DOC.number",
+  "text": "x_ar_customer_document.number · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "DOC.customer",
+  "text": "x_ar_customer_document.customer · Reference → x_ar_customer · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "DOC.requestor",
+  "text": "x_ar_customer_document.requestor · Reference → sys_user · Project-team user who gave this document (#10 E10.2, CCI decision 15)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "DOC.document_type",
+  "text": "x_ar_customer_document.document_type · Choice · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "DOC.file_name",
+  "text": "x_ar_customer_document.file_name · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "DOC.contract",
+  "text": "x_ar_customer_document.contract · Reference → x_ar_contract · read-only · For signed contract / PO",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "DOC.department",
+  "text": "x_ar_customer_document.department · Choice · read-only · For billing contact & address forms",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "DOC.source_request",
+  "text": "x_ar_customer_document.source_request · Reference → x_ar_request · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "DOC.received_on",
+  "text": "x_ar_customer_document.received_on · Date · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "LST-SCH",
+  "text": "List: x_ar_billing_schedule · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RP-SCH",
+  "text": "Record page (UI Builder) · x_ar_billing_schedule",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "HDR-SCH",
+  "text": "Record header: highlighted values of x_ar_billing_schedule",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "FRM-SCH",
+  "text": "Form view: x_ar_billing_schedule (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.number",
+  "text": "x_ar_billing_schedule.number · String · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.contract",
+  "text": "x_ar_billing_schedule.contract · Reference → x_ar_contract · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.customer",
+  "text": "x_ar_billing_schedule.customer · Reference → x_ar_customer · read-only · From the contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.department",
+  "text": "x_ar_billing_schedule.department · Choice · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.short_description",
+  "text": "x_ar_billing_schedule.short_description · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.frequency",
+  "text": "x_ar_billing_schedule.frequency · Choice · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.amount",
+  "text": "x_ar_billing_schedule.amount · Currency · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.first_billing_date",
+  "text": "x_ar_billing_schedule.first_billing_date · Date · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.last_billing_date",
+  "text": "x_ar_billing_schedule.last_billing_date · Date · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.first_period_amount",
+  "text": "x_ar_billing_schedule.first_period_amount · Currency · Empty = amount per period",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.last_period_amount",
+  "text": "x_ar_billing_schedule.last_period_amount · Currency · Empty = amount per period",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.source_request",
+  "text": "x_ar_billing_schedule.source_request · Reference → x_ar_request · AR picks the recurring AR-i case (reference qualifier: AR-i cases with a recurring line on this contract). Invoices from this schedule are linked to that case (CCI decision 8)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.source_line",
+  "text": "x_ar_billing_schedule.source_line · Reference → x_ar_request_line · read-only · Set from the AR request's recurring line",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "LST-CTX",
+  "text": "List: x_ar_collection_tx · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "RP-CTX",
+  "text": "Record page (UI Builder) · x_ar_collection_tx",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "HDR-CTX",
+  "text": "Record header: highlighted values of x_ar_collection_tx",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "FRM-CTX",
+  "text": "Form view: x_ar_collection_tx (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "CTX.ar_request",
+  "text": "x_ar_collection_tx.ar_request · Reference → x_ar_request · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "CTX.row_number",
+  "text": "x_ar_collection_tx.row_number · Integer · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "CTX.collection_type",
+  "text": "x_ar_collection_tx.collection_type · Choice · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "CTX.transaction_amount",
+  "text": "x_ar_collection_tx.transaction_amount · Currency · mandatory · Positive, at most two decimals (AR-iii decision 19: replaces Number of Transactions). The rows' total is the case's Total Amount",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "LST-CAL",
+  "text": "List: x_ar_collection_allocation · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "RP-CAL",
+  "text": "Record page (UI Builder) · x_ar_collection_allocation",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "HDR-CAL",
+  "text": "Record header: highlighted values of x_ar_collection_allocation",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "FRM-CAL",
+  "text": "Form view: x_ar_collection_allocation (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "CAL.ar_request",
+  "text": "x_ar_collection_allocation.ar_request · Reference → x_ar_request · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "CAL.row_number",
+  "text": "x_ar_collection_allocation.row_number · Integer · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "CAL.description",
+  "text": "x_ar_collection_allocation.description · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "CAL.amount",
+  "text": "x_ar_collection_allocation.amount · Currency · mandatory · Positive, at most two decimals",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "CAL.cost_centre",
+  "text": "x_ar_collection_allocation.cost_centre · Reference → x_ar_cost_centre · mandatory · Reference qualifier: active cost centres of the Requesting Department (the case's department; the separate Requesting Department Cost Centre field is removed, AR-iii decision 19)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "CAL.account_code",
+  "text": "x_ar_collection_allocation.account_code · Reference → x_ar_account_code · mandatory · Reference qualifier: active account codes. GST / recovery rule check to be approved (AR-iii open question 11)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "LST-C5L",
+  "text": "List: x_ar_collection_case_line · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "RP-C5L",
+  "text": "Record page (UI Builder) · x_ar_collection_case_line",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "HDR-C5L",
+  "text": "Record header: highlighted values of x_ar_collection_case_line",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "FRM-C5L",
+  "text": "Form view: x_ar_collection_case_line (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "C5L.ar_request",
+  "text": "x_ar_collection_case_line.ar_request · Reference → x_ar_request · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "C5L.row_number",
+  "text": "x_ar_collection_case_line.row_number · Integer · read-only",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "C5L.case_number",
+  "text": "x_ar_collection_case_line.case_number · String",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "C5L.amount",
+  "text": "x_ar_collection_case_line.amount · Currency · Positive, at most two decimals",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "C5L.case_status",
+  "text": "x_ar_collection_case_line.case_status · Choice · Choices depend on the case's category: Seized Monies Case Pending / Case Closed; Restitution to be confirmed (AR-iii open question 12)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "LST-CCT",
+  "text": "List: x_ar_cost_centre · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RP-CCT",
+  "text": "Record page (UI Builder) · x_ar_cost_centre",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "HDR-CCT",
+  "text": "Record header: highlighted values of x_ar_cost_centre",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "FRM-CCT",
+  "text": "Form view: x_ar_cost_centre (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CCT.code",
+  "text": "x_ar_cost_centre.code · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CCT.name",
+  "text": "x_ar_cost_centre.name · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CCT.department",
+  "text": "x_ar_cost_centre.department · Choice · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CCT.active",
+  "text": "x_ar_cost_centre.active · True/False · Inactive records are not offered in forms (CCI decision 12)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "LST-ACT",
+  "text": "List: x_ar_account_code · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RP-ACT",
+  "text": "Record page (UI Builder) · x_ar_account_code",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "HDR-ACT",
+  "text": "Record header: highlighted values of x_ar_account_code",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "FRM-ACT",
+  "text": "Form view: x_ar_account_code (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "ACT.code",
+  "text": "x_ar_account_code.code · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "ACT.description",
+  "text": "x_ar_account_code.description · String · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "ACT.gst_treatment",
+  "text": "x_ar_account_code.gst_treatment · Choice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "ACT.active",
+  "text": "x_ar_account_code.active · True/False · Inactive records are not offered in forms (CCI decision 12)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "LST-PMD",
+  "text": "List: x_ar_payment_mode · list view layout + list menu condition",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RP-PMD",
+  "text": "Record page (UI Builder) · x_ar_payment_mode",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "HDR-PMD",
+  "text": "Record header: highlighted values of x_ar_payment_mode",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "FRM-PMD",
+  "text": "Form view: x_ar_payment_mode (Default view)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "PMD.bank_account",
+  "text": "x_ar_payment_mode.bank_account · Reference → x_ar_bank_account · mandatory",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "PMD.name",
+  "text": "x_ar_payment_mode.name · String · mandatory · The code in the bank statement's transaction column for this payment mode, e.g. GIRO, FAST, CHQ, TT; a statement line matches it exactly, not case-sensitive (BSU decision 19)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "PMD.prefix",
+  "text": "x_ar_payment_mode.prefix · String · mandatory · Start of the Deposit ID, e.g. AAA",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "PMD.suffix",
+  "text": "x_ar_payment_mode.suffix · String · mandatory · End of the Deposit ID",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "PMD.account_code",
+  "text": "x_ar_payment_mode.account_code · Reference → x_ar_account_code · Optional. Active account codes (CCI decision 11). Purpose to be confirmed (BSU open question 11)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "PMD.cost_centre",
+  "text": "x_ar_payment_mode.cost_centre · Reference → x_ar_cost_centre · Optional. Active cost centres (CCI decision 11). Purpose to be confirmed (BSU open question 11)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "PMD.active",
+  "text": "x_ar_payment_mode.active · True/False · Inactive payment modes are not used for new uploads (CCI decision 12)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.amount_due",
+  "text": "Calculated: amount − matched BSU deposits",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.payment_status",
+  "text": "Calculated: Unpaid / Part paid / Paid / Overdue",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.unmatched_amount",
+  "text": "Calculated: amount − allocations",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "DEP.match_state",
+  "text": "Calculated: Unmatched / Part matched / Matched",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.overdue",
+  "text": "Calculated: amount_due on issued invoices past due_date",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.status",
+  "text": "Calculated: Active / Not started / Ended from start and end dates (shells: Open)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CON.line_count",
+  "text": "Calculated: number of billing lines filed under the contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BSU.department",
+  "text": "Dot-walk: bank_account.department",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.next_billing_date",
+  "text": "Calculated: first period on or after today without an invoice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "SCH.periods_due",
+  "text": "Calculated: periods up to today without an invoice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "BNK.last_statement",
+  "text": "Calculated: latest sc_req_item.statement_date for the account",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "INV.aging",
+  "text": "Calculated (#10 E10.11): Current / 1–30 / 31–60 / 61–90 / 90+ days past the due date, for issued invoices with an amount due",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "PMD.deposit_id_pattern",
+  "text": "Calculated for display: <prefix>-DDMMYY-<suffix> (BSU decision 18)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "PMD.bank_name",
+  "text": "Dot-walk: bank_account.bank (Bank name)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "PMD.bank_account_name",
+  "text": "Dot-walk: bank_account.account_name (Bank account name)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CUS-BCT",
+  "text": "Related list: x_ar_billing_contact where customer = this customer",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CUS-DOC",
+  "text": "Related list: x_ar_customer_document where customer = this customer",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CUS-SCH",
+  "text": "Related list: x_ar_billing_schedule where customer = this customer",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-SCH-INV",
+  "text": "Related list: x_ar_invoice where billing_schedule = this billing schedule",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CUS-CON",
+  "text": "Related list: x_ar_contract where customer = this customer",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CUS-INV",
+  "text": "Related list: x_ar_invoice where customer = this customer",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CUS-REQ",
+  "text": "Related list: x_ar_request where customer = this customer",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CON-INV",
+  "text": "Related list: x_ar_invoice where contract = this contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CON-REQ",
+  "text": "Related list: x_ar_request where contract = this contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CON-RQL",
+  "text": "Related list: x_ar_request_line where contract = this contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CON-SCH",
+  "text": "Related list: x_ar_billing_schedule where contract = this contract",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RL-INV-ALC",
+  "text": "Related list: x_ar_allocation where invoice = this invoice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RL-DEP-ALC",
+  "text": "Related list: x_ar_allocation where deposit = this bsu deposit",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RL-REQ-ALC",
+  "text": "Related list: x_ar_allocation where request = this ar request",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "RL-REQ-CTX",
+  "text": "Related list: x_ar_collection_tx where ar_request = this ar request",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "RL-REQ-CAL",
+  "text": "Related list: x_ar_collection_allocation where ar_request = this ar request",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "RL-REQ-C5L",
+  "text": "Related list: x_ar_collection_case_line where ar_request = this ar request",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-CCT-CAL",
+  "text": "Related list: x_ar_collection_allocation where cost_centre = this cost centre",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-INV-RQL",
+  "text": "Related list: x_ar_request_line where invoice = this invoice",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RL-BNK-PMD",
+  "text": "Related list: x_ar_payment_mode where bank_account = this bank account",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "RL-ACT-CAL",
+  "text": "Related list: x_ar_collection_allocation where account_code = this account code",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RL-BSU-DEP",
+  "text": "Related list: x_ar_bank_statement where bsu = this statement upload",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RL-BNK-BSU",
+  "text": "Related list: sc_req_item where bank_account = this bank account",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "RL-BNK-DEP",
+  "text": "Related list: x_ar_bank_statement where bank_account = this bank account",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "UA-PT-addcase",
+  "text": "Collections AR-v Seized Monies / Restitution: + Add row in Case lines (multi-row set, max 99)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "UA-PT-addcol",
+  "text": "Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-iii",
+  "id": "UA-PT-addalloc",
+  "text": "Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "UA-REQ-assign",
+  "text": "Assign to me → assigned_to = current user (assignment_group kept, default Accounts Receivable); New → Work in progress. One of only two case actions with Save (AR-00, 2026-11-16)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-SCH-save",
+  "text": "Save (update)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-BCT-save",
+  "text": "Save (update)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-BCT-new",
+  "text": "New (list action)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-BCT-insert",
+  "text": "Submit (insert); several contacts per customer and department allowed (CCI decision 15, D11 amended)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CUS-newcontact",
+  "text": "Add billing contact → new billing contact form with customer prefilled",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "UA-REQ-post",
+  "text": "Post work note / additional comment to the activity stream",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-00",
+  "id": "UA-REQ-save",
+  "text": "Save (update). On x_ar_request also: state change journalled (system note); substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract; AR-i set to Closed complete generates the 1st invoice as a draft for each line without one (blocked until customer and contract are linked; CCI decision 8)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-INV-issue",
+  "text": "Issue invoice (saves the form first) → state = Issued; blocked until approval_date is set (every invoice, CCI decision 9); posts a comment to the requester on the linked AR request",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-INV-cancel",
+  "text": "Cancel invoice → only when no BSU deposit is matched",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-INV-save",
+  "text": "Save (update, draft only)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-DEP-remove",
+  "text": "Remove match (header action on the deposit, shown when it has allocations) → deletes the deposit's allocations",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-SUG-match",
+  "text": "Match (row action on Suggested matches / Suggested BSU deposits, BSU decisions 21–22) → opens the New allocation form with the deposit and the invoice / case filled and Allocation value prefilled with the smaller of the deposit's unmatched amount and the target's amount due; AR confirms or changes it and saves (UA-ALC-insert). Exception set from what is left (Exact, Short pay, Overpayment, Multi-invoice)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-DEP-newalloc",
+  "text": "New on the deposit's Allocations tab (BSU decision 21) → New allocation form with BSU deposit prefilled; AR picks an invoice or a Collection case and may change the amount",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-INV-newalloc",
+  "text": "New on the invoice's Allocations tab (BSU decision 21) → New allocation form with Invoice prefilled; AR picks the BSU deposit",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-REQ-newalloc",
+  "text": "New on the Collections case's BSU deposits matched tab (BSU decision 21, D29) → New allocation form with Collection case prefilled; AR picks the BSU deposit",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-ALC-insert",
+  "text": "Submit (insert) of x_ar_allocation (BSU decision 21): exactly one of invoice or request; amount empty = default (smaller of deposit unmatched and target due); blocked above either; returns to the record it was opened from",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-BSU-new",
+  "text": "New (list action on Statement uploads): opens the upload form (catalog item Bank statement upload)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-BSU-save",
+  "text": "Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-BSU-sample",
+  "text": "Demo only: generate a sample CSV in the bank's layout",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-BNK-upload",
+  "text": "Upload statement → opens the BSU page for this account",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CUS-save",
+  "text": "Save (update)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CON-save",
+  "text": "Save (update)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-BNK-save",
+  "text": "Save (update)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CUS-new",
+  "text": "New (list action)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CON-new",
+  "text": "New (list action)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CCT-new",
+  "text": "New (list action)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-INV-pdf",
+  "text": "Print or save as PDF: opens the invoice document for printing (in ServiceNow: download the generated PDF attachment)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-BNK-newmode",
+  "text": "New payment mode (on the bank account): opens a new payment mode with the bank account filled in",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-PMD-new",
+  "text": "New (list action)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-PMD-insert",
+  "text": "Submit (insert)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-PMD-save",
+  "text": "Save (update)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-INV-newrel",
+  "text": "New invoice on the contract's Invoices tab (#10 E10.10, CCI decision 14): draft invoice with customer and contract filled in",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-BCT-newrel",
+  "text": "Add billing contact on the customer's Billing contacts tab",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-INV-insert",
+  "text": "Submit (insert)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-DOC-new",
+  "text": "New (list action): AR files a customer document by hand (D31)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-DOC-insert",
+  "text": "Submit (insert)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-DOC-save",
+  "text": "Save (update)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-ACT-new",
+  "text": "New (list action)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CCT-save",
+  "text": "Save (update)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CCT-insert",
+  "text": "Submit (insert)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-ACT-save",
+  "text": "Save (update)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-ACT-insert",
+  "text": "Submit (insert)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-BNK-new",
+  "text": "New (list action)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CUS-insert",
+  "text": "Submit (insert)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CON-insert",
+  "text": "Submit (insert)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-SCH-insert",
+  "text": "Submit (insert) of a billing schedule created from the contract (CCI decision 8)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "BSU",
+  "id": "UA-BNK-insert",
+  "text": "Submit (insert)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CON-newschedule",
+  "text": "New billing schedule (contract record, CCI decision 8) → new x_ar_billing_schedule form with contract (and customer) prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case (source_request)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "UA-CUS-newcontract",
+  "text": "New contract → new contract form with customer prefilled",
+  "added": "2026-11-19",
+  "state": "todo"
  }
 ]

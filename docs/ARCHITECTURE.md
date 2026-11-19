@@ -64,7 +64,6 @@ js/views/common.js      sn() build-note attribute, fieldHtml (forms from schema)
 tools/mapping.mjs       generates SERVICENOW_MAPPING.md from the schema
 js/notes.js             build-note ID registry (table codes, element notes, UI actions, related lists)
 tools/notes.mjs         generates docs/BUILD_NOTES.md (every ID and what it maps to)
-tools/devtasks.mjs      generates docs/DEV_TASKS.md (build tasks per module, signed-off modules only; module of every ID)
 tools/check.mjs         pre-push check (syntax, IDs, generated docs, module folders, links); CI runs it
 docs/modules/<CODE>/    one folder per module (see "How we work"); docs/DECISIONS.md cross-module decisions
 docs/GIT_WORKFLOW.md    git rules for every session

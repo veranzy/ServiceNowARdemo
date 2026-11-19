@@ -33,9 +33,9 @@ for (const f of walk(join(ROOT, "js"), [".js"])) {
 }
 
 // 3. Generated docs
-const GEN = ["SERVICENOW_MAPPING.md", "docs/BUILD_NOTES.md", "docs/DEV_TASKS.md", "docs/DEV_TASKS.json", "docs/DEV_TASKS.csv"];
+const GEN = ["SERVICENOW_MAPPING.md", "docs/BUILD_NOTES.md"];
 const before = GEN.map(f => existsSync(join(ROOT, f)) ? readFileSync(join(ROOT, f), "utf8") : "");
-for (const tool of ["tools/notes.mjs", "tools/mapping.mjs", "tools/devtasks.mjs"]) {
+for (const tool of ["tools/notes.mjs", "tools/mapping.mjs"]) {
   try { execFileSync(process.execPath, [join(ROOT, tool)], { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" }); }
   catch (e) { errors.push(`${tool} failed: ${String(e.stderr).split("\n")[0]}`); }
 }
@@ -44,10 +44,6 @@ GEN.forEach((f, i) => {
     (CI ? errors : warnings).push(CI ? `${f} is out of date: run node tools/check.mjs locally, then commit` : `${f} was regenerated: commit it with your change`);
   }
 });
-
-// 3b. Dev task list: every active build-note ID must belong to a module (tools/devtasks.mjs)
-{ const { build } = await import(join(ROOT, "tools/devtasks.mjs")); const { unmapped } = build();
-  if (unmapped.length) warnings.push(`Dev tasks: no module for ${unmapped.join(", ")}: add them to tools/devtasks.mjs`); }
 
 // 4. Module folders
 const MOD = join(ROOT, "docs/modules");

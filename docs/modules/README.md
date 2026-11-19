@@ -26,8 +26,7 @@ Git rules for working on a module: [`../GIT_WORKFLOW.md`](../GIT_WORKFLOW.md).
 4. **Review** – the client walks through it on the live demo; changes are logged in `CHANGELOG.md`
    (status: *Agreed* once signed off, tagged `signoff/<CODE>-<date>` in git).
 5. **Hand-over** – the spec + mapping doc become the build requirement for the ServiceNow team
-   (status: *Ready for build (Release N)*). Its tasks are in [`../DEV_TASKS.md`](../DEV_TASKS.md), which lists every
-   module's tasks as requirements are updated; add-only, a redundant task gets the state *Redundant* (owner, 2026-11-19).
+   (status: *Ready for build (Release N)*).
 
 Cross-module decisions go in [`../DECISIONS.md`](../DECISIONS.md).
 

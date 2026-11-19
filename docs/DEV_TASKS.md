@@ -201,13 +201,13 @@ AR-i New AR request. Status: Ready for build (Release 1). Spec: `docs/modules/AR
 - ~~`REQ.po_number` x_ar_request.po_number · String~~ **Redundant 2026-11-19** (replaced by a changed task)
 - [ ] `REQ.customer_poc_name` x_ar_request.customer_poc_name · String · AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in; AR copies it to the customer by hand (D23 as amended by D31)
 - [ ] `REQ.customer_poc_email` x_ar_request.customer_poc_email · String · AR-i customer details; must be a valid email. Same rule as POC name
-- ~~`REQ.cost_center` x_ar_request.cost_center · String · Optional, free text. To be filled by GA~~ **Redundant 2026-11-19** (no longer in this module)
-- ~~`REQ.agent_name` x_ar_request.agent_name · String · Optional, free text~~ **Redundant 2026-11-19** (no longer in this module)
+- ~~`REQ.cost_center` x_ar_request.cost_center · String · Optional, free text. To be filled by GA~~ **Redundant 2026-11-19** (removed from the prototype)
+- ~~`REQ.agent_name` x_ar_request.agent_name · String · Optional, free text~~ **Redundant 2026-11-19** (removed from the prototype)
 - [ ] `REQ.agency_type` x_ar_request.agency_type · Choice · AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master
 - ~~`REQ.vag` x_ar_request.vag · Choice · AR-i customer details, optional. Found customer: read-only from the customer master~~ **Redundant 2026-11-19** (replaced by a changed task)
 - [ ] `REQ.sub_bu` x_ar_request.sub_bu · String · Optional, free text
 - ~~`REQ.type_of_billing` x_ar_request.type_of_billing · Choice · Contract level: entered for a new contract (AR copies it to the contract by hand, D31); read-only copy of the contract's value for an existing one~~ **Redundant 2026-11-19** (replaced by a changed task)
-- ~~`REQ.bulk_supporting_docs` x_ar_request.bulk_supporting_docs · Attachment · Optional; several files at once~~ **Redundant 2026-11-19** (no longer in this module)
+- ~~`REQ.bulk_supporting_docs` x_ar_request.bulk_supporting_docs · Attachment · Optional; several files at once~~ **Redundant 2026-11-19** (removed from the prototype)
 - [ ] `REQ.giro_on_contract` x_ar_request.giro_on_contract · Choice · read-only · Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21)
 - [ ] `REQ.doc_contract_po` x_ar_request.doc_contract_po · Attachment · Optional, offered for a new contract only
 - [ ] `REQ.doc_acra` x_ar_request.doc_acra · Attachment · Only when not already on file
@@ -533,7 +533,7 @@ Customers, contracts and invoices. Status: In prototype. Spec: `docs/modules/CCI
 - [ ] `CON.proration_first` x_ar_contract.proration_first · Currency
 - [ ] `CON.proration_last` x_ar_contract.proration_last · Currency
 - [ ] `CON.type_of_billing` x_ar_contract.type_of_billing · Choice
-- ~~`CON.bulk_supporting_docs` x_ar_contract.bulk_supporting_docs · Attachment~~ **Redundant 2026-11-19** (no longer in this module)
+- ~~`CON.bulk_supporting_docs` x_ar_contract.bulk_supporting_docs · Attachment~~ **Redundant 2026-11-19** (removed from the prototype)
 - [ ] `CON.giro_status` x_ar_contract.giro_status · Choice · Updated by AR on the contract from the AR-ix case (manual, AR-ix decision 11). At most one active GIRO per contract (D21)
 - [ ] `CON.giro_case` x_ar_contract.giro_case · Reference → x_ar_request · AR links the AR-ix case whose GIRO is active (reference qualifier: ar_form = AR-ix, giro_type = Add GIRO and contract = this contract). Mandatory when GIRO status is Active; cleared when Not active
 - [ ] `CON.bill_to_name` x_ar_contract.bill_to_name · String

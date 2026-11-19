@@ -396,7 +396,7 @@
   "added": "2026-11-19",
   "state": "redundant",
   "redundantOn": "2026-11-19",
-  "why": "no longer in this module"
+  "why": "removed from the prototype"
  },
  {
   "module": "AR-i",
@@ -405,7 +405,7 @@
   "added": "2026-11-19",
   "state": "redundant",
   "redundantOn": "2026-11-19",
-  "why": "no longer in this module"
+  "why": "removed from the prototype"
  },
  {
   "module": "AR-i",
@@ -446,7 +446,7 @@
   "added": "2026-11-19",
   "state": "redundant",
   "redundantOn": "2026-11-19",
-  "why": "no longer in this module"
+  "why": "removed from the prototype"
  },
  {
   "module": "AR-i",
@@ -2461,7 +2461,7 @@
   "added": "2026-11-19",
   "state": "redundant",
   "redundantOn": "2026-11-19",
-  "why": "no longer in this module"
+  "why": "removed from the prototype"
  },
  {
   "module": "CCI",

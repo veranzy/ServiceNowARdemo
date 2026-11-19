@@ -108,7 +108,8 @@ export function build(ledger = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDG
     ledger.push({ module: t.module, id: t.id, text: t.text, added: today(), state: "todo" });
   }
   for (const e of ledger.filter(live)) if (!tasks.some(t => t.id === e.id && t.module === e.module))
-    redundant(e, /RETIRED/.test(all.find(n => n.id === e.id)?.text || "") ? "retired in the prototype" : "no longer in this module");
+    redundant(e, /RETIRED/.test(all.find(n => n.id === e.id)?.text || "") ? "retired in the prototype"
+      : tasks.some(t => t.id === e.id) ? `moved to ${tasks.find(t => t.id === e.id).module}` : "removed from the prototype");
 
   const withTasks = mods.filter(m => ledger.some(e => e.module === m.code));
   let md = `# Developer task list (ServiceNow build)

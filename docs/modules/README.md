@@ -26,7 +26,8 @@ Git rules for working on a module: [`../GIT_WORKFLOW.md`](../GIT_WORKFLOW.md).
 4. **Review** – the client walks through it on the live demo; changes are logged in `CHANGELOG.md`
    (status: *Agreed* once signed off, tagged `signoff/<CODE>-<date>` in git).
 5. **Hand-over** – the spec + mapping doc become the build requirement for the ServiceNow team
-   (status: *Ready for build*).
+   (status: *Ready for build (Release N)*). Its tasks are then listed in [`../DEV_TASKS.md`](../DEV_TASKS.md); they
+   are add-only: a later change adds a *Changed* or *Retired* task, nothing is deleted (owner, 2026-11-19).
 
 Cross-module decisions go in [`../DECISIONS.md`](../DECISIONS.md).
 
@@ -39,9 +40,9 @@ for a module or a named part of it (e.g. *Portal form: Locked*) with the date.
 | Code | Module | Persona | Status | Lock |
 |---|---|---|---|---|
 | [AR-00](AR-00/README.md) | AR forms, shared parts: catalogue of 16 forms (AR-i … AR-xvi), General information, department sub-BU, CC list, My requests, ticket page, case states | Project team, AR team | In prototype | Open |
-| [AR-i](AR-i/README.md) | AR-i New AR request: the form, Link section (D31), billing lines; Closed complete generates the 1st invoice; Billing schedule and Invoices tabs on the case | Project team, AR team | In prototype | **Portal form: Locked** (2026-11-12, Owner; unlocked and relocked 2026-11-17, Owner, for the D31 text update) |
+| [AR-i](AR-i/README.md) | AR-i New AR request: the form, Link section (D31), billing lines; Closed complete generates the 1st invoice; Billing schedule and Invoices tabs on the case | Project team, AR team | Ready for build (Release 1) | **Portal form: Locked** (2026-11-12, Owner; unlocked and relocked 2026-11-17, Owner, for the D31 text update) |
 | [AR-iii](AR-iii/README.md) | **Collections** form: one form for AR-iii, AR-iv and AR-v (D30), type chosen first; money collected without an invoice (D28); BSU deposit matched to the case (D29). Portal form built (phase 1 of #9); processing parked | Project team, AR team | In prototype | Open |
-| [AR-ix](AR-ix/README.md) | AR-ix GIRO authorisation: a request to add / remove GIRO on a contract; AR updates the contract's GIRO status by hand, then completes the case (one active per contract) | Project team, AR team | In prototype | Portal form: **Locked** (2026-11-17, Owner, after #8; first locked 2026-11-12) |
+| [AR-ix](AR-ix/README.md) | AR-ix GIRO authorisation: a request to add / remove GIRO on a contract; AR updates the contract's GIRO status by hand, then completes the case (one active per contract) | Project team, AR team | Ready for build (Release 1) | Portal form: **Locked** (2026-11-17, Owner, after #8; first locked 2026-11-12) |
 | [CCI](CCI/README.md) | Customers, contracts and invoices: master data, Contract ID and category (Contract / No contract), billing contacts, customer documents, billing schedules on contracts, daily invoice check, invoice lifecycle (draft → approval date → issued → cancelled) | AR team | In prototype | Open |
 | [BSU](BSU/README.md) | Bank statement upload and cash application: daily CSV upload per bank account as an RITM (D32), Deposit IDs, manual matching of deposits to invoices and Collections cases | AR team | In prototype | Open |
 | [UIX](UIX/README.md) | Workspace look and layout aligned to the Horizon Design System (app shell, list page, record page) | AR team | In prototype | Open |

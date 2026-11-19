@@ -1,0 +1,1181 @@
+[
+ {
+  "module": "AR-i",
+  "id": "REQ-FV-ARI",
+  "text": "Form view ar_i on x_ar_request (view rule: ar_form = AR-i), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Customer, 3. Contract and bill-to, 4. Invoice details, 5. Customer documents, 6. Others, in the AR-i portal order; every field of each section on the form, empty when not answered; editable while the case is open",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "LST-REQ-ARI",
+  "text": "Workspace list All AR-i (UIX decision 15, amended 2026-11-16): x_ar_request, condition ar_form = AR-i (every state, open and closed); list view ar_i_all with its own columns (for now: number, ar_form, short_description, customer, department, amount, state, assigned_to, opened_by, opened_at); list menu category AR requests",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-03",
+  "text": "Quick link to catalog item: record producer \"AR-i New AR request\"",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-05",
+  "text": "Record producer \"AR-i New AR request\" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-39",
+  "text": "AR-i Customer section, found customer (D23): read-only customer details in this order: name, UEN, address (from x_ar_customer), agency type, V@G, V@G sub-BU, POC name, POC email (copied from x_ar_customer into the request variables by a catalog client script; variables read-only via UI policy). New customer: the same fields are editable; AR copies them to the customer by hand (D23 as amended by D31)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-36",
+  "text": "AR-i GIRO subsection inside Contract (D22): 'Is there an existing DDA?' read-only Yes / No (variable giro_on_contract) from the chosen contract's giro_status (GlideAjax), plus the active AR-ix case number when Yes. Greyed out with a tooltip for a new contract or no-contract billing: raise an AR-ix once AR has set up the contract",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-40",
+  "text": "AR-i new contract variables, in order: new_contract_type (Recurring / Ad-hoc), new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle (+ suggested billing cycle when Others), new_contract_invoice_date, new_contract_payment_terms (+ other terms when Others), new_contract_proration (+ 1st / last month amounts when Yes), type_of_billing (+ bulk upload when C / D / E). AR creates x_ar_contract from them by hand, then links it with Link Contract Reference (D31)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-41",
+  "text": "AR-i existing contract: every contract detail read-only from x_ar_contract, in the same order as a new contract (catalog client script / read-only HTML widget)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-37",
+  "text": "AR-i variable set Invoice details (AR-i decisions 31–33): short_description (invoice description), attention_name / attention_email (prefilled from the contract bill-to), amount_per_period (before GST), preferred_invoice_date_choice (label 'Preferred invoice date': Per Billing Cycle / Expedited, optional; only for a one-invoice request, UI policy hides and clears it for a recurring contract) and preferred_invoice_date_justification (shown when Expedited, optional), billing_line_items_required (Yes / No → multi-row variable set PT-43). Catalog client script shows the billing summary: recurring contract → monthly to the contract end date (with contract proration); otherwise one invoice. The producer script creates one x_ar_request_line from these",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-07",
+  "text": "Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-15",
+  "text": "Catalog item AR-i New AR request (active record producer)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-19",
+  "text": "Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one (new contract, or a shell without one), prefilled from the department's x_ar_billing_contact. An existing contract's bill-to is read-only (PT-41); AR changes it in the workspace (D22)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-20",
+  "text": "Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, bill-to. UI policies per option. Always shown; until a customer is selected it shows only the hint 'Select a customer above to see the contract options.' (AR-i decision 40)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-42",
+  "text": "AR-i variable set Others (after Customer documents; final placement to be decided by the owner): cost_center, agent_name, po_number. All optional (invoice_breakdown and account_code removed, AR-i decision 39)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-43",
+  "text": "AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code. At least one row when Yes",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-28",
+  "text": "No contract required: info message (UI policy on contract_option = none). AR creates the customer's no-contract shell for the department by hand if needed (x_ar_contract, contract_type = shell) and links it with Link Contract Reference, which files the lines under it (D31)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-25",
+  "text": "Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-27",
+  "text": "Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-29",
+  "text": "Finance coding variables (all optional): cost_center (tooltip: to be filled by GA), agent_name. Now in the Others section (PT-42); type of billing and the bulk upload are on the contract (PT-40)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-23",
+  "text": "Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_customer",
+  "text": "x_ar_request.new_customer · True/False",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_customer_name",
+  "text": "x_ar_request.new_customer_name · String · Mandatory when New customer",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_customer_uen",
+  "text": "x_ar_request.new_customer_uen · String",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_customer_address",
+  "text": "x_ar_request.new_customer_address · String (1000)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_type",
+  "text": "x_ar_request.new_contract_type · Choice · Mandatory for a new contract",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_number",
+  "text": "x_ar_request.new_contract_number · String · Mandatory for a new contract",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_ref",
+  "text": "x_ar_request.new_contract_ref · String · AR-i, optional for a new contract. Not on AR-ix (AR-ix decision 25: the GIRO reference giro_reference is used instead)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_po",
+  "text": "x_ar_request.new_contract_po · String · Optional",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_title",
+  "text": "x_ar_request.new_contract_title · String · Mandatory for a new contract",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_start",
+  "text": "x_ar_request.new_contract_start · Date · Mandatory for a new contract",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_end",
+  "text": "x_ar_request.new_contract_end · Date",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_value",
+  "text": "x_ar_request.new_contract_value · Currency · Mandatory for a new contract",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_billing_cycle",
+  "text": "x_ar_request.new_contract_billing_cycle · Choice · Optional",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_billing_cycle_other",
+  "text": "x_ar_request.new_contract_billing_cycle_other · String · Mandatory when the billing cycle is Others",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_invoice_date",
+  "text": "x_ar_request.new_contract_invoice_date · Date · Optional",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_payment_terms",
+  "text": "x_ar_request.new_contract_payment_terms · Choice · Default 30 days",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_payment_terms_other",
+  "text": "x_ar_request.new_contract_payment_terms_other · String · Mandatory when payment terms is Others",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_proration",
+  "text": "x_ar_request.new_contract_proration · Choice · Default No",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_proration_first",
+  "text": "x_ar_request.new_contract_proration_first · Currency · Mandatory when proration is Yes",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.new_contract_proration_last",
+  "text": "x_ar_request.new_contract_proration_last · Currency · Mandatory when proration is Yes",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.bill_to_name",
+  "text": "x_ar_request.bill_to_name · String · Mandatory when the contract (or shell) has no bill-to person yet; AR copies it to the contract by hand (D16 as amended by D31)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.bill_to_email",
+  "text": "x_ar_request.bill_to_email · String",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.bill_to_phone",
+  "text": "x_ar_request.bill_to_phone · String",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.bill_to_address",
+  "text": "x_ar_request.bill_to_address · String (1000)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.short_description",
+  "text": "x_ar_request.short_description · String · mandatory · What the invoice is for; becomes the case's short description and the billing line's description",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.attention_name",
+  "text": "x_ar_request.attention_name · String · Optional. Prefilled from the contract's bill-to person",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.attention_email",
+  "text": "x_ar_request.attention_email · String · Optional; must be a valid email. Prefilled from the contract's bill-to email",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.amount_per_period",
+  "text": "x_ar_request.amount_per_period · Currency · mandatory · Before GST. Recurring contract: billed every period; ad-hoc or no contract: one invoice of this amount",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.preferred_invoice_date_choice",
+  "text": "x_ar_request.preferred_invoice_date_choice · Choice · One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Optional (AR-i decision 38)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.preferred_invoice_date_justification",
+  "text": "x_ar_request.preferred_invoice_date_justification · String (1000) · Shown when Expedited; optional",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.billing_line_items_required",
+  "text": "x_ar_request.billing_line_items_required · Choice · Yes shows the billing line items table (multi-row variable set)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.po_number",
+  "text": "x_ar_request.po_number · String",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.customer_poc_name",
+  "text": "x_ar_request.customer_poc_name · String · AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in; AR copies it to the customer by hand (D23 as amended by D31)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.customer_poc_email",
+  "text": "x_ar_request.customer_poc_email · String · AR-i customer details; must be a valid email. Same rule as POC name",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.cost_center",
+  "text": "x_ar_request.cost_center · String · Optional, free text. To be filled by GA",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.agent_name",
+  "text": "x_ar_request.agent_name · String · Optional, free text",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.agency_type",
+  "text": "x_ar_request.agency_type · Choice · AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.vag",
+  "text": "x_ar_request.vag · Choice · AR-i customer details, optional. Found customer: read-only from the customer master",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.sub_bu",
+  "text": "x_ar_request.sub_bu · String · Optional, free text",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.type_of_billing",
+  "text": "x_ar_request.type_of_billing · Choice · Contract level: entered for a new contract (AR copies it to the contract by hand, D31); read-only copy of the contract's value for an existing one",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.bulk_supporting_docs",
+  "text": "x_ar_request.bulk_supporting_docs · Attachment · Optional; several files at once",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.giro_on_contract",
+  "text": "x_ar_request.giro_on_contract · Choice · read-only · Read-only: copied from the contract's GIRO status at submit (set by AR-ix, D21)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.doc_contract_po",
+  "text": "x_ar_request.doc_contract_po · Attachment · Optional, offered for a new contract only",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.doc_acra",
+  "text": "x_ar_request.doc_acra · Attachment · Only when not already on file",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.doc_billing_form",
+  "text": "x_ar_request.doc_billing_form · Attachment · Only when not already on file for this department",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.description",
+  "text": "x_ar_request.description · String (4000)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "LST-RQL",
+  "text": "List: x_ar_request_line · list view layout + list menu condition",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RP-RQL",
+  "text": "Record page (UI Builder) · x_ar_request_line",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "HDR-RQL",
+  "text": "Record header: highlighted values of x_ar_request_line",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "FRM-RQL",
+  "text": "Form view: x_ar_request_line (Default view)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.number",
+  "text": "x_ar_request_line.number · String · read-only",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.ar_request",
+  "text": "x_ar_request_line.ar_request · Reference → x_ar_request · read-only",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.contract",
+  "text": "x_ar_request_line.contract · Reference → x_ar_contract · read-only · Billing lines are contract level (D15). Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.line_type",
+  "text": "x_ar_request_line.line_type · Choice · mandatory",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.short_description",
+  "text": "x_ar_request_line.short_description · String · mandatory",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.amount",
+  "text": "x_ar_request_line.amount · Currency · mandatory · Recurring: amount per period",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.preferred_invoice_date",
+  "text": "x_ar_request_line.preferred_invoice_date · Date · One-off only",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.frequency",
+  "text": "x_ar_request_line.frequency · Choice · Recurring only; Monthly by default (decision 10)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.start_date",
+  "text": "x_ar_request_line.start_date · Date · Recurring only: first billing date",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.end_date",
+  "text": "x_ar_request_line.end_date · Date · Recurring only: last billing date",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.remarks",
+  "text": "x_ar_request_line.remarks · String · Recurring only, optional",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.invoice",
+  "text": "x_ar_request_line.invoice · Reference → x_ar_invoice · read-only",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.billing_schedule",
+  "text": "x_ar_request_line.billing_schedule · Reference → x_ar_billing_schedule · read-only",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "LST-RQI",
+  "text": "List: x_ar_request_item · list view layout + list menu condition",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RP-RQI",
+  "text": "Record page (UI Builder) · x_ar_request_item",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "HDR-RQI",
+  "text": "Record header: highlighted values of x_ar_request_item",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "FRM-RQI",
+  "text": "Form view: x_ar_request_item (Default view)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQI.ar_request",
+  "text": "x_ar_request_item.ar_request · Reference → x_ar_request · read-only",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQI.item_number",
+  "text": "x_ar_request_item.item_number · Integer · read-only · System number 1, 2, 3… in row order within the AR request; set by the producer script, never typed (AR-i decision 37)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQI.amount_excl_gst",
+  "text": "x_ar_request_item.amount_excl_gst · Currency · mandatory",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQI.gst_amount",
+  "text": "x_ar_request_item.gst_amount · Currency · read-only · Calculated: amount × GST rate (9%), rounded to the cent",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQI.total_amount",
+  "text": "x_ar_request_item.total_amount · Currency · read-only · Calculated: amount + GST",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQI.late_payment_interest",
+  "text": "x_ar_request_item.late_payment_interest · Decimal · Rate % (to be confirmed with the users)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQI.account_code",
+  "text": "x_ar_request_item.account_code · String",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.line_value",
+  "text": "Calculated: one-off amount, or recurring amount × number of periods",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RQL.periods",
+  "text": "Calculated: number of billing dates between From and To at the frequency",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RL-REQ-RQL",
+  "text": "Related list: x_ar_request_line where ar_request = this ar request",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RL-REQ-RQI",
+  "text": "Related list: x_ar_request_item where ar_request = this ar request",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RL-REQ-INV",
+  "text": "Related list: x_ar_invoice where ar_request = this ar request",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "RL-REQ-SCH",
+  "text": "Related list: x_ar_billing_schedule where contract (the case's contract; read-only on the case) = this ar request",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "UA-RQL-save",
+  "text": "Save (update, while the line is open)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "UA-PT-newcust",
+  "text": "Portal: Add as new customer (sets new_customer = true, copies the search text into the name)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "UA-PT-additem",
+  "text": "Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "UA-RQL-newrel",
+  "text": "New billing line on the contract's Billing lines tab (#10 E10.7): AR copies the AR-i line; contract filled in",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-i",
+  "id": "UA-RQL-insert",
+  "text": "Submit (insert)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ-GIRO",
+  "text": "GIRO setup panel (AR-ix case, contextual side bar): contract set? (for No contract required: the customer's no-contract shell for the department, set as Contract on the case); the contract's GIRO status and active case; reminder to update GIRO status and Active GIRO case on the contract record, then set State = Closed complete (AR-ix decision 11, AR-00 2026-11-16)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ-GIROHIST",
+  "text": "Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract (related list x_ar_request where contract = this case's contract and ar_form = AR-ix)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ-FV-ARIX",
+  "text": "Form view ar_ix on x_ar_request (view rule: ar_form = AR-ix), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Select Customer, 3. Select Contract, 4. GIRO details, 5. Attachments (attachment list), in the AR-ix portal order (section 6 Others removed 2026-11-17, AR-ix decision 23); every field shown, empty when not answered; editable while the case is open",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "LST-REQ-ARIX",
+  "text": "Workspace list All AR-ix (UIX decision 15, amended 2026-11-16): x_ar_request, condition ar_form = AR-ix (every state); list view ar_ix_all with its own columns (for now the same as All AR-i); list menu category AR requests",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "PT-31",
+  "text": "Record producer \"AR-ix GIRO authorisation\" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.ar_form = 'AR-ix'; current.short_description = 'GIRO ' + type + ' – ' + purpose; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; contract_option = none → current.contract = the customer's no-contract shell for the department, if it exists;",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "PT-32",
+  "text": "AR-ix variable set Select Contract (AR-ix decision 12): Existing contract, New contract (no reference asked here since 2026-11-17, decision 25: the GIRO details reference giro_reference is used) or No contract required (producer script sets contract = the customer's no-contract shell for the department when it exists). Existing contract reference qualifier (decision 22, E8.5): the customer's contracts, not No contract, where contract.department = the form's Department OR the requester is in contract.contract_owners; a Department change clears a contract that no longer qualifies (catalog client script)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "PT-33",
+  "text": "AR-ix variable set GIRO details (decisions 14, 15 amended, 18–21): Type of request first, choices filtered by the contract (catalog client script: new / no contract → Add GIRO; existing contract → Add GIRO when giro_status is Not active, Remove GIRO only when Active), with the owner's help text. Contract / tenancy agreement / reference (optional): Remove GIRO after Type; Add GIRO right after Purpose, hidden when Purpose = Carpark (decision 24). Remove GIRO: reference, Effective end date (mandatory), nothing more. Add GIRO (UI policies): purpose (placeholder \"-- Choose the purpose --\", no default; choices by contract option, decision 25: No contract required → Carpark, Others; existing or new contract → Rental, Others; a contract change clears a purpose that no longer fits), reference, other purpose, Effective start date (mandatory); Customer name / email / mobile (prefilled from the contract's or shell's bill-to); remarks; rental → location (mandatory), amount; carpark → car plate, location (mandatory), amount; others → nothing more. Attachments is a separate section (PT-46)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "PT-34",
+  "text": "Info message on AR-ix: the chosen contract's (or no-contract shell's) GIRO status and active case (GlideAjax read of x_ar_contract.giro_status / giro_case). Active → the form offers only Remove GIRO (decision 14)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "PT-35",
+  "text": "Ticket page block for AR-ix: GIRO request summary and its outcome (contract to be linked / with AR / completed / GIRO active when the contract's giro_case is this case)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "PT-44",
+  "text": "AR-ix variable set Select Customer (AR-ix decisions 12, 17): customer search showing the customer name only; existing customers only (no new customer on AR-ix, E8.1), with the hint PT-48",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "PT-45",
+  "text": "AR-ix info message for No contract required: the customer's no-contract shell for the department (x_ar_contract, contract_type = shell) the GIRO goes on, or that AR links it once the shell is set up",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "PT-46",
+  "text": "AR-ix section Attachments (decision 16, modelled on AR-i Customer documents): supporting documents (sc_attachment on the case), optional, for Add and Remove GIRO",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "PT-48",
+  "text": "AR-ix Select Customer hint (decision 17, E8.1): Customer not found? Submit an AR-i to set up the customer first. Shown under the customer search instead of the AR-i add-as-new-customer button (UA-PT-newcust stays on AR-i)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_type",
+  "text": "x_ar_request.giro_type · Choice · AR-ix. Mandatory. New contract or no contract: Add GIRO only. Existing contract: Add GIRO when GIRO is not active, Remove GIRO only when it is (catalog client script filters the choices)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_reference",
+  "text": "x_ar_request.giro_reference · String · AR-ix, Add and Remove GIRO. Optional. Add GIRO: right after Purpose of GIRO/DDA request, hidden when Purpose = Carpark; Remove GIRO: after Type of request (UI policy; AR-ix decisions 19, 24; E8.9–E8.12)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_purpose",
+  "text": "x_ar_request.giro_purpose · Choice · AR-ix Add GIRO. Mandatory. Choices by contract (catalog client script, AR-ix decision 25): No contract required → Carpark, Others; existing or new contract → Rental, Others",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_purpose_other",
+  "text": "x_ar_request.giro_purpose_other · String · AR-ix. Mandatory when Purpose = Others",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_applicant_name",
+  "text": "x_ar_request.giro_applicant_name · String · AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to (label: AR-ix decision 20, E8.6)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_applicant_email",
+  "text": "x_ar_request.giro_applicant_email · String · AR-ix Add GIRO. Mandatory; prefilled from the contract's bill-to (label: AR-ix decision 20, E8.6)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_applicant_mobile",
+  "text": "x_ar_request.giro_applicant_mobile · String · AR-ix Add GIRO. Prefilled from the contract's bill-to phone (label: AR-ix decision 20, E8.6)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_remarks",
+  "text": "x_ar_request.giro_remarks · String (1000) · AR-ix Add GIRO, all purposes. Optional",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_location",
+  "text": "x_ar_request.giro_location · String · AR-ix Rental and Carpark. Mandatory (AR-ix decision 21, E8.15)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_start_date",
+  "text": "x_ar_request.giro_start_date · Date · AR-ix Add GIRO, every purpose. Mandatory (AR-ix decision 18, E8.7)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_end_date",
+  "text": "x_ar_request.giro_end_date · Date · AR-ix Remove GIRO. Mandatory; the only Remove GIRO detail (AR-ix decision 18, E8.8)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_carplate",
+  "text": "x_ar_request.giro_carplate · String · AR-ix carpark. Mandatory; one vehicle per form",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ },
+ {
+  "module": "AR-ix",
+  "id": "REQ.giro_amount",
+  "text": "x_ar_request.giro_amount · String · AR-ix Rental and Carpark. Optional free text; not used by any other field or calculation (AR-ix decisions 13, 21; E8.13, E8.15)",
+  "change": "new",
+  "release": "Release 1",
+  "added": "2026-11-19",
+  "done": false
+ }
+]

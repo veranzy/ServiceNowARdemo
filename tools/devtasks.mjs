@@ -83,27 +83,55 @@ const render = e => e.state === "redundant"
   : `- [${e.state === "done" ? "x" : " "}] #${e.no} ${e.affects ? `(changes #${e.affects}) ` : ""}${line(e)}`;
 
 // ---------- CSV for the developer and the BA (no git access; owner, 2026-11-19) ----------
-const MOD_RE = "AR-00|AR-iii|AR-ix|AR-i|CCI|BSU|UIX";
-/** Decision references in a note: "AR-i 43", "D31". A bare "decision 12" belongs to the task's module. */
-export function decisionsOf(text, module) {
-  const out = [];
-  for (const m of text.matchAll(new RegExp(`\\b(?:(${MOD_RE}) )?decisions? (\\d+(?:\\s*(?:[–-]|,|and)\\s*\\d+)*)`, "g")))
-    out.push(`${m[1] || module} ${m[2].replace(/\s*and\s*/g, ", ").replace(/\s+/g, " ")}`);
-  for (const m of text.matchAll(/\bD(\d+)\b/g)) out.push(`D${m[1]}`);
-  return [...new Set(out)].join("; ");
+// Plain task text: "Add field …", "Change dropdown … to …", "Remove …". Frozen in the ledger when the row is added.
+const TYPE_WORD = { Choice: "dropdown", String: "text", "String (1000)": "long text", Currency: "amount (SGD)", Date: "date", "Date/Time": "date and time",
+  Integer: "whole number", Decimal: "number", "True/False": "checkbox", Attachment: "attachment", Reference: "reference", List: "multi-select", Email: "email" };
+/** "V@G" is Yes / "Agency type" is SB or PV: a show rule in words. */
+function showText(si, t) {
+  if (!si) return "";
+  const k = t.fields.find(x => x.key === si.key), lab = v => k?.choices?.find(c => c[0] === v)?.[1] || v;
+  const vals = si.eq !== undefined ? [si.eq] : si.in || [];
+  return `"${k?.label || si.key}" is ${vals.map(lab).join(" or ")}`;
 }
-/** Short task text: a field gives table.column, label and type; anything else its first clause. */
-function shortOf(e) {
-  const fm = e.id.match(/^([A-Z][A-Z0-9]*)\.([a-z0-9_.]+)$/);
-  if (fm && KEY[fm[1]] && TABLES[KEY[fm[1]]]) {
-    const t = TABLES[KEY[fm[1]]], f = t.fields.find(x => x.name === fm[2]);
-    if (!f) { const [col, type] = e.text.split(" · "); return `Field ${col} (${type || "?"})`; }
-    return `Field ${t.table}.${f.name} "${f.label}" (${f.type}${f.ref ? ` → ${TABLES[f.ref]?.table || f.ref}` : ""}${f.mandatory ? ", mandatory" : ""}${f.readonly ? ", read-only" : ""}${f.choices && f.choices.length <= 8 ? `: ${[...new Set(f.choices.map(c => c[1]))].join(" / ")}` : ""})`;
+/** A field's plain spec from a TABLES object (current or an older schema). */
+export function fieldSpec(id, tables = TABLES) {
+  const m = id.match(/^([A-Z][A-Z0-9]*)\.([a-z0-9_.]+)$/); if (!m || !KEY[m[1]] || !tables[KEY[m[1]]]) return null;
+  const t = tables[KEY[m[1]]], f = t.fields.find(x => x.name === m[2]); if (!f) return null;
+  return { table: t.table, tableLabel: t.label, name: f.name, label: f.label, type: f.type, radio: !!f.radio, ref: f.ref ? tables[f.ref]?.label || f.ref : "",
+    choices: f.choices ? [...new Set(f.choices.map(c => c[1]))] : null, mandatory: !!f.mandatory, readonly: !!f.readonly,
+    showIf: showText(f.showIf, t), help: f.help || "" };
+}
+const kindText = f => f.type === "Choice" ? (f.choices && f.choices.length <= 10 ? `${f.radio ? "buttons" : "dropdown"} ${f.choices.join(" / ")}` : f.radio ? "buttons" : "dropdown")
+  : f.type === "Reference" ? `reference to ${f.ref}` : TYPE_WORD[f.type] || f.type;
+const fieldDesc = (f, prep = "on") => `"${f.label}" ${prep} ${f.tableLabel} (${kindText(f)}${f.mandatory ? ", mandatory" : ""}${f.readonly ? ", read-only" : ""}) [${f.table}.${f.name}]`;
+const plain = text => { let s = text; for (let k = 0; k < 3; k++) s = s.replace(/\s*\([^()]*\)/g, "");
+  const cut = s.search(/(?<=[a-z)]{2})\. (?=[A-Z])/); if (cut > 20) s = s.slice(0, cut);
+  return s.length > 300 ? s.slice(0, 297).replace(/\s+\S*$/, "") + "…" : s; };
+/** What changed in a description: items added to / removed from its list. */
+function listDiff(oldText, newText) {
+  const parts = t => { const p = plain(t), i = p.indexOf(": "); return { head: i > 0 ? p.slice(0, i) : p, items: new Set((i > 0 ? p.slice(i + 2) : "").split(/,\s*|;\s*|\s+and\s+/).map(x => x.trim()).filter(Boolean)) }; };
+  const a = parts(oldText), b = parts(newText);
+  const add = [...b.items].filter(x => !a.items.has(x)), del = [...a.items].filter(x => !b.items.has(x));
+  if (!add.length && !del.length || add.length + del.length > 8) return null;
+  return `${b.head}: ${[add.length ? `add ${add.join(", ")}` : "", del.length ? `remove ${del.join(", ")}` : ""].filter(Boolean).join("; ")}`;
+}
+/** The task text of a ledger row. `old` is the row it affects (Changed / Redundant). */
+export function taskOf(e, old) {
+  const f = e.spec, o = old?.spec;
+  if (e.type === "redundant") return o || f ? `Remove field ${fieldDesc(o || f, "from")}` : `Remove: ${plain(old?.text || e.text)}`;
+  if (f && e.change === "Changed" && o) {
+    const d = [];
+    if (o.label !== f.label) d.push(`rename "${o.label}" to "${f.label}"`);
+    if (JSON.stringify(o.choices) !== JSON.stringify(f.choices) && f.choices) d.push(`change the ${f.radio ? "buttons" : "dropdown"} to ${f.choices.join(" / ")}`);
+    if (o.type !== f.type) d.push(`change the type to ${kindText(f)}`);
+    if (o.mandatory !== f.mandatory) d.push(f.mandatory ? "make it mandatory" : "make it optional");
+    if (o.showIf !== f.showIf) d.push(f.showIf ? `show it only when ${f.showIf}` : "always show it");
+    if (!d.length) d.push(`update the rule: ${plain(f.help || "")}`);
+    return `Change field "${f.label}" on ${f.tableLabel}: ${d.join("; ")} [${f.table}.${f.name}]`;
   }
-  let s = e.text; for (let k = 0; k < 3; k++) s = s.replace(/\s*\([^()]*\)/g, "");   // drop bracketed detail
-  const cut = s.search(/\. (?=[A-Z])/);
-  if (cut > 20) s = s.slice(0, cut);
-  return s.length > 260 ? s.slice(0, 257).replace(/\s+\S*$/, "") + "…" : s;
+  if (f) return `Add field ${fieldDesc(f)}`;
+  if (e.change === "Changed" && old) { const d = listDiff(old.text, e.text); return `Change: ${d || plain(e.text)}`; }
+  return `Add: ${plain(e.text)}`;
 }
 const AREA = ["AR portal forms", "AR workspace", "Data and logic"];
 const csvCell = v => { const t = String(v ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
@@ -122,9 +150,8 @@ export function build(ledger = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDG
   //    no = running number (never reused), ref = running index per module (e.g. AR-i-012). Rows are only appended.
   ledger = ledger.map(({ release, done, ...e }) => ({ type: "task", ...e, state: e.state || (done ? "done" : "todo") }));
   let next = Math.max(0, ...ledger.map(e => e.no || 0)) + 1;
-  const perMod = {}; ledger.forEach(e => { if (e.ref) perMod[e.module] = Math.max(perMod[e.module] || 0, +e.ref.split("-").pop()); });
-  const stamp = e => { if (!e.short) e.short = shortOf(e);   // frozen when the row is added, so old rows never change
-    if (!e.no) e.no = next++; if (!e.ref) e.ref = `${e.module}-${String(perMod[e.module] = (perMod[e.module] || 0) + 1).padStart(3, "0")}`; return e; };
+  const stamp = e => { if (!e.spec && e.type === "task") { const sp = fieldSpec(e.id); if (sp) e.spec = sp; }
+    if (!e.no) e.no = next++; return e; };
   ledger.forEach(stamp);
   // migration (2026-11-19): link changed tasks to the row they replace; give each removal its own row
   ledger.forEach((e, i) => { if (e.type !== "task" || e.state !== "redundant" || e.closedBy) return;
@@ -155,13 +182,11 @@ export function build(ledger = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDG
 
   // CSV: one row per ledger row, in running order; the team copies new rows (No. above their last one) into their tracker
   const byNo = Object.fromEntries(ledger.map(e => [e.no, e]));
-  const csvRows = [["No.", "Ref", "Module", "Area", "Item", "Build-note ID", "Task", "Decision", "Change", "Affects row", "Affects ref", "Date added", "State now"]];
-  for (const e of [...ledger].sort((a, b) => a.no - b.no)) {
-    const old = e.affects ? byNo[e.affects] : null;
-    const task = e.type === "redundant" ? `Do not build / remove: ${e.short}${e.why ? ` (${e.why})` : ""}` : e.short;
-    csvRows.push([e.no, e.ref, e.module, AREA[sideOf(e.id)] || "", kindOf(e.id), e.id, task, decisionsOf(e.text, e.module), e.change, e.affects || "", old?.ref || "",
-      e.added, e.type === "redundant" ? "To do" : e.state === "redundant" ? `Redundant (see #${e.closedBy})` : e.state === "done" ? "Done" : "To do"]);
-  }
+  ledger.forEach(e => { if (!e.task) e.task = taskOf(e, e.affects ? byNo[e.affects] : null); });   // frozen once written
+  const csvRows = [["No.", "Module", "Area", "Build-note ID", "Task", "Change", "Affects row", "Date added", "State now"]];
+  for (const e of [...ledger].sort((a, b) => a.no - b.no))
+    csvRows.push([e.no, e.module, AREA[sideOf(e.id)] || "", e.id, e.task + (e.type === "redundant" && e.why && e.why !== "removed from the prototype" ? ` (${e.why})` : ""), e.change, e.affects || "",
+      e.added, e.type === "redundant" ? "To do" : e.state === "redundant" ? `Redundant (see row ${e.closedBy})` : e.state === "done" ? "Done" : "To do"]);
   const csv = "﻿" + csvRows.map(r => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   const withTasks = mods.filter(m => ledger.some(e => e.module === m.code));
   let md = `# Developer task list (ServiceNow build)
@@ -181,11 +206,10 @@ Specs: \`docs/modules/<CODE>/README.md\`; full mapping: \`SERVICENOW_MAPPING.md\
 Redundant. Tick a box (\`- [x]\`) when a task is done: ticks are kept when the file is regenerated.
 
 **For the developer and the BA: [\`DEV_TASKS.csv\`](DEV_TASKS.csv)** (opens in Excel). One row per task with a running
-**No.** (never reused) and a running **Ref** per module (e.g. \`AR-i-012\`). Rows are only ever added: copy the rows
-whose No. is above your last one into your own tracker. A **Changed** row replaces the row named in *Affects row*;
-a **Redundant** row says *Do not build / remove* for the row named in *Affects row*. Columns: No., Ref, Module, Area,
-Item, Build-note ID, Task (short), Decision (module decision number, e.g. \`AR-i 43\`, or a cross-module \`D\` number),
-Change (New / Changed / Redundant), Affects row, Affects ref, Date added, State now.
+**No.** (never reused). Rows are only ever added: copy the rows whose No. is above your last one into your own
+tracker. Columns: No., Module, Area, Build-note ID, Task (plain words: *Add field …*, *Change field …: change the
+dropdown to …*, *Remove field …*), Change (New / Changed / Redundant), Affects row (the earlier row a Changed or
+Redundant row replaces or removes), Date added, State now.
 
 ## Setup (before any module)
 

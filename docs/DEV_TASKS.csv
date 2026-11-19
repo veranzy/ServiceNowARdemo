@@ -1,564 +1,564 @@
-﻿No.,Ref,Module,Area,Item,Build-note ID,Task,Decision,Change,Affects row,Affects ref,Date added,State now
-1,AR-i-001,AR-i,AR workspace,"Lists, record pages and forms",REQ-FV-ARI,"Form view ar_i on x_ar_request, used by the workspace Details tab: sections Case, 1",UIX 12,New,,,2026-11-19,To do
-2,AR-i-002,AR-i,AR workspace,"Lists, record pages and forms",LST-REQ-ARI,"Workspace list All AR-i: x_ar_request, condition ar_form = AR-i; list view ar_i_all with its own columns; list menu category AR requests",UIX 15,New,,,2026-11-19,To do
-3,AR-i-003,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-03,"Quick link to catalog item: record producer ""AR-i New AR request""",,New,,,2026-11-19,To do
-4,AR-i-004,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-05,"Record producer ""AR-i New AR request"" on x_ar_request",D13,New,,,2026-11-19,To do
-5,AR-i-005,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-39,"AR-i Customer section, found customer: read-only customer details in this order: name, UEN, address, agency type, V@G, V@G sub-BU, POC name, POC email",D23; D31,New,,,2026-11-19,To do
-6,AR-i-006,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-36,"AR-i GIRO subsection inside Contract: 'Is there an existing DDA?' read-only Yes / No from the chosen contract's giro_status, plus the active AR-ix case number when Yes",D22,New,,,2026-11-19,To do
-7,AR-i-007,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-40,"AR-i new contract variables, in order: new_contract_type, new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle,…",D31,New,,,2026-11-19,Redundant (see #554)
-8,AR-i-008,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-41,"AR-i existing contract: every contract detail read-only from x_ar_contract, in the same order as a new contract",,New,,,2026-11-19,To do
-9,AR-i-009,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-37,"AR-i variable set Invoice details: short_description, attention_name / attention_email, amount_per_period, preferred_invoice_date_choice and preferred_invoice_date_justification, billing_line_items_required",AR-i 31–33,New,,,2026-11-19,Redundant (see #545)
-10,AR-i-010,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-07,Catalog client script: contract billing position via GlideAjax / Script Include,,New,,,2026-11-19,To do
-11,AR-i-011,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-15,Catalog item AR-i New AR request,,New,,,2026-11-19,To do
-12,AR-i-012,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-19,"Bill-to: shows the contract's / shell's bill-to or asks for one, prefilled from the department's x_ar_billing_contact",D16; D22,New,,,2026-11-19,To do
-13,AR-i-013,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-20,"Variable set Contract and bill-to: contract_option, contract or new-contract variables, bill-to",AR-i 40; D15,New,,,2026-11-19,To do
-14,AR-i-014,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-42,"AR-i variable set Others: cost_center, agent_name, po_number",AR-i 39,New,,,2026-11-19,Redundant (see #558)
-15,AR-i-015,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-43,"AR-i multi-row variable set Billing line items, shown when billing_line_items_required = Yes: item_number, amount_excl_gst*, gst_amount and total_amount, late_payment_interest, account_code",,New,,,2026-11-19,Redundant (see #546)
-16,AR-i-016,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-28,No contract required: info message,D31,New,,,2026-11-19,To do
-17,AR-i-017,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-25,"Variable set Customer: search x_ar_customer by name/UEN; Add as new customer reveals name, UEN, address",D14,New,,,2026-11-19,To do
-18,AR-i-018,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-27,Ticket page: billing lines with status per line; payment status hidden,,New,,,2026-11-19,To do
-19,AR-i-019,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-29,"Finance coding variables: cost_center, agent_name",,New,,,2026-11-19,Redundant (see #559)
-20,AR-i-020,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-23,Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones,D10,New,,,2026-11-19,To do
-21,AR-i-021,AR-i,Data and logic,Tables and fields,REQ.new_customer,"Field x_ar_request.new_customer ""New customer"" (True/False)",,New,,,2026-11-19,To do
-22,AR-i-022,AR-i,Data and logic,Tables and fields,REQ.new_customer_name,"Field x_ar_request.new_customer_name ""New customer name"" (String)",,New,,,2026-11-19,To do
-23,AR-i-023,AR-i,Data and logic,Tables and fields,REQ.new_customer_uen,"Field x_ar_request.new_customer_uen ""UEN (company registration no.)"" (String)",,New,,,2026-11-19,To do
-24,AR-i-024,AR-i,Data and logic,Tables and fields,REQ.new_customer_address,"Field x_ar_request.new_customer_address ""Registered address"" (String (1000))",,New,,,2026-11-19,To do
-25,AR-i-025,AR-i,Data and logic,Tables and fields,REQ.new_contract_type,"Field x_ar_request.new_contract_type ""Contract type"" (Choice: Recurring / Ad-hoc)",,New,,,2026-11-19,To do
-26,AR-i-026,AR-i,Data and logic,Tables and fields,REQ.new_contract_number,"Field x_ar_request.new_contract_number ""Contract number"" (String)",,New,,,2026-11-19,To do
-27,AR-i-027,AR-i,Data and logic,Tables and fields,REQ.new_contract_ref,"Field x_ar_request.new_contract_ref ""Contract reference number"" (String)",AR-ix 25,New,,,2026-11-19,To do
-28,AR-i-028,AR-i,Data and logic,Tables and fields,REQ.new_contract_po,"Field x_ar_request.new_contract_po ""Contract PO number"" (String)",,New,,,2026-11-19,To do
-29,AR-i-029,AR-i,Data and logic,Tables and fields,REQ.new_contract_title,"Field x_ar_request.new_contract_title ""Contract title"" (String)",,New,,,2026-11-19,To do
-30,AR-i-030,AR-i,Data and logic,Tables and fields,REQ.new_contract_start,"Field x_ar_request.new_contract_start ""Contract start date"" (Date)",,New,,,2026-11-19,To do
-31,AR-i-031,AR-i,Data and logic,Tables and fields,REQ.new_contract_end,"Field x_ar_request.new_contract_end ""Contract end date"" (Date)",,New,,,2026-11-19,To do
-32,AR-i-032,AR-i,Data and logic,Tables and fields,REQ.new_contract_value,"Field x_ar_request.new_contract_value ""Contract value (SGD)"" (Currency)",,New,,,2026-11-19,To do
-33,AR-i-033,AR-i,Data and logic,Tables and fields,REQ.new_contract_billing_cycle,"Field x_ar_request.new_contract_billing_cycle ""Contract billing cycle"" (Choice: 1st of the month / 15th of the month / Others)",,New,,,2026-11-19,To do
-34,AR-i-034,AR-i,Data and logic,Tables and fields,REQ.new_contract_billing_cycle_other,"Field x_ar_request.new_contract_billing_cycle_other ""Suggested billing cycle"" (String)",,New,,,2026-11-19,To do
-35,AR-i-035,AR-i,Data and logic,Tables and fields,REQ.new_contract_invoice_date,"Field x_ar_request.new_contract_invoice_date ""Preferred invoice billing date"" (Date)",,New,,,2026-11-19,To do
-36,AR-i-036,AR-i,Data and logic,Tables and fields,REQ.new_contract_payment_terms,"Field x_ar_request.new_contract_payment_terms ""Payment terms"" (Choice: 30 days / Others)",,New,,,2026-11-19,To do
-37,AR-i-037,AR-i,Data and logic,Tables and fields,REQ.new_contract_payment_terms_other,"Field x_ar_request.new_contract_payment_terms_other ""Other payment terms"" (String)",,New,,,2026-11-19,To do
-38,AR-i-038,AR-i,Data and logic,Tables and fields,REQ.new_contract_proration,"Field x_ar_request.new_contract_proration ""Proration"" (Choice: Yes / No)",,New,,,2026-11-19,To do
-39,AR-i-039,AR-i,Data and logic,Tables and fields,REQ.new_contract_proration_first,"Field x_ar_request.new_contract_proration_first ""Proration for 1st month"" (Currency)",,New,,,2026-11-19,To do
-40,AR-i-040,AR-i,Data and logic,Tables and fields,REQ.new_contract_proration_last,"Field x_ar_request.new_contract_proration_last ""Proration for last month"" (Currency)",,New,,,2026-11-19,To do
-41,AR-i-041,AR-i,Data and logic,Tables and fields,REQ.bill_to_name,"Field x_ar_request.bill_to_name ""Bill-to person"" (String)",D16; D31,New,,,2026-11-19,To do
-42,AR-i-042,AR-i,Data and logic,Tables and fields,REQ.bill_to_email,"Field x_ar_request.bill_to_email ""Bill-to email"" (String)",,New,,,2026-11-19,To do
-43,AR-i-043,AR-i,Data and logic,Tables and fields,REQ.bill_to_phone,"Field x_ar_request.bill_to_phone ""Bill-to phone"" (String)",,New,,,2026-11-19,To do
-44,AR-i-044,AR-i,Data and logic,Tables and fields,REQ.bill_to_address,"Field x_ar_request.bill_to_address ""Billing address"" (String (1000))",,New,,,2026-11-19,To do
-45,AR-i-045,AR-i,Data and logic,Tables and fields,REQ.short_description,"Field x_ar_request.short_description ""Invoice description"" (String, mandatory)",,New,,,2026-11-19,To do
-46,AR-i-046,AR-i,Data and logic,Tables and fields,REQ.attention_name,"Field x_ar_request.attention_name ""Attention to name"" (String)",,New,,,2026-11-19,To do
-47,AR-i-047,AR-i,Data and logic,Tables and fields,REQ.attention_email,"Field x_ar_request.attention_email ""Attention to email"" (String)",,New,,,2026-11-19,To do
-48,AR-i-048,AR-i,Data and logic,Tables and fields,REQ.amount_per_period,"Field x_ar_request.amount_per_period ""Amount billed per period"" (Currency, mandatory)",,New,,,2026-11-19,To do
-49,AR-i-049,AR-i,Data and logic,Tables and fields,REQ.preferred_invoice_date_choice,"Field x_ar_request.preferred_invoice_date_choice ""Preferred invoice date"" (Choice: Per Billing Cycle / Expedited)",AR-i 38,New,,,2026-11-19,To do
-50,AR-i-050,AR-i,Data and logic,Tables and fields,REQ.preferred_invoice_date_justification,"Field x_ar_request.preferred_invoice_date_justification ""Provide Justification for expedited or Off billing cycle request"" (String (1000))",,New,,,2026-11-19,To do
-51,AR-i-051,AR-i,Data and logic,Tables and fields,REQ.billing_line_items_required,"Field x_ar_request.billing_line_items_required ""Require billing line item?"" (Choice: Yes / No)",,New,,,2026-11-19,To do
-52,AR-i-052,AR-i,Data and logic,Tables and fields,REQ.po_number,"Field x_ar_request.po_number ""Customer PO number"" (String)",,New,,,2026-11-19,Redundant (see #547)
-53,AR-i-053,AR-i,Data and logic,Tables and fields,REQ.customer_poc_name,"Field x_ar_request.customer_poc_name ""POC name"" (String)",D23; D31,New,,,2026-11-19,To do
-54,AR-i-054,AR-i,Data and logic,Tables and fields,REQ.customer_poc_email,"Field x_ar_request.customer_poc_email ""POC email"" (String)",,New,,,2026-11-19,To do
-55,AR-i-055,AR-i,Data and logic,Tables and fields,REQ.cost_center,Field x_ar_request.cost_center (String),,New,,,2026-11-19,Redundant (see #560)
-56,AR-i-056,AR-i,Data and logic,Tables and fields,REQ.agent_name,Field x_ar_request.agent_name (String),,New,,,2026-11-19,Redundant (see #561)
-57,AR-i-057,AR-i,Data and logic,Tables and fields,REQ.agency_type,"Field x_ar_request.agency_type ""Agency type"" (Choice: M / SB / PV)",,New,,,2026-11-19,To do
-58,AR-i-058,AR-i,Data and logic,Tables and fields,REQ.vag,"Field x_ar_request.vag ""V@G"" (Choice: Yes / No)",,New,,,2026-11-19,Redundant (see #548)
-59,AR-i-059,AR-i,Data and logic,Tables and fields,REQ.sub_bu,"Field x_ar_request.sub_bu ""V@G sub-BU"" (String)",,New,,,2026-11-19,To do
-60,AR-i-060,AR-i,Data and logic,Tables and fields,REQ.type_of_billing,"Field x_ar_request.type_of_billing ""Type of billing"" (Choice: General / Rental / Carpark / Courses / 5 / 6)",D31,New,,,2026-11-19,Redundant (see #551)
-61,AR-i-061,AR-i,Data and logic,Tables and fields,REQ.bulk_supporting_docs,Field x_ar_request.bulk_supporting_docs (Attachment),,New,,,2026-11-19,Redundant (see #562)
-62,AR-i-062,AR-i,Data and logic,Tables and fields,REQ.giro_on_contract,"Field x_ar_request.giro_on_contract ""GIRO on this contract"" (Choice, read-only: Yes / No)",D21,New,,,2026-11-19,To do
-63,AR-i-063,AR-i,Data and logic,Tables and fields,REQ.doc_contract_po,"Field x_ar_request.doc_contract_po ""Signed contract / PO"" (Attachment)",,New,,,2026-11-19,To do
-64,AR-i-064,AR-i,Data and logic,Tables and fields,REQ.doc_acra,"Field x_ar_request.doc_acra ""Company registration (ACRA / UEN)"" (Attachment)",,New,,,2026-11-19,To do
-65,AR-i-065,AR-i,Data and logic,Tables and fields,REQ.doc_billing_form,"Field x_ar_request.doc_billing_form ""Billing contact & address form"" (Attachment)",,New,,,2026-11-19,To do
-66,AR-i-066,AR-i,Data and logic,Tables and fields,REQ.description,"Field x_ar_request.description ""Additional details"" (String (4000))",,New,,,2026-11-19,To do
-67,AR-i-067,AR-i,AR workspace,"Lists, record pages and forms",LST-RQL,List: x_ar_request_line · list view layout + list menu condition,,New,,,2026-11-19,To do
-68,AR-i-068,AR-i,AR workspace,"Lists, record pages and forms",RP-RQL,Record page · x_ar_request_line,,New,,,2026-11-19,To do
-69,AR-i-069,AR-i,AR workspace,"Lists, record pages and forms",HDR-RQL,Record header: highlighted values of x_ar_request_line,,New,,,2026-11-19,To do
-70,AR-i-070,AR-i,AR workspace,"Lists, record pages and forms",FRM-RQL,Form view: x_ar_request_line,,New,,,2026-11-19,To do
-71,AR-i-071,AR-i,Data and logic,Tables and fields,RQL.number,"Field x_ar_request_line.number ""Number"" (String, read-only)",,New,,,2026-11-19,To do
-72,AR-i-072,AR-i,Data and logic,Tables and fields,RQL.ar_request,"Field x_ar_request_line.ar_request ""AR request"" (Reference → x_ar_request, read-only)",,New,,,2026-11-19,To do
-73,AR-i-073,AR-i,Data and logic,Tables and fields,RQL.contract,"Field x_ar_request_line.contract ""Contract"" (Reference → x_ar_contract, read-only)",D15; D31,New,,,2026-11-19,To do
-74,AR-i-074,AR-i,Data and logic,Tables and fields,RQL.line_type,"Field x_ar_request_line.line_type ""Line type"" (Choice, mandatory: One-off / Recurring)",,New,,,2026-11-19,To do
-75,AR-i-075,AR-i,Data and logic,Tables and fields,RQL.short_description,"Field x_ar_request_line.short_description ""Description"" (String, mandatory)",,New,,,2026-11-19,To do
-76,AR-i-076,AR-i,Data and logic,Tables and fields,RQL.amount,"Field x_ar_request_line.amount ""Amount"" (Currency, mandatory)",,New,,,2026-11-19,To do
-77,AR-i-077,AR-i,Data and logic,Tables and fields,RQL.preferred_invoice_date,"Field x_ar_request_line.preferred_invoice_date ""Preferred invoice date"" (Date)",,New,,,2026-11-19,To do
-78,AR-i-078,AR-i,Data and logic,Tables and fields,RQL.frequency,"Field x_ar_request_line.frequency ""Frequency"" (Choice: Monthly / Quarterly / Half-yearly / Annually)",AR-i 10,New,,,2026-11-19,To do
-79,AR-i-079,AR-i,Data and logic,Tables and fields,RQL.start_date,"Field x_ar_request_line.start_date ""From"" (Date)",,New,,,2026-11-19,To do
-80,AR-i-080,AR-i,Data and logic,Tables and fields,RQL.end_date,"Field x_ar_request_line.end_date ""To"" (Date)",,New,,,2026-11-19,To do
-81,AR-i-081,AR-i,Data and logic,Tables and fields,RQL.remarks,"Field x_ar_request_line.remarks ""Remarks"" (String)",,New,,,2026-11-19,To do
-82,AR-i-082,AR-i,Data and logic,Tables and fields,RQL.invoice,"Field x_ar_request_line.invoice ""Invoice"" (Reference → x_ar_invoice, read-only)",,New,,,2026-11-19,To do
-83,AR-i-083,AR-i,Data and logic,Tables and fields,RQL.billing_schedule,"Field x_ar_request_line.billing_schedule ""Billing schedule"" (Reference → x_ar_billing_schedule, read-only)",,New,,,2026-11-19,To do
-84,AR-i-084,AR-i,AR workspace,"Lists, record pages and forms",LST-RQI,List: x_ar_request_item · list view layout + list menu condition,,New,,,2026-11-19,To do
-85,AR-i-085,AR-i,AR workspace,"Lists, record pages and forms",RP-RQI,Record page · x_ar_request_item,,New,,,2026-11-19,To do
-86,AR-i-086,AR-i,AR workspace,"Lists, record pages and forms",HDR-RQI,Record header: highlighted values of x_ar_request_item,,New,,,2026-11-19,To do
-87,AR-i-087,AR-i,AR workspace,"Lists, record pages and forms",FRM-RQI,Form view: x_ar_request_item,,New,,,2026-11-19,To do
-88,AR-i-088,AR-i,Data and logic,Tables and fields,RQI.ar_request,"Field x_ar_request_item.ar_request ""AR request"" (Reference → x_ar_request, read-only)",,New,,,2026-11-19,To do
-89,AR-i-089,AR-i,Data and logic,Tables and fields,RQI.item_number,"Field x_ar_request_item.item_number ""Item number"" (Integer, read-only)",AR-i 37,New,,,2026-11-19,To do
-90,AR-i-090,AR-i,Data and logic,Tables and fields,RQI.amount_excl_gst,"Field x_ar_request_item.amount_excl_gst ""Amount (w/o GST)"" (Currency, mandatory)",,New,,,2026-11-19,To do
-91,AR-i-091,AR-i,Data and logic,Tables and fields,RQI.gst_amount,"Field x_ar_request_item.gst_amount ""GST amount"" (Currency, read-only)",,New,,,2026-11-19,Redundant (see #552)
-92,AR-i-092,AR-i,Data and logic,Tables and fields,RQI.total_amount,"Field x_ar_request_item.total_amount ""Total amount"" (Currency, read-only)",,New,,,2026-11-19,To do
-93,AR-i-093,AR-i,Data and logic,Tables and fields,RQI.late_payment_interest,"Field x_ar_request_item.late_payment_interest ""Late payment interest (%)"" (Decimal)",,New,,,2026-11-19,To do
-94,AR-i-094,AR-i,Data and logic,Tables and fields,RQI.account_code,"Field x_ar_request_item.account_code ""Account code"" (String)",,New,,,2026-11-19,To do
-95,AR-i-095,AR-i,Data and logic,Tables and fields,RQL.line_value,"Field Calculated: one-off amount, or recurring amount × number of periods (?)",,New,,,2026-11-19,To do
-96,AR-i-096,AR-i,Data and logic,Tables and fields,RQL.periods,Field Calculated: number of billing dates between From and To at the frequency (?),,New,,,2026-11-19,To do
-97,AR-i-097,AR-i,AR workspace,Related lists,RL-REQ-RQL,Related list: x_ar_request_line where ar_request = this ar request,,New,,,2026-11-19,To do
-98,AR-i-098,AR-i,AR workspace,Related lists,RL-REQ-RQI,Related list: x_ar_request_item where ar_request = this ar request,,New,,,2026-11-19,To do
-99,AR-i-099,AR-i,AR workspace,Related lists,RL-REQ-INV,Related list: x_ar_invoice where ar_request = this ar request,,New,,,2026-11-19,To do
-100,AR-i-100,AR-i,AR workspace,Related lists,RL-REQ-SCH,Related list: x_ar_billing_schedule where contract = this ar request,,New,,,2026-11-19,To do
-101,AR-i-101,AR-i,AR workspace,UI actions,UA-RQL-save,Save,,New,,,2026-11-19,To do
-102,AR-i-102,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",UA-PT-newcust,Portal: Add as new customer,,New,,,2026-11-19,To do
-103,AR-i-103,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",UA-PT-additem,Portal: Add item; Remove deletes a row,,New,,,2026-11-19,To do
-104,AR-i-104,AR-i,AR workspace,UI actions,UA-RQL-newrel,New billing line on the contract's Billing lines tab: AR copies the AR-i line; contract filled in,,New,,,2026-11-19,To do
-105,AR-i-105,AR-i,AR workspace,UI actions,UA-RQL-insert,Submit,,New,,,2026-11-19,To do
-106,AR-ix-001,AR-ix,AR workspace,"Panels, tabs and other workspace items",REQ-GIRO,"GIRO setup panel: contract set?; the contract's GIRO status and active case; reminder to update GIRO status and Active GIRO case on the contract record, then set State = Closed complete",AR-ix 11,New,,,2026-11-19,To do
-107,AR-ix-002,AR-ix,AR workspace,"Panels, tabs and other workspace items",REQ-GIROHIST,Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract,,New,,,2026-11-19,To do
-108,AR-ix-003,AR-ix,AR workspace,"Lists, record pages and forms",REQ-FV-ARIX,"Form view ar_ix on x_ar_request, used by the workspace Details tab: sections Case, 1",UIX 12; AR-ix 23,New,,,2026-11-19,To do
-109,AR-ix-004,AR-ix,AR workspace,"Lists, record pages and forms",LST-REQ-ARIX,"Workspace list All AR-ix: x_ar_request, condition ar_form = AR-ix; list view ar_ix_all with its own columns; list menu category AR requests",UIX 15,New,,,2026-11-19,To do
-110,AR-ix-005,AR-ix,AR portal forms,"Catalogue, record producers and portal widgets",PT-31,"Record producer ""AR-ix GIRO authorisation"" on x_ar_request",,New,,,2026-11-19,To do
-111,AR-ix-006,AR-ix,AR portal forms,"Catalogue, record producers and portal widgets",PT-32,"AR-ix variable set Select Contract: Existing contract, New contract or No contract required",AR-ix 12; AR-ix 25; AR-ix 22,New,,,2026-11-19,To do
-112,AR-ix-007,AR-ix,AR portal forms,"Catalogue, record producers and portal widgets",PT-33,"AR-ix variable set GIRO details: Type of request first, choices filtered by the contract, with the owner's help text","AR-ix 14, 15; AR-ix 24; AR-ix 25",New,,,2026-11-19,To do
-113,AR-ix-008,AR-ix,AR portal forms,"Catalogue, record producers and portal widgets",PT-34,Info message on AR-ix: the chosen contract's GIRO status and active case,AR-ix 14,New,,,2026-11-19,To do
-114,AR-ix-009,AR-ix,AR portal forms,"Catalogue, record producers and portal widgets",PT-35,Ticket page block for AR-ix: GIRO request summary and its outcome,,New,,,2026-11-19,To do
-115,AR-ix-010,AR-ix,AR portal forms,"Catalogue, record producers and portal widgets",PT-44,"AR-ix variable set Select Customer: customer search showing the customer name only; existing customers only, with the hint PT-48","AR-ix 12, 17",New,,,2026-11-19,To do
-116,AR-ix-011,AR-ix,AR portal forms,"Catalogue, record producers and portal widgets",PT-45,"AR-ix info message for No contract required: the customer's no-contract shell for the department the GIRO goes on, or that AR links it once the shell is set up",,New,,,2026-11-19,To do
-117,AR-ix-012,AR-ix,AR portal forms,"Catalogue, record producers and portal widgets",PT-46,"AR-ix section Attachments: supporting documents, optional, for Add and Remove GIRO",AR-ix 16,New,,,2026-11-19,To do
-118,AR-ix-013,AR-ix,AR portal forms,"Catalogue, record producers and portal widgets",PT-48,AR-ix Select Customer hint: Customer not found? Submit an AR-i to set up the customer first,AR-ix 17,New,,,2026-11-19,To do
-119,AR-ix-014,AR-ix,Data and logic,Tables and fields,REQ.giro_type,"Field x_ar_request.giro_type ""Type of request"" (Choice: Add GIRO / Remove GIRO)",,New,,,2026-11-19,To do
-120,AR-ix-015,AR-ix,Data and logic,Tables and fields,REQ.giro_reference,"Field x_ar_request.giro_reference ""Contract / tenancy agreement / reference"" (String)","AR-ix 19, 24",New,,,2026-11-19,To do
-121,AR-ix-016,AR-ix,Data and logic,Tables and fields,REQ.giro_purpose,"Field x_ar_request.giro_purpose ""Purpose of GIRO/DDA request"" (Choice: Rental / Carpark / Others)",AR-ix 25,New,,,2026-11-19,To do
-122,AR-ix-017,AR-ix,Data and logic,Tables and fields,REQ.giro_purpose_other,"Field x_ar_request.giro_purpose_other ""Other purpose"" (String)",,New,,,2026-11-19,To do
-123,AR-ix-018,AR-ix,Data and logic,Tables and fields,REQ.giro_applicant_name,"Field x_ar_request.giro_applicant_name ""Customer name"" (String)",AR-ix 20,New,,,2026-11-19,To do
-124,AR-ix-019,AR-ix,Data and logic,Tables and fields,REQ.giro_applicant_email,"Field x_ar_request.giro_applicant_email ""Customer email"" (String)",AR-ix 20,New,,,2026-11-19,To do
-125,AR-ix-020,AR-ix,Data and logic,Tables and fields,REQ.giro_applicant_mobile,"Field x_ar_request.giro_applicant_mobile ""Customer mobile"" (String)",AR-ix 20,New,,,2026-11-19,To do
-126,AR-ix-021,AR-ix,Data and logic,Tables and fields,REQ.giro_remarks,"Field x_ar_request.giro_remarks ""Remarks"" (String (1000))",,New,,,2026-11-19,To do
-127,AR-ix-022,AR-ix,Data and logic,Tables and fields,REQ.giro_location,"Field x_ar_request.giro_location ""Location"" (String)",AR-ix 21,New,,,2026-11-19,To do
-128,AR-ix-023,AR-ix,Data and logic,Tables and fields,REQ.giro_start_date,"Field x_ar_request.giro_start_date ""Effective start date"" (Date)",AR-ix 18,New,,,2026-11-19,To do
-129,AR-ix-024,AR-ix,Data and logic,Tables and fields,REQ.giro_end_date,"Field x_ar_request.giro_end_date ""Effective end date"" (Date)",AR-ix 18,New,,,2026-11-19,To do
-130,AR-ix-025,AR-ix,Data and logic,Tables and fields,REQ.giro_carplate,"Field x_ar_request.giro_carplate ""Car plate"" (String)",,New,,,2026-11-19,To do
-131,AR-ix-026,AR-ix,Data and logic,Tables and fields,REQ.giro_amount,"Field x_ar_request.giro_amount ""Amount"" (String)","AR-ix 13, 21",New,,,2026-11-19,To do
-132,UIX-001,UIX,AR workspace,"Lists, record pages and forms",WS-01,Unified navigation header,,New,,,2026-11-19,To do
-133,UIX-002,UIX,AR workspace,"Lists, record pages and forms",WS-02,"Global search: AR request, invoice, Deposit ID and contract numbers, customer names",,New,,,2026-11-19,To do
-134,UIX-003,UIX,AR workspace,"Lists, record pages and forms",WS-03,"Workspace sidebar: Home, Lists, BSU page, Cash application page",,New,,,2026-11-19,To do
-135,UIX-004,UIX,AR workspace,"Lists, record pages and forms",WS-04,List menu: categories and lists with conditions,,New,,,2026-11-19,To do
-136,UIX-005,UIX,AR workspace,"Lists, record pages and forms",WS-05,Workspace tabs: landing / list tab plus one tab per opened record,,New,,,2026-11-19,To do
-137,UIX-006,UIX,AR workspace,"Lists, record pages and forms",WS-06,"Landing page: single-score data visualisations, each linked to a list menu module",,New,,,2026-11-19,To do
-138,UIX-007,UIX,AR workspace,"Lists, record pages and forms",WS-07,Data visualisation: bar chart of x_ar_invoice.amount_due grouped by days past due_date,,New,,,2026-11-19,To do
-139,UIX-008,UIX,AR workspace,"Lists, record pages and forms",WS-08,Landing page list: new AR requests,,New,,,2026-11-19,To do
-140,UIX-009,UIX,AR workspace,"Lists, record pages and forms",WS-09,Landing page list: overdue invoices,,New,,,2026-11-19,To do
-141,UIX-010,UIX,AR workspace,"Lists, record pages and forms",WS-11,"Record header UI action bar: primary UI actions as buttons, the rest in the overflow menu",,New,,,2026-11-19,To do
-142,UIX-011,UIX,AR workspace,"Lists, record pages and forms",WS-12,Record ribbon: collapsible row of up to 12 widgets with key metrics; configured per table in UI Builder,,New,,,2026-11-19,To do
-143,UIX-012,UIX,AR workspace,"Lists, record pages and forms",WS-13,"Record tabs in the resizable pane: Details first, then related items, then one tab per related list; extra tabs move to the More menu, except on customer and contract records, which show every tab",,New,,,2026-11-19,To do
-144,UIX-013,UIX,AR workspace,"Lists, record pages and forms",WS-14,"Contextual side bar: vertical icon tabs on the right of the record tab, open by default, collapsible and resizable; holds Customer setup, Activity stream and Attachments for AR requests",,New,,,2026-11-19,To do
-145,UIX-014,UIX,AR workspace,"Lists, record pages and forms",WS-15,Form record presence: avatars of users viewing the record,,New,,,2026-11-19,To do
-146,UIX-015,UIX,AR workspace,"Lists, record pages and forms",WS-17,Record history tab: sys_audit / sys_history_line for the record,,New,,,2026-11-19,To do
-147,UIX-016,UIX,AR workspace,"Lists, record pages and forms",WS-16,"List page template: list menu on the left, list on the right; the menu selection drives the list",,New,,,2026-11-19,To do
-148,AR-00-001,AR-00,AR workspace,"Panels, tabs and other workspace items",REQ-ACT,Activity stream: comments + work_notes + field changes,,New,,,2026-11-19,To do
-149,AR-iii-001,AR-iii,AR workspace,"Lists, record pages and forms",REQ-FV-COL,"Form view collections on x_ar_request, Details tab: sections Case, 1",D29,New,,,2026-11-19,To do
-150,AR-iii-002,AR-iii,AR workspace,"Lists, record pages and forms",LST-REQ-COL,"Workspace list All Collections: x_ar_request, condition ar_form = COL; default columns as the other AR form lists",D30,New,,,2026-11-19,To do
-151,CCI-001,CCI,AR workspace,"Panels, tabs and other workspace items",CON-GIRO,"Tab GIRO history on the contract: related list x_ar_request where contract = this contract and ar_form = AR-ix; columns AR-ix case, Type of request, Purpose of GIRO/DDA request, Amount, Requested by, Updated, GIRO",,New,,,2026-11-19,To do
-152,CCI-002,CCI,AR workspace,"Panels, tabs and other workspace items",SCH-PER,Billing periods of the schedule with status Invoiced / Due / Upcoming; no action column,,New,,,2026-11-19,To do
-153,CCI-003,CCI,Data and logic,Jobs and other items,JOB-DAILYINV,"Scheduled job Daily invoice check: for each x_ar_billing_schedule period with no non-cancelled invoice and invoice date within 5 working days of today, insert a draft x_ar_invoice and add a work note on the AR-i case",D12,New,,,2026-11-19,To do
-154,AR-00-002,AR-00,AR workspace,"Panels, tabs and other workspace items",REQ-ATT,Attachments: sys_attachment on x_ar_request,,New,,,2026-11-19,To do
-155,CCI-004,CCI,AR workspace,"Panels, tabs and other workspace items",INV-PDF,Invoice document: HTML template rendered with PDF Generation Utilities when AR issues the invoice and attached to the invoice; the workspace tab shows the same template as a preview,CCI 13,New,,,2026-11-19,To do
-156,BSU-001,BSU,AR workspace,"Panels, tabs and other workspace items",BSU-08,Preview tag No payment mode: the line's transaction ID matches no active payment mode of the bank account; it is saved with the fallback Deposit ID UNK-<DDMMYY>-XX,BSU 18,New,,,2026-11-19,To do
-157,BSU-002,BSU,AR workspace,Related lists,RL-DEP-SUG,"Suggested matches tab on x_ar_bank_statement: workspace data resource listing up to 10 issued invoices with amount due and open Collections cases not yet on this deposit, ranked by: invoice / case number or reference cited in the bank reference, amount…",BSU 21; D5,New,,,2026-11-19,To do
-158,BSU-003,BSU,AR workspace,"Panels, tabs and other workspace items",ALC-DELTA,"Summary line on the Allocations tabs: Amount, Allocation value, Delta: on a deposit the money to refund or apply elsewhere, on an invoice / case the amount still to collect or offset",BSU 22,New,,,2026-11-19,To do
-159,BSU-004,BSU,AR workspace,Related lists,RL-INV-SUG,"Suggested BSU deposits tab on x_ar_invoice: up to 10 x_ar_bank_statement records with an unmatched amount, ranked with the same signals; only for issued invoices with amount due",BSU 21; D5,New,,,2026-11-19,To do
-160,BSU-005,BSU,AR workspace,Related lists,RL-REQ-SUG,"Suggested BSU deposits tab on Collections cases: as RL-INV-SUG, against the case's Request value still to match",BSU 21; D29,New,,,2026-11-19,To do
-161,BSU-006,BSU,AR workspace,"Panels, tabs and other workspace items",BSU-01,"BSU upload form: opened by New on the Statement uploads list; upload form, preview, save opens the new RITM",BSU 16,New,,,2026-11-19,To do
-162,BSU-007,BSU,AR workspace,"Panels, tabs and other workspace items",BSU-03,"Upload form = catalog item 'Bank statement upload' rendered in the workspace: variables bank account, statement date, CSV attachment; submit creates the RITM",D32,New,,,2026-11-19,To do
-163,BSU-008,BSU,AR workspace,"Panels, tabs and other workspace items",BSU-04,CSV file kept as sys_attachment on sc_req_item,,New,,,2026-11-19,To do
-164,BSU-009,BSU,AR workspace,"Panels, tabs and other workspace items",BSU-05,Bank template: column mapping per bank,,New,,,2026-11-19,To do
-165,BSU-010,BSU,AR workspace,"Panels, tabs and other workspace items",BSU-06,"Preview before insert: deposits with Deposit IDs, skipped withdrawals, totals",,New,,,2026-11-19,To do
-166,AR-00-003,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-01,"Service Portal header, audience role x_ar.project_team",,New,,,2026-11-19,To do
-167,AR-00-004,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-02,Portal homepage: search + quick links widgets,,New,,,2026-11-19,To do
-168,AR-00-005,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-04,Quick link to My Requests,,New,,,2026-11-19,To do
-169,AR-00-006,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-30,"Variable set General information, first section of every AR form record producer: requester_name, requester_email, department, cc_list",D19,New,,,2026-11-19,To do
-170,AR-iii-003,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-49,"Collections record producer: one form for AR-iii, AR-iv and AR-v",D30,New,,,2026-11-19,To do
-171,AR-iii-004,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-50,"Collections variable set Collection type: collection_type, mandatory, preset from the catalogue item",D30,New,,,2026-11-19,To do
-172,AR-iii-005,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-51,Collections variable set 3,AR-iii 19,New,,,2026-11-19,To do
-173,AR-iii-006,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-52,"Collections AR-iii multi-row variable set Total number of collections for the day: Collection Type*, Transaction Amount*; 1 to 99 rows; duplicates allowed",AR-iii 19,New,,,2026-11-19,To do
-174,AR-iii-007,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-53,"Collections AR-iv multi-row variable set Amount for Each Account Code: Description*, Amount*, Cost Centre*, Account Code*; 1 to 10 rows",,New,,,2026-11-19,To do
-175,AR-iii-008,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-54,"Collections AR-v supporting-document guidance by category: Cash Bail: G56, Bailor identity document, Bail Bond Form, Bank-in slip or receipt; Seized Monies and Restitution: G56, Case Property List, Bank-in slip or receipt",,New,,,2026-11-19,To do
-176,AR-iii-009,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-55,Collections section 4,,New,,,2026-11-19,To do
-177,AR-iii-010,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-56,Collections AR-iii Total Amount: calculated sum of Transaction Amount across rows; stored as amount on the case,AR-iii 19,New,,,2026-11-19,To do
-178,AR-iii-011,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-59,"Collections AR-v Seized Monies and Restitution multi-row variable set Case lines: Case Number, Amount, Case Status; 0 to 99 rows",AR-iii 19,New,,,2026-11-19,To do
-179,AR-iii-012,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-60,Collections AR-v: message shown when Refund required? = Yes: 'Please raise a AR10' with a link to the AR10 catalogue item,AR-iii 19,New,,,2026-11-19,To do
-180,AR-iii-013,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-61,Collections AR-v Case lines Total Amount: calculated sum of Amount across rows,,New,,,2026-11-19,To do
-181,AR-iii-014,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",PT-57,Collections AR-iv allocation total: calculated sum of Amount across rows; stored as amount on the case,,New,,,2026-11-19,To do
-182,AR-00-007,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-08,Variable attachments → sys_attachment on the created x_ar_request,,New,,,2026-11-19,To do
-183,AR-00-008,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-09,Submit → inserts x_ar_request,,New,,,2026-11-19,To do
-184,AR-00-009,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-10,My Requests widget: x_ar_request where opened_by = me,,New,,,2026-11-19,To do
-185,AR-00-010,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-11,Ticket page: conversation widget,,New,,,2026-11-19,To do
-186,AR-00-011,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-13,Ticket fields widget: read-only summary of the request,,New,,,2026-11-19,To do
-187,AR-00-012,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-14,"Service catalog category ""AR forms"": 16 record producers AR-i … AR-xvi",D9,New,,,2026-11-19,To do
-188,AR-00-013,AR-00,AR portal forms,"Catalogue, record producers and portal widgets",PT-16,Catalog item placeholder AR-ii … AR-xvi,,New,,,2026-11-19,To do
-189,AR-00-014,AR-00,AR workspace,"Lists, record pages and forms",LST-REQ,List: x_ar_request · list view layout + list menu condition,,New,,,2026-11-19,To do
-190,AR-00-015,AR-00,AR workspace,"Lists, record pages and forms",RP-REQ,Record page · x_ar_request extends task,,New,,,2026-11-19,To do
-191,AR-00-016,AR-00,AR workspace,"Lists, record pages and forms",HDR-REQ,Record header: highlighted values of x_ar_request,,New,,,2026-11-19,To do
-192,AR-00-017,AR-00,AR workspace,"Lists, record pages and forms",FRM-REQ,Form view: x_ar_request,,New,,,2026-11-19,To do
-193,AR-00-018,AR-00,Data and logic,Tables and fields,REQ.number,"Field x_ar_request.number ""Number"" (String, read-only)",,New,,,2026-11-19,To do
-194,AR-00-019,AR-00,Data and logic,Tables and fields,REQ.state,"Field x_ar_request.state ""State"" (Choice, mandatory: New / Work in progress / Awaiting requestor information / Closed complete / Closed incomplete / Cancelled)",,New,,,2026-11-19,To do
-195,AR-00-020,AR-00,Data and logic,Tables and fields,REQ.substate,"Field x_ar_request.substate ""Substate"" (Choice: Awaiting input / Awaiting comment)",,New,,,2026-11-19,To do
-196,AR-00-021,AR-00,Data and logic,Tables and fields,REQ.opened_by,"Field x_ar_request.opened_by ""Requested by"" (Reference → users, read-only)",,New,,,2026-11-19,To do
-197,AR-00-022,AR-00,Data and logic,Tables and fields,REQ.ar_form,"Field x_ar_request.ar_form ""AR form"" (Choice, read-only)",D30,New,,,2026-11-19,To do
-198,AR-00-023,AR-00,Data and logic,Tables and fields,REQ.submission_origin,"Field x_ar_request.submission_origin ""Submission Origin"" (Choice, read-only: Manual / System-generated from unreconciled bank statement)",AR-iii 10,New,,,2026-11-19,To do
-199,AR-iii-015,AR-iii,Data and logic,Tables and fields,REQ.collection_type,"Field x_ar_request.collection_type ""Collection type"" (Choice: AR-iii / AR-iv / AR-v)",D30,New,,,2026-11-19,To do
-200,AR-iii-016,AR-iii,Data and logic,Tables and fields,REQ.collection_date,"Field x_ar_request.collection_date ""Collection Date"" (Date)",,New,,,2026-11-19,To do
-201,AR-iii-017,AR-iii,Data and logic,Tables and fields,REQ.collection_reference,"Field x_ar_request.collection_reference ""Reference Number"" (String)",,New,,,2026-11-19,To do
-202,AR-iii-018,AR-iii,Data and logic,Tables and fields,REQ.ar5_category,"Field x_ar_request.ar5_category ""Category"" (Choice: Cash Bail / Seized Monies / Restitution)",,New,,,2026-11-19,To do
-203,AR-iii-019,AR-iii,Data and logic,Tables and fields,REQ.date_of_collection,"Field x_ar_request.date_of_collection ""Date of Collection"" (Date)",,New,,,2026-11-19,To do
-204,AR-iii-020,AR-iii,Data and logic,Tables and fields,REQ.g56_receipt_number,"Field x_ar_request.g56_receipt_number ""G56 Receipt Number"" (String)",AR-iii 19,New,,,2026-11-19,To do
-205,AR-iii-021,AR-iii,Data and logic,Tables and fields,REQ.bail_amount,"Field x_ar_request.bail_amount ""Bail Amount Received"" (Currency)",,New,,,2026-11-19,To do
-206,AR-iii-022,AR-iii,Data and logic,Tables and fields,REQ.bailor_name,"Field x_ar_request.bailor_name ""Bailor Name"" (String)",,New,,,2026-11-19,To do
-207,AR-iii-023,AR-iii,Data and logic,Tables and fields,REQ.ib_case_number,"Field x_ar_request.ib_case_number ""IB Case Number / WEU Number"" (String)",,New,,,2026-11-19,To do
-208,AR-iii-024,AR-iii,Data and logic,Tables and fields,REQ.case_status,"Field x_ar_request.case_status ""Case Status"" (Choice: Case Pending / Case Closed / Forfeit to State with court order / Forfeit to State without court order)",AR-iii 19,New,,,2026-11-19,To do
-209,AR-iii-025,AR-iii,Data and logic,Tables and fields,REQ.accused_name,"Field x_ar_request.accused_name ""Accused Name"" (String)",,New,,,2026-11-19,To do
-210,AR-iii-026,AR-iii,Data and logic,Tables and fields,REQ.ar5_forfeit,"Field x_ar_request.ar5_forfeit ""Forfeit"" (True/False)",AR-iii 19,New,,,2026-11-19,To do
-211,AR-iii-027,AR-iii,Data and logic,Tables and fields,REQ.ar5_court_order,"Field x_ar_request.ar5_court_order ""Court order"" (True/False)",AR-iii 19,New,,,2026-11-19,To do
-212,AR-iii-028,AR-iii,Data and logic,Tables and fields,REQ.ar5_to_be_invested,"Field x_ar_request.ar5_to_be_invested ""Whether the seized monies are to be invested"" (Choice: Yes / No)",,New,,,2026-11-19,To do
-213,AR-iii-029,AR-iii,Data and logic,Tables and fields,REQ.ar5_refund_required,"Field x_ar_request.ar5_refund_required ""Refund required?"" (Choice: Yes / No)",AR-iii 19,New,,,2026-11-19,To do
-214,AR-00-024,AR-00,Data and logic,Tables and fields,REQ.requester_name,"Field x_ar_request.requester_name ""Requester name"" (String)",,New,,,2026-11-19,To do
-215,AR-00-025,AR-00,Data and logic,Tables and fields,REQ.requester_email,"Field x_ar_request.requester_email ""Email"" (String, read-only)",,New,,,2026-11-19,To do
-216,AR-00-026,AR-00,Data and logic,Tables and fields,REQ.department_sub_bu,"Field x_ar_request.department_sub_bu ""Sub-BU"" (Choice)",,New,,,2026-11-19,To do
-217,AR-00-027,AR-00,Data and logic,Tables and fields,REQ.cc_list,"Field x_ar_request.cc_list ""CC list"" (String (1000))",,New,,,2026-11-19,To do
-218,AR-00-028,AR-00,Data and logic,Tables and fields,REQ.department,"Field x_ar_request.department ""Requesting department"" (Choice, mandatory)",,New,,,2026-11-19,To do
-219,AR-00-029,AR-00,Data and logic,Tables and fields,REQ.customer,"Field x_ar_request.customer ""Customer"" (Reference → x_ar_customer)",,New,,,2026-11-19,To do
-220,AR-00-030,AR-00,Data and logic,Tables and fields,REQ.contract_option,"Field x_ar_request.contract_option ""Contract"" (Choice, mandatory: Existing contract / New contract / No contract required)",D15,New,,,2026-11-19,To do
-221,AR-00-031,AR-00,Data and logic,Tables and fields,REQ.link_customer,"Field x_ar_request.link_customer ""Link Customer Reference"" (Reference → x_ar_customer)",D31,New,,,2026-11-19,To do
-222,AR-00-032,AR-00,Data and logic,Tables and fields,REQ.link_contract,"Field x_ar_request.link_contract ""Link Contract Reference"" (Reference → x_ar_contract)",D31,New,,,2026-11-19,To do
-223,AR-00-033,AR-00,Data and logic,Tables and fields,REQ.contract,"Field x_ar_request.contract ""Contract"" (Reference → x_ar_contract)",D31,New,,,2026-11-19,To do
-224,AR-00-034,AR-00,Data and logic,Tables and fields,REQ.amount,"Field x_ar_request.amount ""Request value"" (Currency, read-only)",D29,New,,,2026-11-19,To do
-225,AR-00-035,AR-00,Data and logic,Tables and fields,REQ.assignment_group,"Field x_ar_request.assignment_group ""Assignment group"" (Reference → groups)",,New,,,2026-11-19,To do
-226,AR-00-036,AR-00,Data and logic,Tables and fields,REQ.assigned_to,"Field x_ar_request.assigned_to ""Assigned to"" (Reference → users)",,New,,,2026-11-19,To do
-227,AR-00-037,AR-00,Data and logic,Tables and fields,REQ.opened_at,"Field x_ar_request.opened_at ""Opened"" (Date, read-only)",,New,,,2026-11-19,To do
-228,CCI-005,CCI,AR workspace,"Lists, record pages and forms",LST-INV,List: x_ar_invoice · list view layout + list menu condition,,New,,,2026-11-19,To do
-229,CCI-006,CCI,AR workspace,"Lists, record pages and forms",RP-INV,Record page · x_ar_invoice,,New,,,2026-11-19,To do
-230,CCI-007,CCI,AR workspace,"Lists, record pages and forms",HDR-INV,Record header: highlighted values of x_ar_invoice,,New,,,2026-11-19,To do
-231,CCI-008,CCI,AR workspace,"Lists, record pages and forms",FRM-INV,Form view: x_ar_invoice,,New,,,2026-11-19,To do
-232,CCI-009,CCI,Data and logic,Tables and fields,INV.number,"Field x_ar_invoice.number ""Number"" (String, read-only)",,New,,,2026-11-19,To do
-233,CCI-010,CCI,Data and logic,Tables and fields,INV.state,"Field x_ar_invoice.state ""State"" (Choice, read-only: Draft / Issued / Cancelled)",,New,,,2026-11-19,To do
-234,CCI-011,CCI,Data and logic,Tables and fields,INV.customer,"Field x_ar_invoice.customer ""Customer"" (Reference → x_ar_customer, mandatory)",,New,,,2026-11-19,To do
-235,CCI-012,CCI,Data and logic,Tables and fields,INV.contract,"Field x_ar_invoice.contract ""Contract"" (Reference → x_ar_contract)",,New,,,2026-11-19,To do
-236,CCI-013,CCI,Data and logic,Tables and fields,INV.ar_request,"Field x_ar_invoice.ar_request ""AR request"" (Reference → x_ar_request, read-only)",,New,,,2026-11-19,To do
-237,CCI-014,CCI,Data and logic,Tables and fields,INV.request_line,"Field x_ar_invoice.request_line ""Billing line"" (Reference → x_ar_request_line, read-only)",,New,,,2026-11-19,To do
-238,CCI-015,CCI,Data and logic,Tables and fields,INV.billing_schedule,"Field x_ar_invoice.billing_schedule ""Billing schedule"" (Reference → x_ar_billing_schedule, read-only)",,New,,,2026-11-19,To do
-239,CCI-016,CCI,Data and logic,Tables and fields,INV.billing_period,"Field x_ar_invoice.billing_period ""Billing period"" (Date, read-only)",,New,,,2026-11-19,To do
-240,CCI-017,CCI,Data and logic,Tables and fields,INV.short_description,"Field x_ar_invoice.short_description ""Description"" (String, mandatory)",,New,,,2026-11-19,To do
-241,CCI-018,CCI,Data and logic,Tables and fields,INV.amount,"Field x_ar_invoice.amount ""Amount"" (Currency, mandatory)",,New,,,2026-11-19,To do
-242,CCI-019,CCI,Data and logic,Tables and fields,INV.invoice_date,"Field x_ar_invoice.invoice_date ""Invoice date"" (Date)",,New,,,2026-11-19,To do
-243,CCI-020,CCI,Data and logic,Tables and fields,INV.approval_date,"Field x_ar_invoice.approval_date ""Approval date"" (Date)",CCI 8,New,,,2026-11-19,To do
-244,CCI-021,CCI,Data and logic,Tables and fields,INV.due_date,"Field x_ar_invoice.due_date ""Due date"" (Date)",,New,,,2026-11-19,To do
-245,BSU-011,BSU,AR workspace,"Lists, record pages and forms",LST-DEP,List: x_ar_bank_statement · list view layout + list menu condition,,New,,,2026-11-19,To do
-246,BSU-012,BSU,AR workspace,"Lists, record pages and forms",RP-DEP,Record page · x_ar_bank_statement,,New,,,2026-11-19,To do
-247,BSU-013,BSU,AR workspace,"Lists, record pages and forms",HDR-DEP,Record header: highlighted values of x_ar_bank_statement,,New,,,2026-11-19,To do
-248,BSU-014,BSU,AR workspace,"Lists, record pages and forms",FRM-DEP,Form view: x_ar_bank_statement,,New,,,2026-11-19,To do
-249,BSU-015,BSU,Data and logic,Tables and fields,DEP.deposit_id,"Field x_ar_bank_statement.deposit_id ""Deposit ID"" (String, read-only)",BSU 18,New,,,2026-11-19,To do
-250,BSU-016,BSU,Data and logic,Tables and fields,DEP.bank_account,"Field x_ar_bank_statement.bank_account ""Bank account"" (Reference → x_ar_bank_account, read-only)",,New,,,2026-11-19,To do
-251,BSU-017,BSU,Data and logic,Tables and fields,DEP.bsu,"Field x_ar_bank_statement.bsu ""Statement upload"" (Reference → sc_req_item, read-only)",,New,,,2026-11-19,To do
-252,BSU-018,BSU,Data and logic,Tables and fields,DEP.value_date,"Field x_ar_bank_statement.value_date ""Value date"" (Date, read-only)",,New,,,2026-11-19,To do
-253,BSU-019,BSU,Data and logic,Tables and fields,DEP.amount,"Field x_ar_bank_statement.amount ""Amount"" (Currency, read-only)",,New,,,2026-11-19,To do
-254,BSU-020,BSU,Data and logic,Tables and fields,DEP.payer_name,"Field x_ar_bank_statement.payer_name ""Payer (as on statement)"" (String, read-only)",,New,,,2026-11-19,To do
-255,BSU-021,BSU,Data and logic,Tables and fields,DEP.bank_reference,"Field x_ar_bank_statement.bank_reference ""Reference / remittance"" (String, read-only)",,New,,,2026-11-19,To do
-256,BSU-022,BSU,Data and logic,Tables and fields,DEP.bank_transaction_ref,"Field x_ar_bank_statement.bank_transaction_ref ""Bank transaction ref"" (String, read-only)",,New,,,2026-11-19,To do
-257,BSU-023,BSU,Data and logic,Tables and fields,DEP.transaction_id,"Field x_ar_bank_statement.transaction_id ""Transaction ID"" (String, read-only)",BSU 18–19,New,,,2026-11-19,To do
-258,BSU-024,BSU,Data and logic,Tables and fields,DEP.payment_mode,"Field x_ar_bank_statement.payment_mode ""Payment mode"" (Reference → x_ar_payment_mode, read-only)",BSU 19,New,,,2026-11-19,To do
-259,BSU-025,BSU,AR workspace,"Lists, record pages and forms",LST-BSU,List: sc_req_item · list view layout + list menu condition,,New,,,2026-11-19,To do
-260,BSU-026,BSU,AR workspace,"Lists, record pages and forms",RP-BSU,Record page · sc_req_item,,New,,,2026-11-19,To do
-261,BSU-027,BSU,AR workspace,"Lists, record pages and forms",HDR-BSU,Record header: highlighted values of sc_req_item,,New,,,2026-11-19,To do
-262,BSU-028,BSU,AR workspace,"Lists, record pages and forms",FRM-BSU,Form view: sc_req_item,,New,,,2026-11-19,To do
-263,BSU-029,BSU,Data and logic,Tables and fields,BSU.number,"Field sc_req_item.number ""Number"" (String, read-only)",,New,,,2026-11-19,To do
-264,BSU-030,BSU,Data and logic,Tables and fields,BSU.bank_account,"Field sc_req_item.bank_account ""Bank account"" (Reference → x_ar_bank_account, read-only)",,New,,,2026-11-19,To do
-265,BSU-031,BSU,Data and logic,Tables and fields,BSU.statement_date,"Field sc_req_item.statement_date ""Statement date"" (Date, read-only)",,New,,,2026-11-19,To do
-266,BSU-032,BSU,Data and logic,Tables and fields,BSU.file_name,"Field sc_req_item.file_name ""File"" (String, read-only)",,New,,,2026-11-19,To do
-267,BSU-033,BSU,Data and logic,Tables and fields,BSU.uploaded_by,"Field sc_req_item.uploaded_by ""Uploaded by"" (Reference → users, read-only)",,New,,,2026-11-19,To do
-268,BSU-034,BSU,Data and logic,Tables and fields,BSU.uploaded_at,"Field sc_req_item.uploaded_at ""Uploaded"" (String, read-only)",,New,,,2026-11-19,To do
-269,BSU-035,BSU,Data and logic,Tables and fields,BSU.deposit_count,"Field sc_req_item.deposit_count ""Deposits"" (Integer, read-only)",,New,,,2026-11-19,To do
-270,BSU-036,BSU,Data and logic,Tables and fields,BSU.deposit_total,"Field sc_req_item.deposit_total ""Deposit total"" (Currency, read-only)",,New,,,2026-11-19,To do
-271,BSU-037,BSU,Data and logic,Tables and fields,BSU.withdrawals_skipped,"Field sc_req_item.withdrawals_skipped ""Withdrawals skipped"" (Integer, read-only)",,New,,,2026-11-19,To do
-272,BSU-038,BSU,AR workspace,"Lists, record pages and forms",LST-BNK,List: x_ar_bank_account · list view layout + list menu condition,,New,,,2026-11-19,To do
-273,BSU-039,BSU,AR workspace,"Lists, record pages and forms",RP-BNK,Record page · x_ar_bank_account,,New,,,2026-11-19,To do
-274,BSU-040,BSU,AR workspace,"Lists, record pages and forms",HDR-BNK,Record header: highlighted values of x_ar_bank_account,,New,,,2026-11-19,To do
-275,BSU-041,BSU,AR workspace,"Lists, record pages and forms",FRM-BNK,Form view: x_ar_bank_account,,New,,,2026-11-19,To do
-276,BSU-042,BSU,Data and logic,Tables and fields,BNK.bank,"Field x_ar_bank_account.bank ""Bank name"" (Choice, mandatory: Marina Bank / Orchard Bank / Union Straits Bank)",BSU 17,New,,,2026-11-19,To do
-277,BSU-043,BSU,Data and logic,Tables and fields,BNK.account_number,"Field x_ar_bank_account.account_number ""Bank account number"" (String, mandatory)",,New,,,2026-11-19,To do
-278,BSU-044,BSU,Data and logic,Tables and fields,BNK.account_name,"Field x_ar_bank_account.account_name ""Bank account name"" (String, mandatory)",BSU 17,New,,,2026-11-19,To do
-279,BSU-045,BSU,Data and logic,Tables and fields,BNK.department,"Field x_ar_bank_account.department ""Department"" (Choice, mandatory)",,New,,,2026-11-19,To do
-280,BSU-046,BSU,Data and logic,Tables and fields,BNK.account_type,"Field x_ar_bank_account.account_type ""Account type"" (Choice, mandatory: Revenue account / Deposit account / Operating account)",,New,,,2026-11-19,To do
-281,BSU-047,BSU,Data and logic,Tables and fields,BNK.currency,"Field x_ar_bank_account.currency ""Currency"" (String, read-only)",,New,,,2026-11-19,To do
-282,BSU-048,BSU,Data and logic,Tables and fields,BNK.collection_types,"Field x_ar_bank_account.collection_types ""Collection types"" (List: AR-iii / AR-iv / AR-v)",BSU 13,New,,,2026-11-19,To do
-283,BSU-049,BSU,Data and logic,Tables and fields,BNK.active,"Field x_ar_bank_account.active ""Active"" (True/False)",CCI 12,New,,,2026-11-19,To do
-284,BSU-050,BSU,AR workspace,"Lists, record pages and forms",LST-ALC,List: x_ar_allocation · list view layout + list menu condition,,New,,,2026-11-19,To do
-285,BSU-051,BSU,AR workspace,"Lists, record pages and forms",RP-ALC,Record page · x_ar_allocation,,New,,,2026-11-19,To do
-286,BSU-052,BSU,AR workspace,"Lists, record pages and forms",HDR-ALC,Record header: highlighted values of x_ar_allocation,,New,,,2026-11-19,To do
-287,BSU-053,BSU,AR workspace,"Lists, record pages and forms",FRM-ALC,Form view: x_ar_allocation,,New,,,2026-11-19,To do
-288,BSU-054,BSU,Data and logic,Tables and fields,ALC.deposit,"Field x_ar_allocation.deposit ""BSU deposit"" (Reference → x_ar_bank_statement, mandatory)",,New,,,2026-11-19,To do
-289,BSU-055,BSU,Data and logic,Tables and fields,ALC.invoice,"Field x_ar_allocation.invoice ""Invoice"" (Reference → x_ar_invoice)",,New,,,2026-11-19,To do
-290,BSU-056,BSU,Data and logic,Tables and fields,ALC.request,"Field x_ar_allocation.request ""Collection case"" (Reference → x_ar_request)",D29; D30,New,,,2026-11-19,To do
-291,BSU-057,BSU,Data and logic,Tables and fields,ALC.amount,"Field x_ar_allocation.amount ""Allocation value"" (Currency)",,New,,,2026-11-19,To do
-292,BSU-058,BSU,Data and logic,Tables and fields,ALC.state,"Field x_ar_allocation.state ""State"" (Choice: Applied / Removed)",,New,,,2026-11-19,To do
-293,BSU-059,BSU,Data and logic,Tables and fields,ALC.exception,"Field x_ar_allocation.exception ""Exception"" (Choice: Exact / Multi-invoice / Short pay / Overpayment / Partial / Discount taken)",,New,,,2026-11-19,To do
-294,BSU-060,BSU,Data and logic,Tables and fields,ALC.reason,"Field x_ar_allocation.reason ""Reason"" (String (1000))",,New,,,2026-11-19,To do
-295,CCI-022,CCI,AR workspace,"Lists, record pages and forms",LST-CMP,List: core_company · list view layout + list menu condition,,New,,,2026-11-19,To do
-296,CCI-023,CCI,AR workspace,"Lists, record pages and forms",RP-CMP,Record page · core_company,,New,,,2026-11-19,To do
-297,CCI-024,CCI,AR workspace,"Lists, record pages and forms",HDR-CMP,Record header: highlighted values of core_company,,New,,,2026-11-19,To do
-298,CCI-025,CCI,AR workspace,"Lists, record pages and forms",FRM-CMP,Form view: core_company,,New,,,2026-11-19,To do
-299,CCI-026,CCI,Data and logic,Tables and fields,CMP.name,"Field core_company.name ""Name"" (String, mandatory)",,New,,,2026-11-19,To do
-300,CCI-027,CCI,AR workspace,"Lists, record pages and forms",LST-CUS,List: x_ar_customer · list view layout + list menu condition,,New,,,2026-11-19,To do
-301,CCI-028,CCI,AR workspace,"Lists, record pages and forms",RP-CUS,Record page · x_ar_customer,,New,,,2026-11-19,To do
-302,CCI-029,CCI,AR workspace,"Lists, record pages and forms",HDR-CUS,Record header: highlighted values of x_ar_customer,,New,,,2026-11-19,To do
-303,CCI-030,CCI,AR workspace,"Lists, record pages and forms",FRM-CUS,Form view: x_ar_customer,,New,,,2026-11-19,To do
-304,CCI-031,CCI,Data and logic,Tables and fields,CUS.company,"Field x_ar_customer.company ""Company"" (Reference → core_company, mandatory)",,New,,,2026-11-19,To do
-305,CCI-032,CCI,Data and logic,Tables and fields,CUS.company.name,"Field x_ar_customer.company.name ""Customer name"" (String, read-only)",D26,New,,,2026-11-19,To do
-306,CCI-033,CCI,Data and logic,Tables and fields,CUS.uen,"Field x_ar_customer.uen ""UEN (company registration no.)"" (String)",,New,,,2026-11-19,To do
-307,CCI-034,CCI,Data and logic,Tables and fields,CUS.parent_group,"Field x_ar_customer.parent_group ""Parent group"" (String)",,New,,,2026-11-19,To do
-308,CCI-035,CCI,Data and logic,Tables and fields,CUS.registered_address,"Field x_ar_customer.registered_address ""Registered address"" (String (1000))",,New,,,2026-11-19,To do
-309,CCI-036,CCI,Data and logic,Tables and fields,CUS.agency_type,"Field x_ar_customer.agency_type ""Agency type"" (Choice: M / SB / PV)",D23; D31,New,,,2026-11-19,To do
-310,CCI-037,CCI,Data and logic,Tables and fields,CUS.vag,"Field x_ar_customer.vag ""V@G"" (Choice: Yes / No)",,New,,,2026-11-19,Redundant (see #549)
-311,CCI-038,CCI,Data and logic,Tables and fields,CUS.vag_sub_bu,"Field x_ar_customer.vag_sub_bu ""V@G sub-BU"" (String)",,New,,,2026-11-19,To do
-312,CCI-039,CCI,Data and logic,Tables and fields,CUS.poc_name,"Field x_ar_customer.poc_name ""POC name"" (String)",,New,,,2026-11-19,To do
-313,CCI-040,CCI,Data and logic,Tables and fields,CUS.poc_email,"Field x_ar_customer.poc_email ""POC email"" (String)",,New,,,2026-11-19,To do
-314,CCI-041,CCI,Data and logic,Tables and fields,CUS.bank_names,"Field x_ar_customer.bank_names ""Names seen on bank statements"" (String (1000))",,New,,,2026-11-19,To do
-315,CCI-042,CCI,Data and logic,Tables and fields,CUS.notes,"Field x_ar_customer.notes ""Notes for AR"" (String (4000))",,New,,,2026-11-19,To do
-316,CCI-043,CCI,Data and logic,Tables and fields,CUS.active,"Field x_ar_customer.active ""Active"" (True/False)",CCI 12,New,,,2026-11-19,To do
-317,CCI-044,CCI,AR workspace,"Lists, record pages and forms",LST-CON,List: x_ar_contract · list view layout + list menu condition,,New,,,2026-11-19,To do
-318,CCI-045,CCI,AR workspace,"Lists, record pages and forms",RP-CON,Record page · x_ar_contract,,New,,,2026-11-19,To do
-319,CCI-046,CCI,AR workspace,"Lists, record pages and forms",HDR-CON,Record header: highlighted values of x_ar_contract,,New,,,2026-11-19,To do
-320,CCI-047,CCI,AR workspace,"Lists, record pages and forms",FRM-CON,Form view: x_ar_contract,,New,,,2026-11-19,To do
-321,CCI-048,CCI,Data and logic,Tables and fields,CON.contract_id,"Field x_ar_contract.contract_id ""Contract ID"" (String, read-only)",,New,,,2026-11-19,To do
-322,CCI-049,CCI,Data and logic,Tables and fields,CON.contract_type,"Field x_ar_contract.contract_type ""Contract category"" (Choice, mandatory: Contract / No contract)",D15,New,,,2026-11-19,To do
-323,CCI-050,CCI,Data and logic,Tables and fields,CON.number,"Field x_ar_contract.number ""Contract number"" (String)",,New,,,2026-11-19,To do
-324,CCI-051,CCI,Data and logic,Tables and fields,CON.contract_category,"Field x_ar_contract.contract_category ""Contract type"" (Choice: Recurring / Ad-hoc)",,New,,,2026-11-19,To do
-325,CCI-052,CCI,Data and logic,Tables and fields,CON.customer,"Field x_ar_contract.customer ""Customer"" (Reference → x_ar_customer, mandatory)",,New,,,2026-11-19,To do
-326,CCI-053,CCI,Data and logic,Tables and fields,CON.department,"Field x_ar_contract.department ""Department"" (Choice)",,New,,,2026-11-19,To do
-327,CCI-054,CCI,Data and logic,Tables and fields,CON.contract_owners,"Field x_ar_contract.contract_owners ""Contract owner"" (List → users)",CCI 10,New,,,2026-11-19,To do
-328,CCI-055,CCI,Data and logic,Tables and fields,CON.reference_number,"Field x_ar_contract.reference_number ""Contract reference number"" (String)",,New,,,2026-11-19,To do
-329,CCI-056,CCI,Data and logic,Tables and fields,CON.po_number,"Field x_ar_contract.po_number ""Contract PO number"" (String)",,New,,,2026-11-19,To do
-330,CCI-057,CCI,Data and logic,Tables and fields,CON.short_description,"Field x_ar_contract.short_description ""Contract title"" (String, mandatory)",,New,,,2026-11-19,To do
-331,CCI-058,CCI,Data and logic,Tables and fields,CON.billing_type,"Field x_ar_contract.billing_type ""Billing"" (Choice: Monthly / Milestone / Annual / Time & materials / Per PO)",,New,,,2026-11-19,To do
-332,CCI-059,CCI,Data and logic,Tables and fields,CON.contract_value,"Field x_ar_contract.contract_value ""Contract value (SGD)"" (Currency)",,New,,,2026-11-19,To do
-333,CCI-060,CCI,Data and logic,Tables and fields,CON.start_date,"Field x_ar_contract.start_date ""Contract start date"" (Date)",,New,,,2026-11-19,To do
-334,CCI-061,CCI,Data and logic,Tables and fields,CON.end_date,"Field x_ar_contract.end_date ""Contract end date"" (Date)",,New,,,2026-11-19,To do
-335,CCI-062,CCI,Data and logic,Tables and fields,CON.payment_terms,"Field x_ar_contract.payment_terms ""Payment terms (days)"" (Integer)",,New,,,2026-11-19,To do
-336,CCI-063,CCI,Data and logic,Tables and fields,CON.lpi_applicable,"Field x_ar_contract.lpi_applicable ""LPI applicable"" (True/False)",,New,,,2026-11-19,To do
-337,CCI-064,CCI,Data and logic,Tables and fields,CON.lpi_min_rate,"Field x_ar_contract.lpi_min_rate ""Minimum LPI rate (%)"" (Decimal)",,New,,,2026-11-19,To do
-338,CCI-065,CCI,Data and logic,Tables and fields,CON.lpi_rate,"Field x_ar_contract.lpi_rate ""LPI rate (%)"" (Decimal)",,New,,,2026-11-19,To do
-339,CCI-066,CCI,Data and logic,Tables and fields,CON.billing_cycle,"Field x_ar_contract.billing_cycle ""Contract billing cycle"" (Choice: 1st of the month / 15th of the month / Others)",,New,,,2026-11-19,To do
-340,CCI-067,CCI,Data and logic,Tables and fields,CON.billing_cycle_other,"Field x_ar_contract.billing_cycle_other ""Suggested billing cycle"" (String)",,New,,,2026-11-19,To do
-341,CCI-068,CCI,Data and logic,Tables and fields,CON.preferred_invoice_date,"Field x_ar_contract.preferred_invoice_date ""Preferred invoice billing date"" (Date)",,New,,,2026-11-19,To do
-342,CCI-069,CCI,Data and logic,Tables and fields,CON.payment_terms_choice,"Field x_ar_contract.payment_terms_choice ""Payment terms"" (Choice: 30 days / Others)",,New,,,2026-11-19,To do
-343,CCI-070,CCI,Data and logic,Tables and fields,CON.payment_terms_other,"Field x_ar_contract.payment_terms_other ""Other payment terms"" (String)",,New,,,2026-11-19,To do
-344,CCI-071,CCI,Data and logic,Tables and fields,CON.proration,"Field x_ar_contract.proration ""Proration"" (Choice: Yes / No)",,New,,,2026-11-19,To do
-345,CCI-072,CCI,Data and logic,Tables and fields,CON.proration_first,"Field x_ar_contract.proration_first ""Proration for 1st month"" (Currency)",,New,,,2026-11-19,To do
-346,CCI-073,CCI,Data and logic,Tables and fields,CON.proration_last,"Field x_ar_contract.proration_last ""Proration for last month"" (Currency)",,New,,,2026-11-19,To do
-347,CCI-074,CCI,Data and logic,Tables and fields,CON.type_of_billing,"Field x_ar_contract.type_of_billing ""Type of billing"" (Choice: General / Rental / Carpark / Courses / 5 / 6)",,New,,,2026-11-19,To do
-348,CCI-075,CCI,Data and logic,Tables and fields,CON.bulk_supporting_docs,Field x_ar_contract.bulk_supporting_docs (Attachment),,New,,,2026-11-19,Redundant (see #563)
-349,CCI-076,CCI,Data and logic,Tables and fields,CON.giro_status,"Field x_ar_contract.giro_status ""GIRO status"" (Choice: Active / Not active)",AR-ix 11; D21,New,,,2026-11-19,To do
-350,CCI-077,CCI,Data and logic,Tables and fields,CON.giro_case,"Field x_ar_contract.giro_case ""Active GIRO case"" (Reference → x_ar_request)",,New,,,2026-11-19,To do
-351,CCI-078,CCI,Data and logic,Tables and fields,CON.bill_to_name,"Field x_ar_contract.bill_to_name ""Bill-to person"" (String)",,New,,,2026-11-19,To do
-352,CCI-079,CCI,Data and logic,Tables and fields,CON.bill_to_email,"Field x_ar_contract.bill_to_email ""Bill-to email"" (String)",,New,,,2026-11-19,To do
-353,CCI-080,CCI,Data and logic,Tables and fields,CON.bill_to_phone,"Field x_ar_contract.bill_to_phone ""Bill-to phone"" (String)",,New,,,2026-11-19,To do
-354,CCI-081,CCI,Data and logic,Tables and fields,CON.bill_to_address,"Field x_ar_contract.bill_to_address ""Billing address"" (String (1000))",,New,,,2026-11-19,To do
-355,CCI-082,CCI,Data and logic,Tables and fields,CON.notes,"Field x_ar_contract.notes ""Notes"" (String (4000))",,New,,,2026-11-19,To do
-356,CCI-083,CCI,AR workspace,"Lists, record pages and forms",LST-BCT,List: x_ar_billing_contact · list view layout + list menu condition,,New,,,2026-11-19,To do
-357,CCI-084,CCI,AR workspace,"Lists, record pages and forms",RP-BCT,Record page · x_ar_billing_contact,,New,,,2026-11-19,To do
-358,CCI-085,CCI,AR workspace,"Lists, record pages and forms",HDR-BCT,Record header: highlighted values of x_ar_billing_contact,,New,,,2026-11-19,To do
-359,CCI-086,CCI,AR workspace,"Lists, record pages and forms",FRM-BCT,Form view: x_ar_billing_contact,,New,,,2026-11-19,To do
-360,CCI-087,CCI,Data and logic,Tables and fields,BCT.customer,"Field x_ar_billing_contact.customer ""Customer"" (Reference → x_ar_customer, mandatory)",,New,,,2026-11-19,To do
-361,CCI-088,CCI,Data and logic,Tables and fields,BCT.requestor,"Field x_ar_billing_contact.requestor ""Requestor"" (Reference → users)",CCI 15,New,,,2026-11-19,To do
-362,CCI-089,CCI,Data and logic,Tables and fields,BCT.department,"Field x_ar_billing_contact.department ""Department"" (Choice, mandatory)",,New,,,2026-11-19,To do
-363,CCI-090,CCI,Data and logic,Tables and fields,BCT.contact_name,"Field x_ar_billing_contact.contact_name ""Bill-to person"" (String, mandatory)",,New,,,2026-11-19,To do
-364,CCI-091,CCI,Data and logic,Tables and fields,BCT.email,"Field x_ar_billing_contact.email ""Email"" (String, mandatory)",,New,,,2026-11-19,To do
-365,CCI-092,CCI,Data and logic,Tables and fields,BCT.phone,"Field x_ar_billing_contact.phone ""Phone"" (String)",,New,,,2026-11-19,To do
-366,CCI-093,CCI,Data and logic,Tables and fields,BCT.billing_address,"Field x_ar_billing_contact.billing_address ""Billing address"" (String (1000))",,New,,,2026-11-19,To do
-367,CCI-094,CCI,Data and logic,Tables and fields,BCT.source_request,"Field x_ar_billing_contact.source_request ""From AR request"" (Reference → x_ar_request, read-only)",,New,,,2026-11-19,To do
-368,CCI-095,CCI,Data and logic,Tables and fields,BCT.active,"Field x_ar_billing_contact.active ""Active"" (True/False)",CCI 12,New,,,2026-11-19,To do
-369,CCI-096,CCI,AR workspace,"Lists, record pages and forms",LST-DOC,List: x_ar_customer_document · list view layout + list menu condition,,New,,,2026-11-19,To do
-370,CCI-097,CCI,AR workspace,"Lists, record pages and forms",RP-DOC,Record page · x_ar_customer_document,,New,,,2026-11-19,To do
-371,CCI-098,CCI,AR workspace,"Lists, record pages and forms",HDR-DOC,Record header: highlighted values of x_ar_customer_document,,New,,,2026-11-19,To do
-372,CCI-099,CCI,AR workspace,"Lists, record pages and forms",FRM-DOC,Form view: x_ar_customer_document,,New,,,2026-11-19,To do
-373,CCI-100,CCI,Data and logic,Tables and fields,DOC.number,"Field x_ar_customer_document.number ""Number"" (String, read-only)",,New,,,2026-11-19,To do
-374,CCI-101,CCI,Data and logic,Tables and fields,DOC.customer,"Field x_ar_customer_document.customer ""Customer"" (Reference → x_ar_customer, read-only)",,New,,,2026-11-19,To do
-375,CCI-102,CCI,Data and logic,Tables and fields,DOC.requestor,"Field x_ar_customer_document.requestor ""Requestor"" (Reference → users)",CCI 15,New,,,2026-11-19,To do
-376,CCI-103,CCI,Data and logic,Tables and fields,DOC.document_type,"Field x_ar_customer_document.document_type ""Document type"" (Choice, read-only: Signed contract / PO / Company registration (ACRA / UEN) / Billing contact & address form)",,New,,,2026-11-19,To do
-377,CCI-104,CCI,Data and logic,Tables and fields,DOC.file_name,"Field x_ar_customer_document.file_name ""File"" (String, read-only)",,New,,,2026-11-19,To do
-378,CCI-105,CCI,Data and logic,Tables and fields,DOC.contract,"Field x_ar_customer_document.contract ""Contract"" (Reference → x_ar_contract, read-only)",,New,,,2026-11-19,To do
-379,CCI-106,CCI,Data and logic,Tables and fields,DOC.department,"Field x_ar_customer_document.department ""Department"" (Choice, read-only)",,New,,,2026-11-19,To do
-380,CCI-107,CCI,Data and logic,Tables and fields,DOC.source_request,"Field x_ar_customer_document.source_request ""From AR request"" (Reference → x_ar_request, read-only)",,New,,,2026-11-19,To do
-381,CCI-108,CCI,Data and logic,Tables and fields,DOC.received_on,"Field x_ar_customer_document.received_on ""Received"" (Date, read-only)",,New,,,2026-11-19,To do
-382,CCI-109,CCI,AR workspace,"Lists, record pages and forms",LST-SCH,List: x_ar_billing_schedule · list view layout + list menu condition,,New,,,2026-11-19,To do
-383,CCI-110,CCI,AR workspace,"Lists, record pages and forms",RP-SCH,Record page · x_ar_billing_schedule,,New,,,2026-11-19,To do
-384,CCI-111,CCI,AR workspace,"Lists, record pages and forms",HDR-SCH,Record header: highlighted values of x_ar_billing_schedule,,New,,,2026-11-19,To do
-385,CCI-112,CCI,AR workspace,"Lists, record pages and forms",FRM-SCH,Form view: x_ar_billing_schedule,,New,,,2026-11-19,To do
-386,CCI-113,CCI,Data and logic,Tables and fields,SCH.number,"Field x_ar_billing_schedule.number ""Number"" (String, read-only)",,New,,,2026-11-19,To do
-387,CCI-114,CCI,Data and logic,Tables and fields,SCH.contract,"Field x_ar_billing_schedule.contract ""Contract"" (Reference → x_ar_contract, mandatory)",,New,,,2026-11-19,To do
-388,CCI-115,CCI,Data and logic,Tables and fields,SCH.customer,"Field x_ar_billing_schedule.customer ""Customer"" (Reference → x_ar_customer, read-only)",,New,,,2026-11-19,To do
-389,CCI-116,CCI,Data and logic,Tables and fields,SCH.department,"Field x_ar_billing_schedule.department ""Department"" (Choice, mandatory)",,New,,,2026-11-19,To do
-390,CCI-117,CCI,Data and logic,Tables and fields,SCH.short_description,"Field x_ar_billing_schedule.short_description ""What is billed"" (String, mandatory)",,New,,,2026-11-19,To do
-391,CCI-118,CCI,Data and logic,Tables and fields,SCH.frequency,"Field x_ar_billing_schedule.frequency ""Frequency"" (Choice, mandatory: Monthly / Quarterly / Half-yearly / Annually)",,New,,,2026-11-19,To do
-392,CCI-119,CCI,Data and logic,Tables and fields,SCH.amount,"Field x_ar_billing_schedule.amount ""Amount per period"" (Currency, mandatory)",,New,,,2026-11-19,To do
-393,CCI-120,CCI,Data and logic,Tables and fields,SCH.first_billing_date,"Field x_ar_billing_schedule.first_billing_date ""First billing date"" (Date, mandatory)",,New,,,2026-11-19,To do
-394,CCI-121,CCI,Data and logic,Tables and fields,SCH.last_billing_date,"Field x_ar_billing_schedule.last_billing_date ""Last billing date"" (Date, mandatory)",,New,,,2026-11-19,To do
-395,CCI-122,CCI,Data and logic,Tables and fields,SCH.first_period_amount,"Field x_ar_billing_schedule.first_period_amount ""First period amount (prorated)"" (Currency)",,New,,,2026-11-19,To do
-396,CCI-123,CCI,Data and logic,Tables and fields,SCH.last_period_amount,"Field x_ar_billing_schedule.last_period_amount ""Last period amount (prorated)"" (Currency)",,New,,,2026-11-19,To do
-397,CCI-124,CCI,Data and logic,Tables and fields,SCH.source_request,"Field x_ar_billing_schedule.source_request ""From AR request"" (Reference → x_ar_request)",CCI 8,New,,,2026-11-19,To do
-398,CCI-125,CCI,Data and logic,Tables and fields,SCH.source_line,"Field x_ar_billing_schedule.source_line ""From billing line"" (Reference → x_ar_request_line, read-only)",,New,,,2026-11-19,To do
-399,AR-iii-030,AR-iii,AR workspace,"Lists, record pages and forms",LST-CTX,List: x_ar_collection_tx · list view layout + list menu condition,,New,,,2026-11-19,To do
-400,AR-iii-031,AR-iii,AR workspace,"Lists, record pages and forms",RP-CTX,Record page · x_ar_collection_tx,,New,,,2026-11-19,To do
-401,AR-iii-032,AR-iii,AR workspace,"Lists, record pages and forms",HDR-CTX,Record header: highlighted values of x_ar_collection_tx,,New,,,2026-11-19,To do
-402,AR-iii-033,AR-iii,AR workspace,"Lists, record pages and forms",FRM-CTX,Form view: x_ar_collection_tx,,New,,,2026-11-19,To do
-403,AR-iii-034,AR-iii,Data and logic,Tables and fields,CTX.ar_request,"Field x_ar_collection_tx.ar_request ""AR request"" (Reference → x_ar_request, read-only)",,New,,,2026-11-19,To do
-404,AR-iii-035,AR-iii,Data and logic,Tables and fields,CTX.row_number,"Field x_ar_collection_tx.row_number ""Row"" (Integer, read-only)",,New,,,2026-11-19,To do
-405,AR-iii-036,AR-iii,Data and logic,Tables and fields,CTX.collection_type,"Field x_ar_collection_tx.collection_type ""Collection Type"" (Choice, mandatory: Cashcard / Credit Card / NETS / NETS FlashPay / NETS Scan/QR)",,New,,,2026-11-19,To do
-406,AR-iii-037,AR-iii,Data and logic,Tables and fields,CTX.transaction_amount,"Field x_ar_collection_tx.transaction_amount ""Transaction Amount"" (Currency, mandatory)",AR-iii 19,New,,,2026-11-19,To do
-407,AR-iii-038,AR-iii,AR workspace,"Lists, record pages and forms",LST-CAL,List: x_ar_collection_allocation · list view layout + list menu condition,,New,,,2026-11-19,To do
-408,AR-iii-039,AR-iii,AR workspace,"Lists, record pages and forms",RP-CAL,Record page · x_ar_collection_allocation,,New,,,2026-11-19,To do
-409,AR-iii-040,AR-iii,AR workspace,"Lists, record pages and forms",HDR-CAL,Record header: highlighted values of x_ar_collection_allocation,,New,,,2026-11-19,To do
-410,AR-iii-041,AR-iii,AR workspace,"Lists, record pages and forms",FRM-CAL,Form view: x_ar_collection_allocation,,New,,,2026-11-19,To do
-411,AR-iii-042,AR-iii,Data and logic,Tables and fields,CAL.ar_request,"Field x_ar_collection_allocation.ar_request ""AR request"" (Reference → x_ar_request, read-only)",,New,,,2026-11-19,To do
-412,AR-iii-043,AR-iii,Data and logic,Tables and fields,CAL.row_number,"Field x_ar_collection_allocation.row_number ""Row"" (Integer, read-only)",,New,,,2026-11-19,To do
-413,AR-iii-044,AR-iii,Data and logic,Tables and fields,CAL.description,"Field x_ar_collection_allocation.description ""Description"" (String, mandatory)",,New,,,2026-11-19,To do
-414,AR-iii-045,AR-iii,Data and logic,Tables and fields,CAL.amount,"Field x_ar_collection_allocation.amount ""Amount"" (Currency, mandatory)",,New,,,2026-11-19,To do
-415,AR-iii-046,AR-iii,Data and logic,Tables and fields,CAL.cost_centre,"Field x_ar_collection_allocation.cost_centre ""Cost Centre"" (Reference → x_ar_cost_centre, mandatory)",AR-iii 19,New,,,2026-11-19,To do
-416,AR-iii-047,AR-iii,Data and logic,Tables and fields,CAL.account_code,"Field x_ar_collection_allocation.account_code ""Account Code"" (Reference → x_ar_account_code, mandatory)",,New,,,2026-11-19,To do
-417,AR-iii-048,AR-iii,AR workspace,"Lists, record pages and forms",LST-C5L,List: x_ar_collection_case_line · list view layout + list menu condition,,New,,,2026-11-19,To do
-418,AR-iii-049,AR-iii,AR workspace,"Lists, record pages and forms",RP-C5L,Record page · x_ar_collection_case_line,,New,,,2026-11-19,To do
-419,AR-iii-050,AR-iii,AR workspace,"Lists, record pages and forms",HDR-C5L,Record header: highlighted values of x_ar_collection_case_line,,New,,,2026-11-19,To do
-420,AR-iii-051,AR-iii,AR workspace,"Lists, record pages and forms",FRM-C5L,Form view: x_ar_collection_case_line,,New,,,2026-11-19,To do
-421,AR-iii-052,AR-iii,Data and logic,Tables and fields,C5L.ar_request,"Field x_ar_collection_case_line.ar_request ""AR request"" (Reference → x_ar_request, read-only)",,New,,,2026-11-19,To do
-422,AR-iii-053,AR-iii,Data and logic,Tables and fields,C5L.row_number,"Field x_ar_collection_case_line.row_number ""Row"" (Integer, read-only)",,New,,,2026-11-19,To do
-423,AR-iii-054,AR-iii,Data and logic,Tables and fields,C5L.case_number,"Field x_ar_collection_case_line.case_number ""Case Number"" (String)",,New,,,2026-11-19,To do
-424,AR-iii-055,AR-iii,Data and logic,Tables and fields,C5L.amount,"Field x_ar_collection_case_line.amount ""Amount"" (Currency)",,New,,,2026-11-19,To do
-425,AR-iii-056,AR-iii,Data and logic,Tables and fields,C5L.case_status,"Field x_ar_collection_case_line.case_status ""Case Status"" (Choice: Case Pending / Case Closed / Forfeit to State with court order / Forfeit to State without court order)",,New,,,2026-11-19,To do
-426,CCI-126,CCI,AR workspace,"Lists, record pages and forms",LST-CCT,List: x_ar_cost_centre · list view layout + list menu condition,,New,,,2026-11-19,To do
-427,CCI-127,CCI,AR workspace,"Lists, record pages and forms",RP-CCT,Record page · x_ar_cost_centre,,New,,,2026-11-19,To do
-428,CCI-128,CCI,AR workspace,"Lists, record pages and forms",HDR-CCT,Record header: highlighted values of x_ar_cost_centre,,New,,,2026-11-19,To do
-429,CCI-129,CCI,AR workspace,"Lists, record pages and forms",FRM-CCT,Form view: x_ar_cost_centre,,New,,,2026-11-19,To do
-430,CCI-130,CCI,Data and logic,Tables and fields,CCT.code,"Field x_ar_cost_centre.code ""Code"" (String, mandatory)",,New,,,2026-11-19,To do
-431,CCI-131,CCI,Data and logic,Tables and fields,CCT.name,"Field x_ar_cost_centre.name ""Name"" (String, mandatory)",,New,,,2026-11-19,To do
-432,CCI-132,CCI,Data and logic,Tables and fields,CCT.department,"Field x_ar_cost_centre.department ""Department"" (Choice, mandatory)",,New,,,2026-11-19,To do
-433,CCI-133,CCI,Data and logic,Tables and fields,CCT.active,"Field x_ar_cost_centre.active ""Active"" (True/False)",CCI 12,New,,,2026-11-19,To do
-434,CCI-134,CCI,AR workspace,"Lists, record pages and forms",LST-ACT,List: x_ar_account_code · list view layout + list menu condition,,New,,,2026-11-19,To do
-435,CCI-135,CCI,AR workspace,"Lists, record pages and forms",RP-ACT,Record page · x_ar_account_code,,New,,,2026-11-19,To do
-436,CCI-136,CCI,AR workspace,"Lists, record pages and forms",HDR-ACT,Record header: highlighted values of x_ar_account_code,,New,,,2026-11-19,To do
-437,CCI-137,CCI,AR workspace,"Lists, record pages and forms",FRM-ACT,Form view: x_ar_account_code,,New,,,2026-11-19,To do
-438,CCI-138,CCI,Data and logic,Tables and fields,ACT.code,"Field x_ar_account_code.code ""Code"" (String, mandatory)",,New,,,2026-11-19,To do
-439,CCI-139,CCI,Data and logic,Tables and fields,ACT.description,"Field x_ar_account_code.description ""Description"" (String, mandatory)",,New,,,2026-11-19,To do
-440,CCI-140,CCI,Data and logic,Tables and fields,ACT.gst_treatment,"Field x_ar_account_code.gst_treatment ""GST / recovery treatment"" (Choice: GST applicable / No GST / Recovery)",,New,,,2026-11-19,To do
-441,CCI-141,CCI,Data and logic,Tables and fields,ACT.active,"Field x_ar_account_code.active ""Active"" (True/False)",CCI 12,New,,,2026-11-19,To do
-442,BSU-061,BSU,AR workspace,"Lists, record pages and forms",LST-PMD,List: x_ar_payment_mode · list view layout + list menu condition,,New,,,2026-11-19,To do
-443,BSU-062,BSU,AR workspace,"Lists, record pages and forms",RP-PMD,Record page · x_ar_payment_mode,,New,,,2026-11-19,To do
-444,BSU-063,BSU,AR workspace,"Lists, record pages and forms",HDR-PMD,Record header: highlighted values of x_ar_payment_mode,,New,,,2026-11-19,To do
-445,BSU-064,BSU,AR workspace,"Lists, record pages and forms",FRM-PMD,Form view: x_ar_payment_mode,,New,,,2026-11-19,To do
-446,BSU-065,BSU,Data and logic,Tables and fields,PMD.bank_account,"Field x_ar_payment_mode.bank_account ""Bank account"" (Reference → x_ar_bank_account, mandatory)",,New,,,2026-11-19,To do
-447,BSU-066,BSU,Data and logic,Tables and fields,PMD.name,"Field x_ar_payment_mode.name ""Payment mode"" (String, mandatory)",BSU 19,New,,,2026-11-19,To do
-448,BSU-067,BSU,Data and logic,Tables and fields,PMD.prefix,"Field x_ar_payment_mode.prefix ""Prefix"" (String, mandatory)",,New,,,2026-11-19,To do
-449,BSU-068,BSU,Data and logic,Tables and fields,PMD.suffix,"Field x_ar_payment_mode.suffix ""Suffix"" (String, mandatory)",,New,,,2026-11-19,To do
-450,BSU-069,BSU,Data and logic,Tables and fields,PMD.account_code,"Field x_ar_payment_mode.account_code ""Account code"" (Reference → x_ar_account_code)",CCI 11,New,,,2026-11-19,To do
-451,BSU-070,BSU,Data and logic,Tables and fields,PMD.cost_centre,"Field x_ar_payment_mode.cost_centre ""Cost centre"" (Reference → x_ar_cost_centre)",CCI 11,New,,,2026-11-19,To do
-452,BSU-071,BSU,Data and logic,Tables and fields,PMD.active,"Field x_ar_payment_mode.active ""Active"" (True/False)",CCI 12,New,,,2026-11-19,To do
-453,CCI-142,CCI,Data and logic,Tables and fields,INV.amount_due,Field Calculated: amount − matched BSU deposits (?),,New,,,2026-11-19,To do
-454,CCI-143,CCI,Data and logic,Tables and fields,INV.payment_status,Field Calculated: Unpaid / Part paid / Paid / Overdue (?),,New,,,2026-11-19,To do
-455,BSU-072,BSU,Data and logic,Tables and fields,DEP.unmatched_amount,Field Calculated: amount − allocations (?),,New,,,2026-11-19,To do
-456,BSU-073,BSU,Data and logic,Tables and fields,DEP.match_state,Field Calculated: Unmatched / Part matched / Matched (?),,New,,,2026-11-19,To do
-457,CCI-144,CCI,Data and logic,Tables and fields,CUS.overdue,Field Calculated: amount_due on issued invoices past due_date (?),,New,,,2026-11-19,To do
-458,CCI-145,CCI,Data and logic,Tables and fields,CON.status,Field Calculated: Active / Not started / Ended from start and end dates (shells: Open) (?),,New,,,2026-11-19,To do
-459,CCI-146,CCI,Data and logic,Tables and fields,CON.line_count,Field Calculated: number of billing lines filed under the contract (?),,New,,,2026-11-19,To do
-460,BSU-074,BSU,Data and logic,Tables and fields,BSU.department,Field Dot-walk: bank_account.department (?),,New,,,2026-11-19,To do
-461,CCI-147,CCI,Data and logic,Tables and fields,SCH.next_billing_date,Field Calculated: first period on or after today without an invoice (?),,New,,,2026-11-19,To do
-462,CCI-148,CCI,Data and logic,Tables and fields,SCH.periods_due,Field Calculated: periods up to today without an invoice (?),,New,,,2026-11-19,To do
-463,BSU-075,BSU,Data and logic,Tables and fields,BNK.last_statement,Field Calculated: latest sc_req_item.statement_date for the account (?),,New,,,2026-11-19,To do
-464,CCI-149,CCI,Data and logic,Tables and fields,INV.aging,"Field Calculated (#10 E10.11): Current / 1–30 / 31–60 / 61–90 / 90+ days past the due date, for issued invoices with an amount due (?)",,New,,,2026-11-19,To do
-465,BSU-076,BSU,Data and logic,Tables and fields,PMD.deposit_id_pattern,Field Calculated for display: <prefix>-DDMMYY-<suffix> (BSU decision 18) (?),BSU 18,New,,,2026-11-19,To do
-466,BSU-077,BSU,Data and logic,Tables and fields,PMD.bank_name,Field Dot-walk: bank_account.bank (Bank name) (?),,New,,,2026-11-19,To do
-467,BSU-078,BSU,Data and logic,Tables and fields,PMD.bank_account_name,Field Dot-walk: bank_account.account_name (Bank account name) (?),,New,,,2026-11-19,To do
-468,CCI-150,CCI,AR workspace,Related lists,RL-CUS-BCT,Related list: x_ar_billing_contact where customer = this customer,,New,,,2026-11-19,To do
-469,CCI-151,CCI,AR workspace,Related lists,RL-CUS-DOC,Related list: x_ar_customer_document where customer = this customer,,New,,,2026-11-19,To do
-470,CCI-152,CCI,AR workspace,Related lists,RL-CUS-SCH,Related list: x_ar_billing_schedule where customer = this customer,,New,,,2026-11-19,To do
-471,CCI-153,CCI,AR workspace,Related lists,RL-SCH-INV,Related list: x_ar_invoice where billing_schedule = this billing schedule,,New,,,2026-11-19,To do
-472,CCI-154,CCI,AR workspace,Related lists,RL-CUS-CON,Related list: x_ar_contract where customer = this customer,,New,,,2026-11-19,To do
-473,CCI-155,CCI,AR workspace,Related lists,RL-CUS-INV,Related list: x_ar_invoice where customer = this customer,,New,,,2026-11-19,To do
-474,CCI-156,CCI,AR workspace,Related lists,RL-CUS-REQ,Related list: x_ar_request where customer = this customer,,New,,,2026-11-19,To do
-475,CCI-157,CCI,AR workspace,Related lists,RL-CON-INV,Related list: x_ar_invoice where contract = this contract,,New,,,2026-11-19,To do
-476,CCI-158,CCI,AR workspace,Related lists,RL-CON-REQ,Related list: x_ar_request where contract = this contract,,New,,,2026-11-19,To do
-477,CCI-159,CCI,AR workspace,Related lists,RL-CON-RQL,Related list: x_ar_request_line where contract = this contract,,New,,,2026-11-19,To do
-478,CCI-160,CCI,AR workspace,Related lists,RL-CON-SCH,Related list: x_ar_billing_schedule where contract = this contract,,New,,,2026-11-19,To do
-479,BSU-079,BSU,AR workspace,Related lists,RL-INV-ALC,Related list: x_ar_allocation where invoice = this invoice,,New,,,2026-11-19,To do
-480,BSU-080,BSU,AR workspace,Related lists,RL-DEP-ALC,Related list: x_ar_allocation where deposit = this bsu deposit,,New,,,2026-11-19,To do
-481,BSU-081,BSU,AR workspace,Related lists,RL-REQ-ALC,Related list: x_ar_allocation where request = this ar request,,New,,,2026-11-19,To do
-482,AR-iii-057,AR-iii,AR workspace,Related lists,RL-REQ-CTX,Related list: x_ar_collection_tx where ar_request = this ar request,,New,,,2026-11-19,To do
-483,AR-iii-058,AR-iii,AR workspace,Related lists,RL-REQ-CAL,Related list: x_ar_collection_allocation where ar_request = this ar request,,New,,,2026-11-19,To do
-484,AR-iii-059,AR-iii,AR workspace,Related lists,RL-REQ-C5L,Related list: x_ar_collection_case_line where ar_request = this ar request,,New,,,2026-11-19,To do
-485,CCI-161,CCI,AR workspace,Related lists,RL-CCT-CAL,Related list: x_ar_collection_allocation where cost_centre = this cost centre,,New,,,2026-11-19,To do
-486,CCI-162,CCI,AR workspace,Related lists,RL-INV-RQL,Related list: x_ar_request_line where invoice = this invoice,,New,,,2026-11-19,To do
-487,BSU-082,BSU,AR workspace,Related lists,RL-BNK-PMD,Related list: x_ar_payment_mode where bank_account = this bank account,,New,,,2026-11-19,To do
-488,CCI-163,CCI,AR workspace,Related lists,RL-ACT-CAL,Related list: x_ar_collection_allocation where account_code = this account code,,New,,,2026-11-19,To do
-489,BSU-083,BSU,AR workspace,Related lists,RL-BSU-DEP,Related list: x_ar_bank_statement where bsu = this statement upload,,New,,,2026-11-19,To do
-490,BSU-084,BSU,AR workspace,Related lists,RL-BNK-BSU,Related list: sc_req_item where bank_account = this bank account,,New,,,2026-11-19,To do
-491,BSU-085,BSU,AR workspace,Related lists,RL-BNK-DEP,Related list: x_ar_bank_statement where bank_account = this bank account,,New,,,2026-11-19,To do
-492,AR-iii-060,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",UA-PT-addcase,Collections AR-v Seized Monies / Restitution: + Add row in Case lines,,New,,,2026-11-19,To do
-493,AR-iii-061,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",UA-PT-addcol,Collections AR-iii: + Add row in Total number of collections for the day,,New,,,2026-11-19,To do
-494,AR-iii-062,AR-iii,AR portal forms,"Catalogue, record producers and portal widgets",UA-PT-addalloc,Collections AR-iv: + Add row in Amount for Each Account Code,,New,,,2026-11-19,To do
-495,AR-00-038,AR-00,AR workspace,UI actions,UA-REQ-assign,Assign to me → assigned_to = current user; New → Work in progress,,New,,,2026-11-19,To do
-496,CCI-164,CCI,AR workspace,UI actions,UA-SCH-save,Save,,New,,,2026-11-19,To do
-497,CCI-165,CCI,AR workspace,UI actions,UA-BCT-save,Save,,New,,,2026-11-19,To do
-498,CCI-166,CCI,AR workspace,UI actions,UA-BCT-new,New,,New,,,2026-11-19,To do
-499,CCI-167,CCI,AR workspace,UI actions,UA-BCT-insert,Submit; several contacts per customer and department allowed,CCI 15; D11,New,,,2026-11-19,To do
-500,CCI-168,CCI,AR workspace,UI actions,UA-CUS-newcontact,Add billing contact → new billing contact form with customer prefilled,,New,,,2026-11-19,To do
-501,AR-00-039,AR-00,AR workspace,UI actions,UA-REQ-post,Post work note / additional comment to the activity stream,,New,,,2026-11-19,To do
-502,AR-00-040,AR-00,AR workspace,UI actions,UA-REQ-save,Save. On x_ar_request also: state change journalled; substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract; AR-i set to Closed complete generates the 1st invoice as a draft for each line…,CCI 8,New,,,2026-11-19,To do
-503,CCI-169,CCI,AR workspace,UI actions,UA-INV-issue,Issue invoice → state = Issued; blocked until approval_date is set; posts a comment to the requester on the linked AR request,CCI 9,New,,,2026-11-19,To do
-504,CCI-170,CCI,AR workspace,UI actions,UA-INV-cancel,Cancel invoice → only when no BSU deposit is matched,,New,,,2026-11-19,To do
-505,CCI-171,CCI,AR workspace,UI actions,UA-INV-save,Save,,New,,,2026-11-19,To do
-506,BSU-086,BSU,AR workspace,UI actions,UA-DEP-remove,Remove match → deletes the deposit's allocations,,New,,,2026-11-19,To do
-507,BSU-087,BSU,AR workspace,UI actions,UA-SUG-match,Match → opens the New allocation form with the deposit and the invoice / case filled and Allocation value prefilled with the smaller of the deposit's unmatched amount and the target's amount due; AR confirms or changes it and saves,BSU 21–22,New,,,2026-11-19,To do
-508,BSU-088,BSU,AR workspace,UI actions,UA-DEP-newalloc,New on the deposit's Allocations tab → New allocation form with BSU deposit prefilled; AR picks an invoice or a Collection case and may change the amount,BSU 21,New,,,2026-11-19,To do
-509,BSU-089,BSU,AR workspace,UI actions,UA-INV-newalloc,New on the invoice's Allocations tab → New allocation form with Invoice prefilled; AR picks the BSU deposit,BSU 21,New,,,2026-11-19,To do
-510,BSU-090,BSU,AR workspace,UI actions,UA-REQ-newalloc,New on the Collections case's BSU deposits matched tab → New allocation form with Collection case prefilled; AR picks the BSU deposit,BSU 21; D29,New,,,2026-11-19,To do
-511,BSU-091,BSU,AR workspace,UI actions,UA-ALC-insert,Submit of x_ar_allocation: exactly one of invoice or request; amount empty = default; blocked above either; returns to the record it was opened from,BSU 21,New,,,2026-11-19,To do
-512,BSU-092,BSU,AR workspace,UI actions,UA-BSU-new,New: opens the upload form,,New,,,2026-11-19,To do
-513,BSU-093,BSU,AR workspace,UI actions,UA-BSU-save,"Save to bank statements → submits the catalog item: creates the RITM; a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete",,New,,,2026-11-19,To do
-514,BSU-094,BSU,AR workspace,UI actions,UA-BSU-sample,Demo only: generate a sample CSV in the bank's layout,,New,,,2026-11-19,To do
-515,BSU-095,BSU,AR workspace,UI actions,UA-BNK-upload,Upload statement → opens the BSU page for this account,,New,,,2026-11-19,To do
-516,CCI-172,CCI,AR workspace,UI actions,UA-CUS-save,Save,,New,,,2026-11-19,To do
-517,CCI-173,CCI,AR workspace,UI actions,UA-CON-save,Save,,New,,,2026-11-19,To do
-518,BSU-096,BSU,AR workspace,UI actions,UA-BNK-save,Save,,New,,,2026-11-19,To do
-519,CCI-174,CCI,AR workspace,UI actions,UA-CUS-new,New,,New,,,2026-11-19,To do
-520,CCI-175,CCI,AR workspace,UI actions,UA-CON-new,New,,New,,,2026-11-19,To do
-521,CCI-176,CCI,AR workspace,UI actions,UA-CCT-new,New,,New,,,2026-11-19,To do
-522,CCI-177,CCI,AR workspace,UI actions,UA-INV-pdf,Print or save as PDF: opens the invoice document for printing,,New,,,2026-11-19,To do
-523,BSU-097,BSU,AR workspace,UI actions,UA-BNK-newmode,New payment mode: opens a new payment mode with the bank account filled in,,New,,,2026-11-19,To do
-524,BSU-098,BSU,AR workspace,UI actions,UA-PMD-new,New,,New,,,2026-11-19,To do
-525,BSU-099,BSU,AR workspace,UI actions,UA-PMD-insert,Submit,,New,,,2026-11-19,To do
-526,BSU-100,BSU,AR workspace,UI actions,UA-PMD-save,Save,,New,,,2026-11-19,To do
-527,CCI-178,CCI,AR workspace,UI actions,UA-INV-newrel,New invoice on the contract's Invoices tab: draft invoice with customer and contract filled in,CCI 14,New,,,2026-11-19,To do
-528,CCI-179,CCI,AR workspace,UI actions,UA-BCT-newrel,Add billing contact on the customer's Billing contacts tab,,New,,,2026-11-19,To do
-529,CCI-180,CCI,AR workspace,UI actions,UA-INV-insert,Submit,,New,,,2026-11-19,To do
-530,CCI-181,CCI,AR workspace,UI actions,UA-DOC-new,New: AR files a customer document by hand,D31,New,,,2026-11-19,To do
-531,CCI-182,CCI,AR workspace,UI actions,UA-DOC-insert,Submit,,New,,,2026-11-19,To do
-532,CCI-183,CCI,AR workspace,UI actions,UA-DOC-save,Save,,New,,,2026-11-19,To do
-533,CCI-184,CCI,AR workspace,UI actions,UA-ACT-new,New,,New,,,2026-11-19,To do
-534,CCI-185,CCI,AR workspace,UI actions,UA-CCT-save,Save,,New,,,2026-11-19,To do
-535,CCI-186,CCI,AR workspace,UI actions,UA-CCT-insert,Submit,,New,,,2026-11-19,To do
-536,CCI-187,CCI,AR workspace,UI actions,UA-ACT-save,Save,,New,,,2026-11-19,To do
-537,CCI-188,CCI,AR workspace,UI actions,UA-ACT-insert,Submit,,New,,,2026-11-19,To do
-538,BSU-101,BSU,AR workspace,UI actions,UA-BNK-new,New,,New,,,2026-11-19,To do
-539,CCI-189,CCI,AR workspace,UI actions,UA-CUS-insert,Submit,,New,,,2026-11-19,To do
-540,CCI-190,CCI,AR workspace,UI actions,UA-CON-insert,Submit,,New,,,2026-11-19,To do
-541,CCI-191,CCI,AR workspace,UI actions,UA-SCH-insert,Submit of a billing schedule created from the contract,CCI 8,New,,,2026-11-19,To do
-542,BSU-102,BSU,AR workspace,UI actions,UA-BNK-insert,Submit,,New,,,2026-11-19,To do
-543,CCI-192,CCI,AR workspace,UI actions,UA-CON-newschedule,New billing schedule → new x_ar_billing_schedule form with contract prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case,CCI 8,New,,,2026-11-19,To do
-544,CCI-193,CCI,AR workspace,UI actions,UA-CUS-newcontract,New contract → new contract form with customer prefilled,,New,,,2026-11-19,To do
-545,AR-i-106,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-37,"AR-i variable set Invoice details: short_description, attention_name / attention_email, amount_per_period, preferred_invoice_date_choice and preferred_invoice_date_justification, po_number, billing_line_items_required",AR-i 31–33; AR-i 42,Changed,9,AR-i-009,2026-11-19,To do
-546,AR-i-107,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-43,"AR-i multi-row variable set Billing line items, shown when billing_line_items_required = Yes: item_number, amount_excl_gst*, gst_amount and total_amount, late_payment_interest, account_code, cost_center",AR-i 42,Changed,15,AR-i-015,2026-11-19,Redundant (see #557)
-547,AR-i-108,AR-i,Data and logic,Tables and fields,REQ.po_number,"Field x_ar_request.po_number ""Customer PO number"" (String)",AR-i 42,Changed,52,AR-i-052,2026-11-19,To do
-548,AR-i-109,AR-i,Data and logic,Tables and fields,REQ.vag,"Field x_ar_request.vag ""V@G"" (Choice: Yes / No)",AR-i 42,Changed,58,AR-i-058,2026-11-19,To do
-549,CCI-194,CCI,Data and logic,Tables and fields,CUS.vag,"Field x_ar_customer.vag ""V@G"" (Choice: Yes / No)",AR-i 42,Changed,310,CCI-037,2026-11-19,To do
-550,AR-i-110,AR-i,Data and logic,Tables and fields,RQI.cost_center,"Field x_ar_request_item.cost_center ""Cost center"" (String)",AR-i 42,New,,,2026-11-19,To do
-551,AR-i-111,AR-i,Data and logic,Tables and fields,REQ.type_of_billing,"Field x_ar_request.type_of_billing ""Type of billing"" (Choice: General / Rental / Carpark / Courses / 5 / 6)",AR-i 43; D31,Changed,60,AR-i-060,2026-11-19,To do
-552,AR-i-112,AR-i,Data and logic,Tables and fields,RQI.gst_amount,"Field x_ar_request_item.gst_amount ""GST amount"" (Currency, read-only)",AR-i 43,Changed,91,AR-i-091,2026-11-19,To do
-553,AR-i-113,AR-i,Data and logic,Tables and fields,RQI.gst_applicable,"Field x_ar_request_item.gst_applicable ""GST"" (Choice: Yes / No)",AR-i 43,New,,,2026-11-19,To do
-554,AR-i-114,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-40,"AR-i new contract variables, in order: new_contract_type, new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle,…",AR-i 43; D31,Changed,7,AR-i-007,2026-11-19,To do
-555,AR-i-115,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-62,"AR-i variable set 2. Type of billing, right after General information: type_of_billing. UI policy: 5 or 6 hides the Customer and Contract and bill-to variable sets; Customer documents and Invoice details stay. Stored on the request; AR copies it to the…",AR-i 43; D31,New,,,2026-11-19,To do
-556,AR-i-116,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-63,"AR-i popup: when the chosen existing contract's type_of_billing differs from the requester's choice, a catalog client script replaces the value with the contract's and shows a modal titled Type of billing changed",AR-i 43,New,,,2026-11-19,To do
-557,AR-i-117,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-43,"AR-i multi-row variable set Billing line items, shown when billing_line_items_required = Yes: item_number, amount_excl_gst*, gst_amount and total_amount, gst_applicable, late_payment_interest, account_code, cost_center",AR-i 43; AR-i 42,Changed,546,AR-i-107,2026-11-19,To do
-558,AR-i-118,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-42,"Do not build / remove: AR-i variable set Others: cost_center, agent_name, po_number (retired in the prototype)",AR-i 39,Redundant,14,AR-i-014,2026-11-19,To do
-559,AR-i-119,AR-i,AR portal forms,"Catalogue, record producers and portal widgets",PT-29,"Do not build / remove: Finance coding variables: cost_center, agent_name (retired in the prototype)",,Redundant,19,AR-i-019,2026-11-19,To do
-560,AR-i-120,AR-i,Data and logic,Tables and fields,REQ.cost_center,Do not build / remove: Field x_ar_request.cost_center (String) (removed from the prototype),,Redundant,55,AR-i-055,2026-11-19,To do
-561,AR-i-121,AR-i,Data and logic,Tables and fields,REQ.agent_name,Do not build / remove: Field x_ar_request.agent_name (String) (removed from the prototype),,Redundant,56,AR-i-056,2026-11-19,To do
-562,AR-i-122,AR-i,Data and logic,Tables and fields,REQ.bulk_supporting_docs,Do not build / remove: Field x_ar_request.bulk_supporting_docs (Attachment) (removed from the prototype),,Redundant,61,AR-i-061,2026-11-19,To do
-563,CCI-195,CCI,Data and logic,Tables and fields,CON.bulk_supporting_docs,Do not build / remove: Field x_ar_contract.bulk_supporting_docs (Attachment) (removed from the prototype),,Redundant,348,CCI-075,2026-11-19,To do
+﻿No.,Module,Area,Build-note ID,Task,Change,Affects row,Date added,State now
+1,AR-i,AR workspace,REQ-FV-ARI,"Add: Form view ar_i on x_ar_request, used by the workspace Details tab: sections Case, 1. General information, 2. Customer, 3. Contract and bill-to, 4. Invoice details, 5. Customer documents, 6. Others, in the AR-i portal order; every field of each section on the form, empty when not answered;…",New,,2026-11-19,To do
+2,AR-i,AR workspace,LST-REQ-ARI,"Add: Workspace list All AR-i: x_ar_request, condition ar_form = AR-i; list view ar_i_all with its own columns; list menu category AR requests",New,,2026-11-19,To do
+3,AR-i,AR portal forms,PT-03,"Add: Quick link to catalog item: record producer ""AR-i New AR request""",New,,2026-11-19,To do
+4,AR-i,AR portal forms,PT-05,"Add: Record producer ""AR-i New AR request"" on x_ar_request",New,,2026-11-19,To do
+5,AR-i,AR portal forms,PT-39,"Add: AR-i Customer section, found customer: read-only customer details in this order: name, UEN, address, agency type, V@G, V@G sub-BU, POC name, POC email",New,,2026-11-19,To do
+6,AR-i,AR portal forms,PT-36,"Add: AR-i GIRO subsection inside Contract: 'Is there an existing DDA?' read-only Yes / No from the chosen contract's giro_status, plus the active AR-ix case number when Yes",New,,2026-11-19,To do
+7,AR-i,AR portal forms,PT-40,"Add: AR-i new contract variables, in order: new_contract_type, new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle, new_contract_invoice_date, new_contract_payment_terms,…",New,,2026-11-19,Redundant (see row 554)
+8,AR-i,AR portal forms,PT-41,"Add: AR-i existing contract: every contract detail read-only from x_ar_contract, in the same order as a new contract",New,,2026-11-19,To do
+9,AR-i,AR portal forms,PT-37,"Add: AR-i variable set Invoice details: short_description, attention_name / attention_email, amount_per_period, preferred_invoice_date_choice and preferred_invoice_date_justification, billing_line_items_required",New,,2026-11-19,Redundant (see row 545)
+10,AR-i,AR portal forms,PT-07,Add: Catalog client script: contract billing position via GlideAjax / Script Include,New,,2026-11-19,To do
+11,AR-i,AR portal forms,PT-15,Add: Catalog item AR-i New AR request,New,,2026-11-19,To do
+12,AR-i,AR portal forms,PT-19,"Add: Bill-to: shows the contract's / shell's bill-to or asks for one, prefilled from the department's x_ar_billing_contact",New,,2026-11-19,To do
+13,AR-i,AR portal forms,PT-20,"Add: Variable set Contract and bill-to: contract_option, contract or new-contract variables, bill-to",New,,2026-11-19,To do
+14,AR-i,AR portal forms,PT-42,"Add: AR-i variable set Others: cost_center, agent_name, po_number",New,,2026-11-19,Redundant (see row 558)
+15,AR-i,AR portal forms,PT-43,"Add: AR-i multi-row variable set Billing line items, shown when billing_line_items_required = Yes: item_number, amount_excl_gst*, gst_amount and total_amount, late_payment_interest, account_code",New,,2026-11-19,Redundant (see row 546)
+16,AR-i,AR portal forms,PT-28,Add: No contract required: info message,New,,2026-11-19,To do
+17,AR-i,AR portal forms,PT-25,"Add: Variable set Customer: search x_ar_customer by name/UEN; Add as new customer reveals name, UEN, address",New,,2026-11-19,To do
+18,AR-i,AR portal forms,PT-27,Add: Ticket page: billing lines with status per line; payment status hidden,New,,2026-11-19,To do
+19,AR-i,AR portal forms,PT-29,"Add: Finance coding variables: cost_center, agent_name",New,,2026-11-19,Redundant (see row 559)
+20,AR-i,AR portal forms,PT-23,Add: Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones,New,,2026-11-19,To do
+21,AR-i,Data and logic,REQ.new_customer,"Add field ""New customer"" on AR request (checkbox) [x_ar_request.new_customer]",New,,2026-11-19,To do
+22,AR-i,Data and logic,REQ.new_customer_name,"Add field ""New customer name"" on AR request (text) [x_ar_request.new_customer_name]",New,,2026-11-19,To do
+23,AR-i,Data and logic,REQ.new_customer_uen,"Add field ""UEN (company registration no.)"" on AR request (text) [x_ar_request.new_customer_uen]",New,,2026-11-19,To do
+24,AR-i,Data and logic,REQ.new_customer_address,"Add field ""Registered address"" on AR request (long text) [x_ar_request.new_customer_address]",New,,2026-11-19,To do
+25,AR-i,Data and logic,REQ.new_contract_type,"Add field ""Contract type"" on AR request (dropdown Recurring / Ad-hoc) [x_ar_request.new_contract_type]",New,,2026-11-19,To do
+26,AR-i,Data and logic,REQ.new_contract_number,"Add field ""Contract number"" on AR request (text) [x_ar_request.new_contract_number]",New,,2026-11-19,To do
+27,AR-i,Data and logic,REQ.new_contract_ref,"Add field ""Contract reference number"" on AR request (text) [x_ar_request.new_contract_ref]",New,,2026-11-19,To do
+28,AR-i,Data and logic,REQ.new_contract_po,"Add field ""Contract PO number"" on AR request (text) [x_ar_request.new_contract_po]",New,,2026-11-19,To do
+29,AR-i,Data and logic,REQ.new_contract_title,"Add field ""Contract title"" on AR request (text) [x_ar_request.new_contract_title]",New,,2026-11-19,To do
+30,AR-i,Data and logic,REQ.new_contract_start,"Add field ""Contract start date"" on AR request (date) [x_ar_request.new_contract_start]",New,,2026-11-19,To do
+31,AR-i,Data and logic,REQ.new_contract_end,"Add field ""Contract end date"" on AR request (date) [x_ar_request.new_contract_end]",New,,2026-11-19,To do
+32,AR-i,Data and logic,REQ.new_contract_value,"Add field ""Contract value (SGD)"" on AR request (amount (SGD)) [x_ar_request.new_contract_value]",New,,2026-11-19,To do
+33,AR-i,Data and logic,REQ.new_contract_billing_cycle,"Add field ""Contract billing cycle"" on AR request (dropdown 1st of the month / 15th of the month / Others) [x_ar_request.new_contract_billing_cycle]",New,,2026-11-19,To do
+34,AR-i,Data and logic,REQ.new_contract_billing_cycle_other,"Add field ""Suggested billing cycle"" on AR request (text) [x_ar_request.new_contract_billing_cycle_other]",New,,2026-11-19,To do
+35,AR-i,Data and logic,REQ.new_contract_invoice_date,"Add field ""Preferred invoice billing date"" on AR request (date) [x_ar_request.new_contract_invoice_date]",New,,2026-11-19,To do
+36,AR-i,Data and logic,REQ.new_contract_payment_terms,"Add field ""Payment terms"" on AR request (dropdown 30 days / Others) [x_ar_request.new_contract_payment_terms]",New,,2026-11-19,To do
+37,AR-i,Data and logic,REQ.new_contract_payment_terms_other,"Add field ""Other payment terms"" on AR request (text) [x_ar_request.new_contract_payment_terms_other]",New,,2026-11-19,To do
+38,AR-i,Data and logic,REQ.new_contract_proration,"Add field ""Proration"" on AR request (dropdown Yes / No) [x_ar_request.new_contract_proration]",New,,2026-11-19,To do
+39,AR-i,Data and logic,REQ.new_contract_proration_first,"Add field ""Proration for 1st month"" on AR request (amount (SGD)) [x_ar_request.new_contract_proration_first]",New,,2026-11-19,To do
+40,AR-i,Data and logic,REQ.new_contract_proration_last,"Add field ""Proration for last month"" on AR request (amount (SGD)) [x_ar_request.new_contract_proration_last]",New,,2026-11-19,To do
+41,AR-i,Data and logic,REQ.bill_to_name,"Add field ""Bill-to person"" on AR request (text) [x_ar_request.bill_to_name]",New,,2026-11-19,To do
+42,AR-i,Data and logic,REQ.bill_to_email,"Add field ""Bill-to email"" on AR request (text) [x_ar_request.bill_to_email]",New,,2026-11-19,To do
+43,AR-i,Data and logic,REQ.bill_to_phone,"Add field ""Bill-to phone"" on AR request (text) [x_ar_request.bill_to_phone]",New,,2026-11-19,To do
+44,AR-i,Data and logic,REQ.bill_to_address,"Add field ""Billing address"" on AR request (long text) [x_ar_request.bill_to_address]",New,,2026-11-19,To do
+45,AR-i,Data and logic,REQ.short_description,"Add field ""Invoice description"" on AR request (text, mandatory) [x_ar_request.short_description]",New,,2026-11-19,To do
+46,AR-i,Data and logic,REQ.attention_name,"Add field ""Attention to name"" on AR request (text) [x_ar_request.attention_name]",New,,2026-11-19,To do
+47,AR-i,Data and logic,REQ.attention_email,"Add field ""Attention to email"" on AR request (text) [x_ar_request.attention_email]",New,,2026-11-19,To do
+48,AR-i,Data and logic,REQ.amount_per_period,"Add field ""Amount billed per period"" on AR request (amount (SGD), mandatory) [x_ar_request.amount_per_period]",New,,2026-11-19,To do
+49,AR-i,Data and logic,REQ.preferred_invoice_date_choice,"Add field ""Preferred invoice date"" on AR request (dropdown Per Billing Cycle / Expedited) [x_ar_request.preferred_invoice_date_choice]",New,,2026-11-19,To do
+50,AR-i,Data and logic,REQ.preferred_invoice_date_justification,"Add field ""Provide Justification for expedited or Off billing cycle request"" on AR request (long text) [x_ar_request.preferred_invoice_date_justification]",New,,2026-11-19,To do
+51,AR-i,Data and logic,REQ.billing_line_items_required,"Add field ""Require billing line item?"" on AR request (dropdown Yes / No) [x_ar_request.billing_line_items_required]",New,,2026-11-19,To do
+52,AR-i,Data and logic,REQ.po_number,"Add field ""Customer PO number"" on AR request (text) [x_ar_request.po_number]",New,,2026-11-19,Redundant (see row 547)
+53,AR-i,Data and logic,REQ.customer_poc_name,"Add field ""POC name"" on AR request (text) [x_ar_request.customer_poc_name]",New,,2026-11-19,To do
+54,AR-i,Data and logic,REQ.customer_poc_email,"Add field ""POC email"" on AR request (text) [x_ar_request.customer_poc_email]",New,,2026-11-19,To do
+55,AR-i,Data and logic,REQ.cost_center,"Add field ""Cost center"" on AR request (text) [x_ar_request.cost_center]",New,,2026-11-19,Redundant (see row 560)
+56,AR-i,Data and logic,REQ.agent_name,"Add field ""Name of agent to be billed"" on AR request (text) [x_ar_request.agent_name]",New,,2026-11-19,Redundant (see row 561)
+57,AR-i,Data and logic,REQ.agency_type,"Add field ""Agency type"" on AR request (dropdown M / SB / PV) [x_ar_request.agency_type]",New,,2026-11-19,To do
+58,AR-i,Data and logic,REQ.vag,"Add field ""V@G"" on AR request (dropdown Yes / No) [x_ar_request.vag]",New,,2026-11-19,Redundant (see row 548)
+59,AR-i,Data and logic,REQ.sub_bu,"Add field ""V@G sub-BU"" on AR request (text) [x_ar_request.sub_bu]",New,,2026-11-19,To do
+60,AR-i,Data and logic,REQ.type_of_billing,"Add field ""Type of billing"" on AR request (dropdown A / B / C / D / E) [x_ar_request.type_of_billing]",New,,2026-11-19,Redundant (see row 551)
+61,AR-i,Data and logic,REQ.bulk_supporting_docs,"Add field ""Supporting documents (bulk upload)"" on AR request (attachment) [x_ar_request.bulk_supporting_docs]",New,,2026-11-19,Redundant (see row 562)
+62,AR-i,Data and logic,REQ.giro_on_contract,"Add field ""GIRO on this contract"" on AR request (dropdown Yes / No, read-only) [x_ar_request.giro_on_contract]",New,,2026-11-19,To do
+63,AR-i,Data and logic,REQ.doc_contract_po,"Add field ""Signed contract / PO"" on AR request (attachment) [x_ar_request.doc_contract_po]",New,,2026-11-19,To do
+64,AR-i,Data and logic,REQ.doc_acra,"Add field ""Company registration (ACRA / UEN)"" on AR request (attachment) [x_ar_request.doc_acra]",New,,2026-11-19,To do
+65,AR-i,Data and logic,REQ.doc_billing_form,"Add field ""Billing contact & address form"" on AR request (attachment) [x_ar_request.doc_billing_form]",New,,2026-11-19,To do
+66,AR-i,Data and logic,REQ.description,"Add field ""Additional details"" on AR request (String (4000)) [x_ar_request.description]",New,,2026-11-19,To do
+67,AR-i,AR workspace,LST-RQL,Add: List: x_ar_request_line · list view layout + list menu condition,New,,2026-11-19,To do
+68,AR-i,AR workspace,RP-RQL,Add: Record page · x_ar_request_line,New,,2026-11-19,To do
+69,AR-i,AR workspace,HDR-RQL,Add: Record header: highlighted values of x_ar_request_line,New,,2026-11-19,To do
+70,AR-i,AR workspace,FRM-RQL,Add: Form view: x_ar_request_line,New,,2026-11-19,To do
+71,AR-i,Data and logic,RQL.number,"Add field ""Number"" on Billing line (text, read-only) [x_ar_request_line.number]",New,,2026-11-19,To do
+72,AR-i,Data and logic,RQL.ar_request,"Add field ""AR request"" on Billing line (reference to AR request, read-only) [x_ar_request_line.ar_request]",New,,2026-11-19,To do
+73,AR-i,Data and logic,RQL.contract,"Add field ""Contract"" on Billing line (reference to Contract, read-only) [x_ar_request_line.contract]",New,,2026-11-19,To do
+74,AR-i,Data and logic,RQL.line_type,"Add field ""Line type"" on Billing line (dropdown One-off / Recurring, mandatory) [x_ar_request_line.line_type]",New,,2026-11-19,To do
+75,AR-i,Data and logic,RQL.short_description,"Add field ""Description"" on Billing line (text, mandatory) [x_ar_request_line.short_description]",New,,2026-11-19,To do
+76,AR-i,Data and logic,RQL.amount,"Add field ""Amount"" on Billing line (amount (SGD), mandatory) [x_ar_request_line.amount]",New,,2026-11-19,To do
+77,AR-i,Data and logic,RQL.preferred_invoice_date,"Add field ""Preferred invoice date"" on Billing line (date) [x_ar_request_line.preferred_invoice_date]",New,,2026-11-19,To do
+78,AR-i,Data and logic,RQL.frequency,"Add field ""Frequency"" on Billing line (dropdown Monthly / Quarterly / Half-yearly / Annually) [x_ar_request_line.frequency]",New,,2026-11-19,To do
+79,AR-i,Data and logic,RQL.start_date,"Add field ""From"" on Billing line (date) [x_ar_request_line.start_date]",New,,2026-11-19,To do
+80,AR-i,Data and logic,RQL.end_date,"Add field ""To"" on Billing line (date) [x_ar_request_line.end_date]",New,,2026-11-19,To do
+81,AR-i,Data and logic,RQL.remarks,"Add field ""Remarks"" on Billing line (text) [x_ar_request_line.remarks]",New,,2026-11-19,To do
+82,AR-i,Data and logic,RQL.invoice,"Add field ""Invoice"" on Billing line (reference to Invoice, read-only) [x_ar_request_line.invoice]",New,,2026-11-19,To do
+83,AR-i,Data and logic,RQL.billing_schedule,"Add field ""Billing schedule"" on Billing line (reference to Billing schedule, read-only) [x_ar_request_line.billing_schedule]",New,,2026-11-19,To do
+84,AR-i,AR workspace,LST-RQI,Add: List: x_ar_request_item · list view layout + list menu condition,New,,2026-11-19,To do
+85,AR-i,AR workspace,RP-RQI,Add: Record page · x_ar_request_item,New,,2026-11-19,To do
+86,AR-i,AR workspace,HDR-RQI,Add: Record header: highlighted values of x_ar_request_item,New,,2026-11-19,To do
+87,AR-i,AR workspace,FRM-RQI,Add: Form view: x_ar_request_item,New,,2026-11-19,To do
+88,AR-i,Data and logic,RQI.ar_request,"Add field ""AR request"" on Billing line item (reference to AR request, read-only) [x_ar_request_item.ar_request]",New,,2026-11-19,To do
+89,AR-i,Data and logic,RQI.item_number,"Add field ""Item number"" on Billing line item (whole number, read-only) [x_ar_request_item.item_number]",New,,2026-11-19,To do
+90,AR-i,Data and logic,RQI.amount_excl_gst,"Add field ""Amount (w/o GST)"" on Billing line item (amount (SGD), mandatory) [x_ar_request_item.amount_excl_gst]",New,,2026-11-19,To do
+91,AR-i,Data and logic,RQI.gst_amount,"Add field ""GST amount"" on Billing line item (amount (SGD), read-only) [x_ar_request_item.gst_amount]",New,,2026-11-19,Redundant (see row 552)
+92,AR-i,Data and logic,RQI.total_amount,"Add field ""Total amount"" on Billing line item (amount (SGD), read-only) [x_ar_request_item.total_amount]",New,,2026-11-19,To do
+93,AR-i,Data and logic,RQI.late_payment_interest,"Add field ""Late payment interest (%)"" on Billing line item (number) [x_ar_request_item.late_payment_interest]",New,,2026-11-19,To do
+94,AR-i,Data and logic,RQI.account_code,"Add field ""Account code"" on Billing line item (text) [x_ar_request_item.account_code]",New,,2026-11-19,To do
+95,AR-i,Data and logic,RQL.line_value,"Add: Calculated: one-off amount, or recurring amount × number of periods",New,,2026-11-19,To do
+96,AR-i,Data and logic,RQL.periods,Add: Calculated: number of billing dates between From and To at the frequency,New,,2026-11-19,To do
+97,AR-i,AR workspace,RL-REQ-RQL,Add: Related list: x_ar_request_line where ar_request = this ar request,New,,2026-11-19,To do
+98,AR-i,AR workspace,RL-REQ-RQI,Add: Related list: x_ar_request_item where ar_request = this ar request,New,,2026-11-19,To do
+99,AR-i,AR workspace,RL-REQ-INV,Add: Related list: x_ar_invoice where ar_request = this ar request,New,,2026-11-19,To do
+100,AR-i,AR workspace,RL-REQ-SCH,Add: Related list: x_ar_billing_schedule where contract = this ar request,New,,2026-11-19,To do
+101,AR-i,AR workspace,UA-RQL-save,Add: Save,New,,2026-11-19,To do
+102,AR-i,AR portal forms,UA-PT-newcust,Add: Portal: Add as new customer,New,,2026-11-19,To do
+103,AR-i,AR portal forms,UA-PT-additem,Add: Portal: Add item; Remove deletes a row,New,,2026-11-19,To do
+104,AR-i,AR workspace,UA-RQL-newrel,Add: New billing line on the contract's Billing lines tab: AR copies the AR-i line; contract filled in,New,,2026-11-19,To do
+105,AR-i,AR workspace,UA-RQL-insert,Add: Submit,New,,2026-11-19,To do
+106,AR-ix,AR workspace,REQ-GIRO,"Add: GIRO setup panel: contract set?; the contract's GIRO status and active case; reminder to update GIRO status and Active GIRO case on the contract record, then set State = Closed complete",New,,2026-11-19,To do
+107,AR-ix,AR workspace,REQ-GIROHIST,Add: Tab GIRO history on the AR-ix case: the AR-ix cases on the same contract,New,,2026-11-19,To do
+108,AR-ix,AR workspace,REQ-FV-ARIX,"Add: Form view ar_ix on x_ar_request, used by the workspace Details tab: sections Case, 1. General information, 2. Select Customer, 3. Select Contract, 4. GIRO details, 5. Attachments, in the AR-ix portal order; every field shown, empty when not answered; editable while the case is open",New,,2026-11-19,To do
+109,AR-ix,AR workspace,LST-REQ-ARIX,"Add: Workspace list All AR-ix: x_ar_request, condition ar_form = AR-ix; list view ar_ix_all with its own columns; list menu category AR requests",New,,2026-11-19,To do
+110,AR-ix,AR portal forms,PT-31,"Add: Record producer ""AR-ix GIRO authorisation"" on x_ar_request",New,,2026-11-19,To do
+111,AR-ix,AR portal forms,PT-32,"Add: AR-ix variable set Select Contract: Existing contract, New contract or No contract required",New,,2026-11-19,To do
+112,AR-ix,AR portal forms,PT-33,"Add: AR-ix variable set GIRO details: Type of request first, choices filtered by the contract, with the owner's help text",New,,2026-11-19,To do
+113,AR-ix,AR portal forms,PT-34,Add: Info message on AR-ix: the chosen contract's GIRO status and active case,New,,2026-11-19,To do
+114,AR-ix,AR portal forms,PT-35,Add: Ticket page block for AR-ix: GIRO request summary and its outcome,New,,2026-11-19,To do
+115,AR-ix,AR portal forms,PT-44,"Add: AR-ix variable set Select Customer: customer search showing the customer name only; existing customers only, with the hint PT-48",New,,2026-11-19,To do
+116,AR-ix,AR portal forms,PT-45,"Add: AR-ix info message for No contract required: the customer's no-contract shell for the department the GIRO goes on, or that AR links it once the shell is set up",New,,2026-11-19,To do
+117,AR-ix,AR portal forms,PT-46,"Add: AR-ix section Attachments: supporting documents, optional, for Add and Remove GIRO",New,,2026-11-19,To do
+118,AR-ix,AR portal forms,PT-48,Add: AR-ix Select Customer hint: Customer not found? Submit an AR-i to set up the customer first,New,,2026-11-19,To do
+119,AR-ix,Data and logic,REQ.giro_type,"Add field ""Type of request"" on AR request (dropdown Add GIRO / Remove GIRO) [x_ar_request.giro_type]",New,,2026-11-19,To do
+120,AR-ix,Data and logic,REQ.giro_reference,"Add field ""Contract / tenancy agreement / reference"" on AR request (text) [x_ar_request.giro_reference]",New,,2026-11-19,To do
+121,AR-ix,Data and logic,REQ.giro_purpose,"Add field ""Purpose of GIRO/DDA request"" on AR request (dropdown Rental / Carpark / Others) [x_ar_request.giro_purpose]",New,,2026-11-19,To do
+122,AR-ix,Data and logic,REQ.giro_purpose_other,"Add field ""Other purpose"" on AR request (text) [x_ar_request.giro_purpose_other]",New,,2026-11-19,To do
+123,AR-ix,Data and logic,REQ.giro_applicant_name,"Add field ""Customer name"" on AR request (text) [x_ar_request.giro_applicant_name]",New,,2026-11-19,To do
+124,AR-ix,Data and logic,REQ.giro_applicant_email,"Add field ""Customer email"" on AR request (text) [x_ar_request.giro_applicant_email]",New,,2026-11-19,To do
+125,AR-ix,Data and logic,REQ.giro_applicant_mobile,"Add field ""Customer mobile"" on AR request (text) [x_ar_request.giro_applicant_mobile]",New,,2026-11-19,To do
+126,AR-ix,Data and logic,REQ.giro_remarks,"Add field ""Remarks"" on AR request (long text) [x_ar_request.giro_remarks]",New,,2026-11-19,To do
+127,AR-ix,Data and logic,REQ.giro_location,"Add field ""Location"" on AR request (text) [x_ar_request.giro_location]",New,,2026-11-19,To do
+128,AR-ix,Data and logic,REQ.giro_start_date,"Add field ""Effective start date"" on AR request (date) [x_ar_request.giro_start_date]",New,,2026-11-19,To do
+129,AR-ix,Data and logic,REQ.giro_end_date,"Add field ""Effective end date"" on AR request (date) [x_ar_request.giro_end_date]",New,,2026-11-19,To do
+130,AR-ix,Data and logic,REQ.giro_carplate,"Add field ""Car plate"" on AR request (text) [x_ar_request.giro_carplate]",New,,2026-11-19,To do
+131,AR-ix,Data and logic,REQ.giro_amount,"Add field ""Amount"" on AR request (text) [x_ar_request.giro_amount]",New,,2026-11-19,To do
+132,UIX,AR workspace,WS-01,Add: Unified navigation header,New,,2026-11-19,To do
+133,UIX,AR workspace,WS-02,"Add: Global search: AR request, invoice, Deposit ID and contract numbers, customer names",New,,2026-11-19,To do
+134,UIX,AR workspace,WS-03,"Add: Workspace sidebar: Home, Lists, BSU page, Cash application page",New,,2026-11-19,To do
+135,UIX,AR workspace,WS-04,Add: List menu: categories and lists with conditions,New,,2026-11-19,To do
+136,UIX,AR workspace,WS-05,Add: Workspace tabs: landing / list tab plus one tab per opened record,New,,2026-11-19,To do
+137,UIX,AR workspace,WS-06,"Add: Landing page: single-score data visualisations, each linked to a list menu module",New,,2026-11-19,To do
+138,UIX,AR workspace,WS-07,Add: Data visualisation: bar chart of x_ar_invoice.amount_due grouped by days past due_date,New,,2026-11-19,To do
+139,UIX,AR workspace,WS-08,Add: Landing page list: new AR requests,New,,2026-11-19,To do
+140,UIX,AR workspace,WS-09,Add: Landing page list: overdue invoices,New,,2026-11-19,To do
+141,UIX,AR workspace,WS-11,"Add: Record header UI action bar: primary UI actions as buttons, the rest in the overflow menu",New,,2026-11-19,To do
+142,UIX,AR workspace,WS-12,Add: Record ribbon: collapsible row of up to 12 widgets with key metrics; configured per table in UI Builder,New,,2026-11-19,To do
+143,UIX,AR workspace,WS-13,"Add: Record tabs in the resizable pane: Details first, then related items, then one tab per related list; extra tabs move to the More menu, except on customer and contract records, which show every tab",New,,2026-11-19,To do
+144,UIX,AR workspace,WS-14,"Add: Contextual side bar: vertical icon tabs on the right of the record tab, open by default, collapsible and resizable; holds Customer setup, Activity stream and Attachments for AR requests",New,,2026-11-19,To do
+145,UIX,AR workspace,WS-15,Add: Form record presence: avatars of users viewing the record,New,,2026-11-19,To do
+146,UIX,AR workspace,WS-17,Add: Record history tab: sys_audit / sys_history_line for the record,New,,2026-11-19,To do
+147,UIX,AR workspace,WS-16,"Add: List page template: list menu on the left, list on the right; the menu selection drives the list",New,,2026-11-19,To do
+148,AR-00,AR workspace,REQ-ACT,Add: Activity stream: comments + work_notes + field changes,New,,2026-11-19,To do
+149,AR-iii,AR workspace,REQ-FV-COL,"Add: Form view collections on x_ar_request, Details tab: sections Case, 1. General information, 2. Collection type; ribbon Collection type, Request value, BSU deposits matched",New,,2026-11-19,To do
+150,AR-iii,AR workspace,LST-REQ-COL,"Add: Workspace list All Collections: x_ar_request, condition ar_form = COL; default columns as the other AR form lists",New,,2026-11-19,To do
+151,CCI,AR workspace,CON-GIRO,"Add: Tab GIRO history on the contract: related list x_ar_request where contract = this contract and ar_form = AR-ix; columns AR-ix case, Type of request, Purpose of GIRO/DDA request, Amount, Requested by, Updated, GIRO",New,,2026-11-19,To do
+152,CCI,AR workspace,SCH-PER,Add: Billing periods of the schedule with status Invoiced / Due / Upcoming; no action column,New,,2026-11-19,To do
+153,CCI,Data and logic,JOB-DAILYINV,"Add: Scheduled job Daily invoice check: for each x_ar_billing_schedule period with no non-cancelled invoice and invoice date within 5 working days of today, insert a draft x_ar_invoice and add a work note on the AR-i case",New,,2026-11-19,To do
+154,AR-00,AR workspace,REQ-ATT,Add: Attachments: sys_attachment on x_ar_request,New,,2026-11-19,To do
+155,CCI,AR workspace,INV-PDF,Add: Invoice document: HTML template rendered with PDF Generation Utilities when AR issues the invoice and attached to the invoice; the workspace tab shows the same template as a preview,New,,2026-11-19,To do
+156,BSU,AR workspace,BSU-08,Add: Preview tag No payment mode: the line's transaction ID matches no active payment mode of the bank account; it is saved with the fallback Deposit ID UNK-<DDMMYY>-XX,New,,2026-11-19,To do
+157,BSU,AR workspace,RL-DEP-SUG,"Add: Suggested matches tab on x_ar_bank_statement: workspace data resource listing up to 10 issued invoices with amount due and open Collections cases not yet on this deposit, ranked by: invoice / case number or reference cited in the bank reference, amount fit, payer-name similarity, and the bank…",New,,2026-11-19,To do
+158,BSU,AR workspace,ALC-DELTA,"Add: Summary line on the Allocations tabs: Amount, Allocation value, Delta: on a deposit the money to refund or apply elsewhere, on an invoice / case the amount still to collect or offset",New,,2026-11-19,To do
+159,BSU,AR workspace,RL-INV-SUG,"Add: Suggested BSU deposits tab on x_ar_invoice: up to 10 x_ar_bank_statement records with an unmatched amount, ranked with the same signals; only for issued invoices with amount due",New,,2026-11-19,To do
+160,BSU,AR workspace,RL-REQ-SUG,"Add: Suggested BSU deposits tab on Collections cases: as RL-INV-SUG, against the case's Request value still to match",New,,2026-11-19,To do
+161,BSU,AR workspace,BSU-01,"Add: BSU upload form: opened by New on the Statement uploads list; upload form, preview, save opens the new RITM",New,,2026-11-19,To do
+162,BSU,AR workspace,BSU-03,"Add: Upload form = catalog item 'Bank statement upload' rendered in the workspace: variables bank account, statement date, CSV attachment; submit creates the RITM",New,,2026-11-19,To do
+163,BSU,AR workspace,BSU-04,Add: CSV file kept as sys_attachment on sc_req_item,New,,2026-11-19,To do
+164,BSU,AR workspace,BSU-05,Add: Bank template: column mapping per bank,New,,2026-11-19,To do
+165,BSU,AR workspace,BSU-06,"Add: Preview before insert: deposits with Deposit IDs, skipped withdrawals, totals",New,,2026-11-19,To do
+166,AR-00,AR portal forms,PT-01,"Add: Service Portal header, audience role x_ar.project_team",New,,2026-11-19,To do
+167,AR-00,AR portal forms,PT-02,Add: Portal homepage: search + quick links widgets,New,,2026-11-19,To do
+168,AR-00,AR portal forms,PT-04,Add: Quick link to My Requests,New,,2026-11-19,To do
+169,AR-00,AR portal forms,PT-30,"Add: Variable set General information, first section of every AR form record producer: requester_name, requester_email, department, cc_list",New,,2026-11-19,To do
+170,AR-iii,AR portal forms,PT-49,"Add: Collections record producer: one form for AR-iii, AR-iv and AR-v. Catalogue items AR-iii, AR-iv, AR-v open it with collection_type preset",New,,2026-11-19,To do
+171,AR-iii,AR portal forms,PT-50,"Add: Collections variable set Collection type: collection_type, mandatory, preset from the catalogue item",New,,2026-11-19,To do
+172,AR-iii,AR portal forms,PT-51,Add: Collections variable set 3. Collection Details: fields of the selected type,New,,2026-11-19,To do
+173,AR-iii,AR portal forms,PT-52,"Add: Collections AR-iii multi-row variable set Total number of collections for the day: Collection Type*, Transaction Amount*; 1 to 99 rows; duplicates allowed",New,,2026-11-19,To do
+174,AR-iii,AR portal forms,PT-53,"Add: Collections AR-iv multi-row variable set Amount for Each Account Code: Description*, Amount*, Cost Centre*, Account Code*; 1 to 10 rows",New,,2026-11-19,To do
+175,AR-iii,AR portal forms,PT-54,"Add: Collections AR-v supporting-document guidance by category: Cash Bail: G56, Bailor identity document, Bail Bond Form, Bank-in slip or receipt; Seized Monies and Restitution: G56, Case Property List, Bank-in slip or receipt",New,,2026-11-19,To do
+176,AR-iii,AR portal forms,PT-55,"Add: Collections section 4. Supporting Documents: multiple attachments, optional; file size and type rules documented for the build, not checked in the demo",New,,2026-11-19,To do
+177,AR-iii,AR portal forms,PT-56,Add: Collections AR-iii Total Amount: calculated sum of Transaction Amount across rows; stored as amount on the case,New,,2026-11-19,To do
+178,AR-iii,AR portal forms,PT-59,"Add: Collections AR-v Seized Monies and Restitution multi-row variable set Case lines: Case Number, Amount, Case Status; 0 to 99 rows",New,,2026-11-19,To do
+179,AR-iii,AR portal forms,PT-60,Add: Collections AR-v: message shown when Refund required? = Yes: 'Please raise a AR10' with a link to the AR10 catalogue item,New,,2026-11-19,To do
+180,AR-iii,AR portal forms,PT-61,Add: Collections AR-v Case lines Total Amount: calculated sum of Amount across rows,New,,2026-11-19,To do
+181,AR-iii,AR portal forms,PT-57,Add: Collections AR-iv allocation total: calculated sum of Amount across rows; stored as amount on the case,New,,2026-11-19,To do
+182,AR-00,AR portal forms,PT-08,Add: Variable attachments → sys_attachment on the created x_ar_request,New,,2026-11-19,To do
+183,AR-00,AR portal forms,PT-09,Add: Submit → inserts x_ar_request,New,,2026-11-19,To do
+184,AR-00,AR portal forms,PT-10,Add: My Requests widget: x_ar_request where opened_by = me,New,,2026-11-19,To do
+185,AR-00,AR portal forms,PT-11,Add: Ticket page: conversation widget,New,,2026-11-19,To do
+186,AR-00,AR portal forms,PT-13,Add: Ticket fields widget: read-only summary of the request,New,,2026-11-19,To do
+187,AR-00,AR portal forms,PT-14,"Add: Service catalog category ""AR forms"": 16 record producers AR-i … AR-xvi",New,,2026-11-19,To do
+188,AR-00,AR portal forms,PT-16,Add: Catalog item placeholder AR-ii … AR-xvi,New,,2026-11-19,To do
+189,AR-00,AR workspace,LST-REQ,Add: List: x_ar_request · list view layout + list menu condition,New,,2026-11-19,To do
+190,AR-00,AR workspace,RP-REQ,Add: Record page · x_ar_request extends task,New,,2026-11-19,To do
+191,AR-00,AR workspace,HDR-REQ,Add: Record header: highlighted values of x_ar_request,New,,2026-11-19,To do
+192,AR-00,AR workspace,FRM-REQ,Add: Form view: x_ar_request,New,,2026-11-19,To do
+193,AR-00,Data and logic,REQ.number,"Add field ""Number"" on AR request (text, read-only) [x_ar_request.number]",New,,2026-11-19,To do
+194,AR-00,Data and logic,REQ.state,"Add field ""State"" on AR request (dropdown New / Work in progress / Awaiting requestor information / Closed complete / Closed incomplete / Cancelled, mandatory) [x_ar_request.state]",New,,2026-11-19,To do
+195,AR-00,Data and logic,REQ.substate,"Add field ""Substate"" on AR request (dropdown Awaiting input / Awaiting comment) [x_ar_request.substate]",New,,2026-11-19,To do
+196,AR-00,Data and logic,REQ.opened_by,"Add field ""Requested by"" on AR request (reference to users, read-only) [x_ar_request.opened_by]",New,,2026-11-19,To do
+197,AR-00,Data and logic,REQ.ar_form,"Add field ""AR form"" on AR request (dropdown, read-only) [x_ar_request.ar_form]",New,,2026-11-19,To do
+198,AR-00,Data and logic,REQ.submission_origin,"Add field ""Submission Origin"" on AR request (dropdown Manual / System-generated from unreconciled bank statement, read-only) [x_ar_request.submission_origin]",New,,2026-11-19,To do
+199,AR-iii,Data and logic,REQ.collection_type,"Add field ""Collection type"" on AR request (dropdown AR-iii / AR-iv / AR-v) [x_ar_request.collection_type]",New,,2026-11-19,To do
+200,AR-iii,Data and logic,REQ.collection_date,"Add field ""Collection Date"" on AR request (date) [x_ar_request.collection_date]",New,,2026-11-19,To do
+201,AR-iii,Data and logic,REQ.collection_reference,"Add field ""Reference Number"" on AR request (text) [x_ar_request.collection_reference]",New,,2026-11-19,To do
+202,AR-iii,Data and logic,REQ.ar5_category,"Add field ""Category"" on AR request (dropdown Cash Bail / Seized Monies / Restitution) [x_ar_request.ar5_category]",New,,2026-11-19,To do
+203,AR-iii,Data and logic,REQ.date_of_collection,"Add field ""Date of Collection"" on AR request (date) [x_ar_request.date_of_collection]",New,,2026-11-19,To do
+204,AR-iii,Data and logic,REQ.g56_receipt_number,"Add field ""G56 Receipt Number"" on AR request (text) [x_ar_request.g56_receipt_number]",New,,2026-11-19,To do
+205,AR-iii,Data and logic,REQ.bail_amount,"Add field ""Bail Amount Received"" on AR request (amount (SGD)) [x_ar_request.bail_amount]",New,,2026-11-19,To do
+206,AR-iii,Data and logic,REQ.bailor_name,"Add field ""Bailor Name"" on AR request (text) [x_ar_request.bailor_name]",New,,2026-11-19,To do
+207,AR-iii,Data and logic,REQ.ib_case_number,"Add field ""IB Case Number / WEU Number"" on AR request (text) [x_ar_request.ib_case_number]",New,,2026-11-19,To do
+208,AR-iii,Data and logic,REQ.case_status,"Add field ""Case Status"" on AR request (dropdown Case Pending / Case Closed / Forfeit to State with court order / Forfeit to State without court order) [x_ar_request.case_status]",New,,2026-11-19,To do
+209,AR-iii,Data and logic,REQ.accused_name,"Add field ""Accused Name"" on AR request (text) [x_ar_request.accused_name]",New,,2026-11-19,To do
+210,AR-iii,Data and logic,REQ.ar5_forfeit,"Add field ""Forfeit"" on AR request (checkbox) [x_ar_request.ar5_forfeit]",New,,2026-11-19,To do
+211,AR-iii,Data and logic,REQ.ar5_court_order,"Add field ""Court order"" on AR request (checkbox) [x_ar_request.ar5_court_order]",New,,2026-11-19,To do
+212,AR-iii,Data and logic,REQ.ar5_to_be_invested,"Add field ""Whether the seized monies are to be invested"" on AR request (buttons Yes / No) [x_ar_request.ar5_to_be_invested]",New,,2026-11-19,To do
+213,AR-iii,Data and logic,REQ.ar5_refund_required,"Add field ""Refund required?"" on AR request (buttons Yes / No) [x_ar_request.ar5_refund_required]",New,,2026-11-19,To do
+214,AR-00,Data and logic,REQ.requester_name,"Add field ""Requester name"" on AR request (text) [x_ar_request.requester_name]",New,,2026-11-19,To do
+215,AR-00,Data and logic,REQ.requester_email,"Add field ""Email"" on AR request (text, read-only) [x_ar_request.requester_email]",New,,2026-11-19,To do
+216,AR-00,Data and logic,REQ.department_sub_bu,"Add field ""Sub-BU"" on AR request (dropdown) [x_ar_request.department_sub_bu]",New,,2026-11-19,To do
+217,AR-00,Data and logic,REQ.cc_list,"Add field ""CC list"" on AR request (long text) [x_ar_request.cc_list]",New,,2026-11-19,To do
+218,AR-00,Data and logic,REQ.department,"Add field ""Requesting department"" on AR request (dropdown, mandatory) [x_ar_request.department]",New,,2026-11-19,To do
+219,AR-00,Data and logic,REQ.customer,"Add field ""Customer"" on AR request (reference to Customer) [x_ar_request.customer]",New,,2026-11-19,To do
+220,AR-00,Data and logic,REQ.contract_option,"Add field ""Contract"" on AR request (dropdown Existing contract / New contract / No contract required, mandatory) [x_ar_request.contract_option]",New,,2026-11-19,To do
+221,AR-00,Data and logic,REQ.link_customer,"Add field ""Link Customer Reference"" on AR request (reference to Customer) [x_ar_request.link_customer]",New,,2026-11-19,To do
+222,AR-00,Data and logic,REQ.link_contract,"Add field ""Link Contract Reference"" on AR request (reference to Contract) [x_ar_request.link_contract]",New,,2026-11-19,To do
+223,AR-00,Data and logic,REQ.contract,"Add field ""Contract"" on AR request (reference to Contract) [x_ar_request.contract]",New,,2026-11-19,To do
+224,AR-00,Data and logic,REQ.amount,"Add field ""Request value"" on AR request (amount (SGD), read-only) [x_ar_request.amount]",New,,2026-11-19,To do
+225,AR-00,Data and logic,REQ.assignment_group,"Add field ""Assignment group"" on AR request (reference to groups) [x_ar_request.assignment_group]",New,,2026-11-19,To do
+226,AR-00,Data and logic,REQ.assigned_to,"Add field ""Assigned to"" on AR request (reference to users) [x_ar_request.assigned_to]",New,,2026-11-19,To do
+227,AR-00,Data and logic,REQ.opened_at,"Add field ""Opened"" on AR request (date, read-only) [x_ar_request.opened_at]",New,,2026-11-19,To do
+228,CCI,AR workspace,LST-INV,Add: List: x_ar_invoice · list view layout + list menu condition,New,,2026-11-19,To do
+229,CCI,AR workspace,RP-INV,Add: Record page · x_ar_invoice,New,,2026-11-19,To do
+230,CCI,AR workspace,HDR-INV,Add: Record header: highlighted values of x_ar_invoice,New,,2026-11-19,To do
+231,CCI,AR workspace,FRM-INV,Add: Form view: x_ar_invoice,New,,2026-11-19,To do
+232,CCI,Data and logic,INV.number,"Add field ""Number"" on Invoice (text, read-only) [x_ar_invoice.number]",New,,2026-11-19,To do
+233,CCI,Data and logic,INV.state,"Add field ""State"" on Invoice (dropdown Draft / Issued / Cancelled, read-only) [x_ar_invoice.state]",New,,2026-11-19,To do
+234,CCI,Data and logic,INV.customer,"Add field ""Customer"" on Invoice (reference to Customer, mandatory) [x_ar_invoice.customer]",New,,2026-11-19,To do
+235,CCI,Data and logic,INV.contract,"Add field ""Contract"" on Invoice (reference to Contract) [x_ar_invoice.contract]",New,,2026-11-19,To do
+236,CCI,Data and logic,INV.ar_request,"Add field ""AR request"" on Invoice (reference to AR request, read-only) [x_ar_invoice.ar_request]",New,,2026-11-19,To do
+237,CCI,Data and logic,INV.request_line,"Add field ""Billing line"" on Invoice (reference to Billing line, read-only) [x_ar_invoice.request_line]",New,,2026-11-19,To do
+238,CCI,Data and logic,INV.billing_schedule,"Add field ""Billing schedule"" on Invoice (reference to Billing schedule, read-only) [x_ar_invoice.billing_schedule]",New,,2026-11-19,To do
+239,CCI,Data and logic,INV.billing_period,"Add field ""Billing period"" on Invoice (date, read-only) [x_ar_invoice.billing_period]",New,,2026-11-19,To do
+240,CCI,Data and logic,INV.short_description,"Add field ""Description"" on Invoice (text, mandatory) [x_ar_invoice.short_description]",New,,2026-11-19,To do
+241,CCI,Data and logic,INV.amount,"Add field ""Amount"" on Invoice (amount (SGD), mandatory) [x_ar_invoice.amount]",New,,2026-11-19,To do
+242,CCI,Data and logic,INV.invoice_date,"Add field ""Invoice date"" on Invoice (date) [x_ar_invoice.invoice_date]",New,,2026-11-19,To do
+243,CCI,Data and logic,INV.approval_date,"Add field ""Approval date"" on Invoice (date) [x_ar_invoice.approval_date]",New,,2026-11-19,To do
+244,CCI,Data and logic,INV.due_date,"Add field ""Due date"" on Invoice (date) [x_ar_invoice.due_date]",New,,2026-11-19,To do
+245,BSU,AR workspace,LST-DEP,Add: List: x_ar_bank_statement · list view layout + list menu condition,New,,2026-11-19,To do
+246,BSU,AR workspace,RP-DEP,Add: Record page · x_ar_bank_statement,New,,2026-11-19,To do
+247,BSU,AR workspace,HDR-DEP,Add: Record header: highlighted values of x_ar_bank_statement,New,,2026-11-19,To do
+248,BSU,AR workspace,FRM-DEP,Add: Form view: x_ar_bank_statement,New,,2026-11-19,To do
+249,BSU,Data and logic,DEP.deposit_id,"Add field ""Deposit ID"" on BSU deposit (text, read-only) [x_ar_bank_statement.deposit_id]",New,,2026-11-19,To do
+250,BSU,Data and logic,DEP.bank_account,"Add field ""Bank account"" on BSU deposit (reference to Bank account, read-only) [x_ar_bank_statement.bank_account]",New,,2026-11-19,To do
+251,BSU,Data and logic,DEP.bsu,"Add field ""Statement upload"" on BSU deposit (reference to Statement upload, read-only) [x_ar_bank_statement.bsu]",New,,2026-11-19,To do
+252,BSU,Data and logic,DEP.value_date,"Add field ""Value date"" on BSU deposit (date, read-only) [x_ar_bank_statement.value_date]",New,,2026-11-19,To do
+253,BSU,Data and logic,DEP.amount,"Add field ""Amount"" on BSU deposit (amount (SGD), read-only) [x_ar_bank_statement.amount]",New,,2026-11-19,To do
+254,BSU,Data and logic,DEP.payer_name,"Add field ""Payer (as on statement)"" on BSU deposit (text, read-only) [x_ar_bank_statement.payer_name]",New,,2026-11-19,To do
+255,BSU,Data and logic,DEP.bank_reference,"Add field ""Reference / remittance"" on BSU deposit (text, read-only) [x_ar_bank_statement.bank_reference]",New,,2026-11-19,To do
+256,BSU,Data and logic,DEP.bank_transaction_ref,"Add field ""Bank transaction ref"" on BSU deposit (text, read-only) [x_ar_bank_statement.bank_transaction_ref]",New,,2026-11-19,To do
+257,BSU,Data and logic,DEP.transaction_id,"Add field ""Transaction ID"" on BSU deposit (text, read-only) [x_ar_bank_statement.transaction_id]",New,,2026-11-19,To do
+258,BSU,Data and logic,DEP.payment_mode,"Add field ""Payment mode"" on BSU deposit (reference to Payment mode, read-only) [x_ar_bank_statement.payment_mode]",New,,2026-11-19,To do
+259,BSU,AR workspace,LST-BSU,Add: List: sc_req_item · list view layout + list menu condition,New,,2026-11-19,To do
+260,BSU,AR workspace,RP-BSU,Add: Record page · sc_req_item,New,,2026-11-19,To do
+261,BSU,AR workspace,HDR-BSU,Add: Record header: highlighted values of sc_req_item,New,,2026-11-19,To do
+262,BSU,AR workspace,FRM-BSU,Add: Form view: sc_req_item,New,,2026-11-19,To do
+263,BSU,Data and logic,BSU.number,"Add field ""Number"" on Statement upload (text, read-only) [sc_req_item.number]",New,,2026-11-19,To do
+264,BSU,Data and logic,BSU.bank_account,"Add field ""Bank account"" on Statement upload (reference to Bank account, read-only) [sc_req_item.bank_account]",New,,2026-11-19,To do
+265,BSU,Data and logic,BSU.statement_date,"Add field ""Statement date"" on Statement upload (date, read-only) [sc_req_item.statement_date]",New,,2026-11-19,To do
+266,BSU,Data and logic,BSU.file_name,"Add field ""File"" on Statement upload (text, read-only) [sc_req_item.file_name]",New,,2026-11-19,To do
+267,BSU,Data and logic,BSU.uploaded_by,"Add field ""Uploaded by"" on Statement upload (reference to users, read-only) [sc_req_item.uploaded_by]",New,,2026-11-19,To do
+268,BSU,Data and logic,BSU.uploaded_at,"Add field ""Uploaded"" on Statement upload (text, read-only) [sc_req_item.uploaded_at]",New,,2026-11-19,To do
+269,BSU,Data and logic,BSU.deposit_count,"Add field ""Deposits"" on Statement upload (whole number, read-only) [sc_req_item.deposit_count]",New,,2026-11-19,To do
+270,BSU,Data and logic,BSU.deposit_total,"Add field ""Deposit total"" on Statement upload (amount (SGD), read-only) [sc_req_item.deposit_total]",New,,2026-11-19,To do
+271,BSU,Data and logic,BSU.withdrawals_skipped,"Add field ""Withdrawals skipped"" on Statement upload (whole number, read-only) [sc_req_item.withdrawals_skipped]",New,,2026-11-19,To do
+272,BSU,AR workspace,LST-BNK,Add: List: x_ar_bank_account · list view layout + list menu condition,New,,2026-11-19,To do
+273,BSU,AR workspace,RP-BNK,Add: Record page · x_ar_bank_account,New,,2026-11-19,To do
+274,BSU,AR workspace,HDR-BNK,Add: Record header: highlighted values of x_ar_bank_account,New,,2026-11-19,To do
+275,BSU,AR workspace,FRM-BNK,Add: Form view: x_ar_bank_account,New,,2026-11-19,To do
+276,BSU,Data and logic,BNK.bank,"Add field ""Bank name"" on Bank account (dropdown Marina Bank / Orchard Bank / Union Straits Bank, mandatory) [x_ar_bank_account.bank]",New,,2026-11-19,To do
+277,BSU,Data and logic,BNK.account_number,"Add field ""Bank account number"" on Bank account (text, mandatory) [x_ar_bank_account.account_number]",New,,2026-11-19,To do
+278,BSU,Data and logic,BNK.account_name,"Add field ""Bank account name"" on Bank account (text, mandatory) [x_ar_bank_account.account_name]",New,,2026-11-19,To do
+279,BSU,Data and logic,BNK.department,"Add field ""Department"" on Bank account (dropdown, mandatory) [x_ar_bank_account.department]",New,,2026-11-19,To do
+280,BSU,Data and logic,BNK.account_type,"Add field ""Account type"" on Bank account (dropdown Revenue account / Deposit account / Operating account, mandatory) [x_ar_bank_account.account_type]",New,,2026-11-19,To do
+281,BSU,Data and logic,BNK.currency,"Add field ""Currency"" on Bank account (text, read-only) [x_ar_bank_account.currency]",New,,2026-11-19,To do
+282,BSU,Data and logic,BNK.collection_types,"Add field ""Collection types"" on Bank account (multi-select) [x_ar_bank_account.collection_types]",New,,2026-11-19,To do
+283,BSU,Data and logic,BNK.active,"Add field ""Active"" on Bank account (checkbox) [x_ar_bank_account.active]",New,,2026-11-19,To do
+284,BSU,AR workspace,LST-ALC,Add: List: x_ar_allocation · list view layout + list menu condition,New,,2026-11-19,To do
+285,BSU,AR workspace,RP-ALC,Add: Record page · x_ar_allocation,New,,2026-11-19,To do
+286,BSU,AR workspace,HDR-ALC,Add: Record header: highlighted values of x_ar_allocation,New,,2026-11-19,To do
+287,BSU,AR workspace,FRM-ALC,Add: Form view: x_ar_allocation,New,,2026-11-19,To do
+288,BSU,Data and logic,ALC.deposit,"Add field ""BSU deposit"" on Allocation (reference to BSU deposit, mandatory) [x_ar_allocation.deposit]",New,,2026-11-19,To do
+289,BSU,Data and logic,ALC.invoice,"Add field ""Invoice"" on Allocation (reference to Invoice) [x_ar_allocation.invoice]",New,,2026-11-19,To do
+290,BSU,Data and logic,ALC.request,"Add field ""Collection case"" on Allocation (reference to AR request) [x_ar_allocation.request]",New,,2026-11-19,To do
+291,BSU,Data and logic,ALC.amount,"Add field ""Allocation value"" on Allocation (amount (SGD)) [x_ar_allocation.amount]",New,,2026-11-19,To do
+292,BSU,Data and logic,ALC.state,"Add field ""State"" on Allocation (dropdown Applied / Removed) [x_ar_allocation.state]",New,,2026-11-19,To do
+293,BSU,Data and logic,ALC.exception,"Add field ""Exception"" on Allocation (dropdown Exact / Multi-invoice / Short pay / Overpayment / Partial / Discount taken) [x_ar_allocation.exception]",New,,2026-11-19,To do
+294,BSU,Data and logic,ALC.reason,"Add field ""Reason"" on Allocation (long text) [x_ar_allocation.reason]",New,,2026-11-19,To do
+295,CCI,AR workspace,LST-CMP,Add: List: core_company · list view layout + list menu condition,New,,2026-11-19,To do
+296,CCI,AR workspace,RP-CMP,Add: Record page · core_company,New,,2026-11-19,To do
+297,CCI,AR workspace,HDR-CMP,Add: Record header: highlighted values of core_company,New,,2026-11-19,To do
+298,CCI,AR workspace,FRM-CMP,Add: Form view: core_company,New,,2026-11-19,To do
+299,CCI,Data and logic,CMP.name,"Add field ""Name"" on Company (text, mandatory) [core_company.name]",New,,2026-11-19,To do
+300,CCI,AR workspace,LST-CUS,Add: List: x_ar_customer · list view layout + list menu condition,New,,2026-11-19,To do
+301,CCI,AR workspace,RP-CUS,Add: Record page · x_ar_customer,New,,2026-11-19,To do
+302,CCI,AR workspace,HDR-CUS,Add: Record header: highlighted values of x_ar_customer,New,,2026-11-19,To do
+303,CCI,AR workspace,FRM-CUS,Add: Form view: x_ar_customer,New,,2026-11-19,To do
+304,CCI,Data and logic,CUS.company,"Add field ""Company"" on Customer (reference to Company, mandatory) [x_ar_customer.company]",New,,2026-11-19,To do
+305,CCI,Data and logic,CUS.company.name,"Add field ""Customer name"" on Customer (text, read-only) [x_ar_customer.company.name]",New,,2026-11-19,To do
+306,CCI,Data and logic,CUS.uen,"Add field ""UEN (company registration no.)"" on Customer (text) [x_ar_customer.uen]",New,,2026-11-19,To do
+307,CCI,Data and logic,CUS.parent_group,"Add field ""Parent group"" on Customer (text) [x_ar_customer.parent_group]",New,,2026-11-19,To do
+308,CCI,Data and logic,CUS.registered_address,"Add field ""Registered address"" on Customer (long text) [x_ar_customer.registered_address]",New,,2026-11-19,To do
+309,CCI,Data and logic,CUS.agency_type,"Add field ""Agency type"" on Customer (dropdown M / SB / PV) [x_ar_customer.agency_type]",New,,2026-11-19,To do
+310,CCI,Data and logic,CUS.vag,"Add field ""V@G"" on Customer (dropdown Yes / No) [x_ar_customer.vag]",New,,2026-11-19,Redundant (see row 549)
+311,CCI,Data and logic,CUS.vag_sub_bu,"Add field ""V@G sub-BU"" on Customer (text) [x_ar_customer.vag_sub_bu]",New,,2026-11-19,To do
+312,CCI,Data and logic,CUS.poc_name,"Add field ""POC name"" on Customer (text) [x_ar_customer.poc_name]",New,,2026-11-19,To do
+313,CCI,Data and logic,CUS.poc_email,"Add field ""POC email"" on Customer (text) [x_ar_customer.poc_email]",New,,2026-11-19,To do
+314,CCI,Data and logic,CUS.bank_names,"Add field ""Names seen on bank statements"" on Customer (long text) [x_ar_customer.bank_names]",New,,2026-11-19,To do
+315,CCI,Data and logic,CUS.notes,"Add field ""Notes for AR"" on Customer (String (4000)) [x_ar_customer.notes]",New,,2026-11-19,To do
+316,CCI,Data and logic,CUS.active,"Add field ""Active"" on Customer (checkbox) [x_ar_customer.active]",New,,2026-11-19,To do
+317,CCI,AR workspace,LST-CON,Add: List: x_ar_contract · list view layout + list menu condition,New,,2026-11-19,To do
+318,CCI,AR workspace,RP-CON,Add: Record page · x_ar_contract,New,,2026-11-19,To do
+319,CCI,AR workspace,HDR-CON,Add: Record header: highlighted values of x_ar_contract,New,,2026-11-19,To do
+320,CCI,AR workspace,FRM-CON,Add: Form view: x_ar_contract,New,,2026-11-19,To do
+321,CCI,Data and logic,CON.contract_id,"Add field ""Contract ID"" on Contract (text, read-only) [x_ar_contract.contract_id]",New,,2026-11-19,To do
+322,CCI,Data and logic,CON.contract_type,"Add field ""Contract category"" on Contract (dropdown Contract / No contract, mandatory) [x_ar_contract.contract_type]",New,,2026-11-19,To do
+323,CCI,Data and logic,CON.number,"Add field ""Contract number"" on Contract (text) [x_ar_contract.number]",New,,2026-11-19,To do
+324,CCI,Data and logic,CON.contract_category,"Add field ""Contract type"" on Contract (dropdown Recurring / Ad-hoc) [x_ar_contract.contract_category]",New,,2026-11-19,To do
+325,CCI,Data and logic,CON.customer,"Add field ""Customer"" on Contract (reference to Customer, mandatory) [x_ar_contract.customer]",New,,2026-11-19,To do
+326,CCI,Data and logic,CON.department,"Add field ""Department"" on Contract (dropdown) [x_ar_contract.department]",New,,2026-11-19,To do
+327,CCI,Data and logic,CON.contract_owners,"Add field ""Contract owner"" on Contract (multi-select) [x_ar_contract.contract_owners]",New,,2026-11-19,To do
+328,CCI,Data and logic,CON.reference_number,"Add field ""Contract reference number"" on Contract (text) [x_ar_contract.reference_number]",New,,2026-11-19,To do
+329,CCI,Data and logic,CON.po_number,"Add field ""Contract PO number"" on Contract (text) [x_ar_contract.po_number]",New,,2026-11-19,To do
+330,CCI,Data and logic,CON.short_description,"Add field ""Contract title"" on Contract (text, mandatory) [x_ar_contract.short_description]",New,,2026-11-19,To do
+331,CCI,Data and logic,CON.billing_type,"Add field ""Billing"" on Contract (dropdown Monthly / Milestone / Annual / Time & materials / Per PO) [x_ar_contract.billing_type]",New,,2026-11-19,To do
+332,CCI,Data and logic,CON.contract_value,"Add field ""Contract value (SGD)"" on Contract (amount (SGD)) [x_ar_contract.contract_value]",New,,2026-11-19,To do
+333,CCI,Data and logic,CON.start_date,"Add field ""Contract start date"" on Contract (date) [x_ar_contract.start_date]",New,,2026-11-19,To do
+334,CCI,Data and logic,CON.end_date,"Add field ""Contract end date"" on Contract (date) [x_ar_contract.end_date]",New,,2026-11-19,To do
+335,CCI,Data and logic,CON.payment_terms,"Add field ""Payment terms (days)"" on Contract (whole number) [x_ar_contract.payment_terms]",New,,2026-11-19,To do
+336,CCI,Data and logic,CON.lpi_applicable,"Add field ""LPI applicable"" on Contract (checkbox) [x_ar_contract.lpi_applicable]",New,,2026-11-19,To do
+337,CCI,Data and logic,CON.lpi_min_rate,"Add field ""Minimum LPI rate (%)"" on Contract (number) [x_ar_contract.lpi_min_rate]",New,,2026-11-19,To do
+338,CCI,Data and logic,CON.lpi_rate,"Add field ""LPI rate (%)"" on Contract (number) [x_ar_contract.lpi_rate]",New,,2026-11-19,To do
+339,CCI,Data and logic,CON.billing_cycle,"Add field ""Contract billing cycle"" on Contract (dropdown 1st of the month / 15th of the month / Others) [x_ar_contract.billing_cycle]",New,,2026-11-19,To do
+340,CCI,Data and logic,CON.billing_cycle_other,"Add field ""Suggested billing cycle"" on Contract (text) [x_ar_contract.billing_cycle_other]",New,,2026-11-19,To do
+341,CCI,Data and logic,CON.preferred_invoice_date,"Add field ""Preferred invoice billing date"" on Contract (date) [x_ar_contract.preferred_invoice_date]",New,,2026-11-19,To do
+342,CCI,Data and logic,CON.payment_terms_choice,"Add field ""Payment terms"" on Contract (dropdown 30 days / Others) [x_ar_contract.payment_terms_choice]",New,,2026-11-19,To do
+343,CCI,Data and logic,CON.payment_terms_other,"Add field ""Other payment terms"" on Contract (text) [x_ar_contract.payment_terms_other]",New,,2026-11-19,To do
+344,CCI,Data and logic,CON.proration,"Add field ""Proration"" on Contract (dropdown Yes / No) [x_ar_contract.proration]",New,,2026-11-19,To do
+345,CCI,Data and logic,CON.proration_first,"Add field ""Proration for 1st month"" on Contract (amount (SGD)) [x_ar_contract.proration_first]",New,,2026-11-19,To do
+346,CCI,Data and logic,CON.proration_last,"Add field ""Proration for last month"" on Contract (amount (SGD)) [x_ar_contract.proration_last]",New,,2026-11-19,To do
+347,CCI,Data and logic,CON.type_of_billing,"Add field ""Type of billing"" on Contract (dropdown A / B / C / D / E) [x_ar_contract.type_of_billing]",New,,2026-11-19,To do
+348,CCI,Data and logic,CON.bulk_supporting_docs,"Add field ""Supporting documents (bulk upload)"" on Contract (attachment) [x_ar_contract.bulk_supporting_docs]",New,,2026-11-19,Redundant (see row 563)
+349,CCI,Data and logic,CON.giro_status,"Add field ""GIRO status"" on Contract (dropdown Active / Not active) [x_ar_contract.giro_status]",New,,2026-11-19,To do
+350,CCI,Data and logic,CON.giro_case,"Add field ""Active GIRO case"" on Contract (reference to AR request) [x_ar_contract.giro_case]",New,,2026-11-19,To do
+351,CCI,Data and logic,CON.bill_to_name,"Add field ""Bill-to person"" on Contract (text) [x_ar_contract.bill_to_name]",New,,2026-11-19,To do
+352,CCI,Data and logic,CON.bill_to_email,"Add field ""Bill-to email"" on Contract (text) [x_ar_contract.bill_to_email]",New,,2026-11-19,To do
+353,CCI,Data and logic,CON.bill_to_phone,"Add field ""Bill-to phone"" on Contract (text) [x_ar_contract.bill_to_phone]",New,,2026-11-19,To do
+354,CCI,Data and logic,CON.bill_to_address,"Add field ""Billing address"" on Contract (long text) [x_ar_contract.bill_to_address]",New,,2026-11-19,To do
+355,CCI,Data and logic,CON.notes,"Add field ""Notes"" on Contract (String (4000)) [x_ar_contract.notes]",New,,2026-11-19,To do
+356,CCI,AR workspace,LST-BCT,Add: List: x_ar_billing_contact · list view layout + list menu condition,New,,2026-11-19,To do
+357,CCI,AR workspace,RP-BCT,Add: Record page · x_ar_billing_contact,New,,2026-11-19,To do
+358,CCI,AR workspace,HDR-BCT,Add: Record header: highlighted values of x_ar_billing_contact,New,,2026-11-19,To do
+359,CCI,AR workspace,FRM-BCT,Add: Form view: x_ar_billing_contact,New,,2026-11-19,To do
+360,CCI,Data and logic,BCT.customer,"Add field ""Customer"" on Billing contact (reference to Customer, mandatory) [x_ar_billing_contact.customer]",New,,2026-11-19,To do
+361,CCI,Data and logic,BCT.requestor,"Add field ""Requestor"" on Billing contact (reference to users) [x_ar_billing_contact.requestor]",New,,2026-11-19,To do
+362,CCI,Data and logic,BCT.department,"Add field ""Department"" on Billing contact (dropdown, mandatory) [x_ar_billing_contact.department]",New,,2026-11-19,To do
+363,CCI,Data and logic,BCT.contact_name,"Add field ""Bill-to person"" on Billing contact (text, mandatory) [x_ar_billing_contact.contact_name]",New,,2026-11-19,To do
+364,CCI,Data and logic,BCT.email,"Add field ""Email"" on Billing contact (text, mandatory) [x_ar_billing_contact.email]",New,,2026-11-19,To do
+365,CCI,Data and logic,BCT.phone,"Add field ""Phone"" on Billing contact (text) [x_ar_billing_contact.phone]",New,,2026-11-19,To do
+366,CCI,Data and logic,BCT.billing_address,"Add field ""Billing address"" on Billing contact (long text) [x_ar_billing_contact.billing_address]",New,,2026-11-19,To do
+367,CCI,Data and logic,BCT.source_request,"Add field ""From AR request"" on Billing contact (reference to AR request, read-only) [x_ar_billing_contact.source_request]",New,,2026-11-19,To do
+368,CCI,Data and logic,BCT.active,"Add field ""Active"" on Billing contact (checkbox) [x_ar_billing_contact.active]",New,,2026-11-19,To do
+369,CCI,AR workspace,LST-DOC,Add: List: x_ar_customer_document · list view layout + list menu condition,New,,2026-11-19,To do
+370,CCI,AR workspace,RP-DOC,Add: Record page · x_ar_customer_document,New,,2026-11-19,To do
+371,CCI,AR workspace,HDR-DOC,Add: Record header: highlighted values of x_ar_customer_document,New,,2026-11-19,To do
+372,CCI,AR workspace,FRM-DOC,Add: Form view: x_ar_customer_document,New,,2026-11-19,To do
+373,CCI,Data and logic,DOC.number,"Add field ""Number"" on Customer document (text, read-only) [x_ar_customer_document.number]",New,,2026-11-19,To do
+374,CCI,Data and logic,DOC.customer,"Add field ""Customer"" on Customer document (reference to Customer, read-only) [x_ar_customer_document.customer]",New,,2026-11-19,To do
+375,CCI,Data and logic,DOC.requestor,"Add field ""Requestor"" on Customer document (reference to users) [x_ar_customer_document.requestor]",New,,2026-11-19,To do
+376,CCI,Data and logic,DOC.document_type,"Add field ""Document type"" on Customer document (dropdown Signed contract / PO / Company registration (ACRA / UEN) / Billing contact & address form, read-only) [x_ar_customer_document.document_type]",New,,2026-11-19,To do
+377,CCI,Data and logic,DOC.file_name,"Add field ""File"" on Customer document (text, read-only) [x_ar_customer_document.file_name]",New,,2026-11-19,To do
+378,CCI,Data and logic,DOC.contract,"Add field ""Contract"" on Customer document (reference to Contract, read-only) [x_ar_customer_document.contract]",New,,2026-11-19,To do
+379,CCI,Data and logic,DOC.department,"Add field ""Department"" on Customer document (dropdown, read-only) [x_ar_customer_document.department]",New,,2026-11-19,To do
+380,CCI,Data and logic,DOC.source_request,"Add field ""From AR request"" on Customer document (reference to AR request, read-only) [x_ar_customer_document.source_request]",New,,2026-11-19,To do
+381,CCI,Data and logic,DOC.received_on,"Add field ""Received"" on Customer document (date, read-only) [x_ar_customer_document.received_on]",New,,2026-11-19,To do
+382,CCI,AR workspace,LST-SCH,Add: List: x_ar_billing_schedule · list view layout + list menu condition,New,,2026-11-19,To do
+383,CCI,AR workspace,RP-SCH,Add: Record page · x_ar_billing_schedule,New,,2026-11-19,To do
+384,CCI,AR workspace,HDR-SCH,Add: Record header: highlighted values of x_ar_billing_schedule,New,,2026-11-19,To do
+385,CCI,AR workspace,FRM-SCH,Add: Form view: x_ar_billing_schedule,New,,2026-11-19,To do
+386,CCI,Data and logic,SCH.number,"Add field ""Number"" on Billing schedule (text, read-only) [x_ar_billing_schedule.number]",New,,2026-11-19,To do
+387,CCI,Data and logic,SCH.contract,"Add field ""Contract"" on Billing schedule (reference to Contract, mandatory) [x_ar_billing_schedule.contract]",New,,2026-11-19,To do
+388,CCI,Data and logic,SCH.customer,"Add field ""Customer"" on Billing schedule (reference to Customer, read-only) [x_ar_billing_schedule.customer]",New,,2026-11-19,To do
+389,CCI,Data and logic,SCH.department,"Add field ""Department"" on Billing schedule (dropdown, mandatory) [x_ar_billing_schedule.department]",New,,2026-11-19,To do
+390,CCI,Data and logic,SCH.short_description,"Add field ""What is billed"" on Billing schedule (text, mandatory) [x_ar_billing_schedule.short_description]",New,,2026-11-19,To do
+391,CCI,Data and logic,SCH.frequency,"Add field ""Frequency"" on Billing schedule (dropdown Monthly / Quarterly / Half-yearly / Annually, mandatory) [x_ar_billing_schedule.frequency]",New,,2026-11-19,To do
+392,CCI,Data and logic,SCH.amount,"Add field ""Amount per period"" on Billing schedule (amount (SGD), mandatory) [x_ar_billing_schedule.amount]",New,,2026-11-19,To do
+393,CCI,Data and logic,SCH.first_billing_date,"Add field ""First billing date"" on Billing schedule (date, mandatory) [x_ar_billing_schedule.first_billing_date]",New,,2026-11-19,To do
+394,CCI,Data and logic,SCH.last_billing_date,"Add field ""Last billing date"" on Billing schedule (date, mandatory) [x_ar_billing_schedule.last_billing_date]",New,,2026-11-19,To do
+395,CCI,Data and logic,SCH.first_period_amount,"Add field ""First period amount (prorated)"" on Billing schedule (amount (SGD)) [x_ar_billing_schedule.first_period_amount]",New,,2026-11-19,To do
+396,CCI,Data and logic,SCH.last_period_amount,"Add field ""Last period amount (prorated)"" on Billing schedule (amount (SGD)) [x_ar_billing_schedule.last_period_amount]",New,,2026-11-19,To do
+397,CCI,Data and logic,SCH.source_request,"Add field ""From AR request"" on Billing schedule (reference to AR request) [x_ar_billing_schedule.source_request]",New,,2026-11-19,To do
+398,CCI,Data and logic,SCH.source_line,"Add field ""From billing line"" on Billing schedule (reference to Billing line, read-only) [x_ar_billing_schedule.source_line]",New,,2026-11-19,To do
+399,AR-iii,AR workspace,LST-CTX,Add: List: x_ar_collection_tx · list view layout + list menu condition,New,,2026-11-19,To do
+400,AR-iii,AR workspace,RP-CTX,Add: Record page · x_ar_collection_tx,New,,2026-11-19,To do
+401,AR-iii,AR workspace,HDR-CTX,Add: Record header: highlighted values of x_ar_collection_tx,New,,2026-11-19,To do
+402,AR-iii,AR workspace,FRM-CTX,Add: Form view: x_ar_collection_tx,New,,2026-11-19,To do
+403,AR-iii,Data and logic,CTX.ar_request,"Add field ""AR request"" on Collection (reference to AR request, read-only) [x_ar_collection_tx.ar_request]",New,,2026-11-19,To do
+404,AR-iii,Data and logic,CTX.row_number,"Add field ""Row"" on Collection (whole number, read-only) [x_ar_collection_tx.row_number]",New,,2026-11-19,To do
+405,AR-iii,Data and logic,CTX.collection_type,"Add field ""Collection Type"" on Collection (dropdown Cashcard / Credit Card / NETS / NETS FlashPay / NETS Scan/QR, mandatory) [x_ar_collection_tx.collection_type]",New,,2026-11-19,To do
+406,AR-iii,Data and logic,CTX.transaction_amount,"Add field ""Transaction Amount"" on Collection (amount (SGD), mandatory) [x_ar_collection_tx.transaction_amount]",New,,2026-11-19,To do
+407,AR-iii,AR workspace,LST-CAL,Add: List: x_ar_collection_allocation · list view layout + list menu condition,New,,2026-11-19,To do
+408,AR-iii,AR workspace,RP-CAL,Add: Record page · x_ar_collection_allocation,New,,2026-11-19,To do
+409,AR-iii,AR workspace,HDR-CAL,Add: Record header: highlighted values of x_ar_collection_allocation,New,,2026-11-19,To do
+410,AR-iii,AR workspace,FRM-CAL,Add: Form view: x_ar_collection_allocation,New,,2026-11-19,To do
+411,AR-iii,Data and logic,CAL.ar_request,"Add field ""AR request"" on Allocation (reference to AR request, read-only) [x_ar_collection_allocation.ar_request]",New,,2026-11-19,To do
+412,AR-iii,Data and logic,CAL.row_number,"Add field ""Row"" on Allocation (whole number, read-only) [x_ar_collection_allocation.row_number]",New,,2026-11-19,To do
+413,AR-iii,Data and logic,CAL.description,"Add field ""Description"" on Allocation (text, mandatory) [x_ar_collection_allocation.description]",New,,2026-11-19,To do
+414,AR-iii,Data and logic,CAL.amount,"Add field ""Amount"" on Allocation (amount (SGD), mandatory) [x_ar_collection_allocation.amount]",New,,2026-11-19,To do
+415,AR-iii,Data and logic,CAL.cost_centre,"Add field ""Cost Centre"" on Allocation (reference to Cost centre, mandatory) [x_ar_collection_allocation.cost_centre]",New,,2026-11-19,To do
+416,AR-iii,Data and logic,CAL.account_code,"Add field ""Account Code"" on Allocation (reference to Account code, mandatory) [x_ar_collection_allocation.account_code]",New,,2026-11-19,To do
+417,AR-iii,AR workspace,LST-C5L,Add: List: x_ar_collection_case_line · list view layout + list menu condition,New,,2026-11-19,To do
+418,AR-iii,AR workspace,RP-C5L,Add: Record page · x_ar_collection_case_line,New,,2026-11-19,To do
+419,AR-iii,AR workspace,HDR-C5L,Add: Record header: highlighted values of x_ar_collection_case_line,New,,2026-11-19,To do
+420,AR-iii,AR workspace,FRM-C5L,Add: Form view: x_ar_collection_case_line,New,,2026-11-19,To do
+421,AR-iii,Data and logic,C5L.ar_request,"Add field ""AR request"" on Case line (reference to AR request, read-only) [x_ar_collection_case_line.ar_request]",New,,2026-11-19,To do
+422,AR-iii,Data and logic,C5L.row_number,"Add field ""Row"" on Case line (whole number, read-only) [x_ar_collection_case_line.row_number]",New,,2026-11-19,To do
+423,AR-iii,Data and logic,C5L.case_number,"Add field ""Case Number"" on Case line (text) [x_ar_collection_case_line.case_number]",New,,2026-11-19,To do
+424,AR-iii,Data and logic,C5L.amount,"Add field ""Amount"" on Case line (amount (SGD)) [x_ar_collection_case_line.amount]",New,,2026-11-19,To do
+425,AR-iii,Data and logic,C5L.case_status,"Add field ""Case Status"" on Case line (dropdown Case Pending / Case Closed / Forfeit to State with court order / Forfeit to State without court order) [x_ar_collection_case_line.case_status]",New,,2026-11-19,To do
+426,CCI,AR workspace,LST-CCT,Add: List: x_ar_cost_centre · list view layout + list menu condition,New,,2026-11-19,To do
+427,CCI,AR workspace,RP-CCT,Add: Record page · x_ar_cost_centre,New,,2026-11-19,To do
+428,CCI,AR workspace,HDR-CCT,Add: Record header: highlighted values of x_ar_cost_centre,New,,2026-11-19,To do
+429,CCI,AR workspace,FRM-CCT,Add: Form view: x_ar_cost_centre,New,,2026-11-19,To do
+430,CCI,Data and logic,CCT.code,"Add field ""Code"" on Cost centre (text, mandatory) [x_ar_cost_centre.code]",New,,2026-11-19,To do
+431,CCI,Data and logic,CCT.name,"Add field ""Name"" on Cost centre (text, mandatory) [x_ar_cost_centre.name]",New,,2026-11-19,To do
+432,CCI,Data and logic,CCT.department,"Add field ""Department"" on Cost centre (dropdown, mandatory) [x_ar_cost_centre.department]",New,,2026-11-19,To do
+433,CCI,Data and logic,CCT.active,"Add field ""Active"" on Cost centre (checkbox) [x_ar_cost_centre.active]",New,,2026-11-19,To do
+434,CCI,AR workspace,LST-ACT,Add: List: x_ar_account_code · list view layout + list menu condition,New,,2026-11-19,To do
+435,CCI,AR workspace,RP-ACT,Add: Record page · x_ar_account_code,New,,2026-11-19,To do
+436,CCI,AR workspace,HDR-ACT,Add: Record header: highlighted values of x_ar_account_code,New,,2026-11-19,To do
+437,CCI,AR workspace,FRM-ACT,Add: Form view: x_ar_account_code,New,,2026-11-19,To do
+438,CCI,Data and logic,ACT.code,"Add field ""Code"" on Account code (text, mandatory) [x_ar_account_code.code]",New,,2026-11-19,To do
+439,CCI,Data and logic,ACT.description,"Add field ""Description"" on Account code (text, mandatory) [x_ar_account_code.description]",New,,2026-11-19,To do
+440,CCI,Data and logic,ACT.gst_treatment,"Add field ""GST / recovery treatment"" on Account code (dropdown GST applicable / No GST / Recovery) [x_ar_account_code.gst_treatment]",New,,2026-11-19,To do
+441,CCI,Data and logic,ACT.active,"Add field ""Active"" on Account code (checkbox) [x_ar_account_code.active]",New,,2026-11-19,To do
+442,BSU,AR workspace,LST-PMD,Add: List: x_ar_payment_mode · list view layout + list menu condition,New,,2026-11-19,To do
+443,BSU,AR workspace,RP-PMD,Add: Record page · x_ar_payment_mode,New,,2026-11-19,To do
+444,BSU,AR workspace,HDR-PMD,Add: Record header: highlighted values of x_ar_payment_mode,New,,2026-11-19,To do
+445,BSU,AR workspace,FRM-PMD,Add: Form view: x_ar_payment_mode,New,,2026-11-19,To do
+446,BSU,Data and logic,PMD.bank_account,"Add field ""Bank account"" on Payment mode (reference to Bank account, mandatory) [x_ar_payment_mode.bank_account]",New,,2026-11-19,To do
+447,BSU,Data and logic,PMD.name,"Add field ""Payment mode"" on Payment mode (text, mandatory) [x_ar_payment_mode.name]",New,,2026-11-19,To do
+448,BSU,Data and logic,PMD.prefix,"Add field ""Prefix"" on Payment mode (text, mandatory) [x_ar_payment_mode.prefix]",New,,2026-11-19,To do
+449,BSU,Data and logic,PMD.suffix,"Add field ""Suffix"" on Payment mode (text, mandatory) [x_ar_payment_mode.suffix]",New,,2026-11-19,To do
+450,BSU,Data and logic,PMD.account_code,"Add field ""Account code"" on Payment mode (reference to Account code) [x_ar_payment_mode.account_code]",New,,2026-11-19,To do
+451,BSU,Data and logic,PMD.cost_centre,"Add field ""Cost centre"" on Payment mode (reference to Cost centre) [x_ar_payment_mode.cost_centre]",New,,2026-11-19,To do
+452,BSU,Data and logic,PMD.active,"Add field ""Active"" on Payment mode (checkbox) [x_ar_payment_mode.active]",New,,2026-11-19,To do
+453,CCI,Data and logic,INV.amount_due,Add: Calculated: amount − matched BSU deposits,New,,2026-11-19,To do
+454,CCI,Data and logic,INV.payment_status,Add: Calculated: Unpaid / Part paid / Paid / Overdue,New,,2026-11-19,To do
+455,BSU,Data and logic,DEP.unmatched_amount,Add: Calculated: amount − allocations,New,,2026-11-19,To do
+456,BSU,Data and logic,DEP.match_state,Add: Calculated: Unmatched / Part matched / Matched,New,,2026-11-19,To do
+457,CCI,Data and logic,CUS.overdue,Add: Calculated: amount_due on issued invoices past due_date,New,,2026-11-19,To do
+458,CCI,Data and logic,CON.status,Add: Calculated: Active / Not started / Ended from start and end dates,New,,2026-11-19,To do
+459,CCI,Data and logic,CON.line_count,Add: Calculated: number of billing lines filed under the contract,New,,2026-11-19,To do
+460,BSU,Data and logic,BSU.department,Add: Dot-walk: bank_account.department,New,,2026-11-19,To do
+461,CCI,Data and logic,SCH.next_billing_date,Add: Calculated: first period on or after today without an invoice,New,,2026-11-19,To do
+462,CCI,Data and logic,SCH.periods_due,Add: Calculated: periods up to today without an invoice,New,,2026-11-19,To do
+463,BSU,Data and logic,BNK.last_statement,Add: Calculated: latest sc_req_item.statement_date for the account,New,,2026-11-19,To do
+464,CCI,Data and logic,INV.aging,"Add: Calculated: Current / 1–30 / 31–60 / 61–90 / 90+ days past the due date, for issued invoices with an amount due",New,,2026-11-19,To do
+465,BSU,Data and logic,PMD.deposit_id_pattern,Add: Calculated for display: <prefix>-DDMMYY-<suffix>,New,,2026-11-19,To do
+466,BSU,Data and logic,PMD.bank_name,Add: Dot-walk: bank_account.bank,New,,2026-11-19,To do
+467,BSU,Data and logic,PMD.bank_account_name,Add: Dot-walk: bank_account.account_name,New,,2026-11-19,To do
+468,CCI,AR workspace,RL-CUS-BCT,Add: Related list: x_ar_billing_contact where customer = this customer,New,,2026-11-19,To do
+469,CCI,AR workspace,RL-CUS-DOC,Add: Related list: x_ar_customer_document where customer = this customer,New,,2026-11-19,To do
+470,CCI,AR workspace,RL-CUS-SCH,Add: Related list: x_ar_billing_schedule where customer = this customer,New,,2026-11-19,To do
+471,CCI,AR workspace,RL-SCH-INV,Add: Related list: x_ar_invoice where billing_schedule = this billing schedule,New,,2026-11-19,To do
+472,CCI,AR workspace,RL-CUS-CON,Add: Related list: x_ar_contract where customer = this customer,New,,2026-11-19,To do
+473,CCI,AR workspace,RL-CUS-INV,Add: Related list: x_ar_invoice where customer = this customer,New,,2026-11-19,To do
+474,CCI,AR workspace,RL-CUS-REQ,Add: Related list: x_ar_request where customer = this customer,New,,2026-11-19,To do
+475,CCI,AR workspace,RL-CON-INV,Add: Related list: x_ar_invoice where contract = this contract,New,,2026-11-19,To do
+476,CCI,AR workspace,RL-CON-REQ,Add: Related list: x_ar_request where contract = this contract,New,,2026-11-19,To do
+477,CCI,AR workspace,RL-CON-RQL,Add: Related list: x_ar_request_line where contract = this contract,New,,2026-11-19,To do
+478,CCI,AR workspace,RL-CON-SCH,Add: Related list: x_ar_billing_schedule where contract = this contract,New,,2026-11-19,To do
+479,BSU,AR workspace,RL-INV-ALC,Add: Related list: x_ar_allocation where invoice = this invoice,New,,2026-11-19,To do
+480,BSU,AR workspace,RL-DEP-ALC,Add: Related list: x_ar_allocation where deposit = this bsu deposit,New,,2026-11-19,To do
+481,BSU,AR workspace,RL-REQ-ALC,Add: Related list: x_ar_allocation where request = this ar request,New,,2026-11-19,To do
+482,AR-iii,AR workspace,RL-REQ-CTX,Add: Related list: x_ar_collection_tx where ar_request = this ar request,New,,2026-11-19,To do
+483,AR-iii,AR workspace,RL-REQ-CAL,Add: Related list: x_ar_collection_allocation where ar_request = this ar request,New,,2026-11-19,To do
+484,AR-iii,AR workspace,RL-REQ-C5L,Add: Related list: x_ar_collection_case_line where ar_request = this ar request,New,,2026-11-19,To do
+485,CCI,AR workspace,RL-CCT-CAL,Add: Related list: x_ar_collection_allocation where cost_centre = this cost centre,New,,2026-11-19,To do
+486,CCI,AR workspace,RL-INV-RQL,Add: Related list: x_ar_request_line where invoice = this invoice,New,,2026-11-19,To do
+487,BSU,AR workspace,RL-BNK-PMD,Add: Related list: x_ar_payment_mode where bank_account = this bank account,New,,2026-11-19,To do
+488,CCI,AR workspace,RL-ACT-CAL,Add: Related list: x_ar_collection_allocation where account_code = this account code,New,,2026-11-19,To do
+489,BSU,AR workspace,RL-BSU-DEP,Add: Related list: x_ar_bank_statement where bsu = this statement upload,New,,2026-11-19,To do
+490,BSU,AR workspace,RL-BNK-BSU,Add: Related list: sc_req_item where bank_account = this bank account,New,,2026-11-19,To do
+491,BSU,AR workspace,RL-BNK-DEP,Add: Related list: x_ar_bank_statement where bank_account = this bank account,New,,2026-11-19,To do
+492,AR-iii,AR portal forms,UA-PT-addcase,Add: Collections AR-v Seized Monies / Restitution: + Add row in Case lines,New,,2026-11-19,To do
+493,AR-iii,AR portal forms,UA-PT-addcol,Add: Collections AR-iii: + Add row in Total number of collections for the day,New,,2026-11-19,To do
+494,AR-iii,AR portal forms,UA-PT-addalloc,Add: Collections AR-iv: + Add row in Amount for Each Account Code,New,,2026-11-19,To do
+495,AR-00,AR workspace,UA-REQ-assign,Add: Assign to me → assigned_to = current user; New → Work in progress,New,,2026-11-19,To do
+496,CCI,AR workspace,UA-SCH-save,Add: Save,New,,2026-11-19,To do
+497,CCI,AR workspace,UA-BCT-save,Add: Save,New,,2026-11-19,To do
+498,CCI,AR workspace,UA-BCT-new,Add: New,New,,2026-11-19,To do
+499,CCI,AR workspace,UA-BCT-insert,Add: Submit; several contacts per customer and department allowed,New,,2026-11-19,To do
+500,CCI,AR workspace,UA-CUS-newcontact,Add: Add billing contact → new billing contact form with customer prefilled,New,,2026-11-19,To do
+501,AR-00,AR workspace,UA-REQ-post,Add: Post work note / additional comment to the activity stream,New,,2026-11-19,To do
+502,AR-00,AR workspace,UA-REQ-save,Add: Save. On x_ar_request also: state change journalled; substate cleared unless state = Awaiting requestor information; AR-ix contract change sets customer from the contract; AR-i set to Closed complete generates the 1st invoice as a draft for each line without one,New,,2026-11-19,To do
+503,CCI,AR workspace,UA-INV-issue,Add: Issue invoice → state = Issued; blocked until approval_date is set; posts a comment to the requester on the linked AR request,New,,2026-11-19,To do
+504,CCI,AR workspace,UA-INV-cancel,Add: Cancel invoice → only when no BSU deposit is matched,New,,2026-11-19,To do
+505,CCI,AR workspace,UA-INV-save,Add: Save,New,,2026-11-19,To do
+506,BSU,AR workspace,UA-DEP-remove,Add: Remove match → deletes the deposit's allocations,New,,2026-11-19,To do
+507,BSU,AR workspace,UA-SUG-match,Add: Match → opens the New allocation form with the deposit and the invoice / case filled and Allocation value prefilled with the smaller of the deposit's unmatched amount and the target's amount due; AR confirms or changes it and saves,New,,2026-11-19,To do
+508,BSU,AR workspace,UA-DEP-newalloc,Add: New on the deposit's Allocations tab → New allocation form with BSU deposit prefilled; AR picks an invoice or a Collection case and may change the amount,New,,2026-11-19,To do
+509,BSU,AR workspace,UA-INV-newalloc,Add: New on the invoice's Allocations tab → New allocation form with Invoice prefilled; AR picks the BSU deposit,New,,2026-11-19,To do
+510,BSU,AR workspace,UA-REQ-newalloc,Add: New on the Collections case's BSU deposits matched tab → New allocation form with Collection case prefilled; AR picks the BSU deposit,New,,2026-11-19,To do
+511,BSU,AR workspace,UA-ALC-insert,Add: Submit of x_ar_allocation: exactly one of invoice or request; amount empty = default; blocked above either; returns to the record it was opened from,New,,2026-11-19,To do
+512,BSU,AR workspace,UA-BSU-new,Add: New: opens the upload form,New,,2026-11-19,To do
+513,BSU,AR workspace,UA-BSU-save,"Add: Save to bank statements → submits the catalog item: creates the RITM; a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete",New,,2026-11-19,To do
+514,BSU,AR workspace,UA-BSU-sample,Add: Demo only: generate a sample CSV in the bank's layout,New,,2026-11-19,To do
+515,BSU,AR workspace,UA-BNK-upload,Add: Upload statement → opens the BSU page for this account,New,,2026-11-19,To do
+516,CCI,AR workspace,UA-CUS-save,Add: Save,New,,2026-11-19,To do
+517,CCI,AR workspace,UA-CON-save,Add: Save,New,,2026-11-19,To do
+518,BSU,AR workspace,UA-BNK-save,Add: Save,New,,2026-11-19,To do
+519,CCI,AR workspace,UA-CUS-new,Add: New,New,,2026-11-19,To do
+520,CCI,AR workspace,UA-CON-new,Add: New,New,,2026-11-19,To do
+521,CCI,AR workspace,UA-CCT-new,Add: New,New,,2026-11-19,To do
+522,CCI,AR workspace,UA-INV-pdf,Add: Print or save as PDF: opens the invoice document for printing,New,,2026-11-19,To do
+523,BSU,AR workspace,UA-BNK-newmode,Add: New payment mode: opens a new payment mode with the bank account filled in,New,,2026-11-19,To do
+524,BSU,AR workspace,UA-PMD-new,Add: New,New,,2026-11-19,To do
+525,BSU,AR workspace,UA-PMD-insert,Add: Submit,New,,2026-11-19,To do
+526,BSU,AR workspace,UA-PMD-save,Add: Save,New,,2026-11-19,To do
+527,CCI,AR workspace,UA-INV-newrel,Add: New invoice on the contract's Invoices tab: draft invoice with customer and contract filled in,New,,2026-11-19,To do
+528,CCI,AR workspace,UA-BCT-newrel,Add: Add billing contact on the customer's Billing contacts tab,New,,2026-11-19,To do
+529,CCI,AR workspace,UA-INV-insert,Add: Submit,New,,2026-11-19,To do
+530,CCI,AR workspace,UA-DOC-new,Add: New: AR files a customer document by hand,New,,2026-11-19,To do
+531,CCI,AR workspace,UA-DOC-insert,Add: Submit,New,,2026-11-19,To do
+532,CCI,AR workspace,UA-DOC-save,Add: Save,New,,2026-11-19,To do
+533,CCI,AR workspace,UA-ACT-new,Add: New,New,,2026-11-19,To do
+534,CCI,AR workspace,UA-CCT-save,Add: Save,New,,2026-11-19,To do
+535,CCI,AR workspace,UA-CCT-insert,Add: Submit,New,,2026-11-19,To do
+536,CCI,AR workspace,UA-ACT-save,Add: Save,New,,2026-11-19,To do
+537,CCI,AR workspace,UA-ACT-insert,Add: Submit,New,,2026-11-19,To do
+538,BSU,AR workspace,UA-BNK-new,Add: New,New,,2026-11-19,To do
+539,CCI,AR workspace,UA-CUS-insert,Add: Submit,New,,2026-11-19,To do
+540,CCI,AR workspace,UA-CON-insert,Add: Submit,New,,2026-11-19,To do
+541,CCI,AR workspace,UA-SCH-insert,Add: Submit of a billing schedule created from the contract,New,,2026-11-19,To do
+542,BSU,AR workspace,UA-BNK-insert,Add: Submit,New,,2026-11-19,To do
+543,CCI,AR workspace,UA-CON-newschedule,Add: New billing schedule → new x_ar_billing_schedule form with contract prefilled; AR sets the 2nd invoice's date as first billing date and picks the AR-i case,New,,2026-11-19,To do
+544,CCI,AR workspace,UA-CUS-newcontract,Add: New contract → new contract form with customer prefilled,New,,2026-11-19,To do
+545,AR-i,AR portal forms,PT-37,Change: AR-i variable set Invoice details: add po_number,Changed,9,2026-11-19,To do
+546,AR-i,AR portal forms,PT-43,"Change: AR-i multi-row variable set Billing line items, shown when billing_line_items_required = Yes: add cost_center",Changed,15,2026-11-19,Redundant (see row 557)
+547,AR-i,Data and logic,REQ.po_number,"Change field ""Customer PO number"" on AR request: show it only when ""V@G"" is Yes [x_ar_request.po_number]",Changed,52,2026-11-19,To do
+548,AR-i,Data and logic,REQ.vag,"Change field ""V@G"" on AR request: show it only when ""Agency type"" is SB [x_ar_request.vag]",Changed,58,2026-11-19,To do
+549,CCI,Data and logic,CUS.vag,"Change field ""V@G"" on Customer: show it only when ""Agency type"" is SB [x_ar_customer.vag]",Changed,310,2026-11-19,To do
+550,AR-i,Data and logic,RQI.cost_center,"Add field ""Cost center"" on Billing line item (text) [x_ar_request_item.cost_center]",New,,2026-11-19,To do
+551,AR-i,Data and logic,REQ.type_of_billing,"Change field ""Type of billing"" on AR request: change the dropdown to General / Rental / Carpark / Courses / 5 / 6 [x_ar_request.type_of_billing]",Changed,60,2026-11-19,To do
+552,AR-i,Data and logic,RQI.gst_amount,"Change field ""GST amount"" on Billing line item: update the rule: Calculated: amount × GST rate, rounded to the cent; 0 when GST = No [x_ar_request_item.gst_amount]",Changed,91,2026-11-19,To do
+553,AR-i,Data and logic,RQI.gst_applicable,"Add field ""GST"" on Billing line item (dropdown Yes / No) [x_ar_request_item.gst_applicable]",New,,2026-11-19,To do
+554,AR-i,AR portal forms,PT-40,"Change: AR-i new contract variables, in order: new_contract_type, new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle, new_contract_invoice_date, new_contract_payment_terms,…",Changed,7,2026-11-19,To do
+555,AR-i,AR portal forms,PT-62,"Add: AR-i variable set 2. Type of billing, right after General information: type_of_billing",New,,2026-11-19,To do
+556,AR-i,AR portal forms,PT-63,"Add: AR-i popup: when the chosen existing contract's type_of_billing differs from the requester's choice, a catalog client script replaces the value with the contract's and shows a modal titled Type of billing changed",New,,2026-11-19,To do
+557,AR-i,AR portal forms,PT-43,"Change: AR-i multi-row variable set Billing line items, shown when billing_line_items_required = Yes: add gst_applicable",Changed,546,2026-11-19,To do
+558,AR-i,AR portal forms,PT-42,"Remove: AR-i variable set Others: cost_center, agent_name, po_number (retired in the prototype)",Redundant,14,2026-11-19,To do
+559,AR-i,AR portal forms,PT-29,"Remove: Finance coding variables: cost_center, agent_name (retired in the prototype)",Redundant,19,2026-11-19,To do
+560,AR-i,Data and logic,REQ.cost_center,"Remove field ""Cost center"" from AR request (text) [x_ar_request.cost_center]",Redundant,55,2026-11-19,To do
+561,AR-i,Data and logic,REQ.agent_name,"Remove field ""Name of agent to be billed"" from AR request (text) [x_ar_request.agent_name]",Redundant,56,2026-11-19,To do
+562,AR-i,Data and logic,REQ.bulk_supporting_docs,"Remove field ""Supporting documents (bulk upload)"" from AR request (attachment) [x_ar_request.bulk_supporting_docs]",Redundant,61,2026-11-19,To do
+563,CCI,Data and logic,CON.bulk_supporting_docs,"Remove field ""Supporting documents (bulk upload)"" from Contract (attachment) [x_ar_contract.bulk_supporting_docs]",Redundant,348,2026-11-19,To do

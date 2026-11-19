@@ -82,8 +82,9 @@ build gets the status *Ready for build (Release N)*; AR-i and AR-ix are *Ready f
 check (`tools/devtasks.mjs`, ledger `docs/DEV_TASKS.json`) for **every module** as requirements are updated, split
 per module into AR portal forms, AR workspace and Data and logic. It is add-only: never delete a task. When an
 item becomes redundant (retired, or changed so a new task replaces it), its task gets the state **Redundant** with
-the date; ticks (Done) are kept. The developer and BA (no git access) get `docs/DEV_TASKS.csv`: running No. and
-Ref per row, short task, decision number, and for a change a new row that names the row it affects.
+the date; ticks (Done) are kept. The developer and BA (no git access) get `docs/DEV_TASKS.csv`: running No. per row, the
+build-note ID, a plain task (*Add field …*, *Change dropdown to …*, *Remove field …*), and for a change a new row that
+names the row it affects.
 
 **Style.** Plain English, short sentences. Sample or anonymised data only (the demo is public); the mock
 company for examples and sanitising is in [`docs/MOCK_COMPANY.md`](docs/MOCK_COMPANY.md).
@@ -119,6 +120,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-19 | Release 1: AR-i and AR-ix *Ready for build (Release 1)*. Dev tasks (`docs/DEV_TASKS.md`) are add-only: listed tasks are never deleted; later changes add Changed / Retired tasks. | Owner |
 | 2026-11-19 | Dev tasks rule changed: tasks are generated for every module as requirements are updated (not only released ones); a redundant task gets the state Redundant instead of a new Retired task. | Owner |
 | 2026-11-19 | Dev tasks for the developer and BA: `docs/DEV_TASKS.csv` with running number and index, short task and decision number; changes are new rows naming the affected row. | Owner |
+| 2026-11-19 | Dev task CSV less technical: Ref, Item and Decision columns removed; the task says in plain words what to add, change or remove. | Owner |
 
 ## How we work: modules, one at a time
 

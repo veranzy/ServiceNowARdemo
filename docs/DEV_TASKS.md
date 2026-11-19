@@ -15,11 +15,10 @@ Specs: `docs/modules/<CODE>/README.md`; full mapping: `SERVICENOW_MAPPING.md`; a
 Redundant. Tick a box (`- [x]`) when a task is done: ticks are kept when the file is regenerated.
 
 **For the developer and the BA: [`DEV_TASKS.csv`](DEV_TASKS.csv)** (opens in Excel). One row per task with a running
-**No.** (never reused) and a running **Ref** per module (e.g. `AR-i-012`). Rows are only ever added: copy the rows
-whose No. is above your last one into your own tracker. A **Changed** row replaces the row named in *Affects row*;
-a **Redundant** row says *Do not build / remove* for the row named in *Affects row*. Columns: No., Ref, Module, Area,
-Item, Build-note ID, Task (short), Decision (module decision number, e.g. `AR-i 43`, or a cross-module `D` number),
-Change (New / Changed / Redundant), Affects row, Affects ref, Date added, State now.
+**No.** (never reused). Rows are only ever added: copy the rows whose No. is above your last one into your own
+tracker. Columns: No., Module, Area, Build-note ID, Task (plain words: *Add field …*, *Change field …: change the
+dropdown to …*, *Remove field …*), Change (New / Changed / Redundant), Affects row (the earlier row a Changed or
+Redundant row replaces or removes), Date added, State now.
 
 ## Setup (before any module)
 

@@ -25,3 +25,4 @@
 | 2026-11-18 | Decision 19: empty tabs on customer and contract records keep their column headers (owner). No IDs added or retired. |
 | 2026-11-18 | Decision 20: Customers list without *Open AR*; Master data menu without Billing contacts, Customer documents and No contract (one Contracts list). **Retired ID:** `CUS.open_ar`. |
 | 2026-11-19 | Decision 21: customer V@G only for Agency type SB. No IDs added or retired. |
+| 2026-11-19 | Decision 22: contract Type of billing choices General, Rental, Carpark, Courses, 5, 6; bulk upload and the Documents section removed. **Retired ID:** `CON.bulk_supporting_docs`. |

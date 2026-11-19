@@ -1,14 +1,19 @@
 // Generates docs/DEV_TASKS.md: the developer task list for the ServiceNow build, one section per module.
 // Run: node tools/devtasks.mjs (tools/check.mjs runs it). Source: js/schema.js, js/notes.js and the module index
 // (docs/modules/README.md). Only modules whose status is Agreed or Ready for build get their tasks listed (owner, 2026-11-19).
-import { readFileSync, writeFileSync } from "node:fs";
+// Add-only (owner, 2026-11-19): once a module's tasks are listed they are never deleted. They are kept in the ledger
+// docs/DEV_TASKS.json; a later prototype change adds a new task (Changed / Retired) instead of rewriting the old one.
+// Ticks ([x]) made in docs/DEV_TASKS.md are read back into the ledger, so they survive regeneration.
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RECORD_PRODUCER, RECORD_PRODUCER_ARIX, RECORD_PRODUCER_COL, TABLES } from "../js/schema.js";
 import { CODE, allNotes } from "../js/notes.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const LISTED = ["Agreed", "Ready for build"];
+const isListed = status => /^(Agreed|Ready for build)/.test(status);
+const LEDGER = join(ROOT, "docs/DEV_TASKS.json"), MD = join(ROOT, "docs/DEV_TASKS.md");
+const today = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);   // Singapore date
 
 // ---------- which module owns each build-note ID ----------
 const TABLE_MODULE = { REQ: "AR-00", INV: "CCI", SCH: "CCI", CUS: "CCI", CON: "CCI", BCT: "CCI", DOC: "CCI", CMP: "CCI", CCT: "CCI", ACT: "CCI",
@@ -72,32 +77,56 @@ const SIDES = [
   ["Data and logic", [["Tables and fields", id => /^[A-Z][A-Z0-9]*\.[a-z]/.test(id)], ["Jobs and other items", () => true]]]
 ];
 
-export function build() {
-  const notes = allNotes().filter(n => n.text && !/RETIRED/.test(n.text));
-  const seen = new Set(), tasks = [];
-  for (const n of notes) { if (seen.has(n.id)) continue; seen.add(n.id); tasks.push({ ...n, module: moduleOf(n.id) }); }
-  const unmapped = tasks.filter(t => !t.module).map(t => t.id);
-  const mods = modules(), listed = mods.filter(m => LISTED.includes(m.status));
-  const count = code => tasks.filter(t => t.module === code).length;
-  const sideOf = id => SIDES.findIndex(([, kinds]) => kinds.some(([, test]) => test(id)));
-  const split = code => [0, 1, 2].map(i => tasks.filter(t => t.module === code && sideOf(t.id) === i).length);
-  const one = t => `- [ ] \`${t.id}\` ${t.text.replace(/\s+/g, " ").replace(/^UI action: /, "")}`;
+const clean = t => t.replace(/\s+/g, " ").replace(/^UI action: /, "");
+const line = e => `\`${e.id}\` ${e.change === "new" ? "" : `**${e.change === "changed" ? "Changed" : "Retired"} ${e.added}:** `}${e.text}`;
 
+/** Returns the new ledger (old entries kept, new ones appended) and the markdown. Pure: writes nothing. */
+export function build(ledger = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, "utf8")) : [], mdNow = existsSync(MD) ? readFileSync(MD, "utf8") : "") {
+  const all = allNotes(), seen = new Set(), tasks = [];
+  for (const n of all) { if (!n.text || /RETIRED/.test(n.text) || seen.has(n.id)) continue; seen.add(n.id); tasks.push({ ...n, text: clean(n.text), module: moduleOf(n.id) }); }
+  const retiredText = id => clean(all.find(n => n.id === id && /RETIRED/.test(n.text))?.text || "no longer in the prototype");
+  const unmapped = tasks.filter(t => !t.module).map(t => t.id);
+  const mods = modules();
+  const sideOf = id => SIDES.findIndex(([, kinds]) => kinds.some(([, test]) => test(id)));
+  const kindOf = id => SIDES.flatMap(([, kinds]) => kinds).find(([, test]) => test(id))[0];
+  const count = code => tasks.filter(t => t.module === code).length;
+  const split = code => [0, 1, 2].map(i => tasks.filter(t => t.module === code && sideOf(t.id) === i).length);
+
+  // 1. ticks made in the markdown go back into the ledger
+  const ticked = new Set([...mdNow.matchAll(/^- \[[xX]\] (.+)$/gm)].map(m => m[1]));
+  ledger = ledger.map(e => ({ ...e, done: e.done || ticked.has(line(e)) }));
+  // 2. add-only: listed modules get new / changed / retired entries appended, nothing removed
+  for (const m of mods.filter(x => isListed(x.status))) {
+    const release = (m.status.match(/\(([^)]+)\)/) || [])[1] || m.status;
+    const last = id => [...ledger].reverse().find(e => e.module === m.code && e.id === id);
+    for (const t of tasks.filter(x => x.module === m.code)) {
+      const l = last(t.id);
+      if (!l || l.change === "retired") ledger.push({ module: m.code, id: t.id, text: t.text, change: "new", release, added: today() });
+      else if (l.text !== t.text) ledger.push({ module: m.code, id: t.id, text: t.text, change: "changed", release, added: today() });
+    }
+    for (const id of [...new Set(ledger.filter(e => e.module === m.code).map(e => e.id))]) {
+      const l = last(id);
+      if (l.change !== "retired" && !tasks.some(t => t.id === id && t.module === m.code)) ledger.push({ module: m.code, id, text: retiredText(id), change: "retired", release, added: today() });
+    }
+  }
+
+  const withTasks = mods.filter(m => ledger.some(e => e.module === m.code));
   let md = `# Developer task list (ServiceNow build)
 
-<!-- Generated by tools/devtasks.mjs from js/schema.js, js/notes.js and docs/modules/README.md. Do not edit by hand: change the source and run node tools/check.mjs. -->
+<!-- Generated by tools/devtasks.mjs from js/schema.js, js/notes.js, docs/modules/README.md and the ledger docs/DEV_TASKS.json. Do not edit by hand except to tick boxes: change the source and run node tools/check.mjs. -->
 
 The build tasks for the ServiceNow scoped app \`x_ar\`, one per build-note ID, grouped by module. Each line is
 the ID and what to build. Inside each module the tasks are split into **AR portal forms** (what the project
-team sees), **AR workspace** (what the AR team uses) and **Data and logic** (tables, fields and jobs both use). Specs: \`docs/modules/<CODE>/README.md\`; full mapping: \`SERVICENOW_MAPPING.md\`;
-all IDs: \`docs/BUILD_NOTES.md\`.
+team sees), **AR workspace** (what the AR team uses) and **Data and logic** (tables, fields and jobs both use).
+Specs: \`docs/modules/<CODE>/README.md\`; full mapping: \`SERVICENOW_MAPPING.md\`; all IDs: \`docs/BUILD_NOTES.md\`.
 
-**Only signed-off modules are listed.** A module's tasks appear here when its status in
-[\`docs/modules/README.md\`](modules/README.md) is *Agreed* or *Ready for build*. Until then it shows under
-*Waiting for sign-off* with its task count, because its screens may still change.
+**Only released modules are listed.** A module's tasks appear when its status in
+[\`docs/modules/README.md\`](modules/README.md) is *Agreed* or *Ready for build* (e.g. *Ready for build (Release 1)*).
+Until then it shows *waiting for sign-off* with its task count, because its screens may still change.
 
-**This file is regenerated on every check**, so ticks made here are lost. Track progress in a copy, or raise one
-GitHub issue per module and paste its section there.
+**Add-only.** Listed tasks are never deleted or rewritten. When the prototype changes later, a new task is added:
+**Changed** (build the new version of that item) or **Retired** (remove it from the build), with its date. Tick a
+box (\`- [x]\`) when a task is done: ticks are kept when the file is regenerated.
 
 ## Setup (before any module)
 
@@ -111,31 +140,29 @@ GitHub issue per module and paste its section there.
 
 | Module | Status | AR portal forms | AR workspace | Data and logic | Tasks |
 |---|---|---|---|---|---|
-${mods.map(m => `| ${m.code} | ${m.status} | ${split(m.code).join(" | ")} | ${LISTED.includes(m.status) ? `[${count(m.code)}](#${m.code.toLowerCase()})` : `${count(m.code)} (waiting for sign-off)`} |`).join("\n")}
+${mods.map(m => { const n = ledger.filter(e => e.module === m.code), open = n.filter(e => !e.done).length;
+  return `| ${m.code} | ${m.status} | ${split(m.code).join(" | ")} | ${n.length ? `[${n.length} listed, ${open} open](#${m.code.toLowerCase()})` : `${count(m.code)} (waiting for sign-off)`} |`; }).join("\n")}
 
 `;
-  if (!listed.length) md += `## Waiting for sign-off
-
-No module is *Agreed* yet, so no tasks are listed. They appear here, grouped by module, once the client signs a
-module off on the live demo.
-`;
-  for (const m of listed) {
-    md += `\n## ${m.code}\n\n${m.name}. Spec: \`docs/modules/${m.code}/README.md\`.\n`;
+  if (!withTasks.length) md += `## Waiting for sign-off\n\nNo module is released yet, so no tasks are listed.\n`;
+  for (const m of withTasks) {
+    md += `\n## ${m.code}\n\n${m.name}. Status: ${m.status}. Spec: \`docs/modules/${m.code}/README.md\`.\n`;
+    const es = ledger.filter(e => e.module === m.code);
     for (const [side, kinds] of SIDES) {
       let part = "";
-      for (const [kind, test] of kinds) {
-        const ts = tasks.filter(t => t.module === m.code && !t.done && test(t.id));
-        ts.forEach(t => { t.done = true; });
-        if (ts.length) part += `\n#### ${kind}\n\n${ts.map(one).join("\n")}\n`;
+      for (const [kind] of kinds) {
+        const ts = es.filter(e => kindOf(e.id) === kind);
+        if (ts.length) part += `\n#### ${kind}\n\n${ts.map(e => `- [${e.done ? "x" : " "}] ${line(e)}`).join("\n")}\n`;
       }
       if (part) md += `\n### ${side}\n${part}`;
     }
   }
-  return { md, unmapped };
+  return { md, ledger, unmapped };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const { md, unmapped } = build();
-  writeFileSync(join(ROOT, "docs/DEV_TASKS.md"), md);
+  const { md, ledger, unmapped } = build();
+  writeFileSync(LEDGER, JSON.stringify(ledger, null, 1) + "\n");
+  writeFileSync(MD, md);
   if (unmapped.length) console.warn(`devtasks: no module for ${unmapped.join(", ")} (add it to tools/devtasks.mjs)`);
 }

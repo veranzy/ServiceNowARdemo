@@ -33,7 +33,7 @@ for (const f of walk(join(ROOT, "js"), [".js"])) {
 }
 
 // 3. Generated docs
-const GEN = ["SERVICENOW_MAPPING.md", "docs/BUILD_NOTES.md", "docs/DEV_TASKS.md"];
+const GEN = ["SERVICENOW_MAPPING.md", "docs/BUILD_NOTES.md", "docs/DEV_TASKS.md", "docs/DEV_TASKS.json"];
 const before = GEN.map(f => existsSync(join(ROOT, f)) ? readFileSync(join(ROOT, f), "utf8") : "");
 for (const tool of ["tools/notes.mjs", "tools/mapping.mjs", "tools/devtasks.mjs"]) {
   try { execFileSync(process.execPath, [join(ROOT, tool)], { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" }); }

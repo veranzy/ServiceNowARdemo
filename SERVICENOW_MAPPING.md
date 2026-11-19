@@ -35,7 +35,7 @@ Custom customer master (not CSM customer_account). Each customer references one 
 | `parent_group` | Parent group | String |  |
 | `registered_address` | Registered address | String (1000) |  |
 | `agency_type` | Agency type | Choice | Choices: M, SB, PV. Master data; AR copies it by hand from the AR-i that set the customer up (D23 as amended by D31) |
-| `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type is SB, PV (UI policy) |
+| `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type = SB (UI policy). Only for Agency type SB (AR-i decision 42) |
 | `vag_sub_bu` | V@G sub-BU | String | Shown when V@G = Yes (UI policy) |
 | `poc_name` | POC name | String |  |
 | `poc_email` | POC email | String |  |
@@ -186,13 +186,11 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `preferred_invoice_date_justification` | Provide Justification for expedited or Off billing cycle request | String (1000) | Shown when Preferred invoice date = Expedited (UI policy). Shown when Expedited; optional |
 | `billing_line_items_required` | Require billing line item? | Choice | Choices: Yes (`yes`), No (`no`). Yes shows the billing line items table (multi-row variable set) |
 | `amount` | Request value | Currency | Read-only on form. AR-i: calculated, one-off lines + recurring amount × number of periods. Collections (AR-iii, AR-iv, AR-v): the amount to collect; BSU deposits are matched against it on Cash application (D29) |
-| `po_number` | Customer PO number | String |  |
+| `po_number` | Customer PO number | String | Shown when V@G = Yes (UI policy). AR-i Invoice details; shown only when V@G = Yes (Agency type SB) (AR-i decision 42) |
 | `customer_poc_name` | POC name | String | AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in; AR copies it to the customer by hand (D23 as amended by D31) |
 | `customer_poc_email` | POC email | String | AR-i customer details; must be a valid email. Same rule as POC name |
-| `cost_center` | Cost center | String | Optional, free text. To be filled by GA. Tooltip: "To be filled by GA" |
-| `agent_name` | Name of agent to be billed | String | Optional, free text |
 | `agency_type` | Agency type | Choice | Choices: M, SB, PV. AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master |
-| `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type is SB, PV (UI policy). AR-i customer details, optional. Found customer: read-only from the customer master |
+| `vag` | V@G | Choice | Choices: Yes (`yes`), No (`no`). Shown when Agency type = SB (UI policy). AR-i customer details, optional; only for Agency type SB (AR-i decision 42). Found customer: read-only from the customer master |
 | `sub_bu` | V@G sub-BU | String | Shown when V@G = Yes (UI policy). Optional, free text |
 | `type_of_billing` | Type of billing | Choice | Choices: A, B, C, D, E. Contract level: entered for a new contract (AR copies it to the contract by hand, D31); read-only copy of the contract's value for an existing one |
 | `bulk_supporting_docs` | Supporting documents (bulk upload) | Attachment | Shown when Type of billing is C, D, E (UI policy). Optional; several files at once |
@@ -254,6 +252,7 @@ Breakdown of an AR request's invoice (AR-i decision 32). Portal: multi-row varia
 | `total_amount` | Total amount | Currency | Read-only on form. Calculated: amount + GST |
 | `late_payment_interest` | Late payment interest (%) | Decimal | Rate % (to be confirmed with the users) |
 | `account_code` | Account code | String |  |
+| `cost_center` | Cost center | String | Optional, free text. To be filled by GA (AR-i decision 42: moved from the request to each item, right of Account code). Tooltip: "To be filled by GA" |
 
 ### Billing schedule — `x_ar_billing_schedule`
 
@@ -436,7 +435,7 @@ Master data (CCI decision 11, #9 §8): account codes for AR4 allocations with th
 
 ## Portal (project team)
 
-- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_type`, `new_contract_number`, `new_contract_ref`, `new_contract_po`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `new_contract_billing_cycle`, `new_contract_billing_cycle_other`, `new_contract_invoice_date`, `new_contract_payment_terms`, `new_contract_payment_terms_other`, `new_contract_proration`, `new_contract_proration_first`, `new_contract_proration_last`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `attention_name`, `attention_email`, `amount_per_period`, `preferred_invoice_date_choice`, `preferred_invoice_date_justification`, `billing_line_items_required`, `po_number`, `customer_poc_name`, `customer_poc_email`, `cost_center`, `agent_name`, `agency_type`, `vag`, `sub_bu`, `type_of_billing`, `bulk_supporting_docs`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
+- **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_type`, `new_contract_number`, `new_contract_ref`, `new_contract_po`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `new_contract_billing_cycle`, `new_contract_billing_cycle_other`, `new_contract_invoice_date`, `new_contract_payment_terms`, `new_contract_payment_terms_other`, `new_contract_proration`, `new_contract_proration_first`, `new_contract_proration_last`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `attention_name`, `attention_email`, `amount_per_period`, `preferred_invoice_date_choice`, `preferred_invoice_date_justification`, `billing_line_items_required`, `po_number`, `customer_poc_name`, `customer_poc_email`, `agency_type`, `vag`, `sub_bu`, `type_of_billing`, `bulk_supporting_docs`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
   - Producer script: `current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item`
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.

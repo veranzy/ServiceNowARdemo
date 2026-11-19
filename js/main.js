@@ -229,7 +229,7 @@ document.addEventListener("click", e => {
   // Collections multi-row sets (#9: AR3 collections, AR4 allocations)
   if (d.cradd !== undefined) { const dr = P().draft, k = d.cradd; (dr[k] ||= []).push(k === "colTx" ? { collectionType: "", amount: 0 } : k === "ar5Lines" ? { caseNumber: "", amount: 0, caseStatus: "" } : { desc: "", amount: 0, costCentre: "", accountCode: "" }); delete P().errors[k]; render(); return $(`cr-${k}-${dr[k].length - 1}-${k === "colTx" ? "collectionType" : "desc"}`)?.focus(); }
   if (d.crdel !== undefined) { const [k, i] = d.crdel.split(":"); P().draft[k].splice(+i, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([x]) => !x.startsWith(`crow:${k}:`))); return render(); }
-  if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ amount: 0, lpiRate: 0, accountCode: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
+  if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ amount: 0, lpiRate: 0, accountCode: "", costCenter: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
   if (d.iremove !== undefined) { P().draft.items.splice(+d.iremove, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([k]) => !k.startsWith("item:"))); return render(); }
   if (d.unattach !== undefined) { P().draft.attachments.splice(+d.unattach, 1); return render(); }
   if (d.unbulk !== undefined) { P().draft.docBulk.splice(+d.unbulk, 1); return render(); }

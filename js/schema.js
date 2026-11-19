@@ -147,13 +147,11 @@ export const TABLES = {
       { key: "expediteReason", name: "preferred_invoice_date_justification", label: "Provide Justification for expedited or Off billing cycle request", type: "String (1000)", wide: true, showIf: { key: "invoiceTiming", eq: "expedited" }, help: "Shown when Expedited; optional" },
       { key: "needItems", name: "billing_line_items_required", label: "Require billing line item?", type: "Choice", choices: YES_NO, help: "Yes shows the billing line items table (multi-row variable set)" },
       { key: "amount", name: "amount", label: "Request value", type: "Currency", readonly: true, help: "AR-i: calculated, one-off lines + recurring amount × number of periods. Collections (AR-iii, AR-iv, AR-v): the amount to collect; BSU deposits are matched against it on Cash application (D29)" },
-      { key: "poNumber", name: "po_number", label: "Customer PO number", type: "String" },
+      { key: "poNumber", name: "po_number", label: "Customer PO number", type: "String", showIf: { key: "vag", eq: "yes" }, help: "AR-i Invoice details; shown only when V@G = Yes (Agency type SB) (AR-i decision 42)" },
       { key: "pocName", name: "customer_poc_name", label: "POC name", type: "String", help: "AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in; AR copies it to the customer by hand (D23 as amended by D31)" },
       { key: "pocEmail", name: "customer_poc_email", label: "POC email", type: "String", help: "AR-i customer details; must be a valid email. Same rule as POC name" },
-      { key: "costCenter", name: "cost_center", label: "Cost center", type: "String", help: "Optional, free text. To be filled by GA", tooltip: "To be filled by GA" },
-      { key: "agentName", name: "agent_name", label: "Name of agent to be billed", type: "String", help: "Optional, free text" },
       { key: "agencyType", name: "agency_type", label: "Agency type", type: "Choice", choices: AGENCY_TYPES, help: "AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master" },
-      { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "agencyType", in: ["SB", "PV"] }, help: "AR-i customer details, optional. Found customer: read-only from the customer master" },
+      { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "agencyType", eq: "SB" }, help: "AR-i customer details, optional; only for Agency type SB (AR-i decision 42). Found customer: read-only from the customer master" },
       { key: "subBu", name: "sub_bu", label: "V@G sub-BU", type: "String", showIf: { key: "vag", eq: "yes" }, help: "Optional, free text" },
       { key: "typeOfBilling", name: "type_of_billing", label: "Type of billing", type: "Choice", choices: BILLING_KINDS, help: "Contract level: entered for a new contract (AR copies it to the contract by hand, D31); read-only copy of the contract's value for an existing one" },
       { key: "docBulk", name: "bulk_supporting_docs", label: "Supporting documents (bulk upload)", type: "Attachment", multiple: true, showIf: { key: "typeOfBilling", in: ["C", "D", "E"] }, help: "Optional; several files at once" },
@@ -313,7 +311,8 @@ export const TABLES = {
       { key: "gst", name: "gst_amount", label: "GST amount", type: "Currency", readonly: true, help: "Calculated: amount × GST rate (9%), rounded to the cent" },
       { key: "total", name: "total_amount", label: "Total amount", type: "Currency", readonly: true, help: "Calculated: amount + GST" },
       { key: "lpiRate", name: "late_payment_interest", label: "Late payment interest (%)", type: "Decimal", help: "Rate % (to be confirmed with the users)" },
-      { key: "accountCode", name: "account_code", label: "Account code", type: "String" }
+      { key: "accountCode", name: "account_code", label: "Account code", type: "String" },
+      { key: "costCenter", name: "cost_center", label: "Cost center", type: "String", help: "Optional, free text. To be filled by GA (AR-i decision 42: moved from the request to each item, right of Account code)", tooltip: "To be filled by GA" }
     ]
   },
   contacts: {
@@ -437,7 +436,7 @@ export const TABLES = {
       { key: "parent", name: "parent_group", label: "Parent group", type: "String" },
       { key: "address", name: "registered_address", label: "Registered address", type: "String (1000)", wide: true },
       { key: "agencyType", name: "agency_type", label: "Agency type", type: "Choice", choices: AGENCY_TYPES, help: "Master data; AR copies it by hand from the AR-i that set the customer up (D23 as amended by D31)" },
-      { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "agencyType", in: ["SB", "PV"] } },
+      { key: "vag", name: "vag", label: "V@G", type: "Choice", choices: YES_NO, showIf: { key: "agencyType", eq: "SB" }, help: "Only for Agency type SB (AR-i decision 42)" },
       { key: "vagSubBu", name: "vag_sub_bu", label: "V@G sub-BU", type: "String", showIf: { key: "vag", eq: "yes" } },
       { key: "pocName", name: "poc_name", label: "POC name", type: "String" },
       { key: "pocEmail", name: "poc_email", label: "POC email", type: "String" },
@@ -545,7 +544,7 @@ export const RECORD_PRODUCER = {
     "contractOption", "contractId", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther",
     "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast",
     "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "needItems", "poNumber",
-    "pocName", "pocEmail", "costCenter", "agentName", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
+    "pocName", "pocEmail", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "items",
   script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item"
 };

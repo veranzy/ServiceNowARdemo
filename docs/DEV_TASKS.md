@@ -27,10 +27,10 @@ Redundant. Tick a box (`- [x]`) when a task is done: ticks are kept when the fil
 | Module | Status | AR portal forms | AR workspace | Data and logic | Tasks |
 |---|---|---|---|---|---|
 | AR-00 | In prototype | 11 | 9 | 20 | [40 to do, 0 done, 0 redundant](#ar-00) |
-| AR-i | Ready for build (Release 1) | 20 | 17 | 68 | [105 to do, 0 done, 0 redundant](#ar-i) |
+| AR-i | Ready for build (Release 1) | 18 | 17 | 67 | [102 to do, 0 done, 8 redundant](#ar-i) |
 | AR-iii | In prototype | 15 | 17 | 30 | [62 to do, 0 done, 0 redundant](#ar-iii) |
 | AR-ix | Ready for build (Release 1) | 9 | 4 | 13 | [26 to do, 0 done, 0 redundant](#ar-ix) |
-| CCI | In prototype | 0 | 83 | 110 | [193 to do, 0 done, 0 redundant](#cci) |
+| CCI | In prototype | 0 | 83 | 110 | [193 to do, 0 done, 1 redundant](#cci) |
 | BSU | In prototype | 0 | 54 | 48 | [102 to do, 0 done, 0 redundant](#bsu) |
 | UIX | In prototype | 0 | 16 | 0 | [16 to do, 0 done, 0 redundant](#uix) |
 
@@ -114,20 +114,22 @@ AR-i New AR request. Status: Ready for build (Release 1). Spec: `docs/modules/AR
 - [ ] `PT-36` AR-i GIRO subsection inside Contract (D22): 'Is there an existing DDA?' read-only Yes / No (variable giro_on_contract) from the chosen contract's giro_status (GlideAjax), plus the active AR-ix case number when Yes. Greyed out with a tooltip for a new contract or no-contract billing: raise an AR-ix once AR has set up the contract
 - [ ] `PT-40` AR-i new contract variables, in order: new_contract_type (Recurring / Ad-hoc), new_contract_number, new_contract_ref, new_contract_po, new_contract_title, start / end dates, new_contract_value, bill-to person / email / phone, new_contract_billing_cycle (+ suggested billing cycle when Others), new_contract_invoice_date, new_contract_payment_terms (+ other terms when Others), new_contract_proration (+ 1st / last month amounts when Yes), type_of_billing (+ bulk upload when C / D / E). AR creates x_ar_contract from them by hand, then links it with Link Contract Reference (D31)
 - [ ] `PT-41` AR-i existing contract: every contract detail read-only from x_ar_contract, in the same order as a new contract (catalog client script / read-only HTML widget)
-- [ ] `PT-37` AR-i variable set Invoice details (AR-i decisions 31–33): short_description (invoice description), attention_name / attention_email (prefilled from the contract bill-to), amount_per_period (before GST), preferred_invoice_date_choice (label 'Preferred invoice date': Per Billing Cycle / Expedited, optional; only for a one-invoice request, UI policy hides and clears it for a recurring contract) and preferred_invoice_date_justification (shown when Expedited, optional), billing_line_items_required (Yes / No → multi-row variable set PT-43). Catalog client script shows the billing summary: recurring contract → monthly to the contract end date (with contract proration); otherwise one invoice. The producer script creates one x_ar_request_line from these
+- ~~`PT-37` AR-i variable set Invoice details (AR-i decisions 31–33): short_description (invoice description), attention_name / attention_email (prefilled from the contract bill-to), amount_per_period (before GST), preferred_invoice_date_choice (label 'Preferred invoice date': Per Billing Cycle / Expedited, optional; only for a one-invoice request, UI policy hides and clears it for a recurring contract) and preferred_invoice_date_justification (shown when Expedited, optional), billing_line_items_required (Yes / No → multi-row variable set PT-43). Catalog client script shows the billing summary: recurring contract → monthly to the contract end date (with contract proration); otherwise one invoice. The producer script creates one x_ar_request_line from these~~ **Redundant 2026-11-19** (replaced by a changed task)
 - [ ] `PT-07` Catalog client script (onChange contract): contract billing position via GlideAjax / Script Include
 - [ ] `PT-15` Catalog item AR-i New AR request (active record producer)
 - [ ] `PT-19` Bill-to (inside the Contract variable set, D16): shows the contract's / shell's bill-to (x_ar_contract.bill_to_*) or asks for one (new contract, or a shell without one), prefilled from the department's x_ar_billing_contact. An existing contract's bill-to is read-only (PT-41); AR changes it in the workspace (D22)
 - [ ] `PT-20` Variable set Contract and bill-to (D15): contract_option (existing / new / no contract required), contract or new-contract variables, bill-to. UI policies per option. Always shown; until a customer is selected it shows only the hint 'Select a customer above to see the contract options.' (AR-i decision 40)
-- [ ] `PT-42` AR-i variable set Others (after Customer documents; final placement to be decided by the owner): cost_center, agent_name, po_number. All optional (invoice_breakdown and account_code removed, AR-i decision 39)
-- [ ] `PT-43` AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code. At least one row when Yes
+- ~~`PT-42` AR-i variable set Others (after Customer documents; final placement to be decided by the owner): cost_center, agent_name, po_number. All optional (invoice_breakdown and account_code removed, AR-i decision 39)~~ **Redundant 2026-11-19** (retired in the prototype)
+- ~~`PT-43` AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code. At least one row when Yes~~ **Redundant 2026-11-19** (replaced by a changed task)
 - [ ] `PT-28` No contract required: info message (UI policy on contract_option = none). AR creates the customer's no-contract shell for the department by hand if needed (x_ar_contract, contract_type = shell) and links it with Link Contract Reference, which files the lines under it (D31)
 - [ ] `PT-25` Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer)
 - [ ] `PT-27` Ticket page: billing lines with status per line (invoice number / billing schedule); payment status hidden
-- [ ] `PT-29` Finance coding variables (all optional): cost_center (tooltip: to be filled by GA), agent_name. Now in the Others section (PT-42); type of billing and the bulk upload are on the contract (PT-40)
+- ~~`PT-29` Finance coding variables (all optional): cost_center (tooltip: to be filled by GA), agent_name. Now in the Others section (PT-42); type of billing and the bulk upload are on the contract (PT-40)~~ **Redundant 2026-11-19** (retired in the prototype)
 - [ ] `PT-23` Variable set Customer documents: on-file check via GlideAjax on x_ar_customer_document; attach only missing ones (D10)
 - [ ] `UA-PT-newcust` Portal: Add as new customer (sets new_customer = true, copies the search text into the name)
 - [ ] `UA-PT-additem` Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row
+- [ ] `PT-37` AR-i variable set Invoice details (AR-i decisions 31–33): short_description (invoice description), attention_name / attention_email (prefilled from the contract bill-to), amount_per_period (before GST), preferred_invoice_date_choice (label 'Preferred invoice date': Per Billing Cycle / Expedited, optional; only for a one-invoice request, UI policy hides and clears it for a recurring contract) and preferred_invoice_date_justification (shown when Expedited, optional), po_number (Customer PO number, optional; UI policy shows it only when agency_type = SB and vag = Yes, AR-i decision 42), billing_line_items_required (Yes / No → multi-row variable set PT-43). Catalog client script shows the billing summary: recurring contract → monthly to the contract end date (with contract proration); otherwise one invoice. The producer script creates one x_ar_request_line from these
+- [ ] `PT-43` AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code, cost_center (right of account_code, optional, tooltip To be filled by GA; AR-i decision 42). At least one row when Yes
 
 ### AR workspace
 
@@ -192,13 +194,13 @@ AR-i New AR request. Status: Ready for build (Release 1). Spec: `docs/modules/AR
 - [ ] `REQ.preferred_invoice_date_choice` x_ar_request.preferred_invoice_date_choice · Choice · One-invoice requests only (ad-hoc contract, no contract, or contract type not on file); hidden and cleared for a recurring contract. Optional (AR-i decision 38)
 - [ ] `REQ.preferred_invoice_date_justification` x_ar_request.preferred_invoice_date_justification · String (1000) · Shown when Expedited; optional
 - [ ] `REQ.billing_line_items_required` x_ar_request.billing_line_items_required · Choice · Yes shows the billing line items table (multi-row variable set)
-- [ ] `REQ.po_number` x_ar_request.po_number · String
+- ~~`REQ.po_number` x_ar_request.po_number · String~~ **Redundant 2026-11-19** (replaced by a changed task)
 - [ ] `REQ.customer_poc_name` x_ar_request.customer_poc_name · String · AR-i customer details. Found customer: read-only copy of the customer master; new customer: typed in; AR copies it to the customer by hand (D23 as amended by D31)
 - [ ] `REQ.customer_poc_email` x_ar_request.customer_poc_email · String · AR-i customer details; must be a valid email. Same rule as POC name
-- [ ] `REQ.cost_center` x_ar_request.cost_center · String · Optional, free text. To be filled by GA
-- [ ] `REQ.agent_name` x_ar_request.agent_name · String · Optional, free text
+- ~~`REQ.cost_center` x_ar_request.cost_center · String · Optional, free text. To be filled by GA~~ **Redundant 2026-11-19** (no longer in this module)
+- ~~`REQ.agent_name` x_ar_request.agent_name · String · Optional, free text~~ **Redundant 2026-11-19** (no longer in this module)
 - [ ] `REQ.agency_type` x_ar_request.agency_type · Choice · AR-i customer details, optional. M, SB or PV (full names to be confirmed). Found customer: read-only from the customer master
-- [ ] `REQ.vag` x_ar_request.vag · Choice · AR-i customer details, optional. Found customer: read-only from the customer master
+- ~~`REQ.vag` x_ar_request.vag · Choice · AR-i customer details, optional. Found customer: read-only from the customer master~~ **Redundant 2026-11-19** (replaced by a changed task)
 - [ ] `REQ.sub_bu` x_ar_request.sub_bu · String · Optional, free text
 - [ ] `REQ.type_of_billing` x_ar_request.type_of_billing · Choice · Contract level: entered for a new contract (AR copies it to the contract by hand, D31); read-only copy of the contract's value for an existing one
 - [ ] `REQ.bulk_supporting_docs` x_ar_request.bulk_supporting_docs · Attachment · Optional; several files at once
@@ -229,6 +231,9 @@ AR-i New AR request. Status: Ready for build (Release 1). Spec: `docs/modules/AR
 - [ ] `RQI.account_code` x_ar_request_item.account_code · String
 - [ ] `RQL.line_value` Calculated: one-off amount, or recurring amount × number of periods
 - [ ] `RQL.periods` Calculated: number of billing dates between From and To at the frequency
+- [ ] `REQ.po_number` x_ar_request.po_number · String · AR-i Invoice details; shown only when V@G = Yes (Agency type SB) (AR-i decision 42)
+- [ ] `REQ.vag` x_ar_request.vag · Choice · AR-i customer details, optional; only for Agency type SB (AR-i decision 42). Found customer: read-only from the customer master
+- [ ] `RQI.cost_center` x_ar_request_item.cost_center · String · Optional, free text. To be filled by GA (AR-i decision 42: moved from the request to each item, right of Account code)
 
 ## AR-iii
 
@@ -487,7 +492,7 @@ Customers, contracts and invoices. Status: In prototype. Spec: `docs/modules/CCI
 - [ ] `CUS.parent_group` x_ar_customer.parent_group · String
 - [ ] `CUS.registered_address` x_ar_customer.registered_address · String (1000)
 - [ ] `CUS.agency_type` x_ar_customer.agency_type · Choice · Master data; AR copies it by hand from the AR-i that set the customer up (D23 as amended by D31)
-- [ ] `CUS.vag` x_ar_customer.vag · Choice
+- ~~`CUS.vag` x_ar_customer.vag · Choice~~ **Redundant 2026-11-19** (replaced by a changed task)
 - [ ] `CUS.vag_sub_bu` x_ar_customer.vag_sub_bu · String
 - [ ] `CUS.poc_name` x_ar_customer.poc_name · String
 - [ ] `CUS.poc_email` x_ar_customer.poc_email · String
@@ -576,6 +581,7 @@ Customers, contracts and invoices. Status: In prototype. Spec: `docs/modules/CCI
 - [ ] `SCH.next_billing_date` Calculated: first period on or after today without an invoice
 - [ ] `SCH.periods_due` Calculated: periods up to today without an invoice
 - [ ] `INV.aging` Calculated (#10 E10.11): Current / 1–30 / 31–60 / 61–90 / 90+ days past the due date, for issued invoices with an amount due
+- [ ] `CUS.vag` x_ar_customer.vag · Choice · Only for Agency type SB (AR-i decision 42)
 
 #### Jobs and other items
 

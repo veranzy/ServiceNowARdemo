@@ -78,11 +78,10 @@ function catalogPage() {
 
 const reqField = k => TABLES.requests.fields.find(f => f.key === k);
 /** Finance coding variables (request level, all optional). */
-export const FIN_KEYS = ["costCenter", "agentName", "agencyType", "vag", "subBu", "typeOfBilling", "docBulk"];
+export const FIN_KEYS = ["agencyType", "vag", "subBu", "typeOfBilling", "docBulk"];
 /** AR-i customer details (D23), in form order after name / UEN / address. */
 const CUST_KEYS = ["agencyType", "vag", "subBu", "pocName", "pocEmail"];
 /** Finance coding fields that sit in Invoice details. */
-const INV_KEYS = ["costCenter", "agentName"];
 const finText = r => FIN_KEYS.filter(k => (Array.isArray(r[k]) ? r[k].length : r[k]) && fieldVisible("requests", reqField(k), r)).map(k => { const fl = reqField(k); return `${fl.label}: ${Array.isArray(r[k]) ? `${r[k].length} file(s)` : (fl.choices?.find(c => c[0] === r[k]) || [, r[k]])[1]}`; }).join(" · ");
 
 function docRow(t, d, onFile) {
@@ -206,15 +205,15 @@ function itemsTable(d, e) {
       : `<input type="text" id="pi${i}-${k}" name="item:${i}:${k}" value="${esc(v || "")}"${err ? ` aria-invalid="true"` : ""} aria-label="${esc(f.label)}, item ${i + 1}">`;
     return `<td data-label="${esc(f.label)}"${sn(`RQI.${f.name}`)}>${ctl}${err ? `<span class="ferr">${esc(err)}</span>` : ""}</td>`; };
   return `<div class="ffield wide${e.items ? " has-err" : ""}"${sn("PT-43")}><span class="flabel"><i class="req" aria-hidden="true">*</i>Billing line items</span>
-    <div class="tablewrap"><table class="list mrvs" id="pfItems"><thead><tr><th>Item</th><th class="num">Amount (w/o GST)</th><th class="num">GST amount (${GST_RATE}%)</th><th class="num">Total amount</th><th>Late payment interest (%)</th><th>Account code</th><th><span class="sr">Remove</span></th></tr></thead>
-    <tbody>${items.map((it, i) => { const c = itemCalc(it); return `<tr><td class="mono" data-label="Item number" id="pfItemNo-${i}"${sn("RQI.item_number")}>${i + 1}</td>${inp(i, "amount", it)}<td class="num mono" data-label="GST amount" id="pfItemGst-${i}"${sn("RQI.gst_amount")}>${fmt(c.gst)}</td><td class="num mono" data-label="Total amount" id="pfItemTot-${i}"${sn("RQI.total_amount")}>${fmt(c.total)}</td>${inp(i, "lpiRate", it)}${inp(i, "accountCode", it)}<td><button type="button" class="linkish small" data-iremove="${i}" aria-label="Remove item ${i + 1}">Remove</button></td></tr>`; }).join("")}</tbody>
+    <div class="tablewrap"><table class="list mrvs" id="pfItems"><thead><tr><th>Item</th><th class="num">Amount (w/o GST)</th><th class="num">GST amount (${GST_RATE}%)</th><th class="num">Total amount</th><th>Late payment interest (%)</th><th>Account code</th><th>Cost center <span class="ftip" tabindex="0" role="img" aria-label="To be filled by GA" data-tip="To be filled by GA">i</span></th><th><span class="sr">Remove</span></th></tr></thead>
+    <tbody>${items.map((it, i) => { const c = itemCalc(it); return `<tr><td class="mono" data-label="Item number" id="pfItemNo-${i}"${sn("RQI.item_number")}>${i + 1}</td>${inp(i, "amount", it)}<td class="num mono" data-label="GST amount" id="pfItemGst-${i}"${sn("RQI.gst_amount")}>${fmt(c.gst)}</td><td class="num mono" data-label="Total amount" id="pfItemTot-${i}"${sn("RQI.total_amount")}>${fmt(c.total)}</td>${inp(i, "lpiRate", it)}${inp(i, "accountCode", it)}${inp(i, "costCenter", it)}<td><button type="button" class="linkish small" data-iremove="${i}" aria-label="Remove item ${i + 1}">Remove</button></td></tr>`; }).join("")}</tbody>
     ${itemTotals(d)}</table></div>
     ${e.items ? `<span class="ferr">${esc(e.items)}</span>` : ""}
     <div class="row start"><button type="button" class="btn small" data-iadd${sn("UA-PT-additem")}>+ Add item</button><span class="fhelp">GST and total are calculated at ${GST_RATE}%. Late payment interest is a rate in % (to be confirmed).</span></div></div>`;
 }
 export function itemTotals(d) {
   const t = (d.items || []).reduce((a, it) => { const c = itemCalc(it); return { amount: a.amount + c.amount, gst: a.gst + c.gst, total: a.total + c.total }; }, { amount: 0, gst: 0, total: 0 });
-  return `<tfoot id="pfItemTotals"><tr><th scope="row">Total</th><td class="num mono" data-label="Amount (w/o GST)">${fmt(t.amount)}</td><td class="num mono" data-label="GST">${fmt(t.gst)}</td><td class="num mono" data-label="Total"><b>${fmt(t.total)}</b></td><td colspan="3"></td></tr></tfoot>`;
+  return `<tfoot id="pfItemTotals"><tr><th scope="row">Total</th><td class="num mono" data-label="Amount (w/o GST)">${fmt(t.amount)}</td><td class="num mono" data-label="GST">${fmt(t.gst)}</td><td class="num mono" data-label="Total"><b>${fmt(t.total)}</b></td><td colspan="4"></td></tr></tfoot>`;
 }
 
 /** AR-i GIRO subsection inside Contract (D22): existing DDA? read-only, from the contract's GIRO status (set only by an AR-ix). */
@@ -280,7 +279,7 @@ function formPage() {
           <div class="fgrid">${f("title", { help: null })}${f("attnName", { help: d.attnPrefilled ? "Prefilled from the contract's bill-to person" : null })}${f("attnEmail", { help: null })}
             ${f("perPeriod", { label: billingMode(d).recurring ? "Amount billed per period (SGD, before GST)" : "Amount billed (SGD, before GST)", help: null })}
             ${billingMode(d).recurring ? "" : `${f("invoiceTiming", { help: null })}${d.invoiceTiming === "expedited" ? f("expediteReason", { help: null }) : ""}`}
-            ${f("needItems", { help: null })}</div>
+            ${d.agencyType === "SB" && d.vag === "yes" ? f("poNumber", { help: null }) : ""}${f("needItems", { help: null })}</div>
           ${invSum(d)}
           ${d.needItems === "yes" ? itemsTable(d, e) : ""}
         </fieldset>
@@ -295,10 +294,6 @@ function formPage() {
           <div class="fgrid">${f("details")}</div>
         </fieldset>
 
-        <fieldset class="psec"${sn("PT-42")}><legend>${n()}. Others</legend>
-          <p class="pt-hint">Optional. Where these fields finally go is still to be decided.</p>
-          <div class="fgrid"${sn("PT-29")}>${INV_KEYS.map(k => f(k, { help: null })).join("")}${f("poNumber")}</div>
-        </fieldset>
       </form>
       <aside class="pt-side" id="pfSide">${formSide(d)}</aside>
     </div>

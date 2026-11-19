@@ -60,7 +60,9 @@
   "id": "PT-37",
   "text": "AR-i variable set Invoice details (AR-i decisions 31–33): short_description (invoice description), attention_name / attention_email (prefilled from the contract bill-to), amount_per_period (before GST), preferred_invoice_date_choice (label 'Preferred invoice date': Per Billing Cycle / Expedited, optional; only for a one-invoice request, UI policy hides and clears it for a recurring contract) and preferred_invoice_date_justification (shown when Expedited, optional), billing_line_items_required (Yes / No → multi-row variable set PT-43). Catalog client script shows the billing summary: recurring contract → monthly to the contract end date (with contract proration); otherwise one invoice. The producer script creates one x_ar_request_line from these",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "replaced by a changed task"
  },
  {
   "module": "AR-i",
@@ -95,14 +97,18 @@
   "id": "PT-42",
   "text": "AR-i variable set Others (after Customer documents; final placement to be decided by the owner): cost_center, agent_name, po_number. All optional (invoice_breakdown and account_code removed, AR-i decision 39)",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "retired in the prototype"
  },
  {
   "module": "AR-i",
   "id": "PT-43",
   "text": "AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code. At least one row when Yes",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "replaced by a changed task"
  },
  {
   "module": "AR-i",
@@ -130,7 +136,9 @@
   "id": "PT-29",
   "text": "Finance coding variables (all optional): cost_center (tooltip: to be filled by GA), agent_name. Now in the Others section (PT-42); type of billing and the bulk upload are on the contract (PT-40)",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "retired in the prototype"
  },
  {
   "module": "AR-i",
@@ -361,7 +369,9 @@
   "id": "REQ.po_number",
   "text": "x_ar_request.po_number · String",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "replaced by a changed task"
  },
  {
   "module": "AR-i",
@@ -382,14 +392,18 @@
   "id": "REQ.cost_center",
   "text": "x_ar_request.cost_center · String · Optional, free text. To be filled by GA",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "no longer in this module"
  },
  {
   "module": "AR-i",
   "id": "REQ.agent_name",
   "text": "x_ar_request.agent_name · String · Optional, free text",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "no longer in this module"
  },
  {
   "module": "AR-i",
@@ -403,7 +417,9 @@
   "id": "REQ.vag",
   "text": "x_ar_request.vag · Choice · AR-i customer details, optional. Found customer: read-only from the customer master",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "replaced by a changed task"
  },
  {
   "module": "AR-i",
@@ -2167,7 +2183,9 @@
   "id": "CUS.vag",
   "text": "x_ar_customer.vag · Choice",
   "added": "2026-11-19",
-  "state": "todo"
+  "state": "redundant",
+  "redundantOn": "2026-11-19",
+  "why": "replaced by a changed task"
  },
  {
   "module": "CCI",
@@ -3804,6 +3822,48 @@
   "module": "CCI",
   "id": "UA-CUS-newcontract",
   "text": "New contract → new contract form with customer prefilled",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-37",
+  "text": "AR-i variable set Invoice details (AR-i decisions 31–33): short_description (invoice description), attention_name / attention_email (prefilled from the contract bill-to), amount_per_period (before GST), preferred_invoice_date_choice (label 'Preferred invoice date': Per Billing Cycle / Expedited, optional; only for a one-invoice request, UI policy hides and clears it for a recurring contract) and preferred_invoice_date_justification (shown when Expedited, optional), po_number (Customer PO number, optional; UI policy shows it only when agency_type = SB and vag = Yes, AR-i decision 42), billing_line_items_required (Yes / No → multi-row variable set PT-43). Catalog client script shows the billing summary: recurring contract → monthly to the contract end date (with contract proration); otherwise one invoice. The producer script creates one x_ar_request_line from these",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "PT-43",
+  "text": "AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), late_payment_interest (rate %), account_code, cost_center (right of account_code, optional, tooltip To be filled by GA; AR-i decision 42). At least one row when Yes",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.po_number",
+  "text": "x_ar_request.po_number · String · AR-i Invoice details; shown only when V@G = Yes (Agency type SB) (AR-i decision 42)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "REQ.vag",
+  "text": "x_ar_request.vag · Choice · AR-i customer details, optional; only for Agency type SB (AR-i decision 42). Found customer: read-only from the customer master",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "CCI",
+  "id": "CUS.vag",
+  "text": "x_ar_customer.vag · Choice · Only for Agency type SB (AR-i decision 42)",
+  "added": "2026-11-19",
+  "state": "todo"
+ },
+ {
+  "module": "AR-i",
+  "id": "RQI.cost_center",
+  "text": "x_ar_request_item.cost_center · String · Optional, free text. To be filled by GA (AR-i decision 42: moved from the request to each item, right of Account code)",
   "added": "2026-11-19",
   "state": "todo"
  }

@@ -321,14 +321,13 @@ const LAYOUT = {
     ["Link", ["linkCustomer", "linkContract"], isI],
     ["Link", ["linkContract"], isIx],
     ["1. General information", ["requesterName", "requesterEmail", "department", "deptSubBu", "ccList"]],
-    // AR-i form view (portal: PT-25, PT-20, PT-37, PT-23, PT-42)
+    // AR-i form view (portal: PT-25, PT-20, PT-37, PT-23; Others section removed, AR-i decision 42)
     ["2. Customer", ["customerId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "agencyType", "vag", "subBu", "pocName", "pocEmail"], isI],
     ["3. Contract and bill-to", ["contractOption", "contractId", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue",
       "billToName", "billToEmail", "billToPhone", "billToAddress", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther",
       "newCtrProrate", "newCtrProFirst", "newCtrProLast", "typeOfBilling", "docBulk", "giroOnContract"], isI],
-    ["4. Invoice details", ["title", "attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "needItems"], isI],
+    ["4. Invoice details", ["title", "attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "poNumber", "needItems"], isI],
     ["5. Customer documents", ["docContract", "docAcra", "docBillingForm", "details"], isI],
-    ["6. Others", ["costCenter", "agentName", "poNumber"], isI],
     // AR-ix form view (portal: PT-44, PT-32, PT-33, PT-46; AR-ix decisions 17–21)
     ["2. Select Customer", ["customerId"], isIx],
     ["3. Select Contract", ["contractOption", "contractId"], isIx],

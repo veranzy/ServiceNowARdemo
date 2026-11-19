@@ -338,7 +338,7 @@ const LAYOUT = {
     // Collections form view (D30, portal: PT-49, PT-50); the rest of the form is to be defined
     ["2. Collection type", ["colType"], isCol],
     ["3. Collection Details", ["colDate", "colRef", "colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "ibCase",
-      "caseStatus", "accusedName", "ar5Forfeit", "ar5CourtOrder", "ar5Invest", "ar5Refund"], isCol],
+      "caseStatus", "ar5RefundTo", "accusedName", "ar5RefundS", "ar5Forfeit", "ar5CourtOrder", "ar5Invest", "ar5Refund"], isCol],
     ["4. Supporting Documents", ["@attachments"], isCol]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
@@ -580,7 +580,7 @@ function related(table, rec) {
   // D29: a Collections case lists the BSU deposits matched to it; #9: its AR3 / AR4 rows
   if (table === "requests" && COLLECTION_FORMS.includes(rec.form)) {
     const rowTab = (k, id) => { const t = TABLES[k], rs = S[k].filter(x => x.requestId === rec.id).sort((a, b) => a.seq - b.seq);
-      return rt(t.plural, k, rs, [["Row", x => String(x.seq), "num"], ...t.fields.filter(f => !["requestId", "seq"].includes(f.key)).map(f => [f.label, x => f.type === "Currency" ? fmt(x[f.key]) : f.ref ? esc(displayOf(f.ref, recById(f.ref, x[f.key])) || "—") : esc(String(x[f.key] ?? "")), f.type === "Currency" || f.type === "Integer" ? "num" : ""])], { id }); };
+      return rt(t.plural, k, rs, [["Row", x => String(x.seq), "num"], ...t.fields.filter(f => !["requestId", "seq"].includes(f.key)).map(f => [f.label, x => f.type === "Currency" ? fmt(x[f.key]) : f.ref ? (f.ref === "accountCodes" && x[f.key] === "other" ? "Others" : esc(displayOf(f.ref, recById(f.ref, x[f.key])) || "—")) : esc(String(x[f.key] ?? "")), f.type === "Currency" || f.type === "Integer" ? "num" : ""])], { id }); };
     const extra = rec.colType === "AR-iii" ? [rowTab("colTx", "RL-REQ-CTX")] : rec.colType === "AR-iv" ? [rowTab("colAlloc", "RL-REQ-CAL")] : ["seized", "restitution"].includes(rec.colCategory) ? [rowTab("ar5Lines", "RL-REQ-C5L")] : [];
     const rows = [];
     for (const [pid, m] of Object.entries(S.matches)) { if (!m || m.status !== "accepted") continue; for (const a of m.allocations) if (a.requestId === rec.id) rows.push({ pid, a, m }); }

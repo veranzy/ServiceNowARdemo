@@ -100,11 +100,13 @@ export const TABLES = {
       { key: "bailorName", name: "bailor_name", label: "Bailor Name", type: "String", showIf: { key: "colCategory", eq: "cash_bail" } },
       { key: "ibCase", name: "ib_case_number", label: "IB Case Number / WEU Number", type: "String", showIf: { key: "colCategory", eq: "cash_bail" } },
       { key: "caseStatus", name: "case_status", label: "Case Status", type: "Choice", choices: AR5_STATUS, choiceDependsOn: "colCategory", showIf: { key: "colCategory", eq: "cash_bail" }, help: "AR-v Cash Bail: one bailor / accused set per case (AR-iii decision 19). Seized Monies and Restitution have a status per case line" },
+      { key: "ar5RefundTo", name: "ar5_refund_to", label: "Refund to", type: "Choice", choices: [["bailor", "Bailor"], ["accused", "Accused"]], showIf: { key: "caseStatus", eq: "case_closed" }, help: "AR-v Cash Bail, when Case Status = Case Closed: whether the refund goes to the bailor or the accused (AR-iii decision 20, #11 E11.15)" },
       { key: "accusedName", name: "accused_name", label: "Accused Name", type: "String", showIf: { key: "colCategory", eq: "cash_bail" } },
-      { key: "ar5Forfeit", name: "ar5_forfeit", label: "Forfeit", type: "True/False", showIf: { key: "colCategory", eq: "seized" }, help: "AR-v Seized Monies: checkbox after the case lines (AR-iii decision 19)" },
-      { key: "ar5CourtOrder", name: "ar5_court_order", label: "Court order", type: "True/False", showIf: { key: "colCategory", in: ["seized", "restitution"] }, help: "AR-v Seized Monies and Restitution: checkbox after the case lines (AR-iii decision 19)" },
+      { key: "ar5Forfeit", name: "ar5_forfeit", label: "Forfeit to State", type: "True/False", showIf: { key: "colCategory", eq: "seized" }, help: "AR-v Seized Monies: checkbox after the case lines (AR-iii decisions 19, 20)" },
+      { key: "ar5CourtOrder", name: "ar5_court_order", label: "Court Order", type: "True/False", showIf: { key: "colCategory", in: ["seized", "restitution"] }, help: "AR-v Seized Monies and Restitution: checkbox after the case lines (AR-iii decisions 19, 20)" },
       { key: "ar5Invest", name: "ar5_to_be_invested", label: "Whether the seized monies are to be invested", type: "Choice", choices: YES_NO, radio: true, showIf: { key: "colCategory", eq: "seized" }, help: "Yes / No radio buttons (#9 §9.4), where applicable" },
-      { key: "ar5Refund", name: "ar5_refund_required", label: "Refund required?", type: "Choice", choices: YES_NO, radio: true, showIf: { key: "colCategory", in: ["cash_bail", "seized"] }, help: "AR-v Cash Bail and Seized Monies (AR-iii decision 19). Yes shows: Please raise a AR10, with a link to the AR10 form" },
+      { key: "ar5Refund", name: "ar5_refund_required", label: "Refund Required", type: "True/False", showIf: { key: "colCategory", eq: "cash_bail" }, help: "AR-v Cash Bail checkbox (AR-iii decision 20; was Yes / No buttons). Ticked shows: Please raise a AR10, with a link to the AR10 form" },
+      { key: "ar5RefundS", name: "ar5_refund", label: "Refund", type: "True/False", showIf: { key: "colCategory", eq: "seized" }, help: "AR-v Seized Monies checkbox after the case lines (AR-iii decision 20). Ticked shows: Please raise a AR10, with a link to the AR10 form" },
       { key: "requesterName", name: "requester_name", label: "Requester name", type: "String", help: "General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name", default: "gs.getUser().getFullName()" },
       { key: "requesterEmail", name: "requester_email", label: "Email", type: "String", readonly: true, help: "General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only", default: "gs.getUser().getEmail()" },
       { key: "deptSubBu", name: "department_sub_bu", label: "Sub-BU", type: "Choice", choices: DEPT_SUB_BUS, choiceDependsOn: "department", help: "General information (all AR forms). Sub-BUs of the chosen department (mock list)" },
@@ -354,7 +356,7 @@ export const TABLES = {
       { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
       { key: "seq", name: "row_number", label: "Row", type: "Integer", readonly: true },
       { key: "collectionType", name: "collection_type", label: "Collection Type", type: "Choice", choices: AR3_TYPES, mandatory: true },
-      { key: "amount", name: "transaction_amount", label: "Transaction Amount", type: "Currency", mandatory: true, help: "Positive, at most two decimals (AR-iii decision 19: replaces Number of Transactions). The rows' total is the case's Total Amount" }
+      { key: "amount", name: "transaction_amount", label: "Amount", type: "Currency", mandatory: true, help: "Positive, at most two decimals (AR-iii decisions 19, 20: replaces Number of Transactions; label Amount, #11). The rows' total is the case's Total Amount" }
     ]
   },
   ar5Lines: {
@@ -377,7 +379,8 @@ export const TABLES = {
       { key: "desc", name: "description", label: "Description", type: "String", mandatory: true },
       { key: "amount", name: "amount", label: "Amount", type: "Currency", mandatory: true, help: "Positive, at most two decimals" },
       { key: "costCentre", name: "cost_centre", label: "Cost Centre", type: "Reference", ref: "costCentres", mandatory: true, help: "Reference qualifier: active cost centres of the Requesting Department (the case's department; the separate Requesting Department Cost Centre field is removed, AR-iii decision 19)" },
-      { key: "accountCode", name: "account_code", label: "Account Code", type: "Reference", ref: "accountCodes", mandatory: true, help: "Reference qualifier: active account codes. GST / recovery rule check to be approved (AR-iii open question 11)" }
+      { key: "accountCode", name: "account_code", label: "Account Code", type: "Reference", ref: "accountCodes", mandatory: true, help: "Reference qualifier: active account codes. GST / recovery rule check to be approved (AR-iii open question 11). Plus the choice Others (AR-iii decision 20, #11 E11.6): stores no account code and needs Other account code" },
+      { key: "accountCodeOther", name: "account_code_other", label: "Other account code", type: "String", inRow: false, help: "Free text, mandatory when Account Code = Others (AR-iii decision 20); shown in the Account Code cell" }
     ]
   },
   costCentres: {
@@ -562,7 +565,7 @@ export const RECORD_PRODUCER_COL = {
   name: "Collections (AR-iii, AR-iv, AR-v)",
   table: "requests",
   variables: [...GENERAL_INFO, "colType", "colDate", "colRef", "colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "ibCase",
-    "caseStatus", "accusedName", "ar5Forfeit", "ar5CourtOrder", "ar5Invest", "ar5Refund"],
+    "caseStatus", "ar5RefundTo", "accusedName", "ar5RefundS", "ar5Forfeit", "ar5CourtOrder", "ar5Invest", "ar5Refund"],
   rowSets: ["colTx", "colAlloc", "ar5Lines"],
   script: "current.opened_by = gs.getUserID(); current.ar_form = 'COL'; current.collection_type = producer.collection_type; current.short_description = 'Collections – ' + collection_type; current.submission_origin = 'manual'; copies the multi-row sets to x_ar_collection_tx (AR3) / x_ar_collection_allocation (AR4); amount = AR4 allocation total or the AR5 amount (AR3: open question); current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>. Catalogue: three items (AR-iii, AR-iv, AR-v) open this producer with collection_type preset (URL parameter / default value)."
 };

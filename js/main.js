@@ -361,7 +361,8 @@ document.addEventListener("input", e => {
   if (el.dataset.composer) { const c = W().composer[el.dataset.composer] ||= { kind: "work_note", text: "" }; c.text = el.value; return; }
   if (el.id === "pfCustQ") { P().draft.custQ = el.value; const n = $("pfCustResults"); if (n) n.outerHTML = custResults(P().draft); return; }
   if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
-  if (el.closest("#arForm") && el.name?.startsWith("crow:")) { const [, t, i, k] = el.name.split(":"); P().draft[t][+i][k] = t && TABLES[t].fields.find(x => x.key === k)?.type === "Integer" ? (el.value === "" ? 0 : Math.trunc(+el.value)) : coerce(t, k, el); return colRowUpdated(el, t); }
+  if (el.closest("#arForm") && el.name?.startsWith("crow:")) { const [, t, i, k] = el.name.split(":"); P().draft[t][+i][k] = t && TABLES[t].fields.find(x => x.key === k)?.type === "Integer" ? (el.value === "" ? 0 : Math.trunc(+el.value)) : coerce(t, k, el); if (k === "accountCode") return render();   // AR-iii decision 20: Others shows the free text
+    return colRowUpdated(el, t); }
   if (el.closest("#arForm") && el.name && el.tagName !== "SELECT") { P().draft[el.name] = coerce("requests", el.name, el); portalFieldUpdated(el); return invUpdated(); }
   const rf = el.closest("[data-rform]");
   if (rf && el.name && el.tagName !== "SELECT") { const tab = W().tabs.find(x => x.key === rf.dataset.rform); if (tab) (tab.vals ||= {})[el.name] = coerce(tab.table, el.name, el); }

@@ -126,14 +126,14 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-47` | RETIRED 2026-11-17 (AR-ix decision 23, E8.14): variable set Others with Form number (giro_form_number, also retired) |
 | `PT-49` | Collections record producer (AR-iii module, D30): one form for AR-iii, AR-iv and AR-v. Catalogue items AR-iii, AR-iv, AR-v open it with collection_type preset. Sections: General information (PT-30), 2. Collection type (PT-50); the rest to be defined |
 | `PT-50` | Collections variable set Collection type (D30): collection_type (Choice AR-iii / AR-iv / AR-v, labels to be given), mandatory, preset from the catalogue item |
-| `PT-51` | Collections variable set 3. Collection Details (#9 §7–9, AR-iii decision 19): fields of the selected type. AR-iii: Collection Date*. AR-iv: Collection Date, Reference Number (no Requesting Department Cost Centre). AR-v: Category* first, Date of Collection (every category), then: Cash Bail: G56 Receipt Number, Bail Amount Received, Bailor Name, IB Case Number / WEU Number, Case Status (Case Pending / Case Closed), Accused Name, Refund required? (one bailor / accused set per case); Seized Monies: Case lines, then Forfeit, Court order, invest radio, Refund required?; Restitution: Case lines, then Court order (UI policies on collection_type and ar5_category) |
+| `PT-51` | Collections variable set 3. Collection Details (#9 §7–9, AR-iii decision 19): fields of the selected type. AR-iii: Collection Date*. AR-iv: Collection Date, Reference Number (no Requesting Department Cost Centre). AR-v: Category* first, Date of Collection (every category), then: Cash Bail: G56 Receipt Number, Bail Amount Received, Bailor Name, IB Case Number / WEU Number, Case Status (Case Pending / Case Closed), Refund to (Bailor / Accused, when Case Closed), Accused Name, Refund Required checkbox (one bailor / accused set per case); Seized Monies: Case lines, then checkboxes Refund, Forfeit to State, Court Order, invest radio; Restitution: Case lines, then Court Order checkbox (AR-iii decision 20) (UI policies on collection_type and ar5_category) |
 | `PT-52` | Collections AR-iii multi-row variable set Total number of collections for the day (#9 §7, AR-iii decision 19): Collection Type* (Choice), Transaction Amount* (> 0, two decimals); 1 to 99 rows; duplicates allowed (owner). Producer script copies rows to x_ar_collection_tx |
 | `PT-53` | Collections AR-iv multi-row variable set Amount for Each Account Code (#9 §8): Description*, Amount* (> 0, two decimals), Cost Centre* (active, Requesting Department), Account Code* (active); 1 to 10 rows. Producer script copies rows to x_ar_collection_allocation; the allocation total becomes amount (Request value) |
 | `PT-54` | Collections AR-v supporting-document guidance by category (#9 §9): Cash Bail: G56, Bailor identity document, Bail Bond Form, Bank-in slip or receipt; Seized Monies and Restitution: G56, Case Property List, Bank-in slip or receipt (UI policy / rich-text label per category) |
 | `PT-55` | Collections section 4. Supporting Documents (#9 §10): multiple attachments, optional (sc_attachment on the case); file size and type rules documented for the build, not checked in the demo (owner) |
 | `PT-56` | Collections AR-iii Total Amount: calculated sum of Transaction Amount across rows (catalog client script; multi-row set footer); stored as amount on the case (AR-iii decision 19) |
 | `PT-59` | Collections AR-v Seized Monies and Restitution multi-row variable set Case lines (AR-iii decision 19): Case Number, Amount, Case Status (choices by category); 0 to 99 rows. Producer script copies rows to x_ar_collection_case_line; the lines' total is the case's amount |
-| `PT-60` | Collections AR-v: message shown when Refund required? = Yes (AR-iii decision 19): 'Please raise a AR10' with a link to the AR10 catalogue item (rich-text label / UI policy on ar5_refund_required) |
+| `PT-60` | Collections AR-v: message shown when Refund required? = Yes (AR-iii decision 19): 'Please raise a AR10' with a link to the AR10 catalogue item, when Refund Required (Cash Bail) or Refund (Seized Monies) is ticked (rich-text label / UI policy on ar5_refund_required, ar5_refund; AR-iii decision 20) |
 | `PT-61` | Collections AR-v Case lines Total Amount: calculated sum of Amount across rows (catalog client script; multi-row set footer) |
 | `PT-57` | Collections AR-iv allocation total: calculated sum of Amount across rows (catalog client script); stored as amount on the case |
 | `PT-48` | AR-ix Select Customer hint (decision 17, E8.1): Customer not found? Submit an AR-i to set up the customer first. Shown under the customer search instead of the AR-i add-as-new-customer button (UA-PT-newcust stays on AR-i) |
@@ -188,11 +188,13 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.bailor_name` | x_ar_request.bailor_name · String |
 | `REQ.ib_case_number` | x_ar_request.ib_case_number · String |
 | `REQ.case_status` | x_ar_request.case_status · Choice · AR-v Cash Bail: one bailor / accused set per case (AR-iii decision 19). Seized Monies and Restitution have a status per case line |
+| `REQ.ar5_refund_to` | x_ar_request.ar5_refund_to · Choice · AR-v Cash Bail, when Case Status = Case Closed: whether the refund goes to the bailor or the accused (AR-iii decision 20, #11 E11.15) |
 | `REQ.accused_name` | x_ar_request.accused_name · String |
-| `REQ.ar5_forfeit` | x_ar_request.ar5_forfeit · True/False · AR-v Seized Monies: checkbox after the case lines (AR-iii decision 19) |
-| `REQ.ar5_court_order` | x_ar_request.ar5_court_order · True/False · AR-v Seized Monies and Restitution: checkbox after the case lines (AR-iii decision 19) |
+| `REQ.ar5_forfeit` | x_ar_request.ar5_forfeit · True/False · AR-v Seized Monies: checkbox after the case lines (AR-iii decisions 19, 20) |
+| `REQ.ar5_court_order` | x_ar_request.ar5_court_order · True/False · AR-v Seized Monies and Restitution: checkbox after the case lines (AR-iii decisions 19, 20) |
 | `REQ.ar5_to_be_invested` | x_ar_request.ar5_to_be_invested · Choice · Yes / No radio buttons (#9 §9.4), where applicable |
-| `REQ.ar5_refund_required` | x_ar_request.ar5_refund_required · Choice · AR-v Cash Bail and Seized Monies (AR-iii decision 19). Yes shows: Please raise a AR10, with a link to the AR10 form |
+| `REQ.ar5_refund_required` | x_ar_request.ar5_refund_required · True/False · AR-v Cash Bail checkbox (AR-iii decision 20; was Yes / No buttons). Ticked shows: Please raise a AR10, with a link to the AR10 form |
+| `REQ.ar5_refund` | x_ar_request.ar5_refund · True/False · AR-v Seized Monies checkbox after the case lines (AR-iii decision 20). Ticked shows: Please raise a AR10, with a link to the AR10 form |
 | `REQ.requester_name` | x_ar_request.requester_name · String · General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name |
 | `REQ.requester_email` | x_ar_request.requester_email · String · read-only · General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only |
 | `REQ.department_sub_bu` | x_ar_request.department_sub_bu · Choice · General information (all AR forms). Sub-BUs of the chosen department (mock list) |
@@ -389,7 +391,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CAL.description` | x_ar_collection_allocation.description · String · mandatory |
 | `CAL.amount` | x_ar_collection_allocation.amount · Currency · mandatory · Positive, at most two decimals |
 | `CAL.cost_centre` | x_ar_collection_allocation.cost_centre · Reference → x_ar_cost_centre · mandatory · Reference qualifier: active cost centres of the Requesting Department (the case's department; the separate Requesting Department Cost Centre field is removed, AR-iii decision 19) |
-| `CAL.account_code` | x_ar_collection_allocation.account_code · Reference → x_ar_account_code · mandatory · Reference qualifier: active account codes. GST / recovery rule check to be approved (AR-iii open question 11) |
+| `CAL.account_code` | x_ar_collection_allocation.account_code · Reference → x_ar_account_code · mandatory · Reference qualifier: active account codes. GST / recovery rule check to be approved (AR-iii open question 11). Plus the choice Others (AR-iii decision 20, #11 E11.6): stores no account code and needs Other account code |
+| `CAL.account_code_other` | x_ar_collection_allocation.account_code_other · String · Free text, mandatory when Account Code = Others (AR-iii decision 20); shown in the Account Code cell |
 
 ## Company
 
@@ -620,7 +623,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CTX.ar_request` | x_ar_collection_tx.ar_request · Reference → x_ar_request · read-only |
 | `CTX.row_number` | x_ar_collection_tx.row_number · Integer · read-only |
 | `CTX.collection_type` | x_ar_collection_tx.collection_type · Choice · mandatory |
-| `CTX.transaction_amount` | x_ar_collection_tx.transaction_amount · Currency · mandatory · Positive, at most two decimals (AR-iii decision 19: replaces Number of Transactions). The rows' total is the case's Total Amount |
+| `CTX.transaction_amount` | x_ar_collection_tx.transaction_amount · Currency · mandatory · Positive, at most two decimals (AR-iii decisions 19, 20: replaces Number of Transactions; label Amount, #11). The rows' total is the case's Total Amount |
 
 ## Case line
 

@@ -117,7 +117,8 @@ export function validateCOL(d) {
   };
   // AR-iii decisions 12–17 (#9 §7–9). AR-v: only the category is required (owner: no AR5 field mandatory yet)
   if (d.colType === "AR-iii") { if (!d.colDate) e.colDate = "Enter the collection date."; rows("colTx", 1, 99); }
-  if (d.colType === "AR-iv") rows("colAlloc", 1, 10);   // AR-iii decision 19: no Requesting Department Cost Centre
+  if (d.colType === "AR-iv") { rows("colAlloc", 1, 10);   // AR-iii decision 20: Others needs the free text
+    (d.colAlloc || []).forEach((r, i) => { if (r.accountCode === "other" && !(r.accountCodeOther || "").trim()) e[`crow:colAlloc:${i}:accountCodeOther`] = "Enter the other account code."; }); }   // AR-iii decision 19: no Requesting Department Cost Centre
   if (d.colType === "AR-v" && ["seized", "restitution"].includes(d.colCategory)) rows("ar5Lines", 0, 99);
   if (d.colType === "AR-v" && !d.colCategory) e.colCategory = "Choose the category.";
   return e;

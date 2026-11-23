@@ -114,6 +114,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-19 | Dev tasks for the developer and BA: `docs/DEV_TASKS.csv` with running number and index, short task and decision number; changes are new rows naming the affected row. | Owner |
 | 2026-11-19 | Dev task CSV less technical: Ref, Item and Decision columns removed; the task says in plain words what to add, change or remove. | Owner |
 | 2026-11-19 | Dev tasks dropped (not useful for now): the dev task rule, `docs/DEV_TASKS.*` and `tools/devtasks.mjs` removed. | Owner |
+| 2026-11-23 | Conventions: bank name and bank account are always separate list columns. | Owner |
 
 ## How we work: modules, one at a time
 
@@ -218,6 +219,8 @@ deposit (D7), matched manually to invoices or Collections cases (D5, D29).
 - Styling uses the tokens in `css/styles.css`; every colour must work in light and dark. Layout must
   work at 400px wide with no horizontal page scroll.
 - Sample data is fictional (Singapore, SGD). Keep it fictional.
+- **Bank name and bank account are always separate columns** in lists (the bank account column shows the account
+  number); never one combined "Bank · account" column (owner, 2026-11-23).
 
 ## Checking changes
 

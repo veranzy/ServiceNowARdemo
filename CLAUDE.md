@@ -225,7 +225,7 @@ Serve with `python3 -m http.server` (modules don't load from `file://`). Click t
 AR-i with each contract option (new contract, existing contract with bill-to, no contract with existing /
 new shell); (search → add new customer with a new recurring contract; existing ad-hoc contract → one invoice;
 existing recurring contract with billing line items, GST calculated; Expedited shows the justification; recurring shows no preferred invoice date) → workspace Link section (Link Customer Reference, Link Contract Reference; lines get the contract) → State dropdown Closed complete (1st invoice draft on the Invoices tab) → ARQ0001009: Billing schedule tab, issued 1st invoice and the daily job's draft (mock data) → portal ticket shows each line's invoice / schedule; BSU upload
-(sample file and a real CSV file, wrong-bank error); BSU deposits to match → deposit → Suggested matches → Match, Allocations › New (an invoice and a Collections case), invoice → Suggested BSU deposits, Remove match;
+(sample file and a real CSV file, wrong-bank error); Statement uploads → daily statement (lines first) and Bank lines → line → Suggested matches → Match, Allocations › New (an invoice and a Collections case), invoice → Suggested BSU deposits, Remove match;
 ID tags visible and unclipped; 400px wide in dark mode.
 No console errors.
 

@@ -492,7 +492,7 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 | `UA-REQ-newalloc` | New on the Collections case's BSU deposits matched tab (BSU decision 21, D29) → New allocation form with Collection case prefilled; AR picks the BSU deposit |
 | `UA-ALC-insert` | Submit (insert) of x_ar_allocation (BSU decision 21): exactly one of invoice or request; amount empty = default (smaller of deposit unmatched and target due); blocked above either; returns to the record it was opened from |
 | `UA-BSU-new` | New (list action on Statement uploads): opens the upload form (catalog item Bank statement upload) |
-| `UA-BSU-save` | Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete |
+| `UA-BSU-save` | Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete; then opens the bank statement lines of that RITM (list of x_ar_bank_statement where bsu = the RITM; BSU decision 23) |
 | `UA-BSU-sample` | Demo only: generate a sample CSV in the bank's layout |
 | `UA-BNK-upload` | Upload statement → opens the BSU page for this account |
 | `UA-CUS-save` | Save (update) |

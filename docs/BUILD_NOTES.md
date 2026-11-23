@@ -800,7 +800,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-ALC-insert` | UI action: Submit (insert) of x_ar_allocation (BSU decision 21): exactly one of invoice or request; amount empty = default (smaller of deposit unmatched and target due); blocked above either; returns to the record it was opened from |
 | `UA-DEP-export` | UI action: RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Export matches to CSV |
 | `UA-BSU-new` | UI action: New (list action on Statement uploads): opens the upload form (catalog item Bank statement upload) |
-| `UA-BSU-save` | UI action: Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete |
+| `UA-BSU-save` | UI action: Save to bank statements → submits the catalog item: creates the RITM (sc_req_item, one per bank account per day); a flow parses the CSV with the bank's template, inserts one x_ar_bank_statement row per deposit referencing the RITM, and closes the RITM complete; then opens the bank statement lines of that RITM (list of x_ar_bank_statement where bsu = the RITM; BSU decision 23) |
 | `UA-BSU-sample` | UI action: Demo only: generate a sample CSV in the bank's layout |
 | `UA-BNK-upload` | UI action: Upload statement → opens the BSU page for this account |
 | `UA-CUS-save` | UI action: Save (update) |

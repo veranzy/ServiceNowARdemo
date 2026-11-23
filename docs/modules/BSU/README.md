@@ -39,8 +39,9 @@ the **Bank statements** table, where the AR team reviews it and matches it manua
 3. **Save to bank statements**: submits the catalog item *Bank statement upload*, which creates the **RITM**
    (`RITM…`, one per bank account per day, decision 12) and one deposit record per credit, related to the RITM,
    then opens the new RITM. Upload completeness (which accounts are still missing a day) is decided later.
-4. **Afterwards**: deposits appear in *Bank statements → BSU deposits to match*; AR opens each one and matches it
-   on its record tabs (decision 21).
+4. **Afterwards** (decision 23): AR lands on the **bank statement lines of that upload** (the BSU deposits list
+   filtered to the new RITM, URL `#/ws/list/deposits/ritm-<RITM>`). AR opens each line and matches it on its record
+   tabs (decision 21).
 
 ## ServiceNow mapping
 
@@ -62,8 +63,15 @@ The AR team matches each BSU deposit to one or more **issued** invoices ([CCI](.
 **Collections cases** (AR-iii, AR-iv, AR-v; D28, D29, decision 11) by hand, on the **standard record pages**. There is
 no Cash application page (retired 2026-11-18, decision 21) and no auto-matching (D5).
 
-**Queue.** List menu → *Bank statements* → **BSU deposits to match** (deposits with an unmatched amount). AR opens a
-deposit from the list.
+**Queue.** List menu → *Bank statements* → **BSU deposits to match** (deposits with an unmatched amount) or **All BSU
+deposits**. Both lists show the bank statement lines with columns **RITM › Value date › Deposit ID › Bank name › Bank
+account** (account number) › Payer › Reference › Amount › Unmatched › Match, sorted in that order (newest RITM first,
+then the rest ascending; decision 23). AR opens a line (deposit) from the list.
+
+**User journey (AR Team feedback, decision 23):** 1. *Statement uploads* → **New** (`UA-BSU-new`) → upload → 2. the
+upload's bank statement lines → 3. open a line → 4. on the line, *Suggested matches* → **Match**, or *Allocations* →
+**New**, to allocate it to invoices or Collections cases. The deposit (bank statement line) is the centre of matching:
+its allocations show which invoices and collections it fulfils.
 
 **From a deposit** (record tabs: Details, **Suggested matches**, **Allocations**, Record history):
 1. **Suggested matches** (`RL-DEP-SUG`): up to 10 issued invoices with amount due and open Collections cases not yet

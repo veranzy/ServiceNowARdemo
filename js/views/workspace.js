@@ -16,7 +16,8 @@ const W = () => S.ui.ws;
 const mine = r => r.assignedTo === me()?.id;
 
 // ---------- list definitions (list layouts + filters, i.e. list menu modules) ----------
-export const LISTS = {
+export const upOf = p => S.uploads.find(x => x.id === p.uploadId);   // BSU decision 23
+const LISTS = {
   requests: {
     filters: {
       open: ["Open requests", r => REQ_OPEN.includes(r.state)],
@@ -55,11 +56,16 @@ export const LISTS = {
       unapplied: ["BSU deposits to match", p => depositMoney(p).unapplied > 0],
       all: ["All BSU deposits", () => true]
     },
-    cols: [["Deposit ID", p => refLink("deposits", p.id, p.number), "", "number"], ["Value date", p => esc(p.date), "", "date"], ["Bank account", p => esc(acctLabel(acctById(p.bankAccountId))), "", "bankAccountId"],
+    // BSU decision 23: bank statement lines, RITM › Date › Deposit ID › Bank name › Bank account › Payer …
+    cols: [["RITM", p => { const u = upOf(p); return u ? refLink("uploads", u.id, u.number) : "—"; }, "", "uploadId"], ["Value date", p => esc(p.date), "", "date"],
+      ["Deposit ID", p => refLink("deposits", p.id, p.number), "", "number"], ["Bank name", p => esc(BANKS[acctById(p.bankAccountId)?.bank]?.name || "—"), "", "=BNK.bank"],
+      ["Bank account", p => esc(acctById(p.bankAccountId)?.number || "—"), "", "bankAccountId"],
       ["Payer", p => esc(p.payer), "", "payer"], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap", "reference"], ["Amount", p => fmt(p.amount), "num", "amount"],
       ["Unmatched", p => fmt(depositMoney(p).unapplied), "num", "=DEP.unmatched_amount"], ["Match", p => depositChip(p), "", "=DEP.match_state"]],
-    sort: (a, b) => String(b.date).localeCompare(String(a.date)) || String(a.number).localeCompare(String(b.number)),
-    text: p => [p.number, p.payer, p.reference, acctLabel(acctById(p.bankAccountId))].join(" ")
+    sort: (a, b) => String(upOf(b)?.number || "").localeCompare(String(upOf(a)?.number || "")) || String(a.date).localeCompare(String(b.date))
+      || String(a.number).localeCompare(String(b.number)) || String(BANKS[acctById(a.bankAccountId)?.bank]?.name || "").localeCompare(String(BANKS[acctById(b.bankAccountId)?.bank]?.name || ""))
+      || String(acctById(a.bankAccountId)?.number || "").localeCompare(String(acctById(b.bankAccountId)?.number || "")),
+    text: p => [upOf(p)?.number, p.number, p.payer, p.reference, acctLabel(acctById(p.bankAccountId))].join(" ")
   },
   uploads: {
     filters: { all: ["Statement uploads", () => true] },
@@ -164,6 +170,12 @@ export const REQ_FORM_LISTS = [
   { form: "COL", filter: "all_col", label: "All Collections", note: "LST-REQ-COL", cols: [...REQ_COLS_DEFAULT] }
 ];
 for (const l of REQ_FORM_LISTS) LISTS.requests.filters[l.filter] = [l.label, r => (r.form || "AR-i") === l.form];
+/** A list's filter; deposits also take ritm-<RITM number>: the lines of one upload (BSU decision 23). */
+export function filterOf(table, f) {
+  const m = table === "deposits" && /^ritm-(.+)$/.exec(f || ""), u = m && S.uploads.find(x => x.number === m[1]);
+  if (u) return [u.number, p => p.uploadId === u.id];
+  return LISTS[table].filters[f] || LISTS[table].filters.all;
+}
 
 const MENU = [
   ["AR requests", REQ_FORM_LISTS.map(l => ["requests", l.filter])],   // UIX decision 15: one open list per AR form
@@ -179,7 +191,7 @@ function mainLabel() {
   const m = W().main;
   if (m.kind === "home") return "Home";
   if (m.kind === "bsu") return "Bank statement upload";
-  return `${TABLES[m.table].plural}: ${LISTS[m.table].filters[m.filter][0]}`;
+  return `${TABLES[m.table].plural}: ${filterOf(m.table, m.filter)[0]}`;
 }
 
 function tabLabel(t) {
@@ -268,7 +280,7 @@ function homePage() {
 export function listRows(table, filter) {
   const def = LISTS[table], q = W().q.trim().toLowerCase();
   const cols = def.colsFor ? def.colsFor(filter) : def.cols;
-  let rows = S[table].filter(def.filters[filter][1]);
+  let rows = S[table].filter(filterOf(table, filter)[1]);
   if (q) rows = rows.filter(r => def.text(r).toLowerCase().includes(q));
   rows = rows.slice().sort(def.sort);
   return { rows, html: rows.length ? rows.map(r => `<tr data-open="${table}:${r.id}" tabindex="0">${cols.map(c => `<td class="${c[2]}">${c[1](r)}</td>`).join("")}</tr>`).join("")
@@ -295,9 +307,10 @@ function listView(table, filter, menuOpen) {
   const { rows, html } = listRows(table, filter);
   const cols = def.colsFor ? def.colsFor(filter) : def.cols, formList = table === "requests" ? REQ_FORM_LISTS.find(l => l.filter === filter) : null;
   // AR requests: the filter bar shows only the menu's lists (owner 2026-11-12: other AR request categories removed)
-  const segFilters = def.menuOnly ? Object.entries(def.filters).filter(([k]) => k === filter || REQ_FORM_LISTS.some(l => l.filter === k)) : Object.entries(def.filters);
+  const dyn = !def.filters[filter] && filterOf(table, filter) !== def.filters.all ? [[filter, filterOf(table, filter)]] : [];   // BSU decision 23: one upload's lines
+  const segFilters = dyn.length ? [...Object.entries(def.filters), ...dyn] : def.menuOnly ? Object.entries(def.filters).filter(([k]) => k === filter || REQ_FORM_LISTS.some(l => l.filter === k)) : Object.entries(def.filters);
   return `<div class="page">
-    <div class="pagehead"><div class="ph-l">${menuOpen ? "" : `<button type="button" class="btn small" data-lmtoggle>${icon("list", 15)} Lists</button>`}<div><h1 class="pt">${esc(t.plural)}</h1><p class="psub">${esc(def.filters[filter][0])} · <span id="listCount">${rows.length}</span> record${rows.length === 1 ? "" : "s"}</p></div></div>
+    <div class="pagehead"><div class="ph-l">${menuOpen ? "" : `<button type="button" class="btn small" data-lmtoggle>${icon("list", 15)} Lists</button>`}<div><h1 class="pt">${esc(t.plural)}</h1><p class="psub">${esc(filterOf(table, filter)[0])} · <span id="listCount">${rows.length}</span> record${rows.length === 1 ? "" : "s"}</p></div></div>
       ${def.newable ? `<button type="button" class="btn primary" data-new="${table}"${sn(`UA-${CODE[table]}-new`)}>New</button>` : ""}</div>
     <div class="listbar">
       <div class="seg" role="group" aria-label="Filter">${segFilters.map(([k, [l]]) => `<button type="button" data-list="${table}:${k}" aria-pressed="${k === filter}">${esc(l)}</button>`).join("")}</div>

@@ -165,7 +165,7 @@ export const UI_ACTIONS = {
   "UA-ALC-insert": `Submit (insert) of ${TABLES.allocations.table} (BSU decision 21): exactly one of invoice or request; amount empty = default (smaller of deposit unmatched and target due); blocked above either; returns to the record it was opened from`,
   "UA-DEP-export": "RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Export matches to CSV",
   "UA-BSU-new": "New (list action on Statement uploads): opens the upload form (catalog item Bank statement upload)",
-  "UA-BSU-save": `Save to bank statements → submits the catalog item: creates the RITM (${TABLES.uploads.table}, one per bank account per day); a flow parses the CSV with the bank's template, inserts one ${TABLES.deposits.table} row per deposit referencing the RITM, and closes the RITM complete`,
+  "UA-BSU-save": `Save to bank statements → submits the catalog item: creates the RITM (${TABLES.uploads.table}, one per bank account per day); a flow parses the CSV with the bank's template, inserts one ${TABLES.deposits.table} row per deposit referencing the RITM, and closes the RITM complete; then opens the bank statement lines of that RITM (list of x_ar_bank_statement where bsu = the RITM; BSU decision 23)`,
   "UA-BSU-sample": "Demo only: generate a sample CSV in the bank's layout",
   "UA-BNK-upload": "Upload statement → opens the BSU page for this account",
   "UA-CUS-save": "Save (update)", "UA-CON-save": "Save (update)", "UA-BNK-save": "Save (update)",

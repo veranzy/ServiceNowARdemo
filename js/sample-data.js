@@ -130,10 +130,37 @@ export function loadSample() {
     const txnId = sampleTxn(payAcct[n], n), pm = S.paymentModes.find(m => m.bankAccountId === a.id && m.name === txnId);
     S.deposits.push({ id: uid("p"), number: depositId(a, date, txnId), txnId, paymentModeId: pm?.id || null, bankAccountId: a.id, uploadId: up.id, date, payer: r[0], amount: cents(r[2]), reference: r[3], bankRef: "", currency: "SGD" });
   });
+  // BSU decision 27 (demo): every daily statement has 3–6 bank lines, a mix of fully matched, partly matched and
+  // unmatched days. Matched lines pay older settled invoices (INV-099xx, kept below the live invoice numbers).
+  const filler = [];
+  const settle = [["harb", "HARBOURLINE LOGISTICS PTE"], ["meri", "MERIDIAN FOODS PTE LTD"], ["tanj", "TANJONG RETAIL GRP"], ["orch", "ORCHID CLINICS"],
+    ["nova", "NOVABAY SW"], ["bws", "BRIGHTWATER HOSPITALITY HLDGS"], ["kest", "KESTREL ENGG SDN BHD"], ["paci", "PACIFIC CREST MARINE"]];
+  const loose = [["CASH DEPOSIT", ""], ["NETS SETTLEMENT", "MID 4410023"], ["FAST TRF", "REF 77310452"], ["CHQ DEP 104477", ""], ["UNKNOWN REMITTER", "TRF 90021187"]];
+  let settleNo = 9900, fi = 0;
+  const addLine = (up, a, k, matched) => {
+    const txnId = sampleTxn(k, fi), pm = S.paymentModes.find(m => m.bankAccountId === a.id && m.name === txnId), amt = cents(320 + ((fi * 1379) % 4200) + (fi % 3) * 0.5);
+    const dep = { id: uid("p"), number: depositId(a, up.statementDate, txnId), txnId, paymentModeId: pm?.id || null, bankAccountId: a.id, uploadId: up.id, date: up.statementDate, amount: amt, bankRef: "", currency: "SGD" };
+    if (matched) { const [ck, payer] = settle[fi % settle.length], c = cid[ck], d = new Date(up.statementDate + "T00:00:00"); d.setDate(d.getDate() - 30);
+      const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10), k2 = S.contracts.find(x => x.customerId === c.id);
+      const inv = { id: uid("i"), customerId: c.id, contractId: k2?.id || null, customer: c.name, number: "INV-" + String(++settleNo).padStart(5, "0"), date: iso, due: up.statementDate,
+        amount: amt, desc: `${k2?.title || "Services"}, earlier period`, currency: "SGD", state: "issued", requestId: null };
+      S.invoices.push(inv); Object.assign(dep, { payer, reference: inv.number }); filler.push([dep.id, inv.id, amt]); }
+    else { const [payer, ref] = loose[fi % loose.length]; Object.assign(dep, { payer, reference: ref }); }
+    S.deposits.push(dep); up.depositCount++; up.depositTotal += amt; fi++;
+  };
+  const lines = [5, 4, 6, 3, 5, 4, 6, 3, 5, 4, 4];
+  S.uploads.forEach((up, n) => { const a = S.bankAccounts.find(x => x.id === up.bankAccountId), k = Object.keys(aid).find(x => aid[x] === a);
+    for (let j = 1; j < (lines[n] || 4); j++) addLine(up, a, k, n % 3 !== 2 && j <= (n % 2 ? 1 : lines[n] - 1)); });
+  // three more days: two fully matched, one not matched at all
+  [["mbDep", "2026-10-14", 4, true], ["usOps", "2026-10-18", 3, true], ["mbRev", "2026-10-19", 5, false]].forEach(([k, day, cnt, m], n) => {
+    const a = aid[k], date = shiftDate(day), up = { id: uid("u"), number: "RITM" + String(++upNo).padStart(7, "0"), bankAccountId: a.id, statementDate: date,
+      fileName: `${a.bank}_${a.number.replace(/\D/g, "")}_${date.replace(/-/g, "")}.csv`, uploadedBy: n % 2 ? "u_ar2" : "u_ar1", uploadedAt: date + " 09:2" + n, depositCount: 0, depositTotal: 0, skippedCount: 0 };
+    S.uploads.push(up); for (let j = 0; j < cnt; j++) addLine(up, a, k, m); });
   // uploads are made the morning after the statement day
   for (const u of S.uploads) { const d = new Date(u.statementDate + "T00:00:00"); d.setDate(d.getDate() + 1); u.uploadedAt = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) + u.uploadedAt.slice(10); }
   S.bsu = { acctId: S.bankAccounts[0].id, date: "", text: "", fileName: "", parsed: null, error: "" };
   S.matches = {}; S.pick = {}; S.isSample = true;
+  for (const [pid, iid, amt] of filler) S.matches[pid] = { status: "accepted", method: "manual", exception: "none", allocations: [{ invoiceId: iid, amount: amt }], reason: "Matched manually.", by: "u_ar1" };
 
   // AR request cases raised by the project team: [key, by, customer, contract, billing, title, amount, opened, state, assigned, invoiceNo, periodFrom, periodTo, po, details, activity]
   const invByNo = n => S.invoices.find(i => i.number === n);

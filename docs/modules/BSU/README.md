@@ -67,8 +67,8 @@ RITM is only the ServiceNow job that loads the file) groups its **bank lines**, 
 the daily statement's total**.
 
 1. **Statement uploads** (List menu → *Bank statements*): one row per daily statement, columns Upload, Statement date,
-   **Deposit ID** (its lines' Deposit IDs), **Bank name**, **Bank account**, Department, Deposits, Total, Uploaded
-   (decision 26). **New** uploads a file. Clicking
+   **Deposit ID** (its lines' Deposit IDs), **Bank name**, **Bank account**, Department, Deposits, **Lines matched**
+   (xx/yy: lines 100% matched / lines in the statement), **Unmatched amount**, Total, Uploaded (decisions 26, 27). **New** uploads a file. Clicking
    a row opens the daily statement with its tab *BSU deposits* (all its bank lines) **first**, before *Details*
    (decision 24); a line opens from there.
 2. **Bank lines** (List menu → *Bank statements*; replaces *BSU deposits to match* and *All BSU deposits*): every bank

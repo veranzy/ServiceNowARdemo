@@ -73,7 +73,10 @@ const LISTS = {
     cols: [["Upload", u => refLink("uploads", u.id, u.number), "", "number"], ["Statement date", u => esc(u.statementDate), "", "statementDate"],
       ["Deposit ID", u => [...new Set(S.deposits.filter(p => p.uploadId === u.id).map(p => p.number))].map(n => `<span class="mono">${esc(n)}</span>`).join("<br>") || "—", "", "=BSU.deposit_ids"],
       ["Bank name", u => esc(BANKS[acctById(u.bankAccountId)?.bank]?.name || "—"), "", "=BNK.bank"], ["Bank account", u => esc(acctById(u.bankAccountId)?.number || "—"), "", "bankAccountId"],
-      ["Department", u => esc(acctById(u.bankAccountId)?.department || "—"), "", "=BSU.department"], ["Deposits", u => String(u.depositCount), "num", "depositCount"], ["Total", u => fmt(u.depositTotal), "num", "depositTotal"],
+      ["Department", u => esc(acctById(u.bankAccountId)?.department || "—"), "", "=BSU.department"], ["Deposits", u => String(u.depositCount), "num", "depositCount"],
+      // BSU decision 27: lines 100% matched / lines in the statement, and the amount not yet matched
+      ["Lines matched", u => { const ls = S.deposits.filter(p => p.uploadId === u.id); return `${ls.filter(p => depositMoney(p).unapplied === 0).length}/${ls.length}`; }, "num", "=BSU.lines_matched"],
+      ["Unmatched amount", u => fmt(S.deposits.filter(p => p.uploadId === u.id).reduce((t, p) => t + depositMoney(p).unapplied, 0)), "num", "=BSU.unmatched_amount"], ["Total", u => fmt(u.depositTotal), "num", "depositTotal"],
       ["Uploaded", u => `${esc(u.uploadedAt)}<span class="desc">${esc(userById(u.uploadedBy)?.name || "")}</span>`, "", "uploadedAt"]],
     sort: (a, b) => String(b.statementDate).localeCompare(String(a.statementDate)) || String(b.number).localeCompare(String(a.number)),
     text: u => [u.number, acctLabel(acctById(u.bankAccountId)), u.fileName, ...S.deposits.filter(p => p.uploadId === u.id).map(p => p.number)].join(" "), newable: true

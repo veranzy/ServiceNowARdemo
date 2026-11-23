@@ -196,6 +196,8 @@ export const CALC_COLS = {
   "CON.status": "Calculated: Active / Not started / Ended from start and end dates (shells: Open)",
   "CON.line_count": "Calculated: number of billing lines filed under the contract",
   "BSU.department": `Dot-walk: bank_account.department`,
+  "BSU.lines_matched": `Calculated list column "Lines matched" (BSU decision 27): xx/yy, where yy = the ${TABLES.deposits.table} records with bsu = this upload and xx = those fully matched (unmatched amount 0)`,
+  "BSU.unmatched_amount": `Calculated list column "Unmatched amount" (BSU decision 27): sum of the unmatched amount of this upload's bank lines (amount − allocation values)`,
   "BSU.deposit_ids": `Calculated list column (BSU decision 26): the distinct Deposit IDs of the ${TABLES.deposits.table} records whose bsu = this upload (one per payment mode); list formatter or a string field filled by a business rule`,
   "RQL.line_value": "Calculated: one-off amount, or recurring amount × number of periods",
   "RQL.periods": "Calculated: number of billing dates between From and To at the frequency",

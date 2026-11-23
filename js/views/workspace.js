@@ -57,8 +57,10 @@ const LISTS = {
       all: ["All BSU deposits", () => true]
     },
     // BSU decision 23: bank statement lines, RITM › Date › Deposit ID › Bank name › Bank account › Payer …
-    cols: [["RITM", p => { const u = upOf(p); return u ? refLink("uploads", u.id, u.number) : "—"; }, "", "uploadId"], ["Value date", p => esc(p.date), "", "date"],
-      ["Deposit ID", p => refLink("deposits", p.id, p.number), "", "number"], ["Bank name", p => esc(BANKS[acctById(p.bankAccountId)?.bank]?.name || "—"), "", "=BNK.bank"],
+    // BSU decision 24: a row opens its upload (RITM), whose first tab lists every line of that upload
+    openAs: p => upOf(p) ? `uploads:${p.uploadId}` : `deposits:${p.id}`,
+    cols: [["RITM", p => esc(upOf(p)?.number || "—"), "", "uploadId"], ["Value date", p => esc(p.date), "", "date"],
+      ["Deposit ID", p => `<span class="mono">${esc(p.number)}</span>`, "", "number"], ["Bank name", p => esc(BANKS[acctById(p.bankAccountId)?.bank]?.name || "—"), "", "=BNK.bank"],
       ["Bank account", p => esc(acctById(p.bankAccountId)?.number || "—"), "", "bankAccountId"],
       ["Payer", p => esc(p.payer), "", "payer"], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap", "reference"], ["Amount", p => fmt(p.amount), "num", "amount"],
       ["Unmatched", p => fmt(depositMoney(p).unapplied), "num", "=DEP.unmatched_amount"], ["Match", p => depositChip(p), "", "=DEP.match_state"]],
@@ -283,7 +285,7 @@ export function listRows(table, filter) {
   let rows = S[table].filter(filterOf(table, filter)[1]);
   if (q) rows = rows.filter(r => def.text(r).toLowerCase().includes(q));
   rows = rows.slice().sort(def.sort);
-  return { rows, html: rows.length ? rows.map(r => `<tr data-open="${table}:${r.id}" tabindex="0">${cols.map(c => `<td class="${c[2]}">${c[1](r)}</td>`).join("")}</tr>`).join("")
+  return { rows, html: rows.length ? rows.map(r => `<tr data-open="${def.openAs ? def.openAs(r) : `${table}:${r.id}`}" tabindex="0">${cols.map(c => `<td class="${c[2]}">${c[1](r)}</td>`).join("")}</tr>`).join("")
     : `<tr><td colspan="${cols.length}" class="empty">No records match.</td></tr>` };
 }
 
@@ -708,7 +710,8 @@ function recordPage(tab) {
     : table === "uploads" ? `${acctLabel(acctById(rec.bankAccountId))} · statement ${rec.statementDate}` : table === "bankAccounts" ? rec.name
     : table === "schedules" ? rec.desc : table === "lines" ? rec.desc : table === "contacts" ? `${custName(rec.customerId)} · ${rec.department}` : table === "documents" ? `${custName(rec.customerId)} · ${DOC_LABEL[rec.docType]}` : rec.parent ? `Part of ${rec.parent}` : "";
   // Horizon record page: header (title, presence, UI action bar, label-value pairs) › ribbon › resizable pane (record tabs | contextual side bar)
-  const tabs = [{ key: "details", label: "Details" }, ...(isNew ? [] : [...related(table, rec), historyTab(table, rec)])];
+  const tabs = table === "uploads" && !isNew ? [...related(table, rec), { key: "details", label: "Details" }, historyTab(table, rec)]   // BSU decision 24: lines first
+    : [{ key: "details", label: "Details" }, ...(isNew ? [] : [...related(table, rec), historyTab(table, rec)])];
   const cur = tabs.find(x => x.key === tab.sub) || tabs[0];
   const view = table === "requests" ? `<div${sn(isIx(rec) ? "REQ-FV-ARIX" : isCol(rec) ? "REQ-FV-COL" : "REQ-FV-ARI")}>${sections}</div>` : sections;
   const form = `<form class="rform" data-rform="${esc(tab.key)}" novalidate${sn(`FRM-${CODE[table]}`)}>${view}</form>`;

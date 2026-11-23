@@ -66,10 +66,11 @@ no Cash application page (retired 2026-11-18, decision 21) and no auto-matching 
 **Queue.** List menu → *Bank statements* → **BSU deposits to match** (deposits with an unmatched amount) or **All BSU
 deposits**. Both lists show the bank statement lines with columns **RITM › Value date › Deposit ID › Bank name › Bank
 account** (account number) › Payer › Reference › Amount › Unmatched › Match, sorted in that order (newest RITM first,
-then the rest ascending; decision 23). AR opens a line (deposit) from the list.
+then the rest ascending; decision 23). Clicking a row opens its **upload (RITM)**, whose first tab, *BSU deposits*,
+lists every line of that upload, before *Details*; AR opens a line from there (decision 24).
 
 **User journey (AR Team feedback, decision 23):** 1. *Statement uploads* → **New** (`UA-BSU-new`) → upload → 2. the
-upload's bank statement lines → 3. open a line → 4. on the line, *Suggested matches* → **Match**, or *Allocations* →
+upload's bank statement lines (or the bank statement list → a row → its upload, lines tab first, decision 24) → 3. open a line → 4. on the line, *Suggested matches* → **Match**, or *Allocations* →
 **New**, to allocate it to invoices or Collections cases. The deposit (bank statement line) is the centre of matching:
 its allocations show which invoices and collections it fulfils.
 

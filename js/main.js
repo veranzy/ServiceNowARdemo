@@ -168,7 +168,7 @@ function bsuAction(name) {
     const up = saveUpload(a, b.date, b.fileName.replace(" (sample)", ""), b.parsed);
     Object.assign(b, { text: "", fileName: "", parsed: null, error: "" });
     toast(`${up.number} saved: ${up.depositCount} deposit${up.depositCount === 1 ? "" : "s"} added to bank statements.`);
-    return showMain({ kind: "list", table: "deposits", filter: `ritm-${up.number}` });   // BSU decision 23: that upload's bank statement lines
+    return openTab("uploads", up.id);   // BSU decision 25: the daily statement, its lines tab first
   }
 }
 

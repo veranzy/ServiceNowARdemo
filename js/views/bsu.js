@@ -19,7 +19,7 @@ export function bsuPage() {
   const p = b.parsed;
   return `<div class="page"${sn("BSU-01")}>
     <div class="pagehead"><div><h1 class="pt">Bank statement upload</h1><p class="psub">Load the previous day's CSV statement for each company bank account. Deposits are tagged with a Deposit ID and saved to the Bank statements table, ready for manual matching. Withdrawals are skipped.</p></div>
-      <button type="button" class="btn" data-list="uploads:all">Statement uploads</button><button type="button" class="btn" data-list="deposits:unapplied">BSU deposits to match</button></div>
+      <button type="button" class="btn" data-list="uploads:all">Statement uploads</button><button type="button" class="btn" data-list="deposits:all">Bank lines</button></div>
 
     <section class="card bsu-up"${sn("BSU-03")}>
       <header><h2>Upload a statement</h2></header>

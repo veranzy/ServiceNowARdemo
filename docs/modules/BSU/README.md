@@ -2,7 +2,7 @@
 
 **Status:** In prototype
 **Persona(s):** AR team (workspace)
-**Demo:** Workspace → left rail → **BSU** (upload icon). Lists: *Bank statements* group in the list menu (*BSU deposits to match* is the matching queue, decision 21).
+**Demo:** Workspace → left rail → **BSU** (upload icon). Lists: *Bank statements* group in the list menu (*Statement uploads* and *Bank lines*, decision 25).
 
 Files in this folder: this spec, [DECISIONS.md](DECISIONS.md), [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md),
 [CHANGELOG.md](CHANGELOG.md). Formerly two modules: BSU (upload) and CSH (cash application). Money in
@@ -39,9 +39,8 @@ the **Bank statements** table, where the AR team reviews it and matches it manua
 3. **Save to bank statements**: submits the catalog item *Bank statement upload*, which creates the **RITM**
    (`RITM…`, one per bank account per day, decision 12) and one deposit record per credit, related to the RITM,
    then opens the new RITM. Upload completeness (which accounts are still missing a day) is decided later.
-4. **Afterwards** (decision 23): AR lands on the **bank statement lines of that upload** (the BSU deposits list
-   filtered to the new RITM, URL `#/ws/list/deposits/ritm-<RITM>`). AR opens each line and matches it on its record
-   tabs (decision 21).
+4. **Afterwards** (decision 25): AR lands on the **daily statement** just uploaded, its *BSU deposits* tab (all its
+   bank lines) first. AR opens each line and matches it on its record tabs (decision 21).
 
 ## ServiceNow mapping
 
@@ -63,16 +62,20 @@ The AR team matches each BSU deposit to one or more **issued** invoices ([CCI](.
 **Collections cases** (AR-iii, AR-iv, AR-v; D28, D29, decision 11) by hand, on the **standard record pages**. There is
 no Cash application page (retired 2026-11-18, decision 21) and no auto-matching (D5).
 
-**Queue.** List menu → *Bank statements* → **BSU deposits to match** (deposits with an unmatched amount) or **All BSU
-deposits**. Both lists show the bank statement lines with columns **RITM › Value date › Deposit ID › Bank name › Bank
-account** (account number) › Payer › Reference › Amount › Unmatched › Match, sorted in that order (newest RITM first,
-then the rest ascending; decision 23). Clicking a row opens its **upload (RITM)**, whose first tab, *BSU deposits*,
-lists every line of that upload, before *Details*; AR opens a line from there (decision 24).
+**Two entry points** (owner, decision 25). Structure: a **daily statement** (one bank account, one day; the upload's
+RITM is only the ServiceNow job that loads the file) groups its **bank lines**, and the **sum of the bank lines equals
+the daily statement's total**.
 
-**User journey (AR Team feedback, decision 23):** 1. *Statement uploads* → **New** (`UA-BSU-new`) → upload → 2. the
-upload's bank statement lines (or the bank statement list → a row → its upload, lines tab first, decision 24) → 3. open a line → 4. on the line, *Suggested matches* → **Match**, or *Allocations* →
-**New**, to allocate it to invoices or Collections cases. The deposit (bank statement line) is the centre of matching:
-its allocations show which invoices and collections it fulfils.
+1. **Statement uploads** (List menu → *Bank statements*): one row per daily statement. **New** uploads a file. Clicking
+   a row opens the daily statement with its tab *BSU deposits* (all its bank lines) **first**, before *Details*
+   (decision 24); a line opens from there.
+2. **Bank lines** (List menu → *Bank statements*; replaces *BSU deposits to match* and *All BSU deposits*): every bank
+   line, columns **RITM › Value date › Deposit ID › Bank name › Bank account** (account number) › Payer › Reference ›
+   Amount › Unmatched › Match, sorted in that order (newest RITM first, then ascending; decision 23). The Match column
+   shows Unmatched / Part matched / Matched. **Clicking a row opens the bank line.**
+
+**Matching is per bank line**: on the line, *Suggested matches* → **Match**, or *Allocations* → **New**. One line can
+pay several invoices and / or Collections cases; its allocations show what it fulfils (decisions 21, 22).
 
 **From a deposit** (record tabs: Details, **Suggested matches**, **Allocations**, Record history):
 1. **Suggested matches** (`RL-DEP-SUG`): up to 10 issued invoices with amount due and open Collections cases not yet
@@ -111,7 +114,7 @@ Allocations update each invoice's amount due and payment status (Unpaid / Part p
 
 | Item | Build |
 |---|---|
-| Queue | List *BSU deposits to match*: `x_ar_bank_statement` where unmatched amount > 0. No custom page. |
+| Lists | *Statement uploads* (`x_ar_bsu`, daily statements) and *Bank lines* (all `x_ar_bank_statement` records; Match column). No custom page. |
 | Suggested matches / Suggested BSU deposits | Workspace related-list tabs fed by a data resource (Script Include ranks candidates; suggestion only), row **declarative action** *Match* that inserts one `x_ar_allocation`. |
 | `x_ar_allocation` | Deposit, invoice **or** request (Collection case; exactly one is set, D29), *Allocation value* (`amount`, unique to the allocation; default on insert: smaller of deposit unmatched and target due), status (accepted); reference qualifiers as above; business rule recalculates the invoice's `amount_due` / `payment_status` and the deposit's match state. Form: *New allocation* with the parent prefilled. |
 | UI actions | *Match* (row), *New* on the Allocations tabs, *Save* on the allocation, *Remove match* on the deposit. Related lists `RL-INV-ALC`, `RL-DEP-ALC`, `RL-REQ-ALC`. |

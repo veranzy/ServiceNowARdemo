@@ -61,7 +61,7 @@ Horizon Design System workspace guidance at https://horizon.servicenow.com/works
 |---|---|
 | `#/ws` | Workspace landing page |
 | `#/ws/list/<table>/<filter>` | A list, e.g. `#/ws/list/requests/open`, `#/ws/list/invoices/overdue` |
-| `#/ws/bsu` | Bank statement upload (`#/ws/cash` retired, opens *BSU deposits to match*; BSU decision 21) |
+| `#/ws/bsu` | Bank statement upload (`#/ws/cash` retired, opens *Bank lines*; BSU decisions 21, 25) |
 | `#/ws/<table>/<number>` | A record, e.g. `#/ws/requests/ARQ0001004`, `#/ws/contracts/HL-2026-01`, `#/ws/invoices/INV…` |
 | `#/ws/customers/<name>` | A customer, e.g. `#/ws/customers/Tanjong%20Retail%20Group` |
 | `#/portal` | Portal home |

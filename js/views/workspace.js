@@ -53,14 +53,12 @@ const LISTS = {
   },
   deposits: {
     filters: {
-      unapplied: ["BSU deposits to match", p => depositMoney(p).unapplied > 0],
-      all: ["All BSU deposits", () => true]
+      all: ["Bank lines", () => true]   // BSU decision 25: one list (was BSU deposits to match + All BSU deposits)
     },
     // BSU decision 23: bank statement lines, RITM › Date › Deposit ID › Bank name › Bank account › Payer …
-    // BSU decision 24: a row opens its upload (RITM), whose first tab lists every line of that upload
-    openAs: p => upOf(p) ? `uploads:${p.uploadId}` : `deposits:${p.id}`,
+    // BSU decision 25: a row opens the bank line itself; matching is done per line (one line, many invoices / collections)
     cols: [["RITM", p => esc(upOf(p)?.number || "—"), "", "uploadId"], ["Value date", p => esc(p.date), "", "date"],
-      ["Deposit ID", p => `<span class="mono">${esc(p.number)}</span>`, "", "number"], ["Bank name", p => esc(BANKS[acctById(p.bankAccountId)?.bank]?.name || "—"), "", "=BNK.bank"],
+      ["Deposit ID", p => refLink("deposits", p.id, p.number), "", "number"], ["Bank name", p => esc(BANKS[acctById(p.bankAccountId)?.bank]?.name || "—"), "", "=BNK.bank"],
       ["Bank account", p => esc(acctById(p.bankAccountId)?.number || "—"), "", "bankAccountId"],
       ["Payer", p => esc(p.payer), "", "payer"], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap", "reference"], ["Amount", p => fmt(p.amount), "num", "amount"],
       ["Unmatched", p => fmt(depositMoney(p).unapplied), "num", "=DEP.unmatched_amount"], ["Match", p => depositChip(p), "", "=DEP.match_state"]],
@@ -183,7 +181,7 @@ const MENU = [
   ["AR requests", REQ_FORM_LISTS.map(l => ["requests", l.filter])],   // UIX decision 15: one open list per AR form
   // UIX decision 17: no Recurring billing group; schedules are reached from the contract
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
-  ["Bank statements", [["uploads", "all"], ["deposits", "unapplied"], ["deposits", "all"], ["bankAccounts", "all"], ["paymentModes", "all"]]],
+  ["Bank statements", [["uploads", "all"], ["deposits", "all"], ["bankAccounts", "all"], ["paymentModes", "all"]]],   // BSU decision 25: Statement uploads, Bank lines
   ["GIRO", [["requests", "giroall"], ["contracts", "giro"]]],
   ["Master data", [["customers", "all"], ["contracts", "all"], ["costCentres", "all"], ["accountCodes", "all"]]]   // CCI decision 20: one Contracts list (both categories); contacts and documents live on the customer
 ];

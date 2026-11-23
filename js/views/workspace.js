@@ -69,11 +69,14 @@ const LISTS = {
   },
   uploads: {
     filters: { all: ["Statement uploads", () => true] },
-    cols: [["Upload", u => refLink("uploads", u.id, u.number), "", "number"], ["Bank account", u => esc(acctLabel(acctById(u.bankAccountId))), "", "bankAccountId"], ["Department", u => esc(acctById(u.bankAccountId)?.department || "—"), "", "=BSU.department"],
-      ["Statement date", u => esc(u.statementDate), "", "statementDate"], ["Deposits", u => String(u.depositCount), "num", "depositCount"], ["Total", u => fmt(u.depositTotal), "num", "depositTotal"],
+    // BSU decision 26: Deposit ID(s) of its lines; bank name and bank account in their own columns
+    cols: [["Upload", u => refLink("uploads", u.id, u.number), "", "number"], ["Statement date", u => esc(u.statementDate), "", "statementDate"],
+      ["Deposit ID", u => [...new Set(S.deposits.filter(p => p.uploadId === u.id).map(p => p.number))].map(n => `<span class="mono">${esc(n)}</span>`).join("<br>") || "—", "", "=BSU.deposit_ids"],
+      ["Bank name", u => esc(BANKS[acctById(u.bankAccountId)?.bank]?.name || "—"), "", "=BNK.bank"], ["Bank account", u => esc(acctById(u.bankAccountId)?.number || "—"), "", "bankAccountId"],
+      ["Department", u => esc(acctById(u.bankAccountId)?.department || "—"), "", "=BSU.department"], ["Deposits", u => String(u.depositCount), "num", "depositCount"], ["Total", u => fmt(u.depositTotal), "num", "depositTotal"],
       ["Uploaded", u => `${esc(u.uploadedAt)}<span class="desc">${esc(userById(u.uploadedBy)?.name || "")}</span>`, "", "uploadedAt"]],
     sort: (a, b) => String(b.statementDate).localeCompare(String(a.statementDate)) || String(b.number).localeCompare(String(a.number)),
-    text: u => [u.number, acctLabel(acctById(u.bankAccountId)), u.fileName].join(" "), newable: true
+    text: u => [u.number, acctLabel(acctById(u.bankAccountId)), u.fileName, ...S.deposits.filter(p => p.uploadId === u.id).map(p => p.number)].join(" "), newable: true
   },
   bankAccounts: {
     filters: { all: ["Bank accounts", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },

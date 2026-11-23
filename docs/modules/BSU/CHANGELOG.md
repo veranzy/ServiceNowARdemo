@@ -22,3 +22,4 @@
 | 2026-11-23 | Decision 23: after an upload AR lands on its bank statement lines; deposit lists get columns RITM, Value date, Deposit ID, Bank name, Bank account (number) and sort RITM › date › Deposit ID › bank › account. No IDs added or retired (column tags reuse `DEP.bsu`, `BNK.bank`). |
 | 2026-11-23 | Decision 24: bank statement list rows open the upload (RITM); its lines tab comes before Details. No IDs added or retired. |
 | 2026-11-23 | Decision 25: list menu *Bank statements* → Statement uploads, Bank lines (merged), Bank accounts, Payment modes; Bank lines rows open the line; after an upload, the daily statement opens. No IDs added or retired. |
+| 2026-11-23 | Decision 26: Statement uploads list gets Deposit ID; Bank name and Bank account split. **New ID:** `BSU.deposit_ids`. |

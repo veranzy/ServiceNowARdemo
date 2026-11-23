@@ -714,6 +714,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON.status` | Calculated: Active / Not started / Ended from start and end dates (shells: Open) |
 | `CON.line_count` | Calculated: number of billing lines filed under the contract |
 | `BSU.department` | Dot-walk: bank_account.department |
+| `BSU.deposit_ids` | Calculated list column (BSU decision 26): the distinct Deposit IDs of the x_ar_bank_statement records whose bsu = this upload (one per payment mode); list formatter or a string field filled by a business rule |
 | `RQL.line_value` | Calculated: one-off amount, or recurring amount × number of periods |
 | `RQL.periods` | Calculated: number of billing dates between From and To at the frequency |
 | `SCH.next_billing_date` | Calculated: first period on or after today without an invoice |

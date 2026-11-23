@@ -670,7 +670,7 @@ function related(table, rec) {
   if (table === "uploads" || table === "bankAccounts") {
     const deps = S.deposits.filter(p => table === "uploads" ? p.uploadId === rec.id : p.bankAccountId === rec.id).sort(LISTS.deposits.sort);
     const ups = table === "bankAccounts" ? [rt("Statement uploads", "uploads", S.uploads.filter(u => u.bankAccountId === rec.id).sort(LISTS.uploads.sort),
-      [["Upload", u => refLink("uploads", u.id, u.number)], ["Statement date", u => esc(u.statementDate)], ["Deposits", u => String(u.depositCount), "num"], ["Total", u => fmt(u.depositTotal), "num"]], { id: "RL-BNK-BSU" })] : [];
+      [["Upload", u => refLink("uploads", u.id, u.number)], ["Statement date", u => esc(u.statementDate)], LISTS.uploads.cols.find(c => c[0] === "Deposit ID"), ["Deposits", u => String(u.depositCount), "num"], ["Total", u => fmt(u.depositTotal), "num"]], { id: "RL-BNK-BSU" })] : [];   // BSU decision 26: Deposit ID here too
     const pms = table === "bankAccounts" ? [rt("Payment modes", "paymentModes", S.paymentModes.filter(m => m.bankAccountId === rec.id), [["Payment mode", m => refLink("paymentModes", m.id, m.name)], ["Deposit ID", m => `<span class="mono">${esc(m.prefix)}-DDMMYY-${esc(m.suffix)}</span>`], ["Active", m => m.active !== false ? "Yes" : "No"]], { id: "RL-BNK-PMD" })] : [];
     return [...pms, ...ups, rt("BSU deposits", "deposits", deps, [["Deposit ID", p => refLink("deposits", p.id, p.number)], ["Payer", p => esc(p.payer)], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap"], ["Amount", p => fmt(p.amount), "num"], ["Match", p => depositChip(p)]], { id: table === "uploads" ? "RL-BSU-DEP" : "RL-BNK-DEP" })];
   }

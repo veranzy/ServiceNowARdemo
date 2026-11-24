@@ -71,8 +71,8 @@ function collectionCases() {
        ibCase: "IB/2026/004417", caseStatus: "pending", accusedName: "Lim Ah Kow", ar5Refund: false }, users.pm2, 12, "work_in_progress", "u_ar1", null],
     [{ ...gi(users.pm1, "Marine", "Offshore"), colType: "AR-v", colCategory: "seized", ar5Date: ago(8), ar5Forfeit: true, ar5CourtOrder: true, ar5Invest: "no", ar5RefundS: false,
        ar5Lines: [{ caseNumber: "SM-2026-0081", amount: 230000, caseStatus: "pending" }, { caseNumber: "SM-2026-0082", amount: 41500, caseStatus: "case_closed" }] }, users.pm1, 8, "awaiting_requestor_info", "u_ar2", null],
-    [{ ...gi(users.pm2, "Marine", "Dredging"), colType: "AR-v", colCategory: "restitution", ar5Date: ago(4), ar5CourtOrder: true,
-       ar5Lines: [{ caseNumber: "RS-2026-0019", amount: 75000, caseStatus: "" }, { caseNumber: "RS-2026-0020", amount: 32000, caseStatus: "" }] }, users.pm2, 4, "new", null, null]
+    [{ ...gi(users.pm2, "Marine", "Dredging"), colType: "AR-v", colCategory: "restitution", ar5Date: ago(4), ar5CourtOrder: true, colRemarks: "Second restitution amount received after the court hearing.",
+       ar5Lines: [{ caseNumber: "RS-2026-0019", amount: 75000, caseStatus: "pending" }, { caseNumber: "RS-2026-0020", amount: 32000, caseStatus: "case_closed" }] }, users.pm2, 4, "new", null, null]
   ];
   const label = v => TABLES.requests.fields.find(f => f.key === "state").choices.find(x => x[0] === v)?.[1] || v;
   for (const [vals, by, days, state, ar, line] of cases) {

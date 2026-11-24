@@ -33,14 +33,16 @@ export const DEPT_SUB_BUS = DEPARTMENTS.flatMap(d => SUB_BU_NAMES[d].map((n, i) 
 export const COLLECTION_TILES = ["AR-iii", "AR-iv", "AR-v"];
 export const COLLECTIONS_FORM = "COL";
 export const AR_FORMS = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii", "xiv", "xv", "xvi"].map((r, n) => ({
-  code: `AR-${r}`, name: n === 0 ? "New AR request" : n === 8 ? "GIRO authorisation" : n >= 2 && n <= 4 ? "Collections" : "To be defined",
+  code: `AR-${r}`, name: n === 0 ? "New AR request" : n === 8 ? "GIRO authorisation" : n >= 2 && n <= 4 ? "Submission of Supporting Documents – Collections" : "To be defined",
   desc: n === 0 ? "Bill a customer: one-off and recurring lines, new or existing customer. Customer documents are given once."
     : n === 8 ? "Add or remove GIRO (direct debit) on a contract: rental, carpark or other charges."
     : n >= 2 && n <= 4 ? "Money collected without an invoice. One form for AR-iii, AR-iv and AR-v." : "Form not yet specified.",
   active: n === 0 || n === 8 || (n >= 2 && n <= 4)
 }));
-/** Collection type choices (D30): codes until the owner gives the labels. */
-export const COLLECTION_TYPES = COLLECTION_TILES.map(c => [c, c]);
+/** Collection type choices (D30; labels AR-iii decision 22, #12). */
+export const COLLECTION_TYPES = [["AR-iii", "AR-iii Counter/UPOS Terminals"], ["AR-iv", "AR-iv Miscellaneous/Ad hoc"], ["AR-v", "AR-v Cash Bail/Seized Monies/Restitution"]];
+/** The catalogue shows one tile for the Collections form (AR-iii decision 22): the AR-iii entry stands for all three. */
+export const COLLECTIONS_NAME = "Submission of Supporting Documents – Collections";
 /** Collections category (D28): money collected without an invoice. A BSU deposit can be matched to an open case of these forms (D29). */
 export const COLLECTION_FORMS = ["COL"];   // D30: one Collections form; the case's collection_type says AR-iii, AR-iv or AR-v
 export const GIRO_PURPOSES = [["rental", "Rental"], ["carpark", "Carpark"], ["others", "Others"]];
@@ -61,10 +63,10 @@ export const AR3_TYPES = ["Cashcard", "Credit Card", "NETS", "NETS FlashPay", "N
 /** AR5 categories (#9 §9). */
 export const AR5_CATEGORIES = [["cash_bail", "Cash Bail"], ["seized", "Seized Monies"], ["restitution", "Restitution"]];
 /** AR5 case status per category (#9 §9.1–9.3; subject to final business confirmation). [value, label, category] */
-export const AR5_STATUS = [   // AR-iii decision 19: Cash Bail and Seized Monies: Case Pending / Case Closed; Restitution TBD (open question 12)
+export const AR5_STATUS = [   // AR-iii decisions 19, 22: Case Pending / Case Closed for every category
   ["pending", "Case Pending", "cash_bail"], ["case_closed", "Case Closed", "cash_bail"],
   ["pending", "Case Pending", "seized"], ["case_closed", "Case Closed", "seized"],
-  ["forfeit_order", "Forfeit to State with court order", "restitution"], ["forfeit_no_order", "Forfeit to State without court order", "restitution"], ["pending", "Case Pending", "restitution"]
+  ["pending", "Case Pending", "restitution"], ["case_closed", "Case Closed", "restitution"]
 ];
 const AR5_ALL = ["cash_bail", "seized", "restitution"];
 /** Type of billing (AR-i decision 43). 5 and 6: no customer or contract on the AR-i. */
@@ -88,6 +90,7 @@ export const TABLES = {
       { key: "substate", name: "substate", label: "Substate", type: "Choice", choices: SUBSTATE_REQ, showIf: { key: "state", eq: "awaiting_requestor_info" }, help: "Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal)" },
       { key: "requestedBy", name: "opened_by", label: "Requested by", type: "Reference", ref: "users", readonly: true },
       { key: "form", name: "ar_form", label: "AR form", type: "Choice", choices: [...AR_FORMS.filter(f => !COLLECTION_TILES.includes(f.code)).map(f => [f.code, `${f.code} ${f.name}`]), ["COL", "Collections (AR-iii, AR-iv, AR-v)"]], readonly: true, help: "Collections cases: COL, with the type in collection_type (D30)" },
+      { key: "colRemarks", name: "remarks", label: "Remarks", type: "String (4000)", wide: true, showIf: { key: "colType", in: ["AR-iii", "AR-iv", "AR-v"] }, help: "Collections section Remarks, before Supporting Documents; optional, every type (AR-iii decision 22, #12)" },
       { key: "colOrigin", name: "submission_origin", label: "Submission Origin", type: "Choice", choices: [["manual", "Manual"], ["system", "System-generated from unreconciled bank statement"]], readonly: true, help: "Collections (#9 §6). System-managed: Manual for portal submissions; system-generated cases are a later phase (AR-iii decision 10)" },
       { key: "colType", name: "collection_type", label: "Collection type", type: "Choice", choices: COLLECTION_TYPES, help: "Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording" },
       // Collections section 3. Collection Details (#9 §7–9; AR-iii decisions 12–17). AR5 fields: none mandatory (owner, decision 14)
@@ -106,7 +109,7 @@ export const TABLES = {
       { key: "ar5CourtOrder", name: "ar5_court_order", label: "Court Order", type: "True/False", showIf: { key: "colCategory", in: ["seized", "restitution"] }, help: "AR-v Seized Monies and Restitution: checkbox after the case lines (AR-iii decisions 19, 20)" },
       { key: "ar5Invest", name: "ar5_to_be_invested", label: "Whether the seized monies are to be invested", type: "Choice", choices: YES_NO, radio: true, showIf: { key: "colCategory", eq: "seized" }, help: "Yes / No radio buttons (#9 §9.4), where applicable" },
       { key: "ar5Refund", name: "ar5_refund_required", label: "Refund Required", type: "True/False", showIf: { key: "colCategory", eq: "cash_bail" }, help: "AR-v Cash Bail checkbox (AR-iii decision 20; was Yes / No buttons). Ticked shows: Please raise a AR10, with a link to the AR10 form" },
-      { key: "ar5RefundS", name: "ar5_refund", label: "Refund", type: "True/False", showIf: { key: "colCategory", eq: "seized" }, help: "AR-v Seized Monies checkbox after the case lines (AR-iii decision 20). Ticked shows: Please raise a AR10, with a link to the AR10 form" },
+      { key: "ar5RefundS", name: "ar5_refund", label: "Refund Required", type: "True/False", showIf: { key: "colCategory", eq: "seized" }, help: "AR-v Seized Monies checkbox after the case lines (AR-iii decision 20). Ticked shows: Please raise a AR10, with a link to the AR10 form" },
       { key: "requesterName", name: "requester_name", label: "Requester name", type: "String", help: "General information (all AR forms). Mandatory on the form; defaults to the signed-in user's name", default: "gs.getUser().getFullName()" },
       { key: "requesterEmail", name: "requester_email", label: "Email", type: "String", readonly: true, help: "General information (all AR forms). From ServiceNow SSO (sys_user.email); always read-only", default: "gs.getUser().getEmail()" },
       { key: "deptSubBu", name: "department_sub_bu", label: "Sub-BU", type: "Choice", choices: DEPT_SUB_BUS, choiceDependsOn: "department", help: "General information (all AR forms). Sub-BUs of the chosen department (mock list)" },
@@ -562,10 +565,10 @@ export const RECORD_PRODUCER_ARIX = {
 };
 /** Collections form (AR-iii module, D30): one record producer for AR-iii, AR-iv and AR-v. Shell: fields to be defined. */
 export const RECORD_PRODUCER_COL = {
-  name: "Collections (AR-iii, AR-iv, AR-v)",
+  name: "Submission of Supporting Documents – Collections",
   table: "requests",
   variables: [...GENERAL_INFO, "colType", "colDate", "colRef", "colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "ibCase",
-    "caseStatus", "ar5RefundTo", "accusedName", "ar5RefundS", "ar5Forfeit", "ar5CourtOrder", "ar5Invest", "ar5Refund"],
+    "caseStatus", "ar5RefundTo", "accusedName", "ar5RefundS", "ar5Forfeit", "ar5CourtOrder", "ar5Invest", "ar5Refund", "colRemarks"],
   rowSets: ["colTx", "colAlloc", "ar5Lines"],
   script: "current.opened_by = gs.getUserID(); current.ar_form = 'COL'; current.collection_type = producer.collection_type; current.short_description = 'Collections – ' + collection_type; current.submission_origin = 'manual'; copies the multi-row sets to x_ar_collection_tx (AR3) / x_ar_collection_allocation (AR4); amount = AR4 allocation total or the AR5 amount (AR3: open question); current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>. Catalogue: three items (AR-iii, AR-iv, AR-v) open this producer with collection_type preset (URL parameter / default value)."
 };

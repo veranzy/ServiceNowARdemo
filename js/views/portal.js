@@ -2,7 +2,7 @@
 // AR-i New AR request (record producer), My requests list and the ticket page (conversation with AR).
 import { ctrById, custById, rollup } from "../ledger.js";
 import { giroPurposesFor, giroContracts, DOC_LABEL, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, activeGiroCase, billingMode, giroTarget, giroTypesFor, canViewReq, draftLine, draftPro, itemCalc, reqItems, giroOnContractOf, ccEmails, contactFor, giroLabel, ctrLabel, docsOnFile, freqLabel, isShell, lineStatus, lineValue, linesLabel, linesSummary, me, needBillTo, periodDates, reqById, reqLines, shellFor, targetContract, validateARi } from "../records.js";
-import { COLLECTION_TILES, COLLECTIONS_FORM, GIRO_PURPOSES, AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, GIRO_TYPES, GST_RATE, NO_CUSTOMER_BILLING, ROLES, TABLES, fieldVisible } from "../schema.js";
+import { COLLECTION_TILES, COLLECTIONS_FORM, COLLECTIONS_NAME, GIRO_PURPOSES, AR_FORMS, CONTRACT_OPTIONS, DOC_TYPES, GIRO_TYPES, GST_RATE, NO_CUSTOMER_BILLING, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { CODE } from "../notes.js";
 import { S } from "../state.js";
 import { esc, fmt, nameSim } from "../util.js";
@@ -69,8 +69,8 @@ function catalogPage() {
     <section${sn("PT-14")}>
       <h1 class="pt-h1">AR forms</h1>
       <p class="pt-lead">Choose the form for what you need from Accounts Receivable. Each form creates a case for the AR team.</p>
-      <div class="pt-forms">${AR_FORMS.map(f => f.active
-        ? `<button type="button" class="pt-form-tile on" data-pnav="form" data-form="${f.code}"${sn("PT-15")}><span class="ft-code">${esc(f.code)}</span><b>${esc(f.name)}</b><span>${esc(f.desc)}</span></button>`
+      <div class="pt-forms">${AR_FORMS.filter(f => !["AR-iv", "AR-v"].includes(f.code)).map(f => f.code === "AR-iii" ? { ...f, code: "AR-iii · AR-iv · AR-v" , open: "AR-iii" } : f).map(f => f.active
+        ? `<button type="button" class="pt-form-tile on" data-pnav="form" data-form="${f.open || f.code}"${sn("PT-15")}><span class="ft-code">${esc(f.code)}</span><b>${esc(f.name)}</b><span>${esc(f.desc)}</span></button>`
         : `<div class="pt-form-tile off" aria-disabled="true"${sn("PT-16")}><span class="ft-code">${esc(f.code)}</span><b>${esc(f.name)}</b><span>${esc(f.desc)}</span></div>`).join("")}</div>
     </section>
   </div>`;
@@ -242,7 +242,7 @@ function formPage() {
   if (!p.draft || p.draft.form !== form || (col && p.draft.tile !== code)) {
     const gen = { form, requesterName: me().name, requesterEmail: me().email || "", ccList: "", department: me().department || "", newCustomer: false, custQ: "", attachments: [] };
     p.draft = code === "AR-ix" ? { ...gen, contractOption: "", giroPurpose: "", giroType: "" }
-      : col ? { ...gen, tile: code, colType: code }
+      : col ? { ...gen, tile: code, colType: "" }   // AR-iii decision 22: one tile; the type is chosen on the form
       : { ...gen, needItems: "no", items: [] };
     p.errors = {};
   }
@@ -311,10 +311,10 @@ function colFormPage() {
   const p = P(), d = p.draft, e = p.errors || {};
   const f = (k, o = {}) => fieldHtml("requests", reqField(k), d, { prefix: "pf", errors: e, vals: d, ...o });
   return `<div class="pt-inner pt-body">
-    <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <button type="button" class="linkish" data-pnav="forms">AR forms</button> › <span>Collections</span></nav>
+    <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <button type="button" class="linkish" data-pnav="forms">AR forms</button> › <span>${esc(COLLECTIONS_NAME)}</span></nav>
     <div class="pt-item">
       <form class="pt-form pt-card" id="arForm" novalidate${sn("PT-49")}>
-        <div><span class="ft-code">AR-iii · AR-iv · AR-v</span><h1>Collections</h1></div>
+        <div><span class="ft-code">AR-iii · AR-iv · AR-v</span><h1>${esc(COLLECTIONS_NAME)}</h1></div>
         <p class="pt-lead">Money collected without an invoice. Choose the collection type first.</p>
         <div id="pfAlert">${formAlert(Object.keys(e).length)}</div>
         ${generalInfo(d, e, f)}
@@ -322,7 +322,10 @@ function colFormPage() {
           <div class="fgrid">${f("colType", { mandatory: true, help: null, placeholder: "-- Choose the collection type --" })}</div>
         </fieldset>
         ${d.colType ? colDetails(d, e, f) : ""}
-        ${d.colType ? `<fieldset class="psec"${sn("PT-55")}><legend>4. Supporting Documents</legend>
+        ${d.colType ? `<fieldset class="psec"${sn("PT-64")}><legend>4. Remarks</legend>
+          <div class="fgrid">${f("colRemarks", { help: null })}</div>
+        </fieldset>` : ""}
+        ${d.colType ? `<fieldset class="psec"${sn("PT-55")}><legend>5. Supporting Documents</legend>
           ${COL_DOCS[d.colType === "AR-v" ? d.colCategory : d.colType] ? `<p class="pt-hint"${sn("PT-54")}>Supporting-document guidance: ${COL_DOCS[d.colType === "AR-v" ? d.colCategory : d.colType].map(esc).join(" · ")}</p>` : ""}
           <div class="ffield wide"${sn("PT-08")}><span class="flabel">Supporting documents</span>
             <div><label class="btn small" for="pfAttach">${icon("clip", 15)} Add attachment</label><input type="file" id="pfAttach" multiple hidden></div>
@@ -344,7 +347,7 @@ function colDetails(d, e, f) {
   // Seized Monies and Restitution case lines, then the checkboxes, then Refund required? (Yes: raise an AR10)
   const keys = { "AR-iii": ["colDate"], "AR-iv": ["colDate", "colRef"],
     "AR-v": ["colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "ibCase", "caseStatus", "ar5RefundTo", "accusedName"] }[d.colType] || [];
-  const after = d.colType === "AR-v" ? ["ar5RefundS", "ar5Forfeit", "ar5CourtOrder", "ar5Invest", "ar5Refund"] : [];   // AR-iii decision 20: client order Refund, Forfeit to State, Court Order
+  const after = d.colType === "AR-v" ? ["ar5Forfeit", "ar5CourtOrder", "ar5RefundS", "ar5Invest", "ar5Refund"] : [];   // AR-iii decision 22 (#12): Forfeit to State, Court Order, Refund Required   // AR-iii decision 20: client order Refund, Forfeit to State, Court Order
   const lines = d.colType === "AR-v" && ["seized", "restitution"].includes(d.colCategory);
   const must = { colDate: d.colType === "AR-iii", colCategory: true };
   return `<fieldset class="psec"${sn("PT-51")}><legend>3. Collection Details</legend>
@@ -550,7 +553,7 @@ function ticketPage() {
         <h2>Details</h2>
         <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${r.form === "COL" ? "" : kv("Customer", esc(reqCustName(r)))}${r.pocName || r.pocEmail ? kv("Customer POC", esc([r.pocName, r.pocEmail].filter(Boolean).join(" · "))) : ""}${kv("Department", esc([r.department || "—", reqField("deptSubBu").choices.find(c => c[0] === r.deptSubBu)?.[1]].filter(Boolean).join(" · ")))}${r.form === "COL" ? "" : kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.contractOption === "none" ? "No contract required" : r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
           ${giro ? `${kv("GIRO", esc(giroLabel(r)))}${["giroReference", "applicantName", "applicantEmail", "applicantMobile", "giroStart", "giroEnd", "giroAmount", "giroRemarks"].filter(x => r[x]).map(x => kv(reqField(x).label, esc(r[x]))).join("")}`
-          : r.form === "COL" ? kv(reqField("colType").label, esc(r.colType || "—"))
+          : r.form === "COL" ? kv(reqField("colType").label, esc(reqField("colType").choices.find(c => c[0] === r.colType)?.[1] || r.colType || "—")) + (r.colRemarks ? kv("Remarks", esc(r.colRemarks)) : "")
           : `${kv("Billing", esc(linesLabel(r)))}${r.attnName || r.attnEmail ? kv("Attention to", esc([r.attnName, r.attnEmail].filter(Boolean).join(" · "))) : ""}${r.perPeriod ? kv("Amount per period", `<span class="mono">SGD ${fmt(r.perPeriod)}</span> before GST`) : ""}${r.invoiceTiming ? kv("Preferred invoice date", `${esc(reqField("invoiceTiming").choices.find(c => c[0] === r.invoiceTiming)?.[1] || r.invoiceTiming)}${r.expediteReason ? `<br><span class="small">${esc(r.expediteReason)}</span>` : ""}`) : ""}${reqItems(r).length ? kv("Billing line items", reqItems(r).map(it => `Item ${esc(it.seq)}: SGD ${fmt(it.total)} incl. GST`).join("<br>")) : ""}${r.giroOnContract ? kv("GIRO on contract", r.giroOnContract === "yes" ? "Yes" : "No") : ""}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
 ${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>
         ${r.details ? `<p class="small">${esc(r.details)}</p>` : ""}

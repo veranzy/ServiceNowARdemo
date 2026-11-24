@@ -44,9 +44,9 @@ The three are **one form** (D30, client request): the requester chooses AR-iii, 
           Number / WEU Number, Case Status (Case Pending / Case Closed), **Refund to** (Bailor / Accused, only when Case
           Closed), Accused Name, **Refund Required** (checkbox) (decision 20).
         - Seized Monies: table **Case lines** (`PT-59`, `x_ar_collection_case_line`: Case Number, Amount, Case Status
-          Case Pending / Case Closed; 0–99 rows; *Total Amount* `PT-61`), then checkboxes **Refund**, **Forfeit to
-          State** and **Court Order**, *Whether the seized monies are to be invested* (Yes / No) (decision 20).
-        - Restitution: table **Case lines** (Case Status choices to be confirmed, open question 14), then checkbox
+          Case Pending / Case Closed; 0–99 rows; *Total Amount* `PT-61`), then checkboxes **Forfeit to State**, **Court
+          Order** and **Refund Required** (decision 22), *Whether the seized monies are to be invested* (Yes / No) (decision 20).
+        - Restitution: table **Case lines** (Case Status Case Pending / Case Closed, decision 22), then checkbox
           **Court Order**.
         - **Refund Required** (Cash Bail) or **Refund** (Seized Monies) ticked shows *Please raise a AR10* with a link
           to the AR10 form (`PT-60`). Checkboxes stay after the case lines, not in them (decisions 19, 20).

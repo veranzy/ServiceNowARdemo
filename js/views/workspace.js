@@ -418,7 +418,7 @@ const LAYOUT = {
     // Collections form view (D30, portal: PT-49, PT-50); the rest of the form is to be defined
     ["2. Collection type", ["colType"], isCol],
     ["3. Collection Details", ["colDate", "colRef", "colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "ibCase",
-      "caseStatus", "ar5RefundTo", "accusedName", "ar5RefundS", "ar5Forfeit", "ar5CourtOrder", "ar5Invest", "ar5Refund"], isCol],
+      "caseStatus", "ar5RefundTo", "accusedName", "ar5Forfeit", "ar5CourtOrder", "ar5RefundS", "ar5Invest", "ar5Refund", "colRemarks"], isCol],
     ["4. Supporting Documents", ["@attachments"], isCol]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],

@@ -665,4 +665,7 @@ body.invprint{background:#fff;padding:0;margin:0}body.invprint .invdoc{border:0;
 .pt-modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--fg) 35%,transparent)}
 .pt-modal-box{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:18px 20px;max-width:420px;width:100%;box-shadow:0 10px 30px rgb(0 0 0 / .25)}
 .pt-modal-box h2{margin:0 0 8px;font-size:17px}.pt-modal-box p{margin:0 0 14px;font-size:14px}
+/* BSU decision 29: future enhancement marker (Suggested matches) */
+.future-note{display:flex;gap:8px;align-items:flex-start;border:1px dashed var(--warn);border-radius:8px;padding:8px 10px;margin:0 0 10px;font-size:13px;background:var(--warn-soft)}
+.tab-future{font-size:10.5px;padding:0 6px;margin-left:4px;vertical-align:1px}
 

@@ -58,6 +58,8 @@ See `SERVICENOW_MAPPING.md` (generated) for full column lists.
 
 ## Matching in the workspace (manual, decision 21)
 
+> **Release scope (decision 29):** the *Suggested* tabs and *Match* / *Match total* below are a **future enhancement**. Release 1 matches with **Allocations › New** only. The demo shows them with a *Future* badge and banner.
+
 The AR team matches each BSU deposit to one or more **issued** invoices ([CCI](../CCI/README.md)) or open
 **Collections cases** (AR-iii, AR-iv, AR-v; D28, D29, decision 11) by hand, on the **standard record pages**. There is
 no Cash application page (retired 2026-11-18, decision 21) and no auto-matching (D5).

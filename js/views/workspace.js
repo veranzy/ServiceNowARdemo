@@ -349,9 +349,9 @@ function depIdPage(m) {
     rt("Lines", "deposits", g.lines, [["Payer", p => refLink("deposits", p.id, p.payer || "—")], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap"],
       ["Amount", p => fmt(p.amount), "num"], ["Unmatched", p => fmt(depositMoney(p).unapplied), "num"], ["Match", p => depositChip(p)], ["", p => `<button type="button" class="btn small" data-open="deposits:${p.id}"${sn("UA-DEPID-line")}>Match line</button>`]],
       { id: "RL-DEPID-LINES" }),
-    rt("Suggested matches", "invoices", sug, [["Invoice or case", x => tgtLink(x.i)], ["Customer", x => esc(x.i.customer || "—")], ["Open", x => fmt(x.st.open), "num"], ["Why suggested", x => whyChips(x.sg, x.i)],
+    future(rt("Suggested matches", "invoices", sug, [["Invoice or case", x => tgtLink(x.i)], ["Customer", x => esc(x.i.customer || "—")], ["Open", x => fmt(x.st.open), "num"], ["Why suggested", x => whyChips(x.sg, x.i)],
       ["", x => `<button type="button" class="btn small" data-dmatch="${esc(g.number)}|${x.i.id}"${sn("UA-DEPID-match")}>Match total</button>`]],
-      { id: "RL-DEPID-SUG", empty: g.unmatched > 0 ? "No open invoices or Collections cases." : "All lines of this Deposit ID are matched." }),
+      { id: "RL-DEPID-SUG", intro: FUTURE_NOTE, empty: g.unmatched > 0 ? "No open invoices or Collections cases." : "All lines of this Deposit ID are matched." })),
     rt("Allocations", "allocations", allocs, [["Bank line", x => refLink("deposits", x.p.id, x.p.payer || "—")], ["Invoice or case", x => { const t = targetById(x.a.invoiceId || x.a.requestId); return t ? tgtLink(t) : "—"; }],
       ["Allocation value", x => fmt(x.a.amount), "num"]], { id: "RL-DEPID-ALC", intro: allocDelta(g.total, allocs) }),
     { key: "details", label: "Details", html: `<dl class="kv"${sn("DEPID-DET")}>${[["Deposit ID", `<span class="mono">${esc(g.number)}</span>`], ["Statement date", esc(g.statementDate)],
@@ -370,7 +370,7 @@ function depIdPage(m) {
       <div class="rw"><span class="rw-k">Lines matched</span><span class="rw-v">${g.matchedLines}/${g.lines.length}</span></div>
       <div class="rw"><span class="rw-k">Unmatched amount</span><span class="rw-v">SGD ${fmt(g.unmatched)}</span></div></div></section>
     <div class="rpane solo"><div class="rp-main">
-      <div class="rtabs" role="tablist" aria-label="Deposit ID tabs"${sn("WS-13")}>${tabs.map(x => `<button type="button" role="tab" class="rtab" data-rtab="${esc(x.key)}" aria-selected="${x === cur}">${esc(x.label)}${x.n !== undefined ? ` <span class="count">${x.n}</span>` : ""}</button>`).join("")}</div>
+      <div class="rtabs" role="tablist" aria-label="Deposit ID tabs"${sn("WS-13")}>${tabs.map(x => `<button type="button" role="tab" class="rtab" data-rtab="${esc(x.key)}" aria-selected="${x === cur}">${esc(x.label)}${x.n !== undefined ? ` <span class="count">${x.n}</span>` : ""}${futureBadge(x)}</button>`).join("")}</div>
       <div class="rtab-body">${cur.html}</div></div></div>
     ${conf ? `<div class="pt-modal" role="alertdialog" aria-modal="true" aria-labelledby="dmTitle"${sn("UA-DEPID-confirm")}><div class="pt-modal-box">
       <h2 id="dmTitle">Match ${esc(g.number)} to ${esc(conf.number)}</h2>
@@ -636,22 +636,26 @@ const whyChips = (sg, t) => [sg.ref ? `<span class="chip c-accent">Cited in refe
 /** BSU decision 22: the record's fixed amount, the sum of its allocation values, and the delta (refund or offset). */
 const allocDelta = (amount, rows) => { const v = rows.reduce((t, x) => t + x.a.amount, 0);
   return `<p class="small muted"${sn("ALC-DELTA")}>Amount <b>SGD ${fmt(amount)}</b> · Allocation value <b>SGD ${fmt(v)}</b> · Delta <b>SGD ${fmt(amount - v)}</b></p>`; };
+/** BSU decision 29: Suggested matches is a future enhancement; the tab shows a badge and a banner but stays usable for the demo. */
+const FUTURE_NOTE = `<div class="future-note"${sn("WS-FUT")}><span class="chip c-warn">Future</span> <span><b>Future enhancement:</b> not in the first release. Shown here for discussion. To match now, use Allocations › New.</span></div>`;
+const future = t => Object.assign(t, { future: true });
+const futureBadge = x => x.future ? ` <span class="chip c-warn tab-future">Future</span>` : "";
 const matchBtn = (pid, tid, from) => `<button type="button" class="btn small" data-sugmatch="${pid}:${tid}" data-alloc-from="${from}"${sn("UA-SUG-match")}>Match</button>`;   // BSU decision 22: opens New allocation to confirm
 const newAllocBtn = (from, id) => `<button type="button" class="btn small" data-new="allocations" data-alloc-from="${from}"${sn(id)}>New</button>`;
 const tgtLink = i => i.kind === "case" ? `${refLink("requests", i.id, i.number)} <span class="chip c-neutral">Collection case · ${esc(i.form)}</span>` : refLink("invoices", i.id, i.number);
 /** Deposit: ranked open invoices and Collections cases, each with a Match button (applies the default amount). */
 function depositSuggestions(rec) {
   const m = S.matches[rec.id], rows = depositMoney(rec).unapplied > 0 ? candidateList(rec, m).slice(0, 10) : [];
-  return rt("Suggested matches", "invoices", rows, [["Invoice or case", x => tgtLink(x.i)], ["Customer", x => esc(x.i.customer || "—")], ["Due", x => dueTxt(x.i)],
+  return future(rt("Suggested matches", "invoices", rows, [["Invoice or case", x => tgtLink(x.i)], ["Customer", x => esc(x.i.customer || "—")], ["Due", x => dueTxt(x.i)],
     ["Open", x => fmt(x.st.open), "num"], ["Why suggested", x => whyChips(x.sg, x.i)], ["", x => matchBtn(rec.id, x.i.id, `deposits:${rec.id}`)]],
-    { id: "RL-DEP-SUG", empty: depositMoney(rec).unapplied > 0 ? "No open invoices or Collections cases. Use Allocations › New." : "This deposit is fully matched." });
+    { id: "RL-DEP-SUG", intro: FUTURE_NOTE, empty: depositMoney(rec).unapplied > 0 ? "No open invoices or Collections cases. Use Allocations › New." : "This deposit is fully matched." }));
 }
 /** Invoice or Collections case: ranked BSU deposits with money left, each with a Match button. */
 function targetSuggestions(rec, id) {
   const t = targetById(rec.id), rows = depositCandidates(rec.id).slice(0, 10);
-  return rt("Suggested BSU deposits", "deposits", rows, [["BSU deposit", x => refLink("deposits", x.p.id, x.p.number)], ["Date", x => esc(x.p.date)], ["Payer", x => esc(x.p.payer)],
+  return future(rt("Suggested BSU deposits", "deposits", rows, [["BSU deposit", x => refLink("deposits", x.p.id, x.p.number)], ["Date", x => esc(x.p.date)], ["Payer", x => esc(x.p.payer)],
     ["Reference", x => `<span class="mono small">${esc(x.p.reference || "—")}</span>`, "wrap"], ["Left to match", x => fmt(x.left), "num"], ["Why suggested", x => whyChips(x.sg, t)], ["", x => matchBtn(x.p.id, rec.id, `${t?.kind === "case" ? "requests" : "invoices"}:${rec.id}`)]],
-    { id, empty: t && (t.kind === "case" || t.state === "issued") ? "No BSU deposits with money left to match." : "Only issued invoices can be matched." });
+    { id, intro: FUTURE_NOTE, empty: t && (t.kind === "case" || t.state === "issued") ? "No BSU deposits with money left to match." : "Only issued invoices can be matched." }));
 }
 
 /** Record tabs after Details: related items and one tab per related list (Horizon record page). */
@@ -782,7 +786,7 @@ function recordPage(tab) {
   const form = `<form class="rform" data-rform="${esc(tab.key)}" novalidate${sn(`FRM-${CODE[table]}`)}>${view}</form>`;
   // CCI 2026-11-16: customer and contract pages show every tab (no More menu)
   const MAXT = table === "customers" || table === "contracts" ? Infinity : window.innerWidth < 760 ? 2 : 5, shownT = tabs.slice(0, MAXT), moreT = tabs.slice(MAXT), curMore = moreT.includes(cur);
-  const tabBtn = x => `<button type="button" role="tab" class="rtab" data-rtab="${esc(x.key)}" aria-selected="${x === cur}">${esc(x.label)}${x.n !== undefined ? ` <span class="count">${x.n}</span>` : ""}</button>`;
+  const tabBtn = x => `<button type="button" role="tab" class="rtab" data-rtab="${esc(x.key)}" aria-selected="${x === cur}">${esc(x.label)}${x.n !== undefined ? ` <span class="count">${x.n}</span>` : ""}${futureBadge(x)}</button>`;
   const side = isNew ? [] : sidePanels(table, rec, tab);
   const sp = W().side, sOpen = sp.open && side.length, sCur = side.find(x => x.key === tab.side) || side.find(x => x.key === sideDefault(table, rec)) || side[0];
   return `<div class="page rec">

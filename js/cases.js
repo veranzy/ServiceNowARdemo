@@ -5,6 +5,7 @@
 // portal case open on the same reusable Record page.
 import { parseCSV } from "./io.js";
 import { createRequest, termsDays, draftDate, firstInvoices, journal, nextCycleDate, nextNumber, periodAmounts, periodDates, runDailyInvoiceCheck } from "./records.js";
+import { allocate } from "./matching.js";
 import { TABLES } from "./schema.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, uid } from "./util.js";
@@ -47,6 +48,44 @@ export async function loadCases() {
   return addCases(cached);
 }
 
+/** AR-iii decision 21 (demo): Collections cases for AR-iii, AR-iv and AR-v in different states. Two AR-iii totals equal an
+ *  unmatched bank line: one is already matched by AR (manual, D5), the other waits in Suggested matches. */
+function collectionCases() {
+  const users = { pm1: S.users.find(u => u.id === "u_pm1"), pm2: S.users.find(u => u.id === "u_pm2") };
+  const cc = d => S.costCentres.find(c => c.department === d && c.active)?.id || null, ac = code => S.accountCodes.find(a => a.code === code)?.id || null;
+  const acct = num => S.bankAccounts.find(a => a.number === num);
+  const loose = (num, payer, skip = 0) => S.deposits.filter(p => p.bankAccountId === acct(num)?.id && p.payer === payer && !S.matches[p.id])[skip];
+  const split = (amt, a, b) => { const x = Math.round(amt * 0.6); return [{ collectionType: a, amount: x }, { collectionType: b, amount: amt - x }]; };
+  const nets1 = loose("072-104521-6", "NETS SETTLEMENT"), nets2 = loose("072-104521-6", "NETS SETTLEMENT", 1) || loose("072-104521-6", "CASH DEPOSIT");
+  const t = isoToday(), ago = n => addDays(t, -n);
+  const gi = (u, dept, sub) => ({ form: "COL", requesterName: u.name, requesterEmail: u.email, department: dept, deptSubBu: sub, ccList: "", colOrigin: "manual", attachments: ["collection_report.pdf"] });
+  const cases = [
+    // [vals, by, opened days ago, state, assigned, match to bank line]
+    [{ ...gi(users.pm2, "Facilities", "Carparks"), colType: "AR-iii", colDate: nets1?.date || ago(6), colTx: split(nets1?.amount || 184050, "NETS", "Credit Card") }, users.pm2, 6, "work_in_progress", "u_ar1", nets1],
+    [{ ...gi(users.pm1, "Healthcare", "Clinics"), colType: "AR-iii", colDate: nets2?.date || ago(3), colTx: split(nets2?.amount || 96000, "NETS Scan/QR", "Cashcard") }, users.pm1, 3, "new", null, null],
+    [{ ...gi(users.pm2, "Infrastructure", "Roads"), colType: "AR-iv", colDate: ago(9), colRef: "RDS-RCV-2026-118",
+       colAlloc: [{ desc: "Road closure permit recovery", amount: 420000, costCentre: cc("Infrastructure"), accountCode: ac("4300") }, { desc: "Damaged signage recovery", amount: 86500, costCentre: cc("Infrastructure"), accountCode: "other", accountCodeOther: "4390 Misc recoveries" }] }, users.pm2, 9, "work_in_progress", "u_ar2", null],
+    [{ ...gi(users.pm1, "Environmental", "Waste"), colType: "AR-iv", colDate: ago(2), colRef: "ENV-W-0457",
+       colAlloc: [{ desc: "Bin rental recovery, Oct", amount: 128000, costCentre: cc("Environmental"), accountCode: ac("4200") }] }, users.pm1, 2, "new", null, null],
+    [{ ...gi(users.pm2, "Marine", "Port Works"), colType: "AR-v", colCategory: "cash_bail", ar5Date: ago(12), ar5Receipt: "G56-771204", bailAmount: 500000, bailorName: "Tan Wei Ming",
+       ibCase: "IB/2026/004417", caseStatus: "pending", accusedName: "Lim Ah Kow", ar5Refund: false }, users.pm2, 12, "work_in_progress", "u_ar1", null],
+    [{ ...gi(users.pm1, "Marine", "Offshore"), colType: "AR-v", colCategory: "seized", ar5Date: ago(8), ar5Forfeit: true, ar5CourtOrder: true, ar5Invest: "no", ar5RefundS: false,
+       ar5Lines: [{ caseNumber: "SM-2026-0081", amount: 230000, caseStatus: "pending" }, { caseNumber: "SM-2026-0082", amount: 41500, caseStatus: "case_closed" }] }, users.pm1, 8, "awaiting_requestor_info", "u_ar2", null],
+    [{ ...gi(users.pm2, "Marine", "Dredging"), colType: "AR-v", colCategory: "restitution", ar5Date: ago(4), ar5CourtOrder: true,
+       ar5Lines: [{ caseNumber: "RS-2026-0019", amount: 75000, caseStatus: "" }, { caseNumber: "RS-2026-0020", amount: 32000, caseStatus: "" }] }, users.pm2, 4, "new", null, null]
+  ];
+  const label = v => TABLES.requests.fields.find(f => f.key === "state").choices.find(x => x[0] === v)?.[1] || v;
+  for (const [vals, by, days, state, ar, line] of cases) {
+    const opened = ago(days), r = createRequest(vals, { requestedBy: by?.id, opened }), at = opened + "T09:00:00";
+    if (ar) { r.assignedTo = ar; r.state = "work_in_progress"; journal(r, "system", `Assigned to ${S.users.find(u => u.id === ar).name}.`, ar); }
+    if (state !== r.state) { r.state = state; journal(r, "system", `State changed to ${label(state)}.`, ar || by?.id); }
+    if (state === "awaiting_requestor_info") { r.substate = "awaiting_input"; journal(r, "comment", "Please attach the court order for SM-2026-0081.", ar); }
+    if (line) { allocate(line.id, r.id, null, "Matched to the AR-iii day total."); journal(r, "work_note", `BSU deposit ${line.number} (${line.payer}) matched to this case.`, ar); }
+    r.activity.forEach(e => { e.at = at; }); r.updated = opened;
+    S.history.push({ table: "requests", id: r.id, at, by: by?.id, kind: "created" });
+  }
+}
+
 /** Build cases from CSV text. Returns the number of cases added. */
 export function addCases(text) {
   const rows = parseCSV(text || ""); if (rows.length < 2) return 0;
@@ -78,6 +117,7 @@ export function addCases(text) {
     S.history.push({ table: "requests", id: r.id, at, by: r.requestedBy, kind: "created" });
     n++;
   }
+  collectionCases();   // AR-iii decision 21
   scheduleHistory();
   for (const num of CLOSED_RECURRING) {
     const r = S.requests.find(x => x.number === num), l = r && S.lines.find(x => x.requestId === r.id && x.lineType === "recurring");

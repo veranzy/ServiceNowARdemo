@@ -118,6 +118,7 @@ function portalFieldUpdated(el) {
 
 /** AR-i contract step changed: drop a prefilled bill-to (it belonged to the previous choice) and prefill again. */
 function contractChanged(d) {
+  if (d.form === "AR-ii") return;                   // AR-ii: no customer or contract step
   if (d.form === "COL") {                           // Collections: no contract step. AC-10: cost centres follow the requesting department
     const ok = id => S.costCentres.some(c => c.id === id && c.department === d.department);
     for (const r of d.colAlloc || []) if (r.costCentre && !ok(r.costCentre)) r.costCentre = "";
@@ -174,7 +175,7 @@ function bsuAction(name) {
 
 /** AR-i invoice details typed into: refresh the billing summary and contract box in place. */
 function invUpdated() {
-  const d = P().draft; if (!d || d.form === "AR-ix" || d.form === "COL") return;
+  const d = P().draft; if (!d || d.form === "AR-ix" || d.form === "COL" || d.form === "AR-ii") return;
   const swap = (id, html) => { const n = $(id); if (n) n.outerHTML = html; };
   swap("pfInvSum", invSum(d));
   const box = document.querySelector(".pt-info.ctr-box"); if (box) box.outerHTML = contractBox(d);
@@ -227,7 +228,7 @@ document.addEventListener("click", e => {
     return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? (dr.form === "AR-ix" ? null : $("pf-newCtrType")) : null)?.focus(); }
   // AR-i billing line items (multi-row variable set, AR-i decision 32)
   // Collections multi-row sets (#9: AR3 collections, AR4 allocations)
-  if (d.cradd !== undefined) { const dr = P().draft, k = d.cradd; (dr[k] ||= []).push(k === "colTx" ? { collectionType: "", amount: 0 } : k === "ar5Lines" ? { caseNumber: "", amount: 0, caseStatus: "" } : { desc: "", amount: 0, costCentre: "", accountCode: "" }); delete P().errors[k]; render(); return $(`cr-${k}-${dr[k].length - 1}-${k === "colTx" ? "collectionType" : "desc"}`)?.focus(); }
+  if (d.cradd !== undefined) { const dr = P().draft, k = d.cradd; (dr[k] ||= []).push(k === "refundTasks" ? { reason: "", casesCount: 1 } : k === "colTx" ? { collectionType: "", amount: 0 } : k === "ar5Lines" ? { caseNumber: "", amount: 0, caseStatus: "" } : { desc: "", amount: 0, costCentre: "", accountCode: "" }); delete P().errors[k]; render(); return $(`cr-${k}-${dr[k].length - 1}-${k === "colTx" ? "collectionType" : k === "refundTasks" ? "reason" : "desc"}`)?.focus(); }
   if (d.crdel !== undefined) { const [k, i] = d.crdel.split(":"); P().draft[k].splice(+i, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([x]) => !x.startsWith(`crow:${k}:`))); return render(); }
   if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ amount: 0, gstApplicable: "yes", lpiRate: 0, accountCode: "", costCenter: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
   if (d.tobok !== undefined) { delete P().tobNotice; return render(); }   // AR-i decision 43: Type of billing popup
@@ -386,6 +387,11 @@ document.addEventListener("submit", e => {
   if (f.id === "arForm") {
     const d = P().draft, errors = validateARi(d);
     if (Object.keys(errors).length) { P().errors = errors; render(); return (document.querySelector("#arForm [aria-invalid], #arForm .has-err input, #arForm .has-err .btn"))?.focus(); }
+    if (d.form === "AR-ii") {                     // AR-ii (#13): one AR2 task per row
+      const { custQ, ...vals } = d;
+      const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;
+      render(); return window.scrollTo(0, 0);
+    }
     if (d.form === "COL") {                       // Collections (D30): the tile is not stored on the case
       const { custQ, tile, ...vals } = d;
       const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;

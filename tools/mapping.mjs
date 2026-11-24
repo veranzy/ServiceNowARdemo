@@ -1,7 +1,7 @@
 // Generates SERVICENOW_MAPPING.md from js/schema.js. Run: node tools/mapping.mjs
 import { writeFileSync } from "node:fs";
 import { UI_ACTIONS } from "../js/notes.js";
-import { BANKS, RECORD_PRODUCER, RECORD_PRODUCER_ARIX, RECORD_PRODUCER_COL, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
+import { BANKS, RECORD_PRODUCER, RECORD_PRODUCER_ARIX, RECORD_PRODUCER_COL, RECORD_PRODUCER_AR2, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
 
 const refName = r => r === "users" ? "sys_user" : r === "groups" ? "sys_user_group" : TABLES[r].table;
 // Preferred section order; any table missing from it is still listed (appended), so no table is ever left out.
@@ -50,6 +50,8 @@ md += `## Portal (project team)
   - UI policies: Other purpose when Purpose = Others; location and effective start/end for Rental; car plate and parking start/end for Carpark; amount and start date mandatory for Add GIRO.
 - **Record producer "${RECORD_PRODUCER_COL.name}"** on \`${TABLES.requests.table}\` (AR-iii module, D30). Variables: ${RECORD_PRODUCER_COL.variables.map(v => `\`${TABLES.requests.fields.find(f => f.key === v).name}\``).join(", ")}.
   - Producer script: \`${RECORD_PRODUCER_COL.script}\`
+- **Record producer "${RECORD_PRODUCER_AR2.name}"** on \`${TABLES.requests.table}\` (AR-ii module, #13). Variables: ${RECORD_PRODUCER_AR2.variables.map(v => `\`${TABLES.requests.fields.find(f => f.key === v).name}\``).join(", ")}, the multi-row set *Reason for Refund* (1 to 5 rows: \`refund_reason\`, \`cases_registered\`; button *Add More*), plus attachments (Supporting documents, the Excel template).
+  - Producer script: \`${RECORD_PRODUCER_AR2.script}\`
 - **My requests**: list widget on \`${TABLES.requests.table}\` where \`opened_by = me\` **or the user's email is on the CC list** (\`watch_list\` contains me); CC'd cases are marked *CC*.
 - **Ticket page**: standard ticket conversation (comments only), field summary, attachments; requester can comment. Business rule: requester comment while *Awaiting info* sets state to *In progress*.
 - ACLs: \`${ROLES.project.role}\` create on \`${TABLES.requests.table}\` (via producer), read own records; read \`${TABLES.customers.table}\` and \`${TABLES.contracts.table}\` for reference selection; read invoice number/date/due of their own request's invoice. No workspace access.

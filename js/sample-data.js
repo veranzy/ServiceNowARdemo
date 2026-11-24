@@ -386,7 +386,7 @@ export function loadSample() {
   // Owner 2026-11-12 (UIX decision 12): every sample case is removed so the workspace only holds cases raised from
   // the latest AR-i and AR-ix forms. Customers, contracts, invoices, schedules, documents and BSU data stay, unhooked
   // from the removed cases; GIRO is Not active on every contract until AR sets it from a new AR-ix case.
-  S.requests = []; S.lines = []; S.items = []; S.colTx = []; S.colAlloc = [];
+  S.requests = []; S.lines = []; S.items = []; S.colTx = []; S.colAlloc = []; S.refundTasks = [];
   for (const i of S.invoices) Object.assign(i, { requestId: null, lineId: null });
   for (const x of S.schedules) Object.assign(x, { requestId: null, lineId: null });
   for (const d of S.documents) d.requestId = null;

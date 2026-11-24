@@ -126,7 +126,8 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `state` | State | Choice | Choices: New (`new`), Work in progress (`work_in_progress`), Awaiting requestor information (`awaiting_requestor_info`), Closed complete (`closed_complete`), Closed incomplete (`closed_incomplete`), Cancelled (`cancelled`). Mandatory. Set by AR with the dropdown on the case and Save (AR-00 decision, 2026-11-16). Assign to me moves New to Work in progress; a portal reply moves Awaiting requestor information to Work in progress |
 | `substate` | Substate | Choice | Choices: Awaiting input (`awaiting_input`), Awaiting comment (`awaiting_comment`). Shown when State = Awaiting requestor information (UI policy). Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal) |
 | `opened_by` | Requested by | Reference | → `sys_user`. Read-only on form |
-| `ar_form` | AR form | Choice | Choices: AR-i New AR request (`AR-i`), AR-ii To be defined (`AR-ii`), AR-vi To be defined (`AR-vi`), AR-vii To be defined (`AR-vii`), AR-viii To be defined (`AR-viii`), AR-ix GIRO authorisation (`AR-ix`), AR-x To be defined (`AR-x`), AR-xi To be defined (`AR-xi`), AR-xii To be defined (`AR-xii`), AR-xiii To be defined (`AR-xiii`), AR-xiv To be defined (`AR-xiv`), AR-xv To be defined (`AR-xv`), AR-xvi To be defined (`AR-xvi`), Collections (AR-iii, AR-iv, AR-v) (`COL`). Read-only on form. Collections cases: COL, with the type in collection_type (D30) |
+| `ar_form` | AR form | Choice | Choices: AR-i New AR request (`AR-i`), AR-ii Refund request (`AR-ii`), AR-vi To be defined (`AR-vi`), AR-vii To be defined (`AR-vii`), AR-viii To be defined (`AR-viii`), AR-ix GIRO authorisation (`AR-ix`), AR-x To be defined (`AR-x`), AR-xi To be defined (`AR-xi`), AR-xii To be defined (`AR-xii`), AR-xiii To be defined (`AR-xiii`), AR-xiv To be defined (`AR-xiv`), AR-xv To be defined (`AR-xv`), AR-xvi To be defined (`AR-xvi`), Collections (AR-iii, AR-iv, AR-v) (`COL`). Read-only on form. Collections cases: COL, with the type in collection_type (D30) |
+| `urgent_explanation` | Please provide an explanation on why this is an urgent request. | String (4000) | Shown when AR form = AR-ii Refund request (UI policy). AR-ii (#13): free text, optional, always shown (AR-ii decision 4). Portal help text: To explain why this request is urgent |
 | `remarks` | Remarks | String (4000) | Shown when Collection type is AR-iii Counter/UPOS Terminals, AR-iv Miscellaneous/Ad hoc, AR-v Cash Bail/Seized Monies/Restitution (UI policy). Collections section Remarks, before Supporting Documents; optional, every type (AR-iii decision 22, #12) |
 | `submission_origin` | Submission Origin | Choice | Choices: Manual (`manual`), System-generated from unreconciled bank statement (`system`). Read-only on form. Collections (#9 §6). System-managed: Manual for portal submissions; system-generated cases are a later phase (AR-iii decision 10) |
 | `collection_type` | Collection type | Choice | Choices: AR-iii Counter/UPOS Terminals (`AR-iii`), AR-iv Miscellaneous/Ad hoc (`AR-iv`), AR-v Cash Bail/Seized Monies/Restitution (`AR-v`). Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording |
@@ -388,6 +389,20 @@ AR3 rows of a Collections case (#9 §7): multi-row variable set on the Collectio
 | `collection_type` | Collection Type | Choice | Choices: Cashcard, Credit Card, NETS, NETS FlashPay, NETS Scan/QR. Mandatory |
 | `transaction_amount` | Amount | Currency | Mandatory. Positive, at most two decimals (AR-iii decisions 19, 20: replaces Number of Transactions; label Amount, #11). The rows' total is the case's Total Amount |
 
+### AR2 task — `x_ar_refund_task` (extends `task`)
+
+AR-ii (#13, AR-ii decisions 1–5): the form's multi-row variable set (1 to 5 rows: Reason for Refund, No. of cases registered). The producer script creates one AR2 task per row, parented to the AR-ii case (ar_request). AR works each task in the workspace; the case is the submission. Number prefix: `RFT`.
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `number` | Number | String | Read-only on form |
+| `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form. Parent AR-ii case (task.parent can hold the same reference) |
+| `row_number` | Row | Integer | Read-only on form |
+| `refund_reason` | Reason for Refund | Choice | Choices: A, B, C, Others (`others`). Mandatory. Choices A, B, C and Others (placeholders until the client gives the list, AR-ii open question 1) |
+| `cases_registered` | No. of cases registered | Integer | Mandatory. Whole number, at least 1. Portal help text: To indicate the volume of cases with the same refund reason |
+| `state` | State | Choice | Choices: Open (`open`), Work in progress (`work_in_progress`), Closed complete (`closed_complete`), Closed incomplete (`closed_incomplete`). Set by AR on the task. Starts Open (AR-ii decision 5) |
+| `assigned_to` | Assigned to | Reference | → `sys_user`. AR team member working the task |
+
 ### Case line — `x_ar_collection_case_line`
 
 AR5 Seized Monies and Restitution lines of a Collections case (AR-iii decision 19): multi-row variable set, copied to this table by the producer script. 0 to 99 rows (no AR5 field mandatory yet, decision 14). The Amount total is the case's Total Amount (amount). Checkboxes Forfeit / Court order and Refund required? sit on the case, after the lines.
@@ -449,6 +464,8 @@ Master data (CCI decision 11, #9 §8): account codes for AR4 allocations with th
   - UI policies: Other purpose when Purpose = Others; location and effective start/end for Rental; car plate and parking start/end for Carpark; amount and start date mandatory for Add GIRO.
 - **Record producer "Submission of Supporting Documents – Collections"** on `x_ar_request` (AR-iii module, D30). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `collection_type`, `collection_date`, `collection_reference`, `ar5_category`, `date_of_collection`, `g56_receipt_number`, `bail_amount`, `bailor_name`, `ib_case_number`, `case_status`, `ar5_refund_to`, `accused_name`, `ar5_refund`, `ar5_forfeit`, `ar5_court_order`, `ar5_to_be_invested`, `ar5_refund_required`, `remarks`.
   - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'COL'; current.collection_type = producer.collection_type; current.short_description = 'Collections – ' + collection_type; current.submission_origin = 'manual'; copies the multi-row sets to x_ar_collection_tx (AR3) / x_ar_collection_allocation (AR4); amount = AR4 allocation total or the AR5 amount (AR3: open question); current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>. Catalogue: three items (AR-iii, AR-iv, AR-v) open this producer with collection_type preset (URL parameter / default value).`
+- **Record producer "AR-ii Refund request"** on `x_ar_request` (AR-ii module, #13). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `urgent_explanation`, the multi-row set *Reason for Refund* (1 to 5 rows: `refund_reason`, `cases_registered`; button *Add More*), plus attachments (Supporting documents, the Excel template).
+  - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'AR-ii'; current.short_description = 'Refund request – ' + rows + ' reason(s)'; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; creates one x_ar_refund_task per row of the multi-row set (ar_request = the case, row_number, refund_reason, cases_registered, state = open, assignment_group = <AR team group>)`
 - **My requests**: list widget on `x_ar_request` where `opened_by = me` **or the user's email is on the CC list** (`watch_list` contains me); CC'd cases are marked *CC*.
 - **Ticket page**: standard ticket conversation (comments only), field summary, attachments; requester can comment. Business rule: requester comment while *Awaiting info* sets state to *In progress*.
 - ACLs: `x_ar.project_team` create on `x_ar_request` (via producer), read own records; read `x_ar_customer` and `x_ar_contract` for reference selection; read invoice number/date/due of their own request's invoice. No workspace access.
@@ -469,6 +486,8 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 
 | ID | Action and effect |
 |---|---|
+| `UA-PT-addrefund` | AR-ii: Add More in the Reason for Refund multi-row set (max 5 rows, AR-ii decision 3) |
+| `UA-RFT-save` | Save (update) on the AR2 task: State, Assigned to |
 | `UA-PT-addcase` | Collections AR-v Seized Monies / Restitution: + Add row in Case lines (multi-row set, max 99) |
 | `UA-PT-addcol` | Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99) |
 | `UA-PT-addalloc` | Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10) |

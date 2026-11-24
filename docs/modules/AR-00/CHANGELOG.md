@@ -8,3 +8,4 @@
 | 2026-11-17 | Form categories documented: Billing (AR-i), Collections (AR-iii, AR-iv, AR-v; D28), GIRO (AR-ix). No screen change. |
 | 2026-11-17 | Catalogue: AR-iii, AR-iv and AR-v tiles active (name *Collections*, placeholder); each opens the one Collections form with the type preselected (D30). `ar_form` gains the choice COL. |
 | 2026-11-17 | D31: Link to customer retired; AR-i and AR-ix cases get a Link section on Details. |
+| 2026-11-25 | Catalogue: AR-ii tile active (*Refund request*, AR-ii module, #13); `ar_form` gains AR-ii; AR requests menu gains All AR-ii and Open AR2 tasks. |

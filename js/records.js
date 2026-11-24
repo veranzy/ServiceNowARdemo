@@ -105,16 +105,24 @@ export const GIRO_PURPOSE = Object.fromEntries(GIRO_PURPOSES), GIRO_TYPE = Objec
 /** AR-i cases (form AR-i, or blank on older data): only these have billing lines and generate the 1st invoice. */
 export const isARi = r => !r.form || r.form === "AR-i";
 /** Collections form (AR-iii module, D30): General information, then the collection type. Shell until the owner gives the fields. */
+/** Multi-row variable set checks: row count and each row's mandatory columns. */
+function rowErrors(d, e, k, min, max) {
+  const rs = d[k] || [];
+  if (rs.length < min) e[k] = `Add at least ${min} row.`; else if (rs.length > max) e[k] = `No more than ${max} rows.`;
+  rs.forEach((r, i) => { for (const f of TABLES[k].fields.filter(x => x.mandatory && x.inRow !== false && !["requestId", "seq"].includes(x.key))) {
+    const v = r[f.key], bad = f.type === "Currency" ? !(v > 0) : f.type === "Integer" ? !(Number.isInteger(+v) && +v > 0) : !v;
+    if (bad) e[`crow:${k}:${i}:${f.key}`] = f.type === "Currency" ? "Enter an amount greater than zero." : f.type === "Integer" ? "Enter a whole number greater than zero." : `Enter the ${f.label.toLowerCase()}.`; } });
+}
+/** AR-ii Refund request (#13): General information, 1 to 5 refund rows (AR-ii decision 3). The urgent explanation and documents are optional. */
+export function validateAR2(d) {
+  const e = {}; generalInfoErrors(d, e);
+  rowErrors(d, e, "refundTasks", 1, 5);
+  return e;
+}
 export function validateCOL(d) {
   const e = {}; generalInfoErrors(d, e);
   if (!d.colType) e.colType = "Choose the collection type.";
-  const rows = (k, min, max, label) => {
-    const rs = d[k] || [];
-    if (rs.length < min) e[k] = `Add at least ${min} row.`; else if (rs.length > max) e[k] = `No more than ${max} rows.`;
-    rs.forEach((r, i) => { for (const f of TABLES[k].fields.filter(x => x.mandatory)) {
-      const v = r[f.key], bad = f.type === "Currency" ? !(v > 0) : f.type === "Integer" ? !(Number.isInteger(+v) && +v > 0) : !v;
-      if (bad) e[`crow:${k}:${i}:${f.key}`] = f.type === "Currency" ? "Enter an amount greater than zero." : f.type === "Integer" ? "Enter a whole number greater than zero." : `Enter the ${f.label.toLowerCase()}.`; } });
-  };
+  const rows = (k, min, max) => rowErrors(d, e, k, min, max);
   // AR-iii decisions 12–17 (#9 §7–9). AR-v: only the category is required (owner: no AR5 field mandatory yet)
   if (d.colType === "AR-iii") { if (!d.colDate) e.colDate = "Enter the collection date."; rows("colTx", 1, 99); }
   if (d.colType === "AR-iv") { rows("colAlloc", 1, 10);   // AR-iii decision 20: Others needs the free text
@@ -207,6 +215,7 @@ export const giroTarget = d => d.contractOption === "existing" ? (d.contractId ?
 export function validateARi(d) {
   if (d.form === "AR-ix") return validateARix(d);
   if (d.form === "COL") return validateCOL(d);
+  if (d.form === "AR-ii") return validateAR2(d);
   const e = {}, need = (k, msg) => { const v = d[k]; if (v === undefined || v === null || v === "" || v === false) e[k] = msg; };
   generalInfoErrors(d, e);
   const noCust = NO_CUSTOMER_BILLING.includes(d.typeOfBilling);   // AR-i decision 43: Type of billing 5 / 6 has no customer or contract
@@ -310,6 +319,7 @@ export const reqLines = r => S.lines.filter(l => l.requestId === r.id);
 export function linesLabel(r) {
   if (r.form === "AR-ix") return giroLabel(r);
   if (r.form === "COL") return `Collections · ${r.colType || "type not set"}`;
+  if (r.form === "AR-ii") { const n = S.refundTasks.filter(x => x.requestId === r.id).length; return `Refund · ${n} AR2 task${n === 1 ? "" : "s"}`; }
   const ls = r.lines || reqLines(r), s = linesSummary(ls);
   return [s.nOne ? `${s.nOne} one-off` : "", s.nRec ? `${s.nRec} recurring` : ""].filter(Boolean).join(" · ") || "No lines";
 }
@@ -467,7 +477,7 @@ export function journal(req, kind, text, by) {
 
 /** Record producer submit (portal AR form). `o` overrides the case header when a case is loaded from data/AR_form.csv (UIX decision 13). */
 export function createRequest(vals, o = {}) {
-  const { lines, items = [], colTx = [], colAlloc = [], ar5Lines = [], tile, ...rest } = vals;
+  const { lines, items = [], colTx = [], colAlloc = [], ar5Lines = [], refundTasks = [], tile, ...rest } = vals;
   clearHidden("requests", rest);
   const by = o.requestedBy || me().id;
   const req = { id: uid("r"), number: o.number || nextNumber("requests"), state: "new", substate: "", requestedBy: by, assignmentGroup: "g_ar", assignedTo: null,
@@ -479,6 +489,14 @@ export function createRequest(vals, o = {}) {
     req.title = `${giroLabel(req)}${req.carplate ? ` · ${req.carplate}` : req.giroLocation ? ` · ${req.giroLocation}` : ""}`;
     S.requests.push(req);
     journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : req.contractOption === "none" ? (req.contractId ? `on no-contract shell ${ctrById(req.contractId)?.number}` : `with no contract (no ${req.department} no-contract shell on file yet; AR links it)`) : `for a new contract${req.giroReference ? ` ${req.giroReference}` : ""} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
+    return req;
+  }
+  if (req.form === "AR-ii") {                         // AR-ii (#13, AR-ii decision 5): one AR2 task per row; the case is the submission
+    req.amount = 0;
+    refundTasks.forEach((x, i) => S.refundTasks.push({ id: uid("rt"), number: nextNumber("refundTasks"), requestId: req.id, seq: i + 1, reason: x.reason, casesCount: x.casesCount, state: "open", assignedTo: null }));
+    req.title = `Refund request – ${refundTasks.length} reason${refundTasks.length === 1 ? "" : "s"}`;
+    S.requests.push(req);
+    journal(req, "system", `Submitted from AR-ii on the portal: ${refundTasks.length} AR2 task${refundTasks.length === 1 ? "" : "s"} created.`, req.requestedBy);
     return req;
   }
   if (req.form === "COL") {                           // Collections (D30): no billing lines; rows copied to their tables (#9)

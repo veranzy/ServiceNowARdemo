@@ -644,6 +644,7 @@ button.ws-tab[aria-selected="true"],.ws-tab.rec.on{background:transparent;color:
 .mrvs td { vertical-align: top; }
 .mrvs input { width: 100%; min-width: 96px; }
 .mrvs td .ferr { display: block; }
+.mrvs th .desc { display: block; text-transform: none; letter-spacing: 0; font-family: inherit; font-weight: 400; color: var(--muted); }
 .mrvs tfoot th, .mrvs tfoot td { border-top: 1px solid var(--line); }
 .radios{display:flex;gap:16px;flex-wrap:wrap}.radios .fcheck{font-weight:400}
 /* Invoice preview (CCI decision 13): an A4-like document; always dark text on white, also in dark mode and print */

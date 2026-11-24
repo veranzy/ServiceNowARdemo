@@ -86,6 +86,19 @@ function collectionCases() {
   }
 }
 
+/** AR-ii (#13, demo): one refund request with three reasons; AR has started on the first AR2 task. */
+function refundCases() {
+  const pm = S.users.find(u => u.id === "u_pm1"); if (!pm) return;
+  const opened = addDays(isoToday(), -2), at = opened + "T10:00:00";
+  const r = createRequest({ form: "AR-ii", requesterName: pm.name, requesterEmail: pm.email, department: "Facilities", deptSubBu: "Property Management", ccList: "", attachments: ["refund_template_Nov.xlsx"],
+    urgentReason: "Tenants are waiting for the deposit refunds before the end of the month.",
+    refundTasks: [{ reason: "A", casesCount: 3 }, { reason: "B", casesCount: 1 }, { reason: "others", casesCount: 2 }] }, { requestedBy: pm.id, opened });
+  r.assignedTo = "u_ar1"; r.state = "work_in_progress"; journal(r, "system", "Assigned to " + (S.users.find(u => u.id === "u_ar1")?.name || "AR") + ".", "u_ar1");
+  const t1 = S.refundTasks.find(x => x.requestId === r.id && x.seq === 1); if (t1) Object.assign(t1, { state: "work_in_progress", assignedTo: "u_ar1" });
+  r.activity.forEach(e => { e.at = at; }); r.updated = opened;
+  S.history.push({ table: "requests", id: r.id, at, by: pm.id, kind: "created" });
+}
+
 /** Build cases from CSV text. Returns the number of cases added. */
 export function addCases(text) {
   const rows = parseCSV(text || ""); if (rows.length < 2) return 0;
@@ -118,6 +131,7 @@ export function addCases(text) {
     n++;
   }
   collectionCases();   // AR-iii decision 21
+  refundCases();       // AR-ii (#13)
   scheduleHistory();
   for (const num of CLOSED_RECURRING) {
     const r = S.requests.find(x => x.number === num), l = r && S.lines.find(x => x.requestId === r.id && x.lineType === "recurring");

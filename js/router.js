@@ -52,7 +52,7 @@ export function applyRoute(hash) {
     S.ui.persona = "project";
     const p = S.ui.portal; p.errors = {};
     if (a === "forms" || a === "requests") { p.page = a; return null; }
-    if (a === "form") { p.page = "form"; p.formCode = ["AR-ix", "AR-iii", "AR-iv", "AR-v"].includes(b) ? b : "AR-i"; return null; }
+    if (a === "form") { p.page = "form"; p.formCode = ["AR-ii", "AR-ix", "AR-iii", "AR-iv", "AR-v"].includes(b) ? b : "AR-i"; return null; }
     if (a === "ticket") {
       const r = findRec("requests", b);
       if (r) { p.page = "ticket"; p.id = r.id; return null; }

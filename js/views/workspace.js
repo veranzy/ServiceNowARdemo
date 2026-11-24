@@ -130,6 +130,14 @@ const LISTS = {
     text: m => [m.name, m.prefix, m.suffix, acctLabel(acctById(m.bankAccountId))].join(" "), newable: true
   },
   // Master data for the Collections form (CCI decision 11, #9 §8)
+  // AR-ii decision 5: one AR2 task per row of the AR-ii form; the case is the submission
+  refundTasks: {
+    filters: { open: ["Open AR2 tasks", x => ["open", "work_in_progress"].includes(x.state)], all: ["All AR2 tasks", () => true] },
+    cols: [["Number", x => refLink("refundTasks", x.id, x.number), "", "number"], ["AR request", x => refLink("requests", x.requestId, recById("requests", x.requestId)?.number), "", "requestId"],
+      ["Reason for Refund", x => esc(rftLabel("reason", x.reason)), "", "reason"], ["No. of cases registered", x => esc(x.casesCount), "num", "casesCount"],
+      ["State", x => rftChip(x), "", "state"], ["Assigned to", x => esc(userById(x.assignedTo)?.name || "—"), "", "assignedTo"]],
+    sort: (a, b) => String(b.number).localeCompare(String(a.number)), text: x => [x.number, recById("requests", x.requestId)?.number, rftLabel("reason", x.reason)].join(" ")
+  },
   costCentres: {
     filters: { all: ["Cost centres", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
     cols: [["Code", c => refLink("costCentres", c.id, c.code), "", "code"], ["Name", c => esc(c.name), "wrap", "name"], ["Department", c => esc(c.department), "", "department"], ["Active", c => c.active ? "Yes" : "No", "", "active"]],
@@ -180,6 +188,7 @@ export const REQ_FORM_LISTS = [
   // Owner 2026-11-16: All (open and closed) instead of Open, so closed demo cases such as ARQ0001009 can be found
   { form: "AR-i", filter: "all_ari", label: "All AR-i", note: "LST-REQ-ARI", cols: [...REQ_COLS_DEFAULT] },
   { form: "AR-ix", filter: "all_arix", label: "All AR-ix", note: "LST-REQ-ARIX", cols: [...REQ_COLS_DEFAULT] },
+  { form: "AR-ii", filter: "all_arii", label: "All AR-ii", note: "LST-REQ-AR2", cols: [...REQ_COLS_DEFAULT] },   // AR-ii (#13)
   // D30: one list for the Collections form (AR-iii, AR-iv, AR-v); the Form column shows the collection type
   { form: "COL", filter: "all_col", label: "All Collections", note: "LST-REQ-COL", cols: [...REQ_COLS_DEFAULT] }
 ];
@@ -192,7 +201,7 @@ export function filterOf(table, f) {
 }
 
 const MENU = [
-  ["AR requests", REQ_FORM_LISTS.map(l => ["requests", l.filter])],   // UIX decision 15: one open list per AR form
+  ["AR requests", [...REQ_FORM_LISTS.map(l => ["requests", l.filter]), ["refundTasks", "open"]]],   // AR-ii decision 5: Open AR2 tasks   // UIX decision 15: one open list per AR form
   // UIX decision 17: no Recurring billing group; schedules are reached from the contract
   ["Invoices", [["invoices", "draft"], ["invoices", "open"], ["invoices", "overdue"], ["invoices", "all"]]],
   ["Bank statements", [["uploads", "all"], ["deposits", "all"], ["bankAccounts", "all"], ["paymentModes", "all"]]],   // BSU decision 25: Statement uploads, Bank lines
@@ -390,13 +399,17 @@ export function splitPlan(g, t) {
 }
 
 // ---------- record pages ----------
-const has = k => r => !!r[k], not = k => r => !r[k], isIx = r => r.form === "AR-ix", isI = r => isARi(r), isCol = r => r.form === "COL";
+const has = k => r => !!r[k], not = k => r => !r[k], isIx = r => r.form === "AR-ix", isI = r => isARi(r), isCol = r => r.form === "COL", isAR2 = r => r.form === "AR-ii";
+/** AR2 task choice label and state chip (AR-ii). */
+const rftLabel = (k, v) => TABLES.refundTasks.fields.find(f => f.key === k).choices.find(c => c[0] === v)?.[1] || v || "—";
+const rftChip = x => `<span class="chip ${x.state === "closed_complete" ? "c-ok" : x.state === "closed_incomplete" ? "c-bad" : x.state === "work_in_progress" ? "c-accent" : "c-neutral"}">${esc(rftLabel("state", x.state))}</span>`;
 const LAYOUT = {
   // Case page Details = one form view per AR form (UIX decision 12): the portal form's sections, same names and order, every field shown (empty when not answered)
   // AR-00 2026-11-16: State is a dropdown with Substate under it; Assignment group above Assigned to
   requests: [["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened", "amount"], isI],
     ["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened"], isIx],
     ["Case", ["form", "colOrigin", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened", "amount"], isCol],
+    ["Case", ["form", "state", "substate", "requestedBy", "assignmentGroup", "assignedTo", "opened"], isAR2],
     // D31: Link section right after Case. AR links the case to master data set up by hand (Link to customer retired)
     ["Link", ["linkCustomer", "linkContract"], isI],
     ["Link", ["linkContract"], isIx],
@@ -419,7 +432,11 @@ const LAYOUT = {
     ["2. Collection type", ["colType"], isCol],
     ["3. Collection Details", ["colDate", "colRef", "colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "ibCase",
       "caseStatus", "ar5RefundTo", "accusedName", "ar5Forfeit", "ar5CourtOrder", "ar5RefundS", "ar5Invest", "ar5Refund", "colRemarks"], isCol],
-    ["4. Supporting Documents", ["@attachments"], isCol]],
+    ["4. Supporting Documents", ["@attachments"], isCol],
+    // AR-ii form view (portal: PT-65, PT-66, PT-67); the rows are the AR2 tasks tab
+    ["2. Reason for Refund", ["urgentReason"], isAR2],
+    ["3. Supporting documents", ["@attachments"], isAR2]],
+  refundTasks: [["AR2 task", ["number", "requestId", "seq", "reason", "casesCount", "state", "assignedTo"]]],
   lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
     ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
   invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
@@ -443,7 +460,7 @@ const LAYOUT = {
   schedules: [["Billing schedule", ["number", "contractId", "customerId", "department", "desc", "frequency", "amount", "firstDate", "lastDate", "firstAmount", "lastAmount", "requestId"]]],
 };
 /** Fields AR can't edit on the workspace form (set by the portal or by UI actions). */
-const RO = { requests: ["form", "customerId", "contractId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast", "giroType"], lines: ["lineType"] };
+const RO = { refundTasks: ["reason", "casesCount"], requests: ["form", "customerId", "contractId", "newCustomer", "newCustName", "newCustUen", "newCustAddress", "billToName", "billToEmail", "billToPhone", "billToAddress", "contractOption", "newCtrType", "newCtrNumber", "newCtrRef", "newCtrPo", "newCtrTitle", "newCtrStart", "newCtrEnd", "newCtrValue", "newCtrCycle", "newCtrCycleOther", "newCtrInvDate", "newCtrTerms", "newCtrTermsOther", "newCtrProrate", "newCtrProFirst", "newCtrProLast", "giroType"], lines: ["lineType"] };
 
 function editable(table, rec) {
   if (table === "requests") return REQ_OPEN.includes(rec.state);
@@ -462,7 +479,7 @@ function headerFields(table, rec) {
   const hf = (k, v) => `<div class="hf"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
   // Common case header (UIX decision 16): the same fields on every form, plus the form's own identity
   if (table === "requests") {
-    const id = isCol(rec) ? [hf("Collection type", esc(rec.colType || "—"))]
+    const id = isCol(rec) ? [hf("Collection type", esc(rec.colType || "—"))] : isAR2(rec) ? []
       : [hf("Customer", rec.customerId ? refLink("customers", rec.customerId) : `${esc(rec.newCustName || "—")} <span class="chip c-warn">New</span>`),
         hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : rec.contractOption === "new" ? `${esc((isIx(rec) ? rec.giroReference : rec.newCtrNumber) || "—")} <span class="chip c-warn">${isIx(rec) ? "Not linked" : "New"}</span>` : rec.contractOption === "none" ? `<span class="chip c-warn">No contract</span>` : "—")];
     return [hf("State", reqChip(rec)), hf("Form", `${esc(isCol(rec) ? "Collections" : rec.form || "AR-i")} · ${esc(linesLabel(rec))}`), ...id, hf("Department", esc(rec.department || "—")),
@@ -476,6 +493,7 @@ function headerFields(table, rec) {
   if (table === "contracts") { const r = rollup(S.invoices.filter(i => i.contractId === rec.id && i.state === "issued"));
     return [hf("Type", ctrTypeChip(rec)), hf("Status", ctrStatusChip(rec)), hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department || "—")), hf("Bill-to", esc(rec.billToName || "Not set")), hf("GIRO", giroChip(rec))]; }
   if (table === "schedules") return [hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)), hf("Frequency", esc(freqLabel(rec.frequency))), hf("Department", esc(rec.department))];
+  if (table === "refundTasks") return [hf("State", rftChip(rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Reason for Refund", esc(rftLabel("reason", rec.reason))), hf("Assigned to", esc(userById(rec.assignedTo)?.name || "Unassigned"))];
   if (table === "lines") return [hf("Type", esc(LINE_TYPE[rec.lineType])), hf("Status", lineChip(rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : "Set by Link Contract Reference")];
   if (table === "contacts") return [hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department)), hf("Email", esc(rec.email || "—"))];
   if (table === "documents") return [hf("Customer", refLink("customers", rec.customerId)), hf("Type", esc(DOC_LABEL[rec.docType])), hf("Received", esc(rec.received)), hf("From request", refLink("requests", rec.requestId))];
@@ -491,6 +509,10 @@ function ribbon(table, rec, tab) {
     const k = rec.contractId ? ctrById(rec.contractId) : null, cur = activeGiroCase(k);
     ws = [w("GIRO", esc(giroLabel(rec)), esc(rec.carplate || rec.giroLocation || rec.giroPurposeOther || "")), w("Amount", rec.giroAmount ? esc(rec.giroAmount) : "—"),
       w("Contract", k ? esc(k.number) : `<span class="bad">Not linked</span>`, k ? (cur ? `GIRO active from ${esc(cur.number)}${cur.id === rec.id ? " (this case)" : ""}` : "GIRO not active") : `Reference given: ${esc(rec.giroReference || "—")}`)];
+  } else if (table === "requests" && isAR2(rec)) {   // AR-ii: progress of the AR2 tasks
+    const ts = S.refundTasks.filter(x => x.requestId === rec.id), done = ts.filter(x => x.state.startsWith("closed")).length;
+    ws = [w("AR2 tasks closed", `${done} of ${ts.length}`, done === ts.length && ts.length ? "Every AR2 task closed" : "Work each AR2 task", bar(done, ts.length, "var(--ok)")),
+      w("Cases registered", String(ts.reduce((n, x) => n + (+x.casesCount || 0), 0)), `${ts.length} reason${ts.length === 1 ? "" : "s"}`)];
   } else if (table === "requests" && isCol(rec)) {
     const matched = Object.values(S.matches).filter(m => m && m.status === "accepted").flatMap(m => m.allocations).filter(a => a.requestId === rec.id).reduce((s, a) => s + a.amount, 0);
     ws = [w("Collection type", esc(rec.colType || "—")), w("Total Amount", `SGD ${fmt(rec.amount)}`), w("BSU deposits matched", `SGD ${fmt(matched)}`, rec.amount ? `${fmt(Math.max(0, rec.amount - matched))} still to match` : "", bar(matched, rec.amount, "var(--ok)"))];
@@ -670,6 +692,11 @@ function related(table, rec) {
     for (const [pid, m] of Object.entries(S.matches)) { if (!m || m.status !== "accepted") continue; for (const a of m.allocations) if (a.requestId === rec.id) rows.push({ pid, a, m }); }
     return [...extra, rt("BSU deposits matched", "allocations", rows, [["BSU deposit", x => refLink("deposits", x.pid, recById("deposits", x.pid)?.number)], ["Payer", x => esc(recById("deposits", x.pid)?.payer || "")], ["Allocation value", x => fmt(x.a.amount), "num"], ["Note", x => esc(x.m.reason || ""), "wrap"]], { id: "RL-REQ-ALC", intro: allocDelta(rec.amount || 0, rows), actions: REQ_OPEN.includes(rec.state) && invoiceState(targetById(rec.id)).open > 0 ? newAllocBtn(`requests:${rec.id}`, "UA-REQ-newalloc") : "" }), targetSuggestions(rec, "RL-REQ-SUG")];
   }
+  if (table === "requests" && isAR2(rec)) {   // AR-ii decision 5: one AR2 task per row
+    const ts = S.refundTasks.filter(x => x.requestId === rec.id).sort((a, b) => a.seq - b.seq);
+    return [rt("AR2 tasks", "refundTasks", ts, [["Number", x => refLink("refundTasks", x.id, x.number)], ["Row", x => String(x.seq), "num"], ["Reason for Refund", x => esc(rftLabel("reason", x.reason))],
+      ["No. of cases registered", x => esc(x.casesCount), "num"], ["State", x => rftChip(x)], ["Assigned to", x => esc(userById(x.assignedTo)?.name || "—")]], { id: "RL-REQ-RFT" })];
+  }
   if (table === "requests" && isIx(rec)) {
     return rec.contractId ? [giroHistory(ctrById(rec.contractId), "REQ-GIROHIST")] : [];
   }
@@ -777,12 +804,12 @@ function recordPage(tab) {
   const title = isNew ? `New ${def.label.toLowerCase()}` : displayOf(table, rec);
   const sub = table === "requests" ? rec.title : table === "invoices" ? rec.desc : table === "contracts" ? rec.title : table === "deposits" ? `${rec.payer} · ${acctLabel(acctById(rec.bankAccountId))}`
     : table === "uploads" ? `${acctLabel(acctById(rec.bankAccountId))} · statement ${rec.statementDate}` : table === "bankAccounts" ? rec.name
-    : table === "schedules" ? rec.desc : table === "lines" ? rec.desc : table === "contacts" ? `${custName(rec.customerId)} · ${rec.department}` : table === "documents" ? `${custName(rec.customerId)} · ${DOC_LABEL[rec.docType]}` : rec.parent ? `Part of ${rec.parent}` : "";
+    : table === "schedules" ? rec.desc : table === "lines" ? rec.desc : table === "refundTasks" ? `${recById("requests", rec.requestId)?.number || ""} · row ${rec.seq}` : table === "contacts" ? `${custName(rec.customerId)} · ${rec.department}` : table === "documents" ? `${custName(rec.customerId)} · ${DOC_LABEL[rec.docType]}` : rec.parent ? `Part of ${rec.parent}` : "";
   // Horizon record page: header (title, presence, UI action bar, label-value pairs) › ribbon › resizable pane (record tabs | contextual side bar)
   const tabs = table === "uploads" && !isNew ? [...related(table, rec), { key: "details", label: "Details" }, historyTab(table, rec)]   // BSU decision 24: lines first
     : [{ key: "details", label: "Details" }, ...(isNew ? [] : [...related(table, rec), historyTab(table, rec)])];
   const cur = tabs.find(x => x.key === tab.sub) || tabs[0];
-  const view = table === "requests" ? `<div${sn(isIx(rec) ? "REQ-FV-ARIX" : isCol(rec) ? "REQ-FV-COL" : "REQ-FV-ARI")}>${sections}</div>` : sections;
+  const view = table === "requests" ? `<div${sn(isIx(rec) ? "REQ-FV-ARIX" : isCol(rec) ? "REQ-FV-COL" : isAR2(rec) ? "REQ-FV-AR2" : "REQ-FV-ARI")}>${sections}</div>` : sections;
   const form = `<form class="rform" data-rform="${esc(tab.key)}" novalidate${sn(`FRM-${CODE[table]}`)}>${view}</form>`;
   // CCI 2026-11-16: customer and contract pages show every tab (no More menu)
   const MAXT = table === "customers" || table === "contracts" ? Infinity : window.innerWidth < 760 ? 2 : 5, shownT = tabs.slice(0, MAXT), moreT = tabs.slice(MAXT), curMore = moreT.includes(cur);

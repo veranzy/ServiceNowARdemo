@@ -33,12 +33,13 @@ export const DEPT_SUB_BUS = DEPARTMENTS.flatMap(d => SUB_BU_NAMES[d].map((n, i) 
 export const COLLECTION_TILES = ["AR-iii", "AR-iv", "AR-v"];
 export const COLLECTIONS_FORM = "COL";
 export const AR_FORMS = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii", "xiv", "xv", "xvi"].map((r, n) => ({
-  code: `AR-${r}`, name: n === 0 ? "New AR request" : n === 1 ? "Refund request" : n === 8 ? "GIRO authorisation" : n >= 2 && n <= 4 ? "Submission of Supporting Documents – Collections" : "To be defined",
+  code: `AR-${r}`, name: n === 0 ? "New AR request" : n === 1 ? "Refund request" : n === 9 ? "Refund (payment / journal)" : n === 8 ? "GIRO authorisation" : n >= 2 && n <= 4 ? "Submission of Supporting Documents – Collections" : "To be defined",
   desc: n === 0 ? "Bill a customer: one-off and recurring lines, new or existing customer. Customer documents are given once."
-    : n === 1 ? "Request refunds with the Excel template: one row per refund reason. Each row becomes an AR2 task."
+    : n === 1 ? "Request refunds with the Excel template. Each Excel row becomes an AR2 task."
+    : n === 9 ? "Refund by payment to a beneficiary / vendor, or by journal (forfeiture to state, reclassification), with the AR10 Excel template."
     : n === 8 ? "Add or remove GIRO (direct debit) on a contract: rental, carpark or other charges."
     : n >= 2 && n <= 4 ? "Money collected without an invoice. One form for AR-iii, AR-iv and AR-v." : "Form not yet specified.",
-  active: n === 0 || n === 1 || n === 8 || (n >= 2 && n <= 4)
+  active: n === 0 || n === 1 || n === 8 || n === 9 || (n >= 2 && n <= 4)
 }));
 /** AR-ii Reason for Refund (AR-ii decision 2): placeholders A / B / C until the client gives the list; Others last. */
 export const REFUND_REASONS = [["A", "A"], ["B", "B"], ["C", "C"], ["others", "Others"]];
@@ -95,8 +96,10 @@ export const TABLES = {
       { key: "substate", name: "substate", label: "Substate", type: "Choice", choices: SUBSTATE_REQ, showIf: { key: "state", eq: "awaiting_requestor_info" }, help: "Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal)" },
       { key: "requestedBy", name: "opened_by", label: "Requested by", type: "Reference", ref: "users", readonly: true },
       { key: "form", name: "ar_form", label: "AR form", type: "Choice", choices: [...AR_FORMS.filter(f => !COLLECTION_TILES.includes(f.code)).map(f => [f.code, `${f.code} ${f.name}`]), ["COL", "Collections (AR-iii, AR-iv, AR-v)"]], readonly: true, help: "Collections cases: COL, with the type in collection_type (D30)" },
-      { key: "urgentReason", name: "urgent_explanation", label: "Please provide an explanation on why this is an urgent request.", type: "String (4000)", wide: true, showIf: { key: "form", eq: "AR-ii" }, help: "AR-ii (#13): free text, optional, always shown (AR-ii decision 4). Portal help text: To explain why this request is urgent" },
-      { key: "colRemarks", name: "remarks", label: "Remarks", type: "String (4000)", wide: true, showIf: { key: "colType", in: ["AR-iii", "AR-iv", "AR-v"] }, help: "Collections section Remarks, before Supporting Documents; optional, every type (AR-iii decision 22, #12)" },
+      { key: "urgentReason", name: "urgent_explanation", label: "Please provide an explanation on why this is an urgent request.", type: "String (4000)", wide: true, help: "AR-ii (#13): free text, optional, always shown (AR-ii decision 4); portal help text: To explain why this request is urgent. AR-x (#14): shown and mandatory only when Expedited = Yes (UI policy; AR-x decision 4)" },
+      { key: "ar10Expedited", name: "expedited", label: "Expedited", type: "Choice", choices: YES_NO, showIf: { key: "form", eq: "AR-x" }, help: "AR-x (#14): Yes / No, default No. Yes shows the urgent explanation, mandatory (AR-x decision 4)" },
+      { key: "ar10Ack", name: "acknowledgement", label: "I confirm the information above is correct.", type: "True/False", showIf: { key: "form", eq: "AR-x" }, help: "AR-x (#14): acknowledgement checkbox, optional (AR-x decision 5). Wording is a placeholder (AR-x open question 2)" },
+      { key: "colRemarks", name: "remarks", label: "Remarks", type: "String (4000)", wide: true, help: "Optional free text. Collections: section 4. Remarks, every type, before Supporting Documents (AR-iii decision 22, #12). AR-x: section 4. Remarks (#14)" },
       { key: "colOrigin", name: "submission_origin", label: "Submission Origin", type: "Choice", choices: [["manual", "Manual"], ["system", "System-generated from unreconciled bank statement"]], readonly: true, help: "Collections (#9 §6). System-managed: Manual for portal submissions; system-generated cases are a later phase (AR-iii decision 10)" },
       { key: "colType", name: "collection_type", label: "Collection type", type: "Choice", choices: COLLECTION_TYPES, help: "Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording" },
       // Collections section 3. Collection Details (#9 §7–9; AR-iii decisions 12–17). AR5 fields: none mandatory (owner, decision 14)
@@ -368,17 +371,54 @@ export const TABLES = {
       { key: "amount", name: "transaction_amount", label: "Amount", type: "Currency", mandatory: true, help: "Positive, at most two decimals (AR-iii decisions 19, 20: replaces Number of Transactions; label Amount, #11). The rows' total is the case's Total Amount" }
     ]
   },
-  refundTasks: {
-    table: `${SCOPE}_refund_task`, label: "AR2 task", plural: "AR2 tasks", extends: "task", display: "number", prefix: "RFT",
-    note: "AR-ii (#13, AR-ii decisions 1–5): the form's multi-row variable set (1 to 5 rows: Reason for Refund, No. of cases registered). The producer script creates one AR2 task per row, parented to the AR-ii case (ar_request). AR works each task in the workspace; the case is the submission.",
+  refundReasons: {
+    table: `${SCOPE}_refund_reason`, label: "Refund reason", plural: "Reason for Refund", display: "seq",
+    note: "AR-ii (#13, AR-ii decisions 2, 3, 7): the form's multi-row variable set (1 to 5 rows), copied to this table by the producer script as a summary on the case. No tasks are made from it (AR2 tasks come from the Excel, decision 6).",
     fields: [
-      { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "RFT0001000", inRow: false },
-      { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true, help: "Parent AR-ii case (task.parent can hold the same reference)" },
+      { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
       { key: "seq", name: "row_number", label: "Row", type: "Integer", readonly: true },
       { key: "reason", name: "refund_reason", label: "Reason for Refund", type: "Choice", choices: REFUND_REASONS, mandatory: true, help: "Choices A, B, C and Others (placeholders until the client gives the list, AR-ii open question 1)" },
-      { key: "casesCount", name: "cases_registered", label: "No. of cases registered", type: "Integer", mandatory: true, help: "Whole number, at least 1. Portal help text: To indicate the volume of cases with the same refund reason" },
-      { key: "state", name: "state", label: "State", type: "Choice", choices: REFUND_TASK_STATES, inRow: false, help: "Set by AR on the task. Starts Open (AR-ii decision 5)" },
-      { key: "assignedTo", name: "assigned_to", label: "Assigned to", type: "Reference", ref: "users", inRow: false, help: "AR team member working the task" }
+      { key: "casesCount", name: "cases_registered", label: "No. of cases registered", type: "Integer", mandatory: true, help: "Whole number, at least 1. Portal help text: To indicate the volume of cases with the same refund reason" }
+    ]
+  },
+  refundTasks: {
+    table: `${SCOPE}_refund_task`, label: "AR2 task", plural: "AR2 tasks", extends: "task", display: "number", prefix: "RFT",
+    note: "AR-ii (#15, AR-ii decision 6): one AR2 task per filled row of the AR2 Excel template attached to the form. On submit the Excel is processed (import set on the attachment → transform into this table), parented to the AR-ii case (ar_request). Columns are the template's, in its wording. AR works each task in the workspace.",
+    fields: [
+      { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "RFT0001000" },
+      { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true, help: "Parent AR-ii case (task.parent can hold the same reference)" },
+      { key: "seq", name: "row_number", label: "S/N", type: "Integer", readonly: true, help: "Row of the Excel (1, 2, 3…)" },
+      { key: "collectionRef", name: "collection_reference", label: "Collection reference No. (e.g. Reciept No.)", type: "String", readonly: true, help: "From the Excel (template wording kept as given, #15)" },
+      { key: "reason", name: "refund_reason", label: "Refund Reason", type: "String", readonly: true, help: "From the Excel (free text in the sample; dropdown list to be confirmed, AR-ii open question 1)" },
+      { key: "amount", name: "amount", label: "Amount ($)", type: "Currency", readonly: true, help: "From the Excel" },
+      { key: "caseRef", name: "case_reference", label: "Case Reference No. (if applicable)", type: "String", readonly: true, help: "From the Excel" },
+      { key: "payee", name: "payee_name", label: "Name of Payee", type: "String", readonly: true, help: "From the Excel" },
+      { key: "nonSgd", name: "amount_not_sgd", label: "If amount for refund is not in SGD (if applicable)", type: "String", readonly: true, help: "From the Excel, free text (e.g. USD 31.20)" },
+      { key: "state", name: "state", label: "State", type: "Choice", choices: REFUND_TASK_STATES, help: "Set by AR on the task. Starts Open (AR-ii decision 5)" },
+      { key: "assignedTo", name: "assigned_to", label: "Assigned to", type: "Reference", ref: "users", help: "AR team member working the task" }
+    ]
+  },
+  ar10Payees: {
+    table: `${SCOPE}_ar10_payee`, label: "Payee and amount", plural: "Payee and amount", display: "seq",
+    note: "AR-x (#14, AR-x decision 2): the form's multi-row variable set (payee and amount typed by the requester), copied to this table by the producer script. AR checks the AR10 tasks (from the Excel) against these rows.",
+    fields: [
+      { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
+      { key: "seq", name: "row_number", label: "Row", type: "Integer", readonly: true },
+      { key: "payee", name: "payee_name", label: "Name of Beneficiary /Vendor", type: "String", mandatory: true },
+      { key: "amount", name: "amount", label: "Amount (SGD)", type: "Currency", mandatory: true, help: "Positive, at most two decimals" }
+    ]
+  },
+  ar10Tasks: {
+    table: `${SCOPE}_ar10_task`, label: "AR10 task", plural: "AR10 tasks", extends: "task", display: "number", prefix: "PYT",
+    note: "AR-x (#14, AR-x decision 3): one AR10 task per filled row of the AR10 Excel template attached to the form (import set on the attachment → transform). The task keeps the payee and the amount: payment rows use Name of Beneficiary /Vendor and the payment Amount (SGD); journal rows (forfeiture to state, reclassification) have no payee and use the journal Amount (SGD).",
+    fields: [
+      { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "PYT0001000" },
+      { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true, help: "Parent AR-x case" },
+      { key: "seq", name: "row_number", label: "S/N", type: "Integer", readonly: true, help: "Row of the Excel (1, 2, 3…)" },
+      { key: "payee", name: "payee_name", label: "Name of Beneficiary /Vendor", type: "String", readonly: true, help: "From the Excel; empty on journal rows" },
+      { key: "amount", name: "amount", label: "Amount (SGD)", type: "Currency", readonly: true, help: "From the Excel" },
+      { key: "state", name: "state", label: "State", type: "Choice", choices: REFUND_TASK_STATES, help: "Set by AR on the task. Starts Open (AR-x decision 3)" },
+      { key: "assignedTo", name: "assigned_to", label: "Assigned to", type: "Reference", ref: "users", help: "AR team member working the task" }
     ]
   },
   ar5Lines: {
@@ -591,12 +631,20 @@ export const RECORD_PRODUCER_COL = {
   rowSets: ["colTx", "colAlloc", "ar5Lines"],
   script: "current.opened_by = gs.getUserID(); current.ar_form = 'COL'; current.collection_type = producer.collection_type; current.short_description = 'Collections – ' + collection_type; current.submission_origin = 'manual'; copies the multi-row sets to x_ar_collection_tx (AR3) / x_ar_collection_allocation (AR4); amount = AR4 allocation total or the AR5 amount (AR3: open question); current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>. Catalogue: three items (AR-iii, AR-iv, AR-v) open this producer with collection_type preset (URL parameter / default value)."
 };
-/** AR-ii Refund request (AR-ii module, #13): General information, the refund rows, the urgent explanation, supporting documents. */
+/** AR-ii Refund request (AR-ii module, #13, #15): General information, the refund reason rows, the urgent explanation, supporting documents with the Excel. */
 export const RECORD_PRODUCER_AR2 = {
   name: "AR-ii Refund request",
   table: "requests",
   variables: [...GENERAL_INFO, "urgentReason"],
-  rowSets: ["refundTasks"],
-  script: "current.opened_by = gs.getUserID(); current.ar_form = 'AR-ii'; current.short_description = 'Refund request – ' + rows + ' reason(s)'; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; creates one x_ar_refund_task per row of the multi-row set (ar_request = the case, row_number, refund_reason, cases_registered, state = open, assignment_group = <AR team group>)"
+  rowSets: ["refundReasons"],
+  script: "current.opened_by = gs.getUserID(); current.ar_form = 'AR-ii'; current.short_description = 'Refund request – ' + rows + ' reason(s)'; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; copies the multi-row set to x_ar_refund_reason; processes the attached AR2 Excel (import set → transform) into one x_ar_refund_task per filled row (ar_request = the case, state = open, assignment_group = <AR team group>)"
 };
-export const RECORD_PRODUCERS = [RECORD_PRODUCER, RECORD_PRODUCER_ARIX, RECORD_PRODUCER_COL, RECORD_PRODUCER_AR2];
+/** AR-x AR10 refund, payment or journal (AR-x module, #14): payee and amount rows, Expedited with the urgent explanation, Remarks, acknowledgement, supporting documents with the Excel. */
+export const RECORD_PRODUCER_AR10 = {
+  name: "AR-x Refund (payment / journal)",
+  table: "requests",
+  variables: [...GENERAL_INFO, "ar10Expedited", "urgentReason", "colRemarks", "ar10Ack"],
+  rowSets: ["ar10Payees"],
+  script: "current.opened_by = gs.getUserID(); current.ar_form = 'AR-x'; current.short_description = 'AR10 refund – ' + rows + ' payee(s)'; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; urgent_explanation cleared when expedited = no; copies the multi-row set to x_ar_ar10_payee; processes the attached AR10 Excel (import set → transform) into one x_ar_ar10_task per filled row (payee, amount; ar_request = the case, state = open)"
+};
+export const RECORD_PRODUCERS = [RECORD_PRODUCER, RECORD_PRODUCER_ARIX, RECORD_PRODUCER_COL, RECORD_PRODUCER_AR2, RECORD_PRODUCER_AR10];

@@ -6,6 +6,7 @@
 import { parseCSV } from "./io.js";
 import { createRequest, termsDays, draftDate, firstInvoices, journal, nextCycleDate, nextNumber, periodAmounts, periodDates, runDailyInvoiceCheck } from "./records.js";
 import { allocate } from "./matching.js";
+import { TEMPLATES, sampleRows } from "./excel.js";
 import { TABLES } from "./schema.js";
 import { S } from "./state.js";
 import { addDays, cents, isoToday, uid } from "./util.js";
@@ -86,17 +87,22 @@ function collectionCases() {
   }
 }
 
-/** AR-ii (#13, demo): one refund request with three reasons; AR has started on the first AR2 task. */
+/** AR-ii (#13, #15) and AR-x (#14), demo: one case each, made from the sample Excel. AR has started on the first task.
+ *  The AR-x case has one payee typed on the form with a different amount from the Excel, so AR's check shows a No. */
 function refundCases() {
-  const pm = S.users.find(u => u.id === "u_pm1"); if (!pm) return;
-  const opened = addDays(isoToday(), -2), at = opened + "T10:00:00";
-  const r = createRequest({ form: "AR-ii", requesterName: pm.name, requesterEmail: pm.email, department: "Facilities", deptSubBu: "Property Management", ccList: "", attachments: ["refund_template_Nov.xlsx"],
-    urgentReason: "Tenants are waiting for the deposit refunds before the end of the month.",
-    refundTasks: [{ reason: "A", casesCount: 3 }, { reason: "B", casesCount: 1 }, { reason: "others", casesCount: 2 }] }, { requestedBy: pm.id, opened });
-  r.assignedTo = "u_ar1"; r.state = "work_in_progress"; journal(r, "system", "Assigned to " + (S.users.find(u => u.id === "u_ar1")?.name || "AR") + ".", "u_ar1");
-  const t1 = S.refundTasks.find(x => x.requestId === r.id && x.seq === 1); if (t1) Object.assign(t1, { state: "work_in_progress", assignedTo: "u_ar1" });
-  r.activity.forEach(e => { e.at = at; }); r.updated = opened;
-  S.history.push({ table: "requests", id: r.id, at, by: pm.id, kind: "created" });
+  const pm = S.users.find(u => u.id === "u_pm1"), pm2 = S.users.find(u => u.id === "u_pm2"); if (!pm || !pm2) return;
+  const make = (vals, by, days, taskTable) => {
+    const opened = addDays(isoToday(), -days), at = opened + "T10:00:00";
+    const r = createRequest({ requesterName: by.name, requesterEmail: by.email, ccList: "", attachments: [], xlRows: sampleRows(vals.form), xlFile: TEMPLATES[vals.form].file, ...vals }, { requestedBy: by.id, opened });
+    r.assignedTo = "u_ar1"; r.state = "work_in_progress"; journal(r, "system", "Assigned to " + (S.users.find(u => u.id === "u_ar1")?.name || "AR") + ".", "u_ar1");
+    const t1 = S[taskTable].find(x => x.requestId === r.id && x.seq === 1); if (t1) Object.assign(t1, { state: "work_in_progress", assignedTo: "u_ar1" });
+    r.activity.forEach(e => { e.at = at; }); r.updated = opened;
+    S.history.push({ table: "requests", id: r.id, at, by: by.id, kind: "created" });
+  };
+  make({ form: "AR-ii", department: "Facilities", deptSubBu: "Property Management", urgentReason: "Tenants are waiting for the deposit refunds before the end of the month.",
+    refundReasons: [{ reason: "A", casesCount: 2 }, { reason: "others", casesCount: 1 }] }, pm, 2, "refundTasks");
+  make({ form: "AR-x", department: "Marine", deptSubBu: "Offshore", ar10Expedited: "yes", urgentReason: "Court order deadline on Friday.", colRemarks: "Row 3 is the forfeiture journal for SM-2026-0081.", ar10Ack: true,
+    ar10Payees: [{ payee: "Peter Lim", amount: 25000 }, { payee: "Kallang Events Pte Ltd", amount: 100000 }] }, pm2, 1, "ar10Tasks");
 }
 
 /** Build cases from CSV text. Returns the number of cases added. */

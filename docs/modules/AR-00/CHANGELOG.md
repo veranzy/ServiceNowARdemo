@@ -9,3 +9,4 @@
 | 2026-11-17 | Catalogue: AR-iii, AR-iv and AR-v tiles active (name *Collections*, placeholder); each opens the one Collections form with the type preselected (D30). `ar_form` gains the choice COL. |
 | 2026-11-17 | D31: Link to customer retired; AR-i and AR-ix cases get a Link section on Details. |
 | 2026-11-25 | Catalogue: AR-ii tile active (*Refund request*, AR-ii module, #13); `ar_form` gains AR-ii; AR requests menu gains All AR-ii and Open AR2 tasks. |
+| 2026-11-25 | Catalogue: AR-x tile active (*Refund (payment / journal)*, AR10, #14); `ar_form` gains AR-x; AR requests menu gains All AR-x and Open AR10 tasks. Shared Excel template upload (`PT-69`) for AR-ii and AR-x. |

@@ -126,9 +126,11 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 | `state` | State | Choice | Choices: New (`new`), Work in progress (`work_in_progress`), Awaiting requestor information (`awaiting_requestor_info`), Closed complete (`closed_complete`), Closed incomplete (`closed_incomplete`), Cancelled (`cancelled`). Mandatory. Set by AR with the dropdown on the case and Save (AR-00 decision, 2026-11-16). Assign to me moves New to Work in progress; a portal reply moves Awaiting requestor information to Work in progress |
 | `substate` | Substate | Choice | Choices: Awaiting input (`awaiting_input`), Awaiting comment (`awaiting_comment`). Shown when State = Awaiting requestor information (UI policy). Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal) |
 | `opened_by` | Requested by | Reference | → `sys_user`. Read-only on form |
-| `ar_form` | AR form | Choice | Choices: AR-i New AR request (`AR-i`), AR-ii Refund request (`AR-ii`), AR-vi To be defined (`AR-vi`), AR-vii To be defined (`AR-vii`), AR-viii To be defined (`AR-viii`), AR-ix GIRO authorisation (`AR-ix`), AR-x To be defined (`AR-x`), AR-xi To be defined (`AR-xi`), AR-xii To be defined (`AR-xii`), AR-xiii To be defined (`AR-xiii`), AR-xiv To be defined (`AR-xiv`), AR-xv To be defined (`AR-xv`), AR-xvi To be defined (`AR-xvi`), Collections (AR-iii, AR-iv, AR-v) (`COL`). Read-only on form. Collections cases: COL, with the type in collection_type (D30) |
-| `urgent_explanation` | Please provide an explanation on why this is an urgent request. | String (4000) | Shown when AR form = AR-ii Refund request (UI policy). AR-ii (#13): free text, optional, always shown (AR-ii decision 4). Portal help text: To explain why this request is urgent |
-| `remarks` | Remarks | String (4000) | Shown when Collection type is AR-iii Counter/UPOS Terminals, AR-iv Miscellaneous/Ad hoc, AR-v Cash Bail/Seized Monies/Restitution (UI policy). Collections section Remarks, before Supporting Documents; optional, every type (AR-iii decision 22, #12) |
+| `ar_form` | AR form | Choice | Choices: AR-i New AR request (`AR-i`), AR-ii Refund request (`AR-ii`), AR-vi To be defined (`AR-vi`), AR-vii To be defined (`AR-vii`), AR-viii To be defined (`AR-viii`), AR-ix GIRO authorisation (`AR-ix`), AR-x Refund (payment / journal) (`AR-x`), AR-xi To be defined (`AR-xi`), AR-xii To be defined (`AR-xii`), AR-xiii To be defined (`AR-xiii`), AR-xiv To be defined (`AR-xiv`), AR-xv To be defined (`AR-xv`), AR-xvi To be defined (`AR-xvi`), Collections (AR-iii, AR-iv, AR-v) (`COL`). Read-only on form. Collections cases: COL, with the type in collection_type (D30) |
+| `urgent_explanation` | Please provide an explanation on why this is an urgent request. | String (4000) | AR-ii (#13): free text, optional, always shown (AR-ii decision 4); portal help text: To explain why this request is urgent. AR-x (#14): shown and mandatory only when Expedited = Yes (UI policy; AR-x decision 4) |
+| `expedited` | Expedited | Choice | Choices: Yes (`yes`), No (`no`). Shown when AR form = AR-x Refund (payment / journal) (UI policy). AR-x (#14): Yes / No, default No. Yes shows the urgent explanation, mandatory (AR-x decision 4) |
+| `acknowledgement` | I confirm the information above is correct. | True/False | Shown when AR form = AR-x Refund (payment / journal) (UI policy). AR-x (#14): acknowledgement checkbox, optional (AR-x decision 5). Wording is a placeholder (AR-x open question 2) |
+| `remarks` | Remarks | String (4000) | Optional free text. Collections: section 4. Remarks, every type, before Supporting Documents (AR-iii decision 22, #12). AR-x: section 4. Remarks (#14) |
 | `submission_origin` | Submission Origin | Choice | Choices: Manual (`manual`), System-generated from unreconciled bank statement (`system`). Read-only on form. Collections (#9 §6). System-managed: Manual for portal submissions; system-generated cases are a later phase (AR-iii decision 10) |
 | `collection_type` | Collection type | Choice | Choices: AR-iii Counter/UPOS Terminals (`AR-iii`), AR-iv Miscellaneous/Ad hoc (`AR-iv`), AR-v Cash Bail/Seized Monies/Restitution (`AR-v`). Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording |
 | `collection_date` | Collection Date | Date | Shown when Collection type is AR-iii Counter/UPOS Terminals, AR-iv Miscellaneous/Ad hoc (UI policy). AR-iii: mandatory. AR-iv: optional (#9 §7, §8) |
@@ -389,18 +391,58 @@ AR3 rows of a Collections case (#9 §7): multi-row variable set on the Collectio
 | `collection_type` | Collection Type | Choice | Choices: Cashcard, Credit Card, NETS, NETS FlashPay, NETS Scan/QR. Mandatory |
 | `transaction_amount` | Amount | Currency | Mandatory. Positive, at most two decimals (AR-iii decisions 19, 20: replaces Number of Transactions; label Amount, #11). The rows' total is the case's Total Amount |
 
+### Refund reason — `x_ar_refund_reason`
+
+AR-ii (#13, AR-ii decisions 2, 3, 7): the form's multi-row variable set (1 to 5 rows), copied to this table by the producer script as a summary on the case. No tasks are made from it (AR2 tasks come from the Excel, decision 6).
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
+| `row_number` | Row | Integer | Read-only on form |
+| `refund_reason` | Reason for Refund | Choice | Choices: A, B, C, Others (`others`). Mandatory. Choices A, B, C and Others (placeholders until the client gives the list, AR-ii open question 1) |
+| `cases_registered` | No. of cases registered | Integer | Mandatory. Whole number, at least 1. Portal help text: To indicate the volume of cases with the same refund reason |
+
 ### AR2 task — `x_ar_refund_task` (extends `task`)
 
-AR-ii (#13, AR-ii decisions 1–5): the form's multi-row variable set (1 to 5 rows: Reason for Refund, No. of cases registered). The producer script creates one AR2 task per row, parented to the AR-ii case (ar_request). AR works each task in the workspace; the case is the submission. Number prefix: `RFT`.
+AR-ii (#15, AR-ii decision 6): one AR2 task per filled row of the AR2 Excel template attached to the form. On submit the Excel is processed (import set on the attachment → transform into this table), parented to the AR-ii case (ar_request). Columns are the template's, in its wording. AR works each task in the workspace. Number prefix: `RFT`.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `number` | Number | String | Read-only on form |
 | `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form. Parent AR-ii case (task.parent can hold the same reference) |
-| `row_number` | Row | Integer | Read-only on form |
-| `refund_reason` | Reason for Refund | Choice | Choices: A, B, C, Others (`others`). Mandatory. Choices A, B, C and Others (placeholders until the client gives the list, AR-ii open question 1) |
-| `cases_registered` | No. of cases registered | Integer | Mandatory. Whole number, at least 1. Portal help text: To indicate the volume of cases with the same refund reason |
+| `row_number` | S/N | Integer | Read-only on form. Row of the Excel (1, 2, 3…) |
+| `collection_reference` | Collection reference No. (e.g. Reciept No.) | String | Read-only on form. From the Excel (template wording kept as given, #15) |
+| `refund_reason` | Refund Reason | String | Read-only on form. From the Excel (free text in the sample; dropdown list to be confirmed, AR-ii open question 1) |
+| `amount` | Amount ($) | Currency | Read-only on form. From the Excel |
+| `case_reference` | Case Reference No. (if applicable) | String | Read-only on form. From the Excel |
+| `payee_name` | Name of Payee | String | Read-only on form. From the Excel |
+| `amount_not_sgd` | If amount for refund is not in SGD (if applicable) | String | Read-only on form. From the Excel, free text (e.g. USD 31.20) |
 | `state` | State | Choice | Choices: Open (`open`), Work in progress (`work_in_progress`), Closed complete (`closed_complete`), Closed incomplete (`closed_incomplete`). Set by AR on the task. Starts Open (AR-ii decision 5) |
+| `assigned_to` | Assigned to | Reference | → `sys_user`. AR team member working the task |
+
+### Payee and amount — `x_ar_ar10_payee`
+
+AR-x (#14, AR-x decision 2): the form's multi-row variable set (payee and amount typed by the requester), copied to this table by the producer script. AR checks the AR10 tasks (from the Excel) against these rows.
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
+| `row_number` | Row | Integer | Read-only on form |
+| `payee_name` | Name of Beneficiary /Vendor | String | Mandatory |
+| `amount` | Amount (SGD) | Currency | Mandatory. Positive, at most two decimals |
+
+### AR10 task — `x_ar_ar10_task` (extends `task`)
+
+AR-x (#14, AR-x decision 3): one AR10 task per filled row of the AR10 Excel template attached to the form (import set on the attachment → transform). The task keeps the payee and the amount: payment rows use Name of Beneficiary /Vendor and the payment Amount (SGD); journal rows (forfeiture to state, reclassification) have no payee and use the journal Amount (SGD). Number prefix: `PYT`.
+
+| Column | Label | Type | Notes |
+|---|---|---|---|
+| `number` | Number | String | Read-only on form |
+| `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form. Parent AR-x case |
+| `row_number` | S/N | Integer | Read-only on form. Row of the Excel (1, 2, 3…) |
+| `payee_name` | Name of Beneficiary /Vendor | String | Read-only on form. From the Excel; empty on journal rows |
+| `amount` | Amount (SGD) | Currency | Read-only on form. From the Excel |
+| `state` | State | Choice | Choices: Open (`open`), Work in progress (`work_in_progress`), Closed complete (`closed_complete`), Closed incomplete (`closed_incomplete`). Set by AR on the task. Starts Open (AR-x decision 3) |
 | `assigned_to` | Assigned to | Reference | → `sys_user`. AR team member working the task |
 
 ### Case line — `x_ar_collection_case_line`
@@ -464,8 +506,11 @@ Master data (CCI decision 11, #9 §8): account codes for AR4 allocations with th
   - UI policies: Other purpose when Purpose = Others; location and effective start/end for Rental; car plate and parking start/end for Carpark; amount and start date mandatory for Add GIRO.
 - **Record producer "Submission of Supporting Documents – Collections"** on `x_ar_request` (AR-iii module, D30). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `collection_type`, `collection_date`, `collection_reference`, `ar5_category`, `date_of_collection`, `g56_receipt_number`, `bail_amount`, `bailor_name`, `ib_case_number`, `case_status`, `ar5_refund_to`, `accused_name`, `ar5_refund`, `ar5_forfeit`, `ar5_court_order`, `ar5_to_be_invested`, `ar5_refund_required`, `remarks`.
   - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'COL'; current.collection_type = producer.collection_type; current.short_description = 'Collections – ' + collection_type; current.submission_origin = 'manual'; copies the multi-row sets to x_ar_collection_tx (AR3) / x_ar_collection_allocation (AR4); amount = AR4 allocation total or the AR5 amount (AR3: open question); current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>. Catalogue: three items (AR-iii, AR-iv, AR-v) open this producer with collection_type preset (URL parameter / default value).`
-- **Record producer "AR-ii Refund request"** on `x_ar_request` (AR-ii module, #13). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `urgent_explanation`, the multi-row set *Reason for Refund* (1 to 5 rows: `refund_reason`, `cases_registered`; button *Add More*), plus attachments (Supporting documents, the Excel template).
-  - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'AR-ii'; current.short_description = 'Refund request – ' + rows + ' reason(s)'; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; creates one x_ar_refund_task per row of the multi-row set (ar_request = the case, row_number, refund_reason, cases_registered, state = open, assignment_group = <AR team group>)`
+- **Record producer "AR-ii Refund request"** on `x_ar_request` (AR-ii module, #13). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `urgent_explanation`, the multi-row set *Reason for Refund* (1 to 5 rows: `refund_reason`, `cases_registered`; button *Add More*; summary on the case), plus attachments (Supporting documents with the AR2 Excel template, whose rows become the AR2 tasks).
+  - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'AR-ii'; current.short_description = 'Refund request – ' + rows + ' reason(s)'; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; copies the multi-row set to x_ar_refund_reason; processes the attached AR2 Excel (import set → transform) into one x_ar_refund_task per filled row (ar_request = the case, state = open, assignment_group = <AR team group>)`
+- **Record producer "AR-x Refund (payment / journal)"** on `x_ar_request` (AR-x module, #14). Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `expedited`, `urgent_explanation`, `remarks`, `acknowledgement`, the multi-row set *Payee and amount* (`payee_name`, `amount`), plus attachments (Supporting documents with the AR10 Excel template, whose rows become the AR10 tasks).
+  - Producer script: `current.opened_by = gs.getUserID(); current.ar_form = 'AR-x'; current.short_description = 'AR10 refund – ' + rows + ' payee(s)'; current.state = 'new'; current.watch_list = cc_list emails; current.assignment_group = <AR team group>; urgent_explanation cleared when expedited = no; copies the multi-row set to x_ar_ar10_payee; processes the attached AR10 Excel (import set → transform) into one x_ar_ar10_task per filled row (payee, amount; ar_request = the case, state = open)`
+- **Excel templates (AR-ii, AR-x):** a data source of type File on the attachment, an import set table per template and a transform map into `x_ar_refund_task` / `x_ar_ar10_task`, run by the producer's flow after submit. Header row found by its column names; empty rows skipped. Blank templates are published as knowledge / catalog attachments.
 - **My requests**: list widget on `x_ar_request` where `opened_by = me` **or the user's email is on the CC list** (`watch_list` contains me); CC'd cases are marked *CC*.
 - **Ticket page**: standard ticket conversation (comments only), field summary, attachments; requester can comment. Business rule: requester comment while *Awaiting info* sets state to *In progress*.
 - ACLs: `x_ar.project_team` create on `x_ar_request` (via producer), read own records; read `x_ar_customer` and `x_ar_contract` for reference selection; read invoice number/date/due of their own request's invoice. No workspace access.
@@ -488,6 +533,10 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 |---|---|
 | `UA-PT-addrefund` | AR-ii: Add More in the Reason for Refund multi-row set (max 5 rows, AR-ii decision 3) |
 | `UA-RFT-save` | Save (update) on the AR2 task: State, Assigned to |
+| `UA-PYT-save` | Save (update) on the AR10 task: State, Assigned to |
+| `UA-PT-addpayee` | AR-x: + Add row in the Payee and amount multi-row set (max 99) |
+| `UA-PT-xlsample` | Demo only: Use sample file, fills the Excel upload with the template's sample rows (not built in ServiceNow) |
+| `UA-PT-xltemplate` | Download template: link to the blank Excel template (catalog item attachment or knowledge article) |
 | `UA-PT-addcase` | Collections AR-v Seized Monies / Restitution: + Add row in Case lines (multi-row set, max 99) |
 | `UA-PT-addcol` | Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99) |
 | `UA-PT-addalloc` | Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10) |

@@ -1,4 +1,5 @@
 // Entry point: delegated event handling for the demo bar, workspace and portal, then boot.
+import { TEMPLATES, downloadTemplate, readTemplate, sampleRows } from "./excel.js";
 import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { act, allocate, targetById } from "./matching.js";
@@ -118,7 +119,7 @@ function portalFieldUpdated(el) {
 
 /** AR-i contract step changed: drop a prefilled bill-to (it belonged to the previous choice) and prefill again. */
 function contractChanged(d) {
-  if (d.form === "AR-ii") return;                   // AR-ii: no customer or contract step
+  if (d.form === "AR-ii" || d.form === "AR-x") return;   // AR-ii, AR-x: no customer or contract step
   if (d.form === "COL") {                           // Collections: no contract step. AC-10: cost centres follow the requesting department
     const ok = id => S.costCentres.some(c => c.id === id && c.department === d.department);
     for (const r of d.colAlloc || []) if (r.costCentre && !ok(r.costCentre)) r.costCentre = "";
@@ -149,6 +150,16 @@ function contractChanged(d) {
 }
 const resetContract = d => { Object.assign(d, { contractOption: "", contractId: null }); contractChanged(d); };
 
+/** Excel template picked on AR-ii / AR-x: read it in the browser; its rows become tasks on submit (PT-69). */
+async function readXl(file) {
+  const dr = P().draft; Object.assign(dr, { xlBusy: true, xlError: "" }); render();
+  try {
+    const res = await readTemplate(dr.form, await file.arrayBuffer());
+    Object.assign(dr, res.error ? { xlRows: [], xlFile: "", xlError: `${file.name}: ${res.error}` } : { xlRows: res.rows, xlFile: file.name, xlError: "" });
+  } catch (err) { Object.assign(dr, { xlRows: [], xlFile: "", xlError: `${file.name} couldn't be read as an Excel file. ${err.message || ""}`.trim() }); }
+  dr.xlBusy = false; if (P().draft === dr) render();
+}
+
 // ---------- BSU ----------
 function parseCurrent() {
   const b = S.bsu, a = acctById(b.acctId); if (!a || !b.text) { b.parsed = null; return; }
@@ -175,7 +186,7 @@ function bsuAction(name) {
 
 /** AR-i invoice details typed into: refresh the billing summary and contract box in place. */
 function invUpdated() {
-  const d = P().draft; if (!d || d.form === "AR-ix" || d.form === "COL" || d.form === "AR-ii") return;
+  const d = P().draft; if (!d || d.form === "AR-ix" || d.form === "COL" || d.form === "AR-ii" || d.form === "AR-x") return;
   const swap = (id, html) => { const n = $(id); if (n) n.outerHTML = html; };
   swap("pfInvSum", invSum(d));
   const box = document.querySelector(".pt-info.ctr-box"); if (box) box.outerHTML = contractBox(d);
@@ -228,7 +239,10 @@ document.addEventListener("click", e => {
     return (d.ctropt === "existing" ? $("pf-contractId") : d.ctropt === "new" ? (dr.form === "AR-ix" ? null : $("pf-newCtrType")) : null)?.focus(); }
   // AR-i billing line items (multi-row variable set, AR-i decision 32)
   // Collections multi-row sets (#9: AR3 collections, AR4 allocations)
-  if (d.cradd !== undefined) { const dr = P().draft, k = d.cradd; (dr[k] ||= []).push(k === "refundTasks" ? { reason: "", casesCount: 1 } : k === "colTx" ? { collectionType: "", amount: 0 } : k === "ar5Lines" ? { caseNumber: "", amount: 0, caseStatus: "" } : { desc: "", amount: 0, costCentre: "", accountCode: "" }); delete P().errors[k]; render(); return $(`cr-${k}-${dr[k].length - 1}-${k === "colTx" ? "collectionType" : k === "refundTasks" ? "reason" : "desc"}`)?.focus(); }
+  if (d.xlsample !== undefined) { const dr = P().draft; Object.assign(dr, { xlRows: sampleRows(dr.form), xlFile: TEMPLATES[dr.form].file.replace(".xlsx", "_sample.xlsx"), xlError: "" }); return render(); }
+  if (d.xltemplate !== undefined) { downloadTemplate(P().draft.form).catch(err => toast(err.message)); return; }
+  if (d.xlclear !== undefined) { Object.assign(P().draft, { xlRows: [], xlFile: "", xlError: "" }); return render(); }
+  if (d.cradd !== undefined) { const dr = P().draft, k = d.cradd; (dr[k] ||= []).push(k === "refundReasons" ? { reason: "", casesCount: 1 } : k === "ar10Payees" ? { payee: "", amount: 0 } : k === "colTx" ? { collectionType: "", amount: 0 } : k === "ar5Lines" ? { caseNumber: "", amount: 0, caseStatus: "" } : { desc: "", amount: 0, costCentre: "", accountCode: "" }); delete P().errors[k]; render(); return $(`cr-${k}-${dr[k].length - 1}-${k === "colTx" ? "collectionType" : k === "refundReasons" ? "reason" : k === "ar10Payees" ? "payee" : "desc"}`)?.focus(); }
   if (d.crdel !== undefined) { const [k, i] = d.crdel.split(":"); P().draft[k].splice(+i, 1); P().errors = Object.fromEntries(Object.entries(P().errors).filter(([x]) => !x.startsWith(`crow:${k}:`))); return render(); }
   if (d.iadd !== undefined) { const it = P().draft.items ||= []; it.push({ amount: 0, gstApplicable: "yes", lpiRate: 0, accountCode: "", costCenter: "" }); delete P().errors.items; render(); return $(`pi${it.length - 1}-itemNo`)?.focus(); }
   if (d.tobok !== undefined) { delete P().tobNotice; return render(); }   // AR-i decision 43: Type of billing popup
@@ -320,6 +334,7 @@ document.addEventListener("change", e => {
   if (el.id === "bsuAcct") { Object.assign(S.bsu, { acctId: el.value, text: "", fileName: "", parsed: null, error: "" }); return render(); }
   if (el.id === "bsuDate") { S.bsu.date = el.value; parseCurrent(); return render(); }
   if (el.id === "bsuFile") { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { S.bsu.text = String(r.result); S.bsu.fileName = f.name; parseCurrent(); render(); }; r.readAsText(f); el.value = ""; return; }
+  if (el.id === "pfXl") { const f = el.files[0]; if (f) readXl(f); el.value = ""; return; }
   if (el.id === "pfAttach") { P().draft.attachments.push(...[...el.files].map(f => f.name)); return render(); }
   // portal AR form: billing line item fields
   if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
@@ -387,8 +402,8 @@ document.addEventListener("submit", e => {
   if (f.id === "arForm") {
     const d = P().draft, errors = validateARi(d);
     if (Object.keys(errors).length) { P().errors = errors; render(); return (document.querySelector("#arForm [aria-invalid], #arForm .has-err input, #arForm .has-err .btn"))?.focus(); }
-    if (d.form === "AR-ii") {                     // AR-ii (#13): one AR2 task per row
-      const { custQ, ...vals } = d;
+    if (d.form === "AR-ii" || d.form === "AR-x") {   // AR-ii (#13, #15), AR-x (#14): Excel rows become tasks
+      const { custQ, xlBusy, ...vals } = d;
       const r = createRequest(vals); P().draft = null; P().errors = {}; P().page = "confirm"; P().id = r.id;
       render(); return window.scrollTo(0, 0);
     }

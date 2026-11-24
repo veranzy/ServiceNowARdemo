@@ -1,7 +1,7 @@
 // Generates SERVICENOW_MAPPING.md from js/schema.js. Run: node tools/mapping.mjs
 import { writeFileSync } from "node:fs";
 import { UI_ACTIONS } from "../js/notes.js";
-import { BANKS, RECORD_PRODUCER, RECORD_PRODUCER_ARIX, RECORD_PRODUCER_COL, RECORD_PRODUCER_AR2, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
+import { BANKS, RECORD_PRODUCER, RECORD_PRODUCER_ARIX, RECORD_PRODUCER_COL, RECORD_PRODUCER_AR2, RECORD_PRODUCER_AR10, ROLES, SCOPE, TABLES, showIfText } from "../js/schema.js";
 
 const refName = r => r === "users" ? "sys_user" : r === "groups" ? "sys_user_group" : TABLES[r].table;
 // Preferred section order; any table missing from it is still listed (appended), so no table is ever left out.
@@ -50,8 +50,11 @@ md += `## Portal (project team)
   - UI policies: Other purpose when Purpose = Others; location and effective start/end for Rental; car plate and parking start/end for Carpark; amount and start date mandatory for Add GIRO.
 - **Record producer "${RECORD_PRODUCER_COL.name}"** on \`${TABLES.requests.table}\` (AR-iii module, D30). Variables: ${RECORD_PRODUCER_COL.variables.map(v => `\`${TABLES.requests.fields.find(f => f.key === v).name}\``).join(", ")}.
   - Producer script: \`${RECORD_PRODUCER_COL.script}\`
-- **Record producer "${RECORD_PRODUCER_AR2.name}"** on \`${TABLES.requests.table}\` (AR-ii module, #13). Variables: ${RECORD_PRODUCER_AR2.variables.map(v => `\`${TABLES.requests.fields.find(f => f.key === v).name}\``).join(", ")}, the multi-row set *Reason for Refund* (1 to 5 rows: \`refund_reason\`, \`cases_registered\`; button *Add More*), plus attachments (Supporting documents, the Excel template).
+- **Record producer "${RECORD_PRODUCER_AR2.name}"** on \`${TABLES.requests.table}\` (AR-ii module, #13). Variables: ${RECORD_PRODUCER_AR2.variables.map(v => `\`${TABLES.requests.fields.find(f => f.key === v).name}\``).join(", ")}, the multi-row set *Reason for Refund* (1 to 5 rows: \`refund_reason\`, \`cases_registered\`; button *Add More*; summary on the case), plus attachments (Supporting documents with the AR2 Excel template, whose rows become the AR2 tasks).
   - Producer script: \`${RECORD_PRODUCER_AR2.script}\`
+- **Record producer "${RECORD_PRODUCER_AR10.name}"** on \`${TABLES.requests.table}\` (AR-x module, #14). Variables: ${RECORD_PRODUCER_AR10.variables.map(v => `\`${TABLES.requests.fields.find(f => f.key === v).name}\``).join(", ")}, the multi-row set *Payee and amount* (\`payee_name\`, \`amount\`), plus attachments (Supporting documents with the AR10 Excel template, whose rows become the AR10 tasks).
+  - Producer script: \`${RECORD_PRODUCER_AR10.script}\`
+- **Excel templates (AR-ii, AR-x):** a data source of type File on the attachment, an import set table per template and a transform map into \`${TABLES.refundTasks.table}\` / \`${TABLES.ar10Tasks.table}\`, run by the producer's flow after submit. Header row found by its column names; empty rows skipped. Blank templates are published as knowledge / catalog attachments.
 - **My requests**: list widget on \`${TABLES.requests.table}\` where \`opened_by = me\` **or the user's email is on the CC list** (\`watch_list\` contains me); CC'd cases are marked *CC*.
 - **Ticket page**: standard ticket conversation (comments only), field summary, attachments; requester can comment. Business rule: requester comment while *Awaiting info* sets state to *In progress*.
 - ACLs: \`${ROLES.project.role}\` create on \`${TABLES.requests.table}\` (via producer), read own records; read \`${TABLES.customers.table}\` and \`${TABLES.contracts.table}\` for reference selection; read invoice number/date/due of their own request's invoice. No workspace access.

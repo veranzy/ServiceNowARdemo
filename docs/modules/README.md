@@ -41,13 +41,14 @@ for a module or a named part of it (e.g. *Portal form: Locked*) with the date.
 | [AR-00](AR-00/README.md) | AR forms, shared parts: catalogue of 16 forms (AR-i … AR-xvi), General information, department sub-BU, CC list, My requests, ticket page, case states | Project team, AR team | In prototype | Open |
 | [AR-i](AR-i/README.md) | AR-i New AR request: the form, Link section (D31), billing lines; Closed complete generates the 1st invoice; Billing schedule and Invoices tabs on the case | Project team, AR team | Ready for build (Release 1) | **Portal form: Locked** (2026-11-19, Owner, after decision 43; first locked 2026-11-12) |
 | [AR-iii](AR-iii/README.md) | **Collections** form: one form for AR-iii, AR-iv and AR-v (D30), type chosen first; money collected without an invoice (D28); BSU deposit matched to the case (D29). Portal form built (phase 1 of #9); processing parked | Project team, AR team | In prototype | Open |
-| [AR-ii](AR-ii/README.md) | AR-ii Refund request: refund reasons (1 to 5 rows) with the Excel template; each row becomes an AR2 task in the workspace, the submission is the case ([#13](https://github.com/veranzy/ServiceNowARdemo/issues/13)) | Project team, AR team | In prototype | Open |
+| [AR-ii](AR-ii/README.md) | AR-ii Refund request: refund reasons (1 to 5 rows, a summary) and the AR2 Excel; each Excel row becomes an AR2 task in the workspace, the submission is the case ([#13](https://github.com/veranzy/ServiceNowARdemo/issues/13), [#15](https://github.com/veranzy/ServiceNowARdemo/issues/15)) | Project team, AR team | In prototype | Open |
+| [AR-x](AR-x/README.md) | AR-x AR10 Refund (payment / journal): payee and amount rows, Expedited, acknowledgement and the AR10 Excel; each Excel row becomes an AR10 task, checked against the payee rows ([#14](https://github.com/veranzy/ServiceNowARdemo/issues/14)) | Project team, AR team | In prototype | Open |
 | [AR-ix](AR-ix/README.md) | AR-ix GIRO authorisation: a request to add / remove GIRO on a contract; AR updates the contract's GIRO status by hand, then completes the case (one active per contract) | Project team, AR team | Ready for build (Release 1) | Portal form: **Locked** (2026-11-17, Owner, after #8; first locked 2026-11-12) |
 | [CCI](CCI/README.md) | Customers, contracts and invoices: master data, Contract ID and category (Contract / No contract), billing contacts, customer documents, billing schedules on contracts, daily invoice check, invoice lifecycle (draft → approval date → issued → cancelled) | AR team | In prototype | Open |
 | [BSU](BSU/README.md) | Bank statement upload and cash application: daily CSV upload per bank account as an RITM (D32), Deposit IDs, manual matching of deposits to invoices and Collections cases | AR team | In prototype | Open |
 | [UIX](UIX/README.md) | Workspace look and layout aligned to the Horizon Design System (app shell, list page, record page) | AR team | In prototype | Open |
 
-AR-iv … AR-viii and AR-x … AR-xvi each get a module folder named after the form (e.g. `AR-ii/`) when the owner defines them.
+AR-iv … AR-viii and AR-xi … AR-xvi each get a module folder named after the form (e.g. `AR-ii/`) when the owner defines them.
 
 ## Former module codes (before 2026-11-12)
 

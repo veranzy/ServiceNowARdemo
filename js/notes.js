@@ -4,7 +4,7 @@
 import { RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES } from "./schema.js";
 
 /** Short code per table, used as the prefix of field IDs (e.g. INV.due_date) and record-page IDs. */
-export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI", colTx: "CTX", colAlloc: "CAL", ar5Lines: "C5L", refundTasks: "RFT", costCentres: "CCT", accountCodes: "ACT", paymentModes: "PMD" };
+export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI", colTx: "CTX", colAlloc: "CAL", ar5Lines: "C5L", refundTasks: "RFT", refundReasons: "RFR", ar10Payees: "PYR", ar10Tasks: "PYT", costCentres: "CCT", accountCodes: "ACT", paymentModes: "PMD" };
 const T = Object.fromEntries(Object.entries(CODE).map(([k, c]) => [c, k]));
 
 /** Screen elements that aren't a field, list, record page, related list or UI action. */
@@ -36,6 +36,8 @@ export const NOTES = {
   "REQ-FV-COL": "Form view collections on x_ar_request (view rule: ar_form = COL), Details tab: sections Case (with Request value, the amount to collect, D29), 1. General information, 2. Collection type; ribbon Collection type, Request value, BSU deposits matched (sum of accepted allocations with request = this case)",
   "LST-REQ-AR2": "Workspace list All AR-ii (AR-ii decision 5): x_ar_request, condition ar_form = AR-ii; default columns as the other AR form lists",
   "REQ-FV-AR2": "Form view ar_ii on x_ar_request (view rule: ar_form = AR-ii), Details tab: sections Case, 1. General information, 2. Reason for Refund (urgent_explanation; the rows are the AR2 tasks tab), 3. Supporting documents; ribbon AR2 tasks done (closed / total)",
+  "LST-REQ-AR10": "Workspace list All AR-x (AR-x decision 3): x_ar_request, condition ar_form = AR-x; default columns as the other AR form lists",
+  "REQ-FV-AR10": "Form view ar_x on x_ar_request (view rule: ar_form = AR-x), Details tab: sections Case, 1. General information, 3. Expedited, 4. Remarks, 5. Acknowledgement, 6. Supporting documents (the Payee and amount rows and the AR10 tasks are tabs); ribbon AR10 tasks closed, Excel vs form check",
   "LST-REQ-COL": "Workspace list All Collections (D30): x_ar_request, condition ar_form = COL; default columns as the other AR form lists",
   "REQ-FV-ARIX": "Form view ar_ix on x_ar_request (view rule: ar_form = AR-ix), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Select Customer, 3. Select Contract, 4. GIRO details, 5. Attachments (attachment list), in the AR-ix portal order (section 6 Others removed 2026-11-17, AR-ix decision 23); every field shown, empty when not answered; editable while the case is open",
   "LST-REQ-ARI": "Workspace list All AR-i (UIX decision 15, amended 2026-11-16): x_ar_request, condition ar_form = AR-i (every state, open and closed); list view ar_i_all with its own columns (for now: number, ar_form, short_description, customer, department, amount, state, assigned_to, opened_by, opened_at); list menu category AR requests",
@@ -104,9 +106,14 @@ export const NOTES = {
   "PT-60": "Collections AR-v: message shown when Refund required? = Yes (AR-iii decision 19): 'Please raise a AR10' with a link to the AR10 catalogue item, when Refund Required (Cash Bail) or Refund (Seized Monies) is ticked (rich-text label / UI policy on ar5_refund_required, ar5_refund; AR-iii decision 20)",
   "PT-61": "Collections AR-v Case lines Total Amount: calculated sum of Amount across rows (catalog client script; multi-row set footer)",
   "PT-65": "AR-ii Refund request (AR-ii module, #13): record producer on x_ar_request (ar_form = AR-ii). Sections: 1. General information, 2. Reason for Refund (multi-row set and the urgent explanation), 3. Supporting documents",
-  "PT-66": "AR-ii multi-row variable set Reason for Refund (AR-ii decisions 2, 3): columns Reason for Refund (choice A, B, C, Others) and No. of cases registered (integer, at least 1; column help: To indicate the volume of cases with the same refund reason); 1 to 5 rows; help text above the table in the owner's wording. The producer script makes one AR2 task per row",
-  "PT-67": "AR-ii variable set 3. Supporting documents: attachments (the Excel template), optional",
-  "PT-68": "AR-ii ticket page: AR2 tasks list (reason, number of cases, task state), read-only for the requester",
+  "PT-66": "AR-ii multi-row variable set Reason for Refund (AR-ii decisions 2, 3, 7): columns Reason for Refund (choice A, B, C, Others) and No. of cases registered (integer, at least 1; column help: To indicate the volume of cases with the same refund reason); 1 to 5 rows; help text above the table in the owner's wording. Copied to x_ar_refund_reason as a summary on the case (no tasks)",
+  "PT-67": "AR-ii variable set 3. Supporting documents: the Excel template upload (PT-69) and other attachments, optional",
+  "PT-68": "AR-ii ticket page: AR2 tasks list (Name of Payee, Amount ($), Refund Reason, task state), read-only for the requester",
+  "PT-69": "Excel template upload (AR-ii #15, AR-x #14): attachment variable (.xlsx) on the form, with a link to the blank template (Download template) and, in the demo only, Use sample file. On submit the producer's flow loads it through an import set (data source on the attachment, transform map) into the task table: one task per filled row. Demo reads it in the browser (SheetJS, vendor/) and shows how many rows were read",
+  "PT-70": "AR-x AR10 Refund (payment / journal) (AR-x module, #14): record producer on x_ar_request (ar_form = AR-x). Sections: 1. General information, 2. Payee and amount, 3. Expedited, 4. Remarks, 5. Acknowledgement, 6. Supporting documents",
+  "PT-71": "AR-x multi-row variable set Payee and amount (AR-x decision 2): Name of Beneficiary /Vendor, Amount (SGD); 1 to 99 rows; footer total. Copied to x_ar_ar10_payee",
+  "PT-72": "AR-x variable set 3. Expedited: expedited (Yes / No, default No); UI policy: Yes shows urgent_explanation, mandatory (AR-x decision 4)",
+  "PT-73": "AR-x ticket page: AR10 tasks list (payee, amount, task state), read-only for the requester",
   "PT-64": "Collections variable set 4. Remarks (AR-iii decision 22, #12): remarks (multi-line text, optional, every type), before 5. Supporting Documents",
   "PT-57": "Collections AR-iv allocation total: calculated sum of Amount across rows (catalog client script); stored as amount on the case",
   "PT-48": "AR-ix Select Customer hint (decision 17, E8.1): Customer not found? Submit an AR-i to set up the customer first. Shown under the customer search instead of the AR-i add-as-new-customer button (UA-PT-newcust stays on AR-i)",
@@ -137,6 +144,10 @@ export const NOTES = {
 export const UI_ACTIONS = {
   "UA-PT-addrefund": "AR-ii: Add More in the Reason for Refund multi-row set (max 5 rows, AR-ii decision 3)",
   "UA-RFT-save": "Save (update) on the AR2 task: State, Assigned to",
+  "UA-PYT-save": "Save (update) on the AR10 task: State, Assigned to",
+  "UA-PT-addpayee": "AR-x: + Add row in the Payee and amount multi-row set (max 99)",
+  "UA-PT-xlsample": "Demo only: Use sample file, fills the Excel upload with the template's sample rows (not built in ServiceNow)",
+  "UA-PT-xltemplate": "Download template: link to the blank Excel template (catalog item attachment or knowledge article)",
   "UA-PT-addcase": "Collections AR-v Seized Monies / Restitution: + Add row in Case lines (multi-row set, max 99)",
   "UA-PT-addcol": "Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99)",
   "UA-PT-addalloc": "Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10)",
@@ -193,7 +204,7 @@ export const RELATED = {
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",
-  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request", "RL-REQ-C5L": "ar_request", "RL-REQ-RFT": "ar_request", "RL-CCT-CAL": "cost_centre", "RL-INV-RQL": "invoice", "RL-BNK-PMD": "bank_account", "RL-ACT-CAL": "account_code",
+  "RL-INV-ALC": "invoice", "RL-DEP-ALC": "deposit", "RL-REQ-ALC": "request", "RL-REQ-CTX": "ar_request", "RL-REQ-CAL": "ar_request", "RL-REQ-C5L": "ar_request", "RL-REQ-RFT": "ar_request", "RL-REQ-RFR": "ar_request", "RL-REQ-PYR": "ar_request", "RL-REQ-PYT": "ar_request", "RL-CCT-CAL": "cost_centre", "RL-INV-RQL": "invoice", "RL-BNK-PMD": "bank_account", "RL-ACT-CAL": "account_code",
   "RL-BSU-DEP": "bsu", "RL-BNK-BSU": "bank_account", "RL-BNK-DEP": "bank_account"
 };
 
@@ -204,6 +215,8 @@ export const CALC_COLS = {
   "DEP.unmatched_amount": "Calculated: amount − allocations",
   "DEP.match_state": "Calculated: Unmatched / Part matched / Matched",
   "CUS.open_ar": "RETIRED 2026-11-18 (CCI decision 20): Open AR column on the Customers list. Was: calculated sum of amount_due on issued invoices",
+  "PYT.on_form": "Calculated column On the form (AR-x decision 2): Yes when a Payee and amount row of the same case has the same payee (case-insensitive, spaces trimmed) and amount; else No. A check for AR, nothing is changed automatically",
+  "PYR.in_excel": "Calculated column In the Excel (AR-x decision 2): Yes when an AR10 task of the same case (from the Excel) has the same payee and amount; else No",
   "CUS.overdue": "Calculated: amount_due on issued invoices past due_date",
   "CON.status": "Calculated: Active / Not started / Ended from start and end dates (shells: Open)",
   "CON.line_count": "Calculated: number of billing lines filed under the contract",

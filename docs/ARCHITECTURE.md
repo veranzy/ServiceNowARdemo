@@ -53,7 +53,8 @@ js/matching.js          manual matching (BSU decision 21): allocate, act (remove
 js/bsu.js               BSU: parse bank CSV by template, Deposit IDs, saveUpload, sample CSV per bank
 js/io.js                CSV parser, matches CSV export
 js/sample-data.js       users, customers, contracts, invoices, BSU data (dates shift to today); no AR requests
-js/cases.js             loads AR request cases from data/AR_form.csv (UIX decision 13) + demo setup (ARQ0001009, schedule history, mock daily job)
+js/cases.js             loads AR request cases from data/AR_form.csv (UIX decision 13) + demo setup (ARQ0001009, schedule history, mock daily job) + demo Collections, AR-ii and AR-x cases
+js/excel.js             AR-ii / AR-x Excel templates: read .xlsx (SheetJS in vendor/, loaded on first use), rows that become AR2 / AR10 tasks, sample rows, blank template download
 data/AR_form.csv        demo AR-i / AR-ix cases, one row per case, headers = x_ar_request field names
 js/views/app.js         render(): demo bar + active persona; toast; setStatus
 js/router.js            page URLs (#/ws/…, #/portal/…): URL → screen on load and Back / Forward, screen → URL after render (UIX decision 14)

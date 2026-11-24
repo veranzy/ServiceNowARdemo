@@ -243,13 +243,15 @@ function formPage() {
     const gen = { form, requesterName: me().name, requesterEmail: me().email || "", ccList: "", department: me().department || "", newCustomer: false, custQ: "", attachments: [] };
     p.draft = code === "AR-ix" ? { ...gen, contractOption: "", giroPurpose: "", giroType: "" }
       : col ? { ...gen, tile: code, colType: "" }   // AR-iii decision 22: one tile; the type is chosen on the form
-      : code === "AR-ii" ? { ...gen, refundTasks: [{ reason: "", casesCount: 1 }] }   // AR-ii decision 3: starts with one row
+      : code === "AR-ii" ? { ...gen, refundReasons: [{ reason: "", casesCount: 1 }] }   // AR-ii decision 3: starts with one row
+      : code === "AR-x" ? { ...gen, ar10Payees: [{ payee: "", amount: 0 }], ar10Expedited: "no", ar10Ack: false }   // AR-x decision 4: Expedited defaults to No
       : { ...gen, needItems: "no", items: [] };
     p.errors = {};
   }
   if (code === "AR-ix") return giroFormPage();
   if (col) return colFormPage();
   if (code === "AR-ii") return refundFormPage();
+  if (code === "AR-x") return ar10FormPage();
   const d = p.draft, e = p.errors || {};
   const f = (k, o = {}) => fieldHtml("requests", reqField(k), d, { prefix: "pf", errors: e, vals: d, ...o });
   const onFile = d.newCustomer ? {} : docsOnFile(d.customerId, d.contractId, d.department);
@@ -354,15 +356,66 @@ function refundFormPage() {
         <div id="pfAlert">${formAlert(Object.keys(e).length)}</div>
         ${generalInfo(d, e, f)}
         <fieldset class="psec"><legend>2. Reason for Refund</legend>
-          ${colRows(d, e, "refundTasks", { min: 1, max: 5, total: false, id: "PT-66", label: "", help: REFUND_TABLE_HELP, add: "Add More",
+          ${colRows(d, e, "refundReasons", { min: 1, max: 5, total: false, id: "PT-66", label: "", help: REFUND_TABLE_HELP, add: "Add More",
             colHelp: { casesCount: "To indicate the volume of cases with the same refund reason" } })}
           <div class="fgrid">${f("urgentReason", { help: "To explain why this request is urgent" })}</div>
         </fieldset>
         <fieldset class="psec"${sn("PT-67")}><legend>3. Supporting documents</legend>
-          <div class="ffield wide"${sn("PT-08")}><span class="flabel">Supporting documents</span>
-            <div><label class="btn small" for="pfAttach">${icon("clip", 15)} Add attachment</label><input type="file" id="pfAttach" multiple hidden></div>
-            ${d.attachments?.length ? `<ul class="attlist">${d.attachments.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unattach="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Attach the Excel template.</span>`}
-          </div>
+          ${xlUpload(d, "AR2 tasks")}
+          ${otherDocs(d)}
+        </fieldset>
+      </form>
+      <aside class="pt-side" id="pfSide">${formSide(d)}</aside>
+    </div>
+  </div>`;
+}
+
+/** Excel template upload (PT-69, AR-ii #15, AR-x #14): the file is read on the form; its rows become tasks when the form is submitted. */
+function xlUpload(d, what) {
+  const n = d.xlRows?.length || 0;
+  return `<div class="ffield wide"${sn("PT-69")}><span class="flabel">Excel template</span>
+    <div class="row start"><label class="btn small" for="pfXl">${icon("clip", 15)} Upload Excel</label><input type="file" id="pfXl" accept=".xlsx,.xls" hidden>
+      <button type="button" class="btn small" data-xlsample${sn("UA-PT-xlsample")}>Use sample file</button>
+      <button type="button" class="linkish small" data-xltemplate${sn("UA-PT-xltemplate")}>Download template</button></div>
+    ${d.xlBusy ? `<span class="fhelp">Reading the file…</span>` : d.xlError ? `<span class="ferr" role="alert">${esc(d.xlError)}</span>`
+      : n ? `<span class="fhelp ok-t" role="status">${esc(d.xlFile)}: ${n} row${n === 1 ? "" : "s"} read. ${n === 1 ? "It becomes" : "They become"} ${n} ${esc(what)} when you submit. <button type="button" class="linkish small" data-xlclear>Remove</button></span>`
+      : `<span class="fhelp">Each filled row of the template becomes one of the ${esc(what)} for Accounts Receivable.</span>`}
+  </div>`;
+}
+/** Other supporting documents (generic attachments). */
+const otherDocs = d => `<div class="ffield wide"${sn("PT-08")}><span class="flabel">Other supporting documents</span>
+    <div><label class="btn small" for="pfAttach">${icon("clip", 15)} Add attachment</label><input type="file" id="pfAttach" multiple hidden></div>
+    ${d.attachments?.length ? `<ul class="attlist">${d.attachments.map((a, ix) => `<li>${esc(a)} <button type="button" class="linkish small" data-unattach="${ix}">Remove</button></li>`).join("")}</ul>` : `<span class="fhelp">Optional.</span>`}
+  </div>`;
+
+/** AR-x AR10 refund, payment or journal (AR-x module, #14). */
+function ar10FormPage() {
+  const p = P(), d = p.draft, e = p.errors || {};
+  const f = (k, o = {}) => fieldHtml("requests", reqField(k), d, { prefix: "pf", errors: e, vals: d, ...o });
+  return `<div class="pt-inner pt-body">
+    <nav class="crumbs" aria-label="Breadcrumb"><button type="button" class="linkish" data-pnav="home">Home</button> › <button type="button" class="linkish" data-pnav="forms">AR forms</button> › <span>AR-x</span></nav>
+    <div class="pt-item">
+      <form class="pt-form pt-card" id="arForm" novalidate${sn("PT-70")}>
+        <div><span class="ft-code">AR-x</span><h1>Refund (payment / journal)</h1></div>
+        <p class="pt-lead">Refund by payment to a beneficiary / vendor, or by journal (forfeiture to state, reclassification). List the payees and amounts, and upload the AR10 Excel template: each Excel row becomes a task for Accounts Receivable.</p>
+        <div id="pfAlert">${formAlert(Object.keys(e).length)}</div>
+        ${generalInfo(d, e, f)}
+        <fieldset class="psec"><legend>2. Payee and amount</legend>
+          ${colRows(d, e, "ar10Payees", { min: 1, max: 99, total: ["amount", "Total Amount", true], id: "PT-71", label: "" })}
+        </fieldset>
+        <fieldset class="psec"${sn("PT-72")}><legend>3. Expedited</legend>
+          <div class="fgrid">${f("ar10Expedited", { help: null })}</div>
+          ${d.ar10Expedited === "yes" ? `<div class="fgrid">${f("urgentReason", { mandatory: true, help: "To explain why this request is urgent" })}</div>` : ""}
+        </fieldset>
+        <fieldset class="psec"><legend>4. Remarks</legend>
+          <div class="fgrid">${f("colRemarks", { help: null })}</div>
+        </fieldset>
+        <fieldset class="psec"><legend>5. Acknowledgement</legend>
+          <div class="fgrid">${f("ar10Ack", { help: null })}</div>
+        </fieldset>
+        <fieldset class="psec"><legend>6. Supporting documents</legend>
+          ${xlUpload(d, "AR10 tasks")}
+          ${otherDocs(d)}
         </fieldset>
       </form>
       <aside class="pt-side" id="pfSide">${formSide(d)}</aside>
@@ -413,12 +466,12 @@ export function colRows(d, e, k, o) {
     <tbody>${rows.map((r, i) => `<tr><td class="mono" data-label="Row">${i + 1}</td>${cols.map(c => cell(r, i, c)).join("")}<td><button type="button" class="linkish small" data-crdel="${k}:${i}">Remove</button></td></tr>`).join("")}</tbody>
     ${o.total === false ? "" : colTotal(d, k, o.total)}</table></div>
     ${e[k] ? `<span class="ferr">${esc(e[k])}</span>` : ""}
-    <div class="row start">${rows.length < o.max ? `<button type="button" class="btn small" data-cradd="${k}"${sn({ colTx: "UA-PT-addcol", colAlloc: "UA-PT-addalloc", ar5Lines: "UA-PT-addcase", refundTasks: "UA-PT-addrefund" }[k])}>${o.add ? esc(o.add) : "+ Add row"}</button>` : ""}<span class="fhelp">${o.min ?? 1} to ${o.max} rows.</span></div></div>`;
+    <div class="row start">${rows.length < o.max ? `<button type="button" class="btn small" data-cradd="${k}"${sn({ colTx: "UA-PT-addcol", colAlloc: "UA-PT-addalloc", ar5Lines: "UA-PT-addcase", refundReasons: "UA-PT-addrefund", ar10Payees: "UA-PT-addpayee" }[k])}>${o.add ? esc(o.add) : "+ Add row"}</button>` : ""}<span class="fhelp">${o.min ?? 1} to ${o.max} rows.</span></div></div>`;
 }
 export function colTotal(d, k, [key, label, money] = k === "colAlloc" ? ["amount", "Allocation total", true] : ["amount", "Total Amount", true]) {
   const cols = rowCols(k), at = cols.findIndex(c => c.key === key);
   const n = (d[k] || []).reduce((s, r) => s + (+r[key] || 0), 0);
-  return `<tfoot id="pfTot-${k}"${sn({ colTx: "PT-56", colAlloc: "PT-57", ar5Lines: "PT-61" }[k])}><tr><th scope="row" colspan="${at + 1}">${esc(label)}</th><td class="num mono"><b>${money ? fmt(n) : n}</b></td><td colspan="${cols.length - at}"></td></tr></tfoot>`;
+  return `<tfoot id="pfTot-${k}"${sn({ colTx: "PT-56", colAlloc: "PT-57", ar5Lines: "PT-61", ar10Payees: "PT-71" }[k])}><tr><th scope="row" colspan="${at + 1}">${esc(label)}</th><td class="num mono"><b>${money ? fmt(n) : n}</b></td><td colspan="${cols.length - at}"></td></tr></tfoot>`;
 }
 
 /** AR-ix Type help text, owner's wording exactly (AR-ix decision 14). */
@@ -492,12 +545,13 @@ const ctrSummary = d => d.contractOption === "existing" ? (d.contractId ? `Contr
 export const formAlert = n => n ? `<div class="pt-alert err" role="alert">Please fix ${n} field${n === 1 ? "" : "s"} below.</div>` : "";
 
 export function formSide(d) {
-  if (d.form === "AR-ii") {
-    const labels = [...new Set(Object.keys(validateARi(d)).map(k => k.startsWith("crow:") || k === "refundTasks" ? "Reason for Refund" : reqField(k)?.label).filter(Boolean))], n = (d.refundTasks || []).length;
+  if (d.form === "AR-ii" || d.form === "AR-x") {
+    const ar2 = d.form === "AR-ii", set = ar2 ? "Reason for Refund" : "Payee and amount";
+    const labels = [...new Set(Object.keys(validateARi(d)).map(k => k.startsWith("crow:") || k === "refundReasons" || k === "ar10Payees" ? set : reqField(k)?.label).filter(Boolean))], n = d.xlRows?.length || 0;
     return `<div class="pt-card sticky"><div class="side-info">
-      <span class="ft-code">AR-ii</span><h2>Submit request</h2>
+      <span class="ft-code">${esc(d.form)}</span><h2>Submit request</h2>
       <p class="small muted">Goes to the Accounts Receivable team as a case. You and the people on the CC list can follow it on My requests.</p>
-      <p class="small"><b>${n} row${n === 1 ? "" : "s"}: ${n} AR2 task${n === 1 ? "" : "s"}</b></p>
+      <p class="small"><b>${n ? `Excel: ${n} row${n === 1 ? "" : "s"}, ${n} ${ar2 ? "AR2" : "AR10"} task${n === 1 ? "" : "s"}` : "No Excel template uploaded yet"}</b></p>
       ${labels.length ? `<p class="small"><b>Still needed</b><br>${labels.map(esc).join(", ")}</p>` : `<p class="small ok-t">All required information provided.</p>`}
       </div><button type="submit" form="arForm" class="btn primary block"${sn("PT-09")}>Submit</button>
     </div>`;
@@ -537,9 +591,9 @@ export function formSide(d) {
 
 function confirmPage() {
   const r = reqById(P().id); if (!r) return homePage();
-  if (r.form === "AR-ii") return `<div class="pt-inner pt-body"><section class="pt-card pt-done" role="status">
+  if (r.form === "AR-ii" || r.form === "AR-x") return `<div class="pt-inner pt-body"><section class="pt-card pt-done" role="status">
     <h1>Request submitted</h1>
-    <p>Your AR-ii refund request <b class="mono">${esc(r.number)}</b> (${esc(linesLabel(r))}) has been sent to Accounts Receivable.</p>
+    <p>Your ${esc(r.form)} refund request <b class="mono">${esc(r.number)}</b> (${esc(linesLabel(r))}) has been sent to Accounts Receivable.</p>
     ${ccEmails(r.ccList).length ? `<p class="small">CC: ${esc(ccEmails(r.ccList).join(", "))} can view this case.</p>` : ""}
     <div class="row"><button type="button" class="btn primary" data-ticket="${r.id}">View request</button><button type="button" class="btn" data-pnav="forms">Back to AR forms</button></div>
   </section></div>`;
@@ -578,12 +632,15 @@ function requestsPage() {
   </div>`;
 }
 
-/** AR-ii ticket page (PT-68): the AR2 tasks made from the form's rows, with their state. */
-function refundTicketRows(r) {
-  const ts = S.refundTasks.filter(x => x.requestId === r.id).sort((a, b) => a.seq - b.seq), F = TABLES.refundTasks.fields, lab = (k, v) => F.find(x => x.key === k).choices.find(c => c[0] === v)?.[1] || v || "—";
-  return `<div class="tklines"${sn("PT-68")}><h2 class="small">Reason for Refund</h2><ul>${ts.map(x => `<li><div><b>${esc(lab("reason", x.reason))}</b><span class="desc">${esc(x.number)} · No. of cases registered: ${esc(x.casesCount)}</span></div>
-    <div class="tkst"><span class="chip ${x.state === "closed_complete" ? "c-ok" : x.state === "closed_incomplete" ? "c-bad" : "c-neutral"}">${esc(lab("state", x.state))}</span></div></li>`).join("")}</ul></div>`;
+/** AR-ii ticket page (PT-68) and AR-x (PT-73): the tasks made from the Excel, with their state. */
+function taskTicketRows(k, id, title, ts, main, sub) {
+  const lab = v => TABLES[k].fields.find(x => x.key === "state").choices.find(c => c[0] === v)?.[1] || v || "—";
+  return `<div class="tklines"${sn(id)}><h2 class="small">${esc(title)}</h2>${ts.length ? `<ul>${ts.map(x => `<li><div><b>${esc(main(x))}</b><span class="desc">${esc(x.number)} · ${esc(sub(x))}</span></div>
+    <div class="tkst"><span class="chip ${x.state === "closed_complete" ? "c-ok" : x.state === "closed_incomplete" ? "c-bad" : "c-neutral"}">${esc(lab(x.state))}</span></div></li>`).join("")}</ul>` : `<p class="small muted">No Excel rows were processed, so there are no tasks.</p>`}</div>`;
 }
+const tasksOf = (k, r) => S[k].filter(x => x.requestId === r.id).sort((a, b) => a.seq - b.seq);
+const refundTicketRows = r => taskTicketRows("refundTasks", "PT-68", "AR2 tasks", tasksOf("refundTasks", r), x => x.payee || x.collectionRef || "—", x => `SGD ${fmt(x.amount)}${x.reason ? ` · ${x.reason}` : ""}`);
+const ar10TicketRows = r => taskTicketRows("ar10Tasks", "PT-73", "AR10 tasks", tasksOf("ar10Tasks", r), x => x.payee || "Journal", x => `SGD ${fmt(x.amount)}`);
 
 function ticketPage() {
   const r = reqById(P().id); if (!r || !canViewReq(r)) return requestsPage();
@@ -599,7 +656,7 @@ function ticketPage() {
         <header class="tk-head"><div><span class="mono muted">${esc(r.number)}</span><h1 class="h2">${esc(r.title)}</h1></div>${reqChip(r)}</header>
         ${r.state === "awaiting_requestor_info" ? `<div class="pt-alert" role="status"><b>Accounts Receivable needs more information.</b> Reply below. Your reply sends the request back to AR.</div>` : ""}
         ${giro ? `<div class="tklines"${sn("PT-35")}><h2 class="small">GIRO</h2><ul><li><div><b>${esc(giroLabel(r))}</b><span class="desc">${esc([r.carplate, r.giroLocation, r.giroAmount, r.giroStart ? `from ${r.giroStart}` : "", r.giroEnd ? `until ${r.giroEnd}` : ""].filter(Boolean).join(" · "))}</span></div>
-          <div class="tkst">${r.state === "closed_complete" ? (cur?.id === r.id ? `<span class="chip c-ok">GIRO active</span><span class="desc">on ${esc(ctrNo(r.contractId))}</span>` : `<span class="chip c-ok">Closed complete</span>${r.contractId ? `<span class="desc">${esc(ctrNo(r.contractId))}</span>` : ""}`) : r.state === "rejected" ? `<span class="chip c-bad">Rejected</span>` : r.contractId ? `<span class="chip c-neutral">With AR</span>` : `<span class="chip c-warn">Contract to be linked</span><span class="desc">${esc(r.contractOption === "none" ? "No contract required" : r.newCtrRef || "")}</span>`}</div></li></ul></div>` : r.form === "COL" ? "" : r.form === "AR-ii" ? refundTicketRows(r) : `<div class="tklines"${sn("PT-27")}><h2 class="small">Billing</h2><ul>${lines.map(l => { const inv = l.invoiceId ? S.invoices.find(i => i.id === l.invoiceId) : null, sch = l.scheduleId ? S.schedules.find(x => x.id === l.scheduleId) : null, st = lineStatus(l);
+          <div class="tkst">${r.state === "closed_complete" ? (cur?.id === r.id ? `<span class="chip c-ok">GIRO active</span><span class="desc">on ${esc(ctrNo(r.contractId))}</span>` : `<span class="chip c-ok">Closed complete</span>${r.contractId ? `<span class="desc">${esc(ctrNo(r.contractId))}</span>` : ""}`) : r.state === "rejected" ? `<span class="chip c-bad">Rejected</span>` : r.contractId ? `<span class="chip c-neutral">With AR</span>` : `<span class="chip c-warn">Contract to be linked</span><span class="desc">${esc(r.contractOption === "none" ? "No contract required" : r.newCtrRef || "")}</span>`}</div></li></ul></div>` : r.form === "COL" ? "" : r.form === "AR-ii" ? refundTicketRows(r) : r.form === "AR-x" ? ar10TicketRows(r) : `<div class="tklines"${sn("PT-27")}><h2 class="small">Billing</h2><ul>${lines.map(l => { const inv = l.invoiceId ? S.invoices.find(i => i.id === l.invoiceId) : null, sch = l.scheduleId ? S.schedules.find(x => x.id === l.scheduleId) : null, st = lineStatus(l);
           return `<li><div><b>${esc(l.desc)}</b><span class="desc">${l.lineType === "recurring" ? `${esc(freqLabel(l.frequency).toLowerCase())} SGD ${fmt(l.amount)} · ${esc(l.startDate)} to ${esc(l.endDate)}` : `One-off SGD ${fmt(l.amount)}`}</span></div>
             <div class="tkst">${st === "invoiced" ? `<span class="chip c-ok">Invoiced</span><span class="desc">${esc(inv.number)} · issued ${esc(inv.date)} · due ${esc(inv.due)}</span>` : st === "scheduled" ? `<span class="chip c-ok">Scheduled</span><span class="desc">${esc(sch.number)} · AR raises each invoice</span>` : st === "draft" ? `<span class="chip c-accent">Being invoiced</span>` : `<span class="chip c-neutral">With AR</span>`}</div></li>`; }).join("")}</ul></div>`}
         ${r.state === "closed_incomplete" || r.state === "cancelled" ? `<div class="pt-alert err" role="status"><b>This request is ${r.state === "cancelled" ? "cancelled" : "closed incomplete"}.</b> See the comments below. Submit a new AR form if needed.</div>` : ""}
@@ -609,9 +666,10 @@ function ticketPage() {
       </section>
       <aside class="pt-card"${sn("PT-13")}>
         <h2>Details</h2>
-        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${["COL", "AR-ii"].includes(r.form) ? "" : kv("Customer", esc(reqCustName(r)))}${r.pocName || r.pocEmail ? kv("Customer POC", esc([r.pocName, r.pocEmail].filter(Boolean).join(" · "))) : ""}${kv("Department", esc([r.department || "—", reqField("deptSubBu").choices.find(c => c[0] === r.deptSubBu)?.[1]].filter(Boolean).join(" · ")))}${["COL", "AR-ii"].includes(r.form) ? "" : kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.contractOption === "none" ? "No contract required" : r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
+        <dl class="kvlist">${kv("Form", esc(r.form || "AR-i"))}${kv("Requester", esc(r.requesterName || ""))}${ccEmails(r.ccList).length ? kv("CC", esc(ccEmails(r.ccList).join(", "))) : ""}${["COL", "AR-ii", "AR-x"].includes(r.form) ? "" : kv("Customer", esc(reqCustName(r)))}${r.pocName || r.pocEmail ? kv("Customer POC", esc([r.pocName, r.pocEmail].filter(Boolean).join(" · "))) : ""}${kv("Department", esc([r.department || "—", reqField("deptSubBu").choices.find(c => c[0] === r.deptSubBu)?.[1]].filter(Boolean).join(" · ")))}${["COL", "AR-ii", "AR-x"].includes(r.form) ? "" : kv("Contract", esc(r.contractId ? ctrLabel(ctrById(r.contractId)) : giro ? `${r.contractOption === "none" ? "No contract required" : r.newCtrRef || "—"} (to be linked)` : ctrSummary(r)))}
           ${giro ? `${kv("GIRO", esc(giroLabel(r)))}${["giroReference", "applicantName", "applicantEmail", "applicantMobile", "giroStart", "giroEnd", "giroAmount", "giroRemarks"].filter(x => r[x]).map(x => kv(reqField(x).label, esc(r[x]))).join("")}`
           : r.form === "AR-ii" ? (r.urgentReason ? kv(reqField("urgentReason").label, esc(r.urgentReason)) : "")
+          : r.form === "AR-x" ? kv("Expedited", r.ar10Expedited === "yes" ? "Yes" : "No") + (r.urgentReason ? kv(reqField("urgentReason").label, esc(r.urgentReason)) : "") + (r.colRemarks ? kv("Remarks", esc(r.colRemarks)) : "")
           : r.form === "COL" ? kv(reqField("colType").label, esc(reqField("colType").choices.find(c => c[0] === r.colType)?.[1] || r.colType || "—")) + (r.colRemarks ? kv("Remarks", esc(r.colRemarks)) : "")
           : `${kv("Billing", esc(linesLabel(r)))}${r.attnName || r.attnEmail ? kv("Attention to", esc([r.attnName, r.attnEmail].filter(Boolean).join(" · "))) : ""}${r.perPeriod ? kv("Amount per period", `<span class="mono">SGD ${fmt(r.perPeriod)}</span> before GST`) : ""}${r.invoiceTiming ? kv("Preferred invoice date", `${esc(reqField("invoiceTiming").choices.find(c => c[0] === r.invoiceTiming)?.[1] || r.invoiceTiming)}${r.expediteReason ? `<br><span class="small">${esc(r.expediteReason)}</span>` : ""}`) : ""}${reqItems(r).length ? kv("Billing line items", reqItems(r).map(it => `Item ${esc(it.seq)}: SGD ${fmt(it.total)} incl. GST`).join("<br>")) : ""}${r.giroOnContract ? kv("GIRO on contract", r.giroOnContract === "yes" ? "Yes" : "No") : ""}${finText(r) ? kv("Finance coding", esc(finText(r))) : ""}${kv("Request value", `<span class="mono">SGD ${fmt(r.amount)}</span>`)}`}
 ${r.poNumber ? kv("Customer PO", esc(r.poNumber)) : ""}${kv("Submitted", esc(r.opened))}</dl>

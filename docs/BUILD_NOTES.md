@@ -41,6 +41,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `WS-17` | Record history tab (out-of-box on the Record page template): sys_audit / sys_history_line for the record. Turn on Audit in the dictionary of every x_ar table; shows when, who, field, old and new value |
 | `WS-16` | List page template (Horizon): list menu on the left, list on the right; the menu selection drives the list. Menu can be hidden |
 | `LST-REQ-AR2` | Workspace list All AR-ii (AR-ii decision 5): x_ar_request, condition ar_form = AR-ii; default columns as the other AR form lists |
+| `LST-REQ-AR10` | Workspace list All AR-x (AR-x decision 3): x_ar_request, condition ar_form = AR-x; default columns as the other AR form lists |
 | `LST-REQ-COL` | Workspace list All Collections (D30): x_ar_request, condition ar_form = COL; default columns as the other AR form lists |
 | `LST-REQ-ARI` | Workspace list All AR-i (UIX decision 15, amended 2026-11-16): x_ar_request, condition ar_form = AR-i (every state, open and closed); list view ar_i_all with its own columns (for now: number, ar_form, short_description, customer, department, amount, state, assigned_to, opened_by, opened_at); list menu category AR requests |
 | `LST-REQ-ARIX` | Workspace list All AR-ix (UIX decision 15, amended 2026-11-16): x_ar_request, condition ar_form = AR-ix (every state); list view ar_ix_all with its own columns (for now the same as All AR-i); list menu category AR requests |
@@ -64,6 +65,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ-FV-ARI` | Form view ar_i on x_ar_request (view rule: ar_form = AR-i), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Customer, 3. Contract and bill-to, 4. Invoice details, 5. Customer documents, 6. Others, in the AR-i portal order; every field of each section on the form, empty when not answered; editable while the case is open |
 | `REQ-FV-COL` | Form view collections on x_ar_request (view rule: ar_form = COL), Details tab: sections Case (with Request value, the amount to collect, D29), 1. General information, 2. Collection type; ribbon Collection type, Request value, BSU deposits matched (sum of accepted allocations with request = this case) |
 | `REQ-FV-AR2` | Form view ar_ii on x_ar_request (view rule: ar_form = AR-ii), Details tab: sections Case, 1. General information, 2. Reason for Refund (urgent_explanation; the rows are the AR2 tasks tab), 3. Supporting documents; ribbon AR2 tasks done (closed / total) |
+| `REQ-FV-AR10` | Form view ar_x on x_ar_request (view rule: ar_form = AR-x), Details tab: sections Case, 1. General information, 3. Expedited, 4. Remarks, 5. Acknowledgement, 6. Supporting documents (the Payee and amount rows and the AR10 tasks are tabs); ribbon AR10 tasks closed, Excel vs form check |
 | `REQ-FV-ARIX` | Form view ar_ix on x_ar_request (view rule: ar_form = AR-ix), used by the workspace Details tab (UIX decision 12): sections Case, 1. General information, 2. Select Customer, 3. Select Contract, 4. GIRO details, 5. Attachments (attachment list), in the AR-ix portal order (section 6 Others removed 2026-11-17, AR-ix decision 23); every field shown, empty when not answered; editable while the case is open |
 | `REQ-LINKCTR` | RETIRED 2026-11-16 (AR-00: case actions are Assign to me and Save; state via the State dropdown): Contract to link picker in the AR-ix GIRO setup panel (Link contract retired) |
 | `REQ-LINKCO` | RETIRED 2026-11-17 (D31): Company (core_company) for the new customer; mandatory when Link to customer creates a new x_ar_customer. Lists companies with no customer yet, closest name first (D26) |
@@ -138,9 +140,14 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-60` | Collections AR-v: message shown when Refund required? = Yes (AR-iii decision 19): 'Please raise a AR10' with a link to the AR10 catalogue item, when Refund Required (Cash Bail) or Refund (Seized Monies) is ticked (rich-text label / UI policy on ar5_refund_required, ar5_refund; AR-iii decision 20) |
 | `PT-61` | Collections AR-v Case lines Total Amount: calculated sum of Amount across rows (catalog client script; multi-row set footer) |
 | `PT-65` | AR-ii Refund request (AR-ii module, #13): record producer on x_ar_request (ar_form = AR-ii). Sections: 1. General information, 2. Reason for Refund (multi-row set and the urgent explanation), 3. Supporting documents |
-| `PT-66` | AR-ii multi-row variable set Reason for Refund (AR-ii decisions 2, 3): columns Reason for Refund (choice A, B, C, Others) and No. of cases registered (integer, at least 1; column help: To indicate the volume of cases with the same refund reason); 1 to 5 rows; help text above the table in the owner's wording. The producer script makes one AR2 task per row |
-| `PT-67` | AR-ii variable set 3. Supporting documents: attachments (the Excel template), optional |
-| `PT-68` | AR-ii ticket page: AR2 tasks list (reason, number of cases, task state), read-only for the requester |
+| `PT-66` | AR-ii multi-row variable set Reason for Refund (AR-ii decisions 2, 3, 7): columns Reason for Refund (choice A, B, C, Others) and No. of cases registered (integer, at least 1; column help: To indicate the volume of cases with the same refund reason); 1 to 5 rows; help text above the table in the owner's wording. Copied to x_ar_refund_reason as a summary on the case (no tasks) |
+| `PT-67` | AR-ii variable set 3. Supporting documents: the Excel template upload (PT-69) and other attachments, optional |
+| `PT-68` | AR-ii ticket page: AR2 tasks list (Name of Payee, Amount ($), Refund Reason, task state), read-only for the requester |
+| `PT-69` | Excel template upload (AR-ii #15, AR-x #14): attachment variable (.xlsx) on the form, with a link to the blank template (Download template) and, in the demo only, Use sample file. On submit the producer's flow loads it through an import set (data source on the attachment, transform map) into the task table: one task per filled row. Demo reads it in the browser (SheetJS, vendor/) and shows how many rows were read |
+| `PT-70` | AR-x AR10 Refund (payment / journal) (AR-x module, #14): record producer on x_ar_request (ar_form = AR-x). Sections: 1. General information, 2. Payee and amount, 3. Expedited, 4. Remarks, 5. Acknowledgement, 6. Supporting documents |
+| `PT-71` | AR-x multi-row variable set Payee and amount (AR-x decision 2): Name of Beneficiary /Vendor, Amount (SGD); 1 to 99 rows; footer total. Copied to x_ar_ar10_payee |
+| `PT-72` | AR-x variable set 3. Expedited: expedited (Yes / No, default No); UI policy: Yes shows urgent_explanation, mandatory (AR-x decision 4) |
+| `PT-73` | AR-x ticket page: AR10 tasks list (payee, amount, task state), read-only for the requester |
 | `PT-64` | Collections variable set 4. Remarks (AR-iii decision 22, #12): remarks (multi-line text, optional, every type), before 5. Supporting Documents |
 | `PT-57` | Collections AR-iv allocation total: calculated sum of Amount across rows (catalog client script); stored as amount on the case |
 | `PT-48` | AR-ix Select Customer hint (decision 17, E8.1): Customer not found? Submit an AR-i to set up the customer first. Shown under the customer search instead of the AR-i add-as-new-customer button (UA-PT-newcust stays on AR-i) |
@@ -184,8 +191,10 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `REQ.substate` | x_ar_request.substate · Choice · Only for Awaiting requestor information; optional; cleared when the state changes. AR only (not shown on the portal) |
 | `REQ.opened_by` | x_ar_request.opened_by · Reference → sys_user · read-only |
 | `REQ.ar_form` | x_ar_request.ar_form · Choice · read-only · Collections cases: COL, with the type in collection_type (D30) |
-| `REQ.urgent_explanation` | x_ar_request.urgent_explanation · String (4000) · AR-ii (#13): free text, optional, always shown (AR-ii decision 4). Portal help text: To explain why this request is urgent |
-| `REQ.remarks` | x_ar_request.remarks · String (4000) · Collections section Remarks, before Supporting Documents; optional, every type (AR-iii decision 22, #12) |
+| `REQ.urgent_explanation` | x_ar_request.urgent_explanation · String (4000) · AR-ii (#13): free text, optional, always shown (AR-ii decision 4); portal help text: To explain why this request is urgent. AR-x (#14): shown and mandatory only when Expedited = Yes (UI policy; AR-x decision 4) |
+| `REQ.expedited` | x_ar_request.expedited · Choice · AR-x (#14): Yes / No, default No. Yes shows the urgent explanation, mandatory (AR-x decision 4) |
+| `REQ.acknowledgement` | x_ar_request.acknowledgement · True/False · AR-x (#14): acknowledgement checkbox, optional (AR-x decision 5). Wording is a placeholder (AR-x open question 2) |
+| `REQ.remarks` | x_ar_request.remarks · String (4000) · Optional free text. Collections: section 4. Remarks, every type, before Supporting Documents (AR-iii decision 22, #12). AR-x: section 4. Remarks (#14) |
 | `REQ.submission_origin` | x_ar_request.submission_origin · Choice · read-only · Collections (#9 §6). System-managed: Manual for portal submissions; system-generated cases are a later phase (AR-iii decision 10) |
 | `REQ.collection_type` | x_ar_request.collection_type · Choice · Collections form (AR-iii module, D30). Mandatory; first question after General information, preselected from the catalogue tile. Choice labels are the codes until the owner gives the wording |
 | `REQ.collection_date` | x_ar_request.collection_date · Date · AR-iii: mandatory. AR-iv: optional (#9 §7, §8) |
@@ -668,11 +677,72 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `RFT.number` | x_ar_refund_task.number · String · read-only |
 | `RFT.ar_request` | x_ar_refund_task.ar_request · Reference → x_ar_request · read-only · Parent AR-ii case (task.parent can hold the same reference) |
-| `RFT.row_number` | x_ar_refund_task.row_number · Integer · read-only |
-| `RFT.refund_reason` | x_ar_refund_task.refund_reason · Choice · mandatory · Choices A, B, C and Others (placeholders until the client gives the list, AR-ii open question 1) |
-| `RFT.cases_registered` | x_ar_refund_task.cases_registered · Integer · mandatory · Whole number, at least 1. Portal help text: To indicate the volume of cases with the same refund reason |
+| `RFT.row_number` | x_ar_refund_task.row_number · Integer · read-only · Row of the Excel (1, 2, 3…) |
+| `RFT.collection_reference` | x_ar_refund_task.collection_reference · String · read-only · From the Excel (template wording kept as given, #15) |
+| `RFT.refund_reason` | x_ar_refund_task.refund_reason · String · read-only · From the Excel (free text in the sample; dropdown list to be confirmed, AR-ii open question 1) |
+| `RFT.amount` | x_ar_refund_task.amount · Currency · read-only · From the Excel |
+| `RFT.case_reference` | x_ar_refund_task.case_reference · String · read-only · From the Excel |
+| `RFT.payee_name` | x_ar_refund_task.payee_name · String · read-only · From the Excel |
+| `RFT.amount_not_sgd` | x_ar_refund_task.amount_not_sgd · String · read-only · From the Excel, free text (e.g. USD 31.20) |
 | `RFT.state` | x_ar_refund_task.state · Choice · Set by AR on the task. Starts Open (AR-ii decision 5) |
 | `RFT.assigned_to` | x_ar_refund_task.assigned_to · Reference → sys_user · AR team member working the task |
+
+## Refund reason
+
+| ID | ServiceNow |
+|---|---|
+| `LST-RFR` | List: x_ar_refund_reason · list view layout + list menu condition |
+| `RP-RFR` | Record page (UI Builder) · x_ar_refund_reason |
+| `HDR-RFR` | Record header: highlighted values of x_ar_refund_reason |
+| `FRM-RFR` | Form view: x_ar_refund_reason (Default view) |
+
+## Refund reason fields
+
+| ID | ServiceNow |
+|---|---|
+| `RFR.ar_request` | x_ar_refund_reason.ar_request · Reference → x_ar_request · read-only |
+| `RFR.row_number` | x_ar_refund_reason.row_number · Integer · read-only |
+| `RFR.refund_reason` | x_ar_refund_reason.refund_reason · Choice · mandatory · Choices A, B, C and Others (placeholders until the client gives the list, AR-ii open question 1) |
+| `RFR.cases_registered` | x_ar_refund_reason.cases_registered · Integer · mandatory · Whole number, at least 1. Portal help text: To indicate the volume of cases with the same refund reason |
+
+## Payee and amount
+
+| ID | ServiceNow |
+|---|---|
+| `LST-PYR` | List: x_ar_ar10_payee · list view layout + list menu condition |
+| `RP-PYR` | Record page (UI Builder) · x_ar_ar10_payee |
+| `HDR-PYR` | Record header: highlighted values of x_ar_ar10_payee |
+| `FRM-PYR` | Form view: x_ar_ar10_payee (Default view) |
+
+## Payee and amount fields
+
+| ID | ServiceNow |
+|---|---|
+| `PYR.ar_request` | x_ar_ar10_payee.ar_request · Reference → x_ar_request · read-only |
+| `PYR.row_number` | x_ar_ar10_payee.row_number · Integer · read-only |
+| `PYR.payee_name` | x_ar_ar10_payee.payee_name · String · mandatory |
+| `PYR.amount` | x_ar_ar10_payee.amount · Currency · mandatory · Positive, at most two decimals |
+
+## AR10 task
+
+| ID | ServiceNow |
+|---|---|
+| `LST-PYT` | List: x_ar_ar10_task · list view layout + list menu condition |
+| `RP-PYT` | Record page (UI Builder) · x_ar_ar10_task extends task |
+| `HDR-PYT` | Record header: highlighted values of x_ar_ar10_task |
+| `FRM-PYT` | Form view: x_ar_ar10_task (Default view) |
+
+## AR10 task fields
+
+| ID | ServiceNow |
+|---|---|
+| `PYT.number` | x_ar_ar10_task.number · String · read-only |
+| `PYT.ar_request` | x_ar_ar10_task.ar_request · Reference → x_ar_request · read-only · Parent AR-x case |
+| `PYT.row_number` | x_ar_ar10_task.row_number · Integer · read-only · Row of the Excel (1, 2, 3…) |
+| `PYT.payee_name` | x_ar_ar10_task.payee_name · String · read-only · From the Excel; empty on journal rows |
+| `PYT.amount` | x_ar_ar10_task.amount · Currency · read-only · From the Excel |
+| `PYT.state` | x_ar_ar10_task.state · Choice · Set by AR on the task. Starts Open (AR-x decision 3) |
+| `PYT.assigned_to` | x_ar_ar10_task.assigned_to · Reference → sys_user · AR team member working the task |
 
 ## Cost centre
 
@@ -740,6 +810,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `DEP.unmatched_amount` | Calculated: amount − allocations |
 | `DEP.match_state` | Calculated: Unmatched / Part matched / Matched |
 | `CUS.open_ar` | RETIRED 2026-11-18 (CCI decision 20): Open AR column on the Customers list. Was: calculated sum of amount_due on issued invoices |
+| `PYT.on_form` | Calculated column On the form (AR-x decision 2): Yes when a Payee and amount row of the same case has the same payee (case-insensitive, spaces trimmed) and amount; else No. A check for AR, nothing is changed automatically |
+| `PYR.in_excel` | Calculated column In the Excel (AR-x decision 2): Yes when an AR10 task of the same case (from the Excel) has the same payee and amount; else No |
 | `CUS.overdue` | Calculated: amount_due on issued invoices past due_date |
 | `CON.status` | Calculated: Active / Not started / Ended from start and end dates (shells: Open) |
 | `CON.line_count` | Calculated: number of billing lines filed under the contract |
@@ -790,6 +862,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `RL-REQ-CAL` | Related list: x_ar_collection_allocation where ar_request = this ar request |
 | `RL-REQ-C5L` | Related list: x_ar_collection_case_line where ar_request = this ar request |
 | `RL-REQ-RFT` | Related list: x_ar_refund_task where ar_request = this ar request |
+| `RL-REQ-RFR` | Related list: x_ar_refund_reason where ar_request = this ar request |
+| `RL-REQ-PYR` | Related list: x_ar_ar10_payee where ar_request = this ar request |
+| `RL-REQ-PYT` | Related list: x_ar_ar10_task where ar_request = this ar request |
 | `RL-CCT-CAL` | Related list: x_ar_collection_allocation where cost_centre = this cost centre |
 | `RL-INV-RQL` | Related list: x_ar_request_line where invoice = this invoice |
 | `RL-BNK-PMD` | Related list: x_ar_payment_mode where bank_account = this bank account |
@@ -804,6 +879,10 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `UA-PT-addrefund` | UI action: AR-ii: Add More in the Reason for Refund multi-row set (max 5 rows, AR-ii decision 3) |
 | `UA-RFT-save` | UI action: Save (update) on the AR2 task: State, Assigned to |
+| `UA-PYT-save` | UI action: Save (update) on the AR10 task: State, Assigned to |
+| `UA-PT-addpayee` | UI action: AR-x: + Add row in the Payee and amount multi-row set (max 99) |
+| `UA-PT-xlsample` | UI action: Demo only: Use sample file, fills the Excel upload with the template's sample rows (not built in ServiceNow) |
+| `UA-PT-xltemplate` | UI action: Download template: link to the blank Excel template (catalog item attachment or knowledge article) |
 | `UA-PT-addcase` | UI action: Collections AR-v Seized Monies / Restitution: + Add row in Case lines (multi-row set, max 99) |
 | `UA-PT-addcol` | UI action: Collections AR-iii: + Add row in Total number of collections for the day (multi-row set, max 99) |
 | `UA-PT-addalloc` | UI action: Collections AR-iv: + Add row in Amount for Each Account Code (multi-row set, max 10) |

@@ -116,9 +116,20 @@ function rowErrors(d, e, k, min, max) {
 /** AR-ii Refund request (#13): General information, 1 to 5 refund rows (AR-ii decision 3). The urgent explanation and documents are optional. */
 export function validateAR2(d) {
   const e = {}; generalInfoErrors(d, e);
-  rowErrors(d, e, "refundTasks", 1, 5);
+  rowErrors(d, e, "refundReasons", 1, 5);
   return e;
 }
+/** AR-x AR10 refund (#14): payee and amount rows (1 to 99), urgent explanation when Expedited = Yes (AR-x decision 4). */
+export function validateAR10(d) {
+  const e = {}; generalInfoErrors(d, e);
+  rowErrors(d, e, "ar10Payees", 1, 99);
+  if (d.ar10Expedited === "yes" && !(d.urgentReason || "").trim()) e.urgentReason = "Explain why this request is urgent.";
+  return e;
+}
+/** AR-x decision 2: does an AR10 task (from the Excel) match a payee and amount row typed on the form? */
+const normName = x => String(x || "").trim().replace(/\s+/g, " ").toLowerCase();
+export const inExcel = p => S.ar10Tasks.some(t => t.requestId === p.requestId && normName(t.payee) === normName(p.payee) && t.amount === p.amount);
+export const onForm = t => S.ar10Payees.some(p => p.requestId === t.requestId && normName(p.payee) === normName(t.payee) && p.amount === t.amount);
 export function validateCOL(d) {
   const e = {}; generalInfoErrors(d, e);
   if (!d.colType) e.colType = "Choose the collection type.";
@@ -216,6 +227,7 @@ export function validateARi(d) {
   if (d.form === "AR-ix") return validateARix(d);
   if (d.form === "COL") return validateCOL(d);
   if (d.form === "AR-ii") return validateAR2(d);
+  if (d.form === "AR-x") return validateAR10(d);
   const e = {}, need = (k, msg) => { const v = d[k]; if (v === undefined || v === null || v === "" || v === false) e[k] = msg; };
   generalInfoErrors(d, e);
   const noCust = NO_CUSTOMER_BILLING.includes(d.typeOfBilling);   // AR-i decision 43: Type of billing 5 / 6 has no customer or contract
@@ -320,6 +332,7 @@ export function linesLabel(r) {
   if (r.form === "AR-ix") return giroLabel(r);
   if (r.form === "COL") return `Collections · ${r.colType || "type not set"}`;
   if (r.form === "AR-ii") { const n = S.refundTasks.filter(x => x.requestId === r.id).length; return `Refund · ${n} AR2 task${n === 1 ? "" : "s"}`; }
+  if (r.form === "AR-x") { const n = S.ar10Tasks.filter(x => x.requestId === r.id).length; return `AR10 · ${n} AR10 task${n === 1 ? "" : "s"}`; }
   const ls = r.lines || reqLines(r), s = linesSummary(ls);
   return [s.nOne ? `${s.nOne} one-off` : "", s.nRec ? `${s.nRec} recurring` : ""].filter(Boolean).join(" · ") || "No lines";
 }
@@ -477,7 +490,7 @@ export function journal(req, kind, text, by) {
 
 /** Record producer submit (portal AR form). `o` overrides the case header when a case is loaded from data/AR_form.csv (UIX decision 13). */
 export function createRequest(vals, o = {}) {
-  const { lines, items = [], colTx = [], colAlloc = [], ar5Lines = [], refundTasks = [], tile, ...rest } = vals;
+  const { lines, items = [], colTx = [], colAlloc = [], ar5Lines = [], refundReasons = [], ar10Payees = [], xlRows = [], xlFile, xlError, tile, ...rest } = vals;
   clearHidden("requests", rest);
   const by = o.requestedBy || me().id;
   const req = { id: uid("r"), number: o.number || nextNumber("requests"), state: "new", substate: "", requestedBy: by, assignmentGroup: "g_ar", assignedTo: null,
@@ -491,12 +504,27 @@ export function createRequest(vals, o = {}) {
     journal(req, "system", `Submitted from AR-ix on the portal: ${giroLabel(req)} ${req.contractOption === "existing" ? `on contract ${ctrById(req.contractId)?.number}` : req.contractOption === "none" ? (req.contractId ? `on no-contract shell ${ctrById(req.contractId)?.number}` : `with no contract (no ${req.department} no-contract shell on file yet; AR links it)`) : `for a new contract${req.giroReference ? ` ${req.giroReference}` : ""} (not on file yet; AR links it after processing its AR-i)`}.`, req.requestedBy);
     return req;
   }
-  if (req.form === "AR-ii") {                         // AR-ii (#13, AR-ii decision 5): one AR2 task per row; the case is the submission
+  // AR-ii (#13, #15) and AR-x (#14): the form's rows are stored on the case; each filled row of the attached Excel becomes a task
+  const tasks = (k, base) => xlRows.forEach((x, i) => S[k].push({ id: uid("tk"), number: nextNumber(k), requestId: req.id, seq: i + 1, ...base(x), state: "open", assignedTo: null }));
+  const put = (k, rs) => rs.forEach((x, i) => S[k].push({ id: uid("cr"), requestId: req.id, seq: i + 1, ...x }));
+  if (xlFile && !req.attachments.includes(xlFile)) req.attachments = [...req.attachments, xlFile];
+  if (req.form === "AR-ii") {                         // AR-ii decisions 6, 7: reason rows = summary; Excel rows = AR2 tasks
     req.amount = 0;
-    refundTasks.forEach((x, i) => S.refundTasks.push({ id: uid("rt"), number: nextNumber("refundTasks"), requestId: req.id, seq: i + 1, reason: x.reason, casesCount: x.casesCount, state: "open", assignedTo: null }));
-    req.title = `Refund request – ${refundTasks.length} reason${refundTasks.length === 1 ? "" : "s"}`;
+    put("refundReasons", refundReasons);
+    tasks("refundTasks", x => ({ collectionRef: x.collectionRef, reason: x.reason, amount: x.amount, caseRef: x.caseRef, payee: x.payee, nonSgd: x.nonSgd }));
+    req.title = `Refund request – ${refundReasons.length} reason${refundReasons.length === 1 ? "" : "s"}`;
     S.requests.push(req);
-    journal(req, "system", `Submitted from AR-ii on the portal: ${refundTasks.length} AR2 task${refundTasks.length === 1 ? "" : "s"} created.`, req.requestedBy);
+    journal(req, "system", `Submitted from AR-ii on the portal. ${xlRows.length ? `${xlFile || "Excel"} processed: ${xlRows.length} AR2 task${xlRows.length === 1 ? "" : "s"} created.` : "No Excel template attached: no AR2 tasks created."}`, req.requestedBy);
+    return req;
+  }
+  if (req.form === "AR-x") {                          // AR-x decisions 2–4
+    if (req.ar10Expedited !== "yes") req.urgentReason = "";
+    put("ar10Payees", ar10Payees);
+    req.amount = ar10Payees.reduce((n, x) => n + (x.amount || 0), 0);
+    tasks("ar10Tasks", x => ({ payee: x.payee, amount: x.amount }));
+    req.title = `AR10 refund – ${ar10Payees.length} payee${ar10Payees.length === 1 ? "" : "s"}`;
+    S.requests.push(req);
+    journal(req, "system", `Submitted from AR-x on the portal. ${xlRows.length ? `${xlFile || "Excel"} processed: ${xlRows.length} AR10 task${xlRows.length === 1 ? "" : "s"} created.` : "No Excel template attached: no AR10 tasks created."}`, req.requestedBy);
     return req;
   }
   if (req.form === "COL") {                           // Collections (D30): no billing lines; rows copied to their tables (#9)

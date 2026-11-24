@@ -26,3 +26,4 @@
 | 2026-11-23 | Decision 27: Statement uploads columns Lines matched and Unmatched amount; demo data with 3–6 lines per statement and 3 more statements. **New IDs:** `BSU.lines_matched`, `BSU.unmatched_amount`. |
 | 2026-11-24 | Decision 28: Statement uploads one row per Deposit ID; Deposit ID page with Lines, Suggested matches (Match total with split confirm), Allocations, Details. **New IDs:** `DEPID-01`, `DEPID-DET`, `RL-DEPID-LINES`, `RL-DEPID-SUG`, `RL-DEPID-ALC`, `UA-DEPID-line`, `UA-DEPID-match`, `UA-DEPID-confirm`, `BSU.deposit_total`. **Retired ID:** `BSU.deposit_ids`. |
 | 2026-11-24 | Decision 29: Suggested matches tabs marked Future (badge + banner). **New ID:** `WS-FUT` (prototype marker, not built). |
+| 2026-11-25 | Demo data: 13 bank lines added for the Collections scenarios (AR-iii decision 23), on the AR-iii, AR-iv and AR-v accounts and one on the Operating account; added to that day's statement upload when one exists. No screen change. |

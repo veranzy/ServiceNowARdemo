@@ -3,7 +3,7 @@
 **Status:** In prototype
 **Persona(s):** Project team (portal), AR team (workspace)
 **Demo:** portal → AR forms → **AR-ii Refund request** (`#/portal/form/AR-ii`); workspace → AR requests → **All AR-ii**
-(demo case ARQ0001017) and **Open AR2 tasks**.
+(demo case ARQ0001022) and **Open AR2 tasks**.
 
 Files in this folder: this spec, [DECISIONS.md](DECISIONS.md), [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md),
 [CHANGELOG.md](CHANGELOG.md). Requirements: [issue #13](https://github.com/veranzy/ServiceNowARdemo/issues/13) (form), [issue #15](https://github.com/veranzy/ServiceNowARdemo/issues/15) (Excel upload).

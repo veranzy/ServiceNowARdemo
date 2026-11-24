@@ -6,6 +6,7 @@
 import { parseCSV } from "./io.js";
 import { createRequest, termsDays, draftDate, firstInvoices, journal, nextCycleDate, nextNumber, periodAmounts, periodDates, runDailyInvoiceCheck } from "./records.js";
 import { allocate } from "./matching.js";
+import { depositId } from "./bsu.js";
 import { TEMPLATES, sampleRows } from "./excel.js";
 import { TABLES } from "./schema.js";
 import { S } from "./state.js";
@@ -49,39 +50,88 @@ export async function loadCases() {
   return addCases(cached);
 }
 
-/** AR-iii decision 21 (demo): Collections cases for AR-iii, AR-iv and AR-v in different states. Two AR-iii totals equal an
- *  unmatched bank line: one is already matched by AR (manual, D5), the other waits in Suggested matches. */
+/** AR-iii decision 23 (demo, replaces decision 21's set): Collections cases with their own bank lines, to show how hard
+ *  matching to BSU deposits can be. Each case's first work note names its scenario. Matching stays manual (D5): only the
+ *  "already matched" and "part matched" situations carry allocations, made as AR would make them. */
 function collectionCases() {
   const users = { pm1: S.users.find(u => u.id === "u_pm1"), pm2: S.users.find(u => u.id === "u_pm2") };
   const cc = d => S.costCentres.find(c => c.department === d && c.active)?.id || null, ac = code => S.accountCodes.find(a => a.code === code)?.id || null;
   const acct = num => S.bankAccounts.find(a => a.number === num);
-  const loose = (num, payer, skip = 0) => S.deposits.filter(p => p.bankAccountId === acct(num)?.id && p.payer === payer && !S.matches[p.id])[skip];
-  const split = (amt, a, b) => { const x = Math.round(amt * 0.6); return [{ collectionType: a, amount: x }, { collectionType: b, amount: amt - x }]; };
-  const nets1 = loose("072-104521-6", "NETS SETTLEMENT"), nets2 = loose("072-104521-6", "NETS SETTLEMENT", 1) || loose("072-104521-6", "CASH DEPOSIT");
-  const t = isoToday(), ago = n => addDays(t, -n);
+  const MB = acct("072-104521-6"), OB = acct("601-337204-001"), USD = acct("451-302-118-7"), OPS = acct("451-302-990-2");   // AR-iii, AR-iv, AR-v accounts; Operating (wrong account)
+  const t = isoToday(), ago = n => addDays(t, -n), $ = x => Math.round(x * 100);
+  // one statement upload per account per day: reuse the day's upload when it exists, else add one (RITM)
+  const stmt = (a, date) => {
+    let up = S.uploads.find(u => u.bankAccountId === a.id && u.statementDate === date);
+    if (!up) { up = { id: uid("u"), number: nextNumber("uploads"), bankAccountId: a.id, statementDate: date, fileName: `${a.bank}_${a.number.replace(/\D/g, "")}_${date.replace(/-/g, "")}.csv`,
+      uploadedBy: "u_ar2", uploadedAt: addDays(date, 1) + " 09:05", depositCount: 0, depositTotal: 0, skippedCount: 0 }; S.uploads.push(up); }
+    return up;
+  };
+  const line = (a, days, txnId, payer, reference, amount) => {
+    const date = ago(days), up = stmt(a, date), pm = S.paymentModes.find(m => m.bankAccountId === a.id && m.name === txnId);
+    const d = { id: uid("p"), number: depositId(a, date, txnId), txnId, paymentModeId: pm?.id || null, bankAccountId: a.id, uploadId: up.id, date, payer, amount: $(amount), reference, bankRef: "", currency: "SGD" };
+    S.deposits.push(d); up.depositCount++; up.depositTotal += d.amount; return d;
+  };
   const gi = (u, dept, sub) => ({ form: "COL", requesterName: u.name, requesterEmail: u.email, department: dept, deptSubBu: sub, ccList: "", colOrigin: "manual", attachments: ["collection_report.pdf"] });
+  const tx = (...r) => r.map(([collectionType, amount]) => ({ collectionType, amount: $(amount) }));
+
+  // Bank lines (statement day = days ago)
+  const L = {
+    netsA: line(MB, 7, "GIRO", "NETS SETTLEMENT", "MID 4410023 STL 0417", 1842.50),
+    ccA: line(MB, 6, "GIRO", "CC SETTLEMENT VISA MC", "MERCH 88120045 BATCH 0418", 2315.00),
+    ezA: line(MB, 6, "GIRO", "EZ-LINK CASHCARD STL", "TID 30017781", 410.20),
+    netsB: line(MB, 4, "GIRO", "NETS SETTLEMENT", "MID 4410551 STL 0421", 1760.00),
+    ccC: line(MB, 8, "GIRO", "CC SETTLEMENT VISA MC", "MERCH 88120061 BATCH 0415", 2946.00),
+    ibgD: line(OB, 3, "IBG", "LIM BROS CONTRACTORS PTE", "RDS-RCV-2026-118", 5065.00),
+    fastE: line(OB, 2, "FAST", "GREENCYCLE PTE LTD", "ENV-W-0457/0461", 2240.00),
+    ttF1: line(USD, 6, "TT", "TAN WEI MING", "BAIL IB/2026/004417", 5000.00),
+    fastF2: line(USD, 5, "FAST", "CASH BAIL", "", 5000.00),
+    ttSM: line(USD, 9, "TT", "SEIZED MONIES SM", "SM-2026-0081 SM-2026-0082", 2715.00),
+    ttRS: line(USD, 3, "TT", "RESTITUTION RS", "RS-2026-0019", 750.00),
+    fastRS: line(USD, 3, "FAST", "RESTITUTION RS", "RS-2026-0020", 320.00),
+    opsH: line(OPS, 4, "FAST", "NETS SETTLEMENT", "MID 4410388 STL 0421", 655.40)
+  };
   const cases = [
-    // [vals, by, opened days ago, state, assigned, match to bank line]
-    [{ ...gi(users.pm2, "Facilities", "Carparks"), colType: "AR-iii", colDate: nets1?.date || ago(6), colTx: split(nets1?.amount || 184050, "NETS", "Credit Card") }, users.pm2, 6, "work_in_progress", "u_ar1", nets1],
-    [{ ...gi(users.pm1, "Healthcare", "Clinics"), colType: "AR-iii", colDate: nets2?.date || ago(3), colTx: split(nets2?.amount || 96000, "NETS Scan/QR", "Cashcard") }, users.pm1, 3, "new", null, null],
-    [{ ...gi(users.pm2, "Infrastructure", "Roads"), colType: "AR-iv", colDate: ago(9), colRef: "RDS-RCV-2026-118",
-       colAlloc: [{ desc: "Road closure permit recovery", amount: 420000, costCentre: cc("Infrastructure"), accountCode: ac("4300") }, { desc: "Damaged signage recovery", amount: 86500, costCentre: cc("Infrastructure"), accountCode: "other", accountCodeOther: "4390 Misc recoveries" }] }, users.pm2, 9, "work_in_progress", "u_ar2", null],
-    [{ ...gi(users.pm1, "Environmental", "Waste"), colType: "AR-iv", colDate: ago(2), colRef: "ENV-W-0457",
-       colAlloc: [{ desc: "Bin rental recovery, Oct", amount: 128000, costCentre: cc("Environmental"), accountCode: ac("4200") }] }, users.pm1, 2, "new", null, null],
-    [{ ...gi(users.pm2, "Marine", "Port Works"), colType: "AR-v", colCategory: "cash_bail", ar5Date: ago(12), ar5Receipt: "G56-771204", bailAmount: 500000, bailorName: "Tan Wei Ming",
-       ibCase: "IB/2026/004417", caseStatus: "pending", accusedName: "Lim Ah Kow", ar5Refund: false }, users.pm2, 12, "work_in_progress", "u_ar1", null],
-    [{ ...gi(users.pm1, "Marine", "Offshore"), colType: "AR-v", colCategory: "seized", ar5Date: ago(8), ar5Forfeit: true, ar5CourtOrder: true, ar5Invest: "no", ar5RefundS: false,
-       ar5Lines: [{ caseNumber: "SM-2026-0081", amount: 230000, caseStatus: "pending" }, { caseNumber: "SM-2026-0082", amount: 41500, caseStatus: "case_closed" }] }, users.pm1, 8, "awaiting_requestor_info", "u_ar2", null],
+    // [vals, by, opened days ago, state, assigned, scenario work note, allocations [line, amount or null]]
+    [{ ...gi(users.pm2, "Facilities", "Carparks"), colType: "AR-iii", colDate: ago(8), colTx: tx(["NETS", 1842.50], ["Credit Card", 2315.00], ["Cashcard", 410.20]) }, users.pm2, 8, "work_in_progress", "u_ar1",
+      `Scenario: split and part matched. One day's takings (SGD 4,567.70) settle as three bank lines on different days: NETS ${L.netsA.number} (T+1), credit card ${L.ccA.number} and cashcard ${L.ezA.number} (T+2). NETS is matched; the card and cashcard lines are still open.`, [[L.netsA, null]]],
+    [{ ...gi(users.pm1, "Healthcare", "Clinics"), colType: "AR-iii", colDate: ago(5), colTx: tx(["NETS", 620.00]) }, users.pm1, 5, "new", null,
+      `Scenario: combined. NETS settles per merchant, not per counter: bank line ${L.netsB.number} (SGD 1,760.00) pays this case (SGD 620.00) and the Hospitals counter's case together. Allocate 620.00 here and 1,140.00 there.`, []],
+    [{ ...gi(users.pm2, "Healthcare", "Hospitals"), colType: "AR-iii", colDate: ago(5), colTx: tx(["NETS", 1140.00]) }, users.pm2, 5, "new", null,
+      `Scenario: combined. Paid by the same NETS line ${L.netsB.number} as the Clinics counter's case; no line has exactly SGD 1,140.00.`, []],
+    [{ ...gi(users.pm1, "Facilities", "Retail Leasing"), colType: "AR-iii", colDate: ago(10), colTx: tx(["Credit Card", 3000.00]) }, users.pm1, 10, "work_in_progress", "u_ar2",
+      `Scenario: bank fees. Card takings SGD 3,000.00 settle net of the bank's commission (1.8% MDR, SGD 54.00): line ${L.ccC.number} is SGD 2,946.00. Matching leaves 54.00 open on the case (fee treatment to decide).`, []],
+    [{ ...gi(users.pm2, "Infrastructure", "Roads"), colType: "AR-iv", colDate: ago(4), colRef: "RDS-RCV-2026-118",
+       colAlloc: [{ desc: "Road closure permit recovery", amount: $(4200.00), costCentre: cc("Infrastructure"), accountCode: ac("4300") }, { desc: "Damaged signage recovery", amount: $(865.05), costCentre: cc("Infrastructure"), accountCode: "other", accountCodeOther: "4390 Misc recoveries" }] }, users.pm2, 4, "work_in_progress", "u_ar1",
+      `Scenario: rounding difference. The payer quoted our Reference Number, but paid SGD 5,065.00 (line ${L.ibgD.number}) against SGD 5,065.05: 5 cents short.`, []],
+    [{ ...gi(users.pm1, "Environmental", "Waste"), colType: "AR-iv", colDate: ago(4), colRef: "ENV-W-0457",
+       colAlloc: [{ desc: "Bin rental recovery, week 1", amount: $(1280.00), costCentre: cc("Environmental"), accountCode: ac("4200") }] }, users.pm1, 4, "new", null,
+      `Scenario: two days banked together. Line ${L.fastE.number} (SGD 2,240.00, reference ENV-W-0457/0461) is bigger than this case (SGD 1,280.00): it also pays ENV-W-0461.`, []],
+    [{ ...gi(users.pm1, "Environmental", "Waste"), colType: "AR-iv", colDate: ago(3), colRef: "ENV-W-0461",
+       colAlloc: [{ desc: "Bin rental recovery, week 2", amount: $(960.00), costCentre: cc("Environmental"), accountCode: ac("4200") }] }, users.pm1, 3, "new", null,
+      `Scenario: two days banked together. Paid by the same line ${L.fastE.number} as ENV-W-0457.`, []],
+    [{ ...gi(users.pm2, "Marine", "Port Works"), colType: "AR-v", colCategory: "cash_bail", ar5Date: ago(7), ar5Receipt: "G56-771204", bailAmount: $(5000.00), bailorName: "Tan Wei Ming",
+       ibCase: "IB/2026/004417", caseStatus: "pending", accusedName: "Lim Ah Kow", ar5Refund: false }, users.pm2, 7, "work_in_progress", "u_ar1",
+      `Scenario: look-alike. Two Cash Bail cases of SGD 5,000.00 each. Line ${L.ttF1.number} quotes this case's IB number; line ${L.fastF2.number} says only "CASH BAIL". Check the IB number and the bailor before matching.`, []],
+    [{ ...gi(users.pm1, "Marine", "Offshore"), colType: "AR-v", colCategory: "cash_bail", ar5Date: ago(6), ar5Receipt: "G56-771260", bailAmount: $(5000.00), bailorName: "Nur Aisyah Binte Rahman",
+       ibCase: "IB/2026/004502", caseStatus: "pending", accusedName: "Ong Kah Huat", ar5Refund: false }, users.pm1, 6, "new", null,
+      `Scenario: look-alike, no reference. The likely line is ${L.fastF2.number} (SGD 5,000.00, reference "CASH BAIL" only), but ${L.ttF1.number} has the same amount. Ask the requester for the bank-in slip.`, []],
+    [{ ...gi(users.pm1, "Marine", "Offshore"), colType: "AR-v", colCategory: "seized", ar5Date: ago(10), ar5Forfeit: true, ar5CourtOrder: true, ar5Invest: "no", ar5RefundS: false,
+       ar5Lines: [{ caseNumber: "SM-2026-0081", amount: $(2300.00), caseStatus: "pending" }, { caseNumber: "SM-2026-0082", amount: $(415.00), caseStatus: "case_closed" }] }, users.pm1, 10, "closed_complete", "u_ar2",
+      `Scenario: already matched. One TT line ${L.ttSM.number} quotes both case numbers and equals the case total (SGD 2,715.00).`, [[L.ttSM, null]]],
     [{ ...gi(users.pm2, "Marine", "Dredging"), colType: "AR-v", colCategory: "restitution", ar5Date: ago(4), ar5CourtOrder: true, colRemarks: "Second restitution amount received after the court hearing.",
-       ar5Lines: [{ caseNumber: "RS-2026-0019", amount: 75000, caseStatus: "pending" }, { caseNumber: "RS-2026-0020", amount: 32000, caseStatus: "case_closed" }] }, users.pm2, 4, "new", null, null]
+       ar5Lines: [{ caseNumber: "RS-2026-0019", amount: $(750.00), caseStatus: "pending" }, { caseNumber: "RS-2026-0020", amount: $(320.00), caseStatus: "case_closed" }] }, users.pm2, 4, "work_in_progress", "u_ar1",
+      `Scenario: matched across two Deposit IDs. The two case lines were paid the same day by TT (${L.ttRS.number}) and FAST (${L.fastRS.number}), so they sit under two Deposit IDs.`, [[L.ttRS, null], [L.fastRS, null]]],
+    [{ ...gi(users.pm2, "Rail", "Signalling"), colType: "AR-iii", colDate: ago(5), colTx: tx(["NETS FlashPay", 655.40]) }, users.pm2, 5, "awaiting_requestor_info", "u_ar2",
+      `Scenario: wrong bank account. The settlement ${L.opsH.number} landed in the Operating account (${OPS.number}), not the AR collections account that receives AR-iii money, so it ranks lower in Suggested matches. Asked the requester to check the terminal's settlement account.`, []]
   ];
   const label = v => TABLES.requests.fields.find(f => f.key === "state").choices.find(x => x[0] === v)?.[1] || v;
-  for (const [vals, by, days, state, ar, line] of cases) {
+  for (const [vals, by, days, state, ar, note, allocs] of cases) {
     const opened = ago(days), r = createRequest(vals, { requestedBy: by?.id, opened }), at = opened + "T09:00:00";
     if (ar) { r.assignedTo = ar; r.state = "work_in_progress"; journal(r, "system", `Assigned to ${S.users.find(u => u.id === ar).name}.`, ar); }
+    journal(r, "work_note", note, ar || "u_ar1");
+    for (const [d, amt] of allocs) { allocate(d.id, r.id, amt, "Matched by AR."); journal(r, "work_note", `BSU deposit ${d.number} (${d.payer}, SGD ${(d.amount / 100).toFixed(2)}) matched to this case.`, ar); }
     if (state !== r.state) { r.state = state; journal(r, "system", `State changed to ${label(state)}.`, ar || by?.id); }
-    if (state === "awaiting_requestor_info") { r.substate = "awaiting_input"; journal(r, "comment", "Please attach the court order for SM-2026-0081.", ar); }
-    if (line) { allocate(line.id, r.id, null, "Matched to the AR-iii day total."); journal(r, "work_note", `BSU deposit ${line.number} (${line.payer}) matched to this case.`, ar); }
+    if (state === "awaiting_requestor_info") { r.substate = "awaiting_input"; journal(r, "comment", "The NETS settlement for this terminal reached the Operating account. Please confirm the terminal's settlement account with the bank.", ar); }
     r.activity.forEach(e => { e.at = at; }); r.updated = opened;
     S.history.push({ table: "requests", id: r.id, at, by: by?.id, kind: "created" });
   }
@@ -136,7 +186,7 @@ export function addCases(text) {
     S.history.push({ table: "requests", id: r.id, at, by: r.requestedBy, kind: "created" });
     n++;
   }
-  collectionCases();   // AR-iii decision 21
+  collectionCases();   // AR-iii decision 23 (replaces the decision 21 set)
   refundCases();       // AR-ii (#13)
   scheduleHistory();
   for (const num of CLOSED_RECURRING) {

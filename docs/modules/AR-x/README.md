@@ -3,7 +3,7 @@
 **Status:** In prototype
 **Persona(s):** Project team (portal), AR team (workspace)
 **Demo:** portal → AR forms → **AR-x Refund (payment / journal)** (`#/portal/form/AR-x`); workspace → AR requests →
-**All AR-x** (demo case ARQ0001018) and **Open AR10 tasks**. The AR-v Collections form's "Please raise a AR10" link opens it.
+**All AR-x** (demo case ARQ0001023) and **Open AR10 tasks**. The AR-v Collections form's "Please raise a AR10" link opens it.
 
 Files in this folder: this spec, [DECISIONS.md](DECISIONS.md), [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md),
 [CHANGELOG.md](CHANGELOG.md). Requirement: [issue #14](https://github.com/veranzy/ServiceNowARdemo/issues/14).

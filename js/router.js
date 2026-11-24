@@ -40,6 +40,7 @@ export function routeOf() {
   const m = w.main;
   if (m.kind === "list") return `#/ws/list/${m.table}/${m.filter}`;
   if (m.kind === "bsu") return `#/ws/${m.kind}`;
+  if (m.kind === "depid") return `#/ws/depid/${enc(m.id)}`;   // BSU decision 28
   return "#/ws";
 }
 
@@ -65,6 +66,7 @@ export function applyRoute(hash) {
   if (!a) { if (area === "ws") { w.main = { kind: "home" }; w.active = "main"; } return null; }
   if (a === "cash") { w.main = { kind: "list", table: "deposits", filter: "all" }; w.active = "main"; return null; }   // BSU decision 21: page retired; old links open BSU deposits to match
   if (a === "bsu") { w.main = { kind: a }; w.active = "main"; return null; }
+  if (a === "depid" && b) { w.main = { kind: "depid", id: b }; w.active = "main"; return null; }   // BSU decision 28
   if (a === "list" && b) { w.main = { kind: "list", table: b, filter: c || "all" }; w.active = "main"; return null; }
   if (b && S[a] && b !== "new") {
     const r = findRec(a, b);

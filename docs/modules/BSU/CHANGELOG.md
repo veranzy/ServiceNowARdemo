@@ -24,3 +24,4 @@
 | 2026-11-23 | Decision 25: list menu *Bank statements* → Statement uploads, Bank lines (merged), Bank accounts, Payment modes; Bank lines rows open the line; after an upload, the daily statement opens. No IDs added or retired. |
 | 2026-11-23 | Decision 26: Statement uploads list gets Deposit ID; Bank name and Bank account split. **New ID:** `BSU.deposit_ids`. |
 | 2026-11-23 | Decision 27: Statement uploads columns Lines matched and Unmatched amount; demo data with 3–6 lines per statement and 3 more statements. **New IDs:** `BSU.lines_matched`, `BSU.unmatched_amount`. |
+| 2026-11-24 | Decision 28: Statement uploads one row per Deposit ID; Deposit ID page with Lines, Suggested matches (Match total with split confirm), Allocations, Details. **New IDs:** `DEPID-01`, `DEPID-DET`, `RL-DEPID-LINES`, `RL-DEPID-SUG`, `RL-DEPID-ALC`, `UA-DEPID-line`, `UA-DEPID-match`, `UA-DEPID-confirm`, `BSU.deposit_total`. **Retired ID:** `BSU.deposit_ids`. |

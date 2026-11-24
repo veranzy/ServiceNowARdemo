@@ -17,6 +17,14 @@ const mine = r => r.assignedTo === me()?.id;
 
 // ---------- list definitions (list layouts + filters, i.e. list menu modules) ----------
 export const upOf = p => S.uploads.find(x => x.id === p.uploadId);   // BSU decision 23
+/** BSU decision 28: bank lines grouped by Deposit ID (account + day + payment mode). Not a table: deposit_id is a field on the lines. */
+export function depositGroups() {
+  const g = {};
+  for (const p of S.deposits) (g[p.number] ||= []).push(p);
+  return Object.entries(g).map(([number, lines]) => { const p0 = lines[0], m = lines.map(depositMoney);
+    return { id: number, number, lines, upload: upOf(p0), uploadId: p0.uploadId, bankAccountId: p0.bankAccountId, statementDate: p0.date, txnId: p0.txnId,
+      total: lines.reduce((t, p) => t + p.amount, 0), unmatched: m.reduce((t, x) => t + x.unapplied, 0), matchedLines: m.filter(x => x.unapplied === 0).length }; });
+}
 const LISTS = {
   requests: {
     filters: {
@@ -69,17 +77,17 @@ const LISTS = {
   },
   uploads: {
     filters: { all: ["Statement uploads", () => true] },
-    // BSU decision 26: Deposit ID(s) of its lines; bank name and bank account in their own columns
-    cols: [["Upload", u => refLink("uploads", u.id, u.number), "", "number"], ["Statement date", u => esc(u.statementDate), "", "statementDate"],
-      ["Deposit ID", u => [...new Set(S.deposits.filter(p => p.uploadId === u.id).map(p => p.number))].map(n => `<span class="mono">${esc(n)}</span>`).join("<br>") || "—", "", "=BSU.deposit_ids"],
-      ["Bank name", u => esc(BANKS[acctById(u.bankAccountId)?.bank]?.name || "—"), "", "=BNK.bank"], ["Bank account", u => esc(acctById(u.bankAccountId)?.number || "—"), "", "bankAccountId"],
-      ["Department", u => esc(acctById(u.bankAccountId)?.department || "—"), "", "=BSU.department"], ["Deposits", u => String(u.depositCount), "num", "depositCount"],
-      // BSU decision 27: lines 100% matched / lines in the statement, and the amount not yet matched
-      ["Lines matched", u => { const ls = S.deposits.filter(p => p.uploadId === u.id); return `${ls.filter(p => depositMoney(p).unapplied === 0).length}/${ls.length}`; }, "num", "=BSU.lines_matched"],
-      ["Unmatched amount", u => fmt(S.deposits.filter(p => p.uploadId === u.id).reduce((t, p) => t + depositMoney(p).unapplied, 0)), "num", "=BSU.unmatched_amount"], ["Total", u => fmt(u.depositTotal), "num", "depositTotal"],
-      ["Uploaded", u => `${esc(u.uploadedAt)}<span class="desc">${esc(userById(u.uploadedBy)?.name || "")}</span>`, "", "uploadedAt"]],
-    sort: (a, b) => String(b.statementDate).localeCompare(String(a.statementDate)) || String(b.number).localeCompare(String(a.number)),
-    text: u => [u.number, acctLabel(acctById(u.bankAccountId)), u.fileName, ...S.deposits.filter(p => p.uploadId === u.id).map(p => p.number)].join(" "), newable: true
+    // BSU decision 28: one row per Deposit ID (bank lines of one account, one day, one payment mode); the row opens the Deposit ID page
+    rows: () => depositGroups(), openAs: g => `depid:${g.number}`,
+    cols: [["Deposit ID", g => `<span class="mono">${esc(g.number)}</span>`, "", "=DEP.deposit_id"], ["Statement date", g => esc(g.statementDate), "", "statementDate"],
+      ["Upload", g => esc(g.upload?.number || "—"), "", "number"],
+      ["Bank name", g => esc(BANKS[acctById(g.bankAccountId)?.bank]?.name || "—"), "", "=BNK.bank"], ["Bank account", g => esc(acctById(g.bankAccountId)?.number || "—"), "", "bankAccountId"],
+      ["Department", g => esc(acctById(g.bankAccountId)?.department || "—"), "", "=BSU.department"],
+      ["Lines matched", g => `${g.matchedLines}/${g.lines.length}`, "num", "=BSU.lines_matched"], ["Unmatched amount", g => fmt(g.unmatched), "num", "=BSU.unmatched_amount"],
+      ["Total", g => fmt(g.total), "num", "=BSU.deposit_total"],
+      ["Uploaded", g => `${esc(g.upload?.uploadedAt || "—")}<span class="desc">${esc(userById(g.upload?.uploadedBy)?.name || "")}</span>`, "", "uploadedAt"]],
+    sort: (a, b) => String(b.statementDate).localeCompare(String(a.statementDate)) || String(b.upload?.number || "").localeCompare(String(a.upload?.number || "")) || a.number.localeCompare(b.number),
+    text: g => [g.number, g.upload?.number, acctLabel(acctById(g.bankAccountId)), ...g.lines.map(p => `${p.payer} ${p.reference}`)].join(" "), newable: true
   },
   bankAccounts: {
     filters: { all: ["Bank accounts", () => true], active: ["Active", x => x.active !== false], inactive: ["Inactive", x => x.active === false] },
@@ -197,6 +205,7 @@ function mainLabel() {
   const m = W().main;
   if (m.kind === "home") return "Home";
   if (m.kind === "bsu") return "Bank statement upload";
+  if (m.kind === "depid") return m.id;
   return `${TABLES[m.table].plural}: ${filterOf(m.table, m.filter)[0]}`;
 }
 
@@ -209,7 +218,7 @@ export function workspaceView() {
   const w = W(), m = w.main, u = me();
   const rail = [["home", "Home", "home"], ["list", "Lists", "list"], ["bsu", "Bank statement upload (BSU)", "upload"]];   // BSU decision 21: Cash application page retired
   const bsuList = m.kind === "list" && m.table === "uploads";   // BSU decision 16
-  const railActive = k => w.active === "main" && (k === "list" ? m.kind === "list" && !bsuList : k === "bsu" ? m.kind === "bsu" || bsuList : m.kind === k);
+  const railActive = k => w.active === "main" && (k === "list" ? m.kind === "list" && !bsuList : k === "bsu" ? m.kind === "bsu" || m.kind === "depid" || bsuList : m.kind === k);
   const counts = { new: S.requests.filter(LISTS.requests.filters.new[1]).length };
   return `<div class="ws">
     <header class="ws-head"${sn("WS-01")}>
@@ -235,6 +244,7 @@ export function workspaceView() {
 function mainContent() {
   const m = W().main;
   if (m.kind === "bsu") return bsuPage();
+  if (m.kind === "depid") return depIdPage(m);
   if (m.kind === "list") return listPage(m.table, m.filter);
   return homePage();
 }
@@ -286,7 +296,7 @@ function homePage() {
 export function listRows(table, filter) {
   const def = LISTS[table], q = W().q.trim().toLowerCase();
   const cols = def.colsFor ? def.colsFor(filter) : def.cols;
-  let rows = S[table].filter(filterOf(table, filter)[1]);
+  let rows = (def.rows ? def.rows() : S[table]).filter(filterOf(table, filter)[1]);
   if (q) rows = rows.filter(r => def.text(r).toLowerCase().includes(q));
   rows = rows.slice().sort(def.sort);
   return { rows, html: rows.length ? rows.map(r => `<tr data-open="${def.openAs ? def.openAs(r) : `${table}:${r.id}`}" tabindex="0">${cols.map(c => `<td class="${c[2]}">${c[1](r)}</td>`).join("")}</tr>`).join("")
@@ -298,7 +308,7 @@ function listMenu() {
   return `<aside class="lp-menu" aria-label="Lists"${sn("WS-04")}>
     <div class="lm-head"><b>Lists</b><button type="button" class="iconbtn lm-close" data-lmtoggle aria-label="Hide lists">${icon("panel", 16)}</button></div>
     ${MENU.map(([g, items]) => `<div class="lm-group"><h3>${esc(g)}</h3>${items.map(([t, f]) => {
-      const n = S[t].filter(LISTS[t].filters[f][1]).length, on = m.table === t && m.filter === f;
+      const n = (LISTS[t].rows ? LISTS[t].rows() : S[t]).filter(LISTS[t].filters[f][1]).length, on = m.table === t && m.filter === f;
       return `<button type="button" class="lm-item" data-list="${t}:${f}" aria-current="${on}"><span>${esc(LISTS[t].filters[f][0])}</span><span class="count">${n}</span></button>`; }).join("")}</div>`).join("")}
   </aside>`;
 }
@@ -326,6 +336,57 @@ function listView(table, filter, menuOpen) {
       return `<th class="${c[2]}"${c[3] ? sn(c[3].startsWith("=") ? c[3].slice(1) : `${CODE[table]}.${tf?.name}`) : ""}>${esc(c[0])}${tf?.tooltip ? ` <span class="ftip" tabindex="0" role="img" aria-label="${esc(tf.tooltip)}" data-tip="${esc(tf.tooltip)}">i</span>` : ""}</th>`; }).join("")}</tr></thead>
       <tbody id="listBody">${html}</tbody></table></div></div>
   </div>`;
+}
+
+// ---------- BSU decision 28: Deposit ID page (lines first; match per line or by the Deposit ID total) ----------
+function depIdPage(m) {
+  const g = depositGroups().find(x => x.number === m.id);
+  if (!g) return `<div class="page"><p class="empty">Deposit ID ${esc(m.id)} isn't here. Uploads made during a demo last only until the page reloads.</p><button type="button" class="btn" data-list="uploads:all">Statement uploads</button></div>`;
+  const a = acctById(g.bankAccountId), allocs = g.lines.flatMap(p => (S.matches[p.id]?.status === "accepted" ? S.matches[p.id].allocations : []).map(x => ({ p, a: x })));
+  const pseudo = { id: "g", amount: g.unmatched, payer: g.lines[0].payer, reference: g.lines.map(p => p.reference).join(" "), bankAccountId: g.bankAccountId, date: g.statementDate };
+  const sug = g.unmatched > 0 ? candidateList(pseudo, null).slice(0, 10) : [];
+  const tabs = [
+    rt("Lines", "deposits", g.lines, [["Payer", p => refLink("deposits", p.id, p.payer || "—")], ["Reference", p => `<span class="mono small">${esc(p.reference || "—")}</span>`, "wrap"],
+      ["Amount", p => fmt(p.amount), "num"], ["Unmatched", p => fmt(depositMoney(p).unapplied), "num"], ["Match", p => depositChip(p)], ["", p => `<button type="button" class="btn small" data-open="deposits:${p.id}"${sn("UA-DEPID-line")}>Match line</button>`]],
+      { id: "RL-DEPID-LINES" }),
+    rt("Suggested matches", "invoices", sug, [["Invoice or case", x => tgtLink(x.i)], ["Customer", x => esc(x.i.customer || "—")], ["Open", x => fmt(x.st.open), "num"], ["Why suggested", x => whyChips(x.sg, x.i)],
+      ["", x => `<button type="button" class="btn small" data-dmatch="${esc(g.number)}|${x.i.id}"${sn("UA-DEPID-match")}>Match total</button>`]],
+      { id: "RL-DEPID-SUG", empty: g.unmatched > 0 ? "No open invoices or Collections cases." : "All lines of this Deposit ID are matched." }),
+    rt("Allocations", "allocations", allocs, [["Bank line", x => refLink("deposits", x.p.id, x.p.payer || "—")], ["Invoice or case", x => { const t = targetById(x.a.invoiceId || x.a.requestId); return t ? tgtLink(t) : "—"; }],
+      ["Allocation value", x => fmt(x.a.amount), "num"]], { id: "RL-DEPID-ALC", intro: allocDelta(g.total, allocs) }),
+    { key: "details", label: "Details", html: `<dl class="kv"${sn("DEPID-DET")}>${[["Deposit ID", `<span class="mono">${esc(g.number)}</span>`], ["Statement date", esc(g.statementDate)],
+      ["Bank name", esc(BANKS[a?.bank]?.name || "—")], ["Bank account", esc(a?.number || "—")], ["Payment mode", esc(g.txnId || "—")],
+      ["Upload", g.upload ? refLink("uploads", g.upload.id, g.upload.number) : "—"], ["Uploaded", esc(g.upload ? `${g.upload.uploadedAt} · ${userById(g.upload.uploadedBy)?.name || ""}` : "—")]]
+      .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join("")}</dl>` }];
+  const cur = tabs.find(x => x.key === m.sub) || tabs[0];
+  const conf = m.confirm && targetById(m.confirm.split("|")[1]);
+  const plan = conf ? splitPlan(g, conf) : [];
+  return `<div class="page rec"${sn("DEPID-01")}>
+    <div class="rec-head"><div class="rh-top"><div class="rh-title"><span class="rh-table">Deposit ID</span><h1 class="mono">${esc(g.number)}</h1>
+      <span class="rh-sub">${esc(BANKS[a?.bank]?.name || "")} · ${esc(a?.number || "")} · ${esc(g.statementDate)}</span></div>
+      <div class="rh-right"><button type="button" class="btn" data-list="uploads:all">Statement uploads</button></div></div></div>
+    <section class="ribbon"${sn("WS-12")}><div class="rb-row">
+      <div class="rw"><span class="rw-k">Total</span><span class="rw-v">SGD ${fmt(g.total)}</span></div>
+      <div class="rw"><span class="rw-k">Lines matched</span><span class="rw-v">${g.matchedLines}/${g.lines.length}</span></div>
+      <div class="rw"><span class="rw-k">Unmatched amount</span><span class="rw-v">SGD ${fmt(g.unmatched)}</span></div></div></section>
+    <div class="rpane solo"><div class="rp-main">
+      <div class="rtabs" role="tablist" aria-label="Deposit ID tabs"${sn("WS-13")}>${tabs.map(x => `<button type="button" role="tab" class="rtab" data-rtab="${esc(x.key)}" aria-selected="${x === cur}">${esc(x.label)}${x.n !== undefined ? ` <span class="count">${x.n}</span>` : ""}</button>`).join("")}</div>
+      <div class="rtab-body">${cur.html}</div></div></div>
+    ${conf ? `<div class="pt-modal" role="alertdialog" aria-modal="true" aria-labelledby="dmTitle"${sn("UA-DEPID-confirm")}><div class="pt-modal-box">
+      <h2 id="dmTitle">Match ${esc(g.number)} to ${esc(conf.number)}</h2>
+      <p>One allocation per bank line (allocation value = the line's unmatched amount, up to what is open on ${esc(conf.number)}):</p>
+      <div class="tablewrap"><table><thead><tr><th>Payer</th><th>Reference</th><th class="num">Allocation value</th></tr></thead><tbody>
+      ${plan.map(([p, v]) => `<tr><td>${esc(p.payer)}</td><td class="mono small">${esc(p.reference || "—")}</td><td class="num mono">${fmt(v)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><th scope="row" colspan="2">Total</th><td class="num mono">${fmt(plan.reduce((t, x) => t + x[1], 0))}</td></tr></tfoot></table></div>
+      <div class="row" style="margin-top:12px;gap:8px;display:flex;justify-content:flex-end"><button type="button" class="btn" data-dmcancel>Cancel</button><button type="button" class="btn primary" data-dmok autofocus>Match</button></div>
+    </div></div>` : ""}
+  </div>`;
+}
+/** BSU decision 28: split a Deposit ID total onto its lines, in line order, up to what is open on the target. */
+export function splitPlan(g, t) {
+  let open = invoiceState(t).open; const out = [];
+  for (const p of g.lines) { const left = depositMoney(p).unapplied, v = Math.min(left, open); if (v > 0) { out.push([p, v]); open -= v; } }
+  return out;
 }
 
 // ---------- record pages ----------

@@ -1,7 +1,7 @@
 // Entry point: delegated event handling for the demo bar, workspace and portal, then boot.
 import { startRouter } from "./router.js";
 import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
-import { act, targetById } from "./matching.js";
+import { act, allocate, targetById } from "./matching.js";
 import { invoiceState } from "./ledger.js";
 import { depositMoney } from "./views/common.js";
 import { giroPurposesFor, giroContracts, custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
@@ -11,7 +11,7 @@ import { $, S } from "./state.js";
 import { cents, fmt, uid } from "./util.js";
 import { render, syncBarHeight, toast } from "./views/app.js";
 import { colTotal, contractBox, custResults, formAlert, formSide, invSum, itemTotals } from "./views/portal.js";
-import { listRows } from "./views/workspace.js";
+import { depositGroups, listRows, splitPlan } from "./views/workspace.js";
 
 const W = () => S.ui.ws, P = () => S.ui.portal;
 const activeTab = () => W().tabs.find(t => t.key === W().active);
@@ -168,7 +168,7 @@ function bsuAction(name) {
     const up = saveUpload(a, b.date, b.fileName.replace(" (sample)", ""), b.parsed);
     Object.assign(b, { text: "", fileName: "", parsed: null, error: "" });
     toast(`${up.number} saved: ${up.depositCount} deposit${up.depositCount === 1 ? "" : "s"} added to bank statements.`);
-    return openTab("uploads", up.id);   // BSU decision 25: the daily statement, its lines tab first
+    return showMain({ kind: "list", table: "uploads", filter: "all" });   // BSU decision 28: the Statement uploads list (one row per Deposit ID)
   }
 }
 
@@ -242,13 +242,19 @@ document.addEventListener("click", e => {
   // Horizon list page: list menu beside the list
   if (d.lmtoggle !== undefined) { const open = W().lmOpen ?? (window.innerWidth >= 760); W().lmOpen = !open; return render(); }
   // Horizon record page: record tabs, ribbon, contextual side bar
+  if (d.rtab && W().active === "main" && W().main.kind === "depid") { W().main.sub = d.rtab; return render(); }
+  if (d.dmatch) { W().main.confirm = d.dmatch; return render(); }   // BSU decision 28: confirm the split
+  if (d.dmcancel !== undefined) { delete W().main.confirm; return render(); }
+  if (d.dmok !== undefined) { const m = W().main, [num, tid] = m.confirm.split("|"), g = depositGroups().find(x => x.number === num), t = targetById(tid);
+    const plan = splitPlan(g, t); for (const [p, v] of plan) allocate(p.id, tid, v, `Matched by Deposit ID ${num} total`);
+    delete m.confirm; m.sub = "RL-DEPID-ALC"; toast(`${num}: ${plan.length} line${plan.length === 1 ? "" : "s"} matched to ${t.number}.`); return render(); }
   if (d.rtab) { const tab = activeTab(); if (tab) { tab.sub = d.rtab; render(); document.querySelector(`[data-rtab="${CSS.escape(d.rtab)}"]`)?.focus({ preventScroll: true }); } return; }
   if (d.ribbon !== undefined) { const tab = activeTab(); if (tab) tab.ribbonClosed = !tab.ribbonClosed; return render(); }
   if (d.stab) { const tab = activeTab(); if (tab) { const sp = W().side, same = tab.side === d.stab || (!tab.side && t.getAttribute("aria-selected") === "true"); if (sp.open && same) sp.open = false; else { sp.open = true; tab.side = d.stab; } } return render(); }
   if (d.stoggle !== undefined) { W().side.open = !W().side.open; return render();
   }
   if (d.list) { const [table, filter] = d.list.split(":"); return showMain({ kind: "list", table, filter }); }
-  if (d.open) { const [table, id] = d.open.split(":"); return openTab(table, id); }
+  if (d.open) { const [table, id] = d.open.split(":"); if (table === "depid") return showMain({ kind: "depid", id }); return openTab(table, id); }   // BSU decision 28
   if (d.printinv) {   // CCI decision 13: print the invoice preview (browser print → Save as PDF)
     const doc = $(`invdoc-${d.printinv}`); if (!doc) return;
     const w = window.open("", "_blank", "width=820,height=1000"); if (!w) return toast("Allow pop-ups to print the invoice.");

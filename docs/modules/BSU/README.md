@@ -66,11 +66,16 @@ no Cash application page (retired 2026-11-18, decision 21) and no auto-matching 
 RITM is only the ServiceNow job that loads the file) groups its **bank lines**, and the **sum of the bank lines equals
 the daily statement's total**.
 
-1. **Statement uploads** (List menu → *Bank statements*): one row per daily statement, columns Upload, Statement date,
-   **Deposit ID** (its lines' Deposit IDs), **Bank name**, **Bank account**, Department, Deposits, **Lines matched**
-   (xx/yy: lines 100% matched / lines in the statement), **Unmatched amount**, Total, Uploaded (decisions 26, 27). **New** uploads a file. Clicking
-   a row opens the daily statement with its tab *BSU deposits* (all its bank lines) **first**, before *Details*
-   (decision 24); a line opens from there.
+1. **Statement uploads** (List menu → *Bank statements*): **one row per Deposit ID** (decision 28): the bank lines
+   of one account, one day and one payment mode (a daily statement can carry several Deposit IDs; Deposit ID is a field
+   on the bank lines, not a table). Columns **Deposit ID** › Statement date › Upload (RITM) › **Bank name** › **Bank
+   account** › Department › **Lines matched** (xx/yy) › **Unmatched amount** › **Total** (sum of its lines) › Uploaded.
+   **New** uploads a file (back to this list after Save). Clicking a row opens the **Deposit ID page**: ribbon Total,
+   Lines matched, Unmatched amount; tabs **Lines** (first; *Match line* opens a line to match it on its own) ›
+   **Suggested matches** (ranked against the Deposit ID's unmatched total; **Match total**) › **Allocations** (all its
+   lines' allocations, with the Delta line) › **Details** (Deposit ID, date, bank, account, payment mode, upload).
+   **Match total** shows a confirm dialog with the split: one allocation per line, each for the line's unmatched
+   amount, in line order, up to what is open on the invoice or case; *Match* saves them (manual, D5).
 2. **Bank lines** (List menu → *Bank statements*; replaces *BSU deposits to match* and *All BSU deposits*): every bank
    line, columns **RITM › Value date › Deposit ID › Bank name › Bank account** (account number) › Payer › Reference ›
    Amount › Unmatched › Match, sorted in that order (newest RITM first, then ascending; decision 23). The Match column

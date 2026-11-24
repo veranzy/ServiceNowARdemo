@@ -486,6 +486,9 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 | `UA-INV-cancel` | Cancel invoice → only when no BSU deposit is matched |
 | `UA-INV-save` | Save (update, draft only) |
 | `UA-DEP-remove` | Remove match (header action on the deposit, shown when it has allocations) → deletes the deposit's allocations |
+| `UA-DEPID-line` | Match line (row action on the Deposit ID page's Lines tab, BSU decision 28) → opens that bank line's record to match it on its own |
+| `UA-DEPID-match` | Match total (row action on the Deposit ID page's Suggested matches, BSU decision 28) → opens a confirm dialog with the split: one x_ar_allocation per bank line with an unmatched amount, allocation value = the line's unmatched amount, in line order, up to the target's amount due |
+| `UA-DEPID-confirm` | Confirm dialog of Match total (BSU decision 28): lists Payer, Reference and Allocation value per line and the total; Match inserts the allocations (manual, D5), Cancel closes |
 | `UA-SUG-match` | Match (row action on Suggested matches / Suggested BSU deposits, BSU decisions 21–22) → opens the New allocation form with the deposit and the invoice / case filled and Allocation value prefilled with the smaller of the deposit's unmatched amount and the target's amount due; AR confirms or changes it and saves (UA-ALC-insert). Exception set from what is left (Exact, Short pay, Overpayment, Multi-invoice) |
 | `UA-DEP-newalloc` | New on the deposit's Allocations tab (BSU decision 21) → New allocation form with BSU deposit prefilled; AR picks an invoice or a Collection case and may change the amount |
 | `UA-INV-newalloc` | New on the invoice's Allocations tab (BSU decision 21) → New allocation form with Invoice prefilled; AR picks the BSU deposit |

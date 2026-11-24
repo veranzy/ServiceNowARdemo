@@ -337,7 +337,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `BSU.uploaded_by` | sc_req_item.uploaded_by · Reference → sys_user · read-only |
 | `BSU.uploaded_at` | sc_req_item.uploaded_at · String · read-only |
 | `BSU.deposit_count` | sc_req_item.deposit_count · Integer · read-only |
-| `BSU.deposit_total` | sc_req_item.deposit_total · Currency · read-only |
+| `BSU.deposit_total` | Calculated column "Total" (BSU decision 28): sum of the amounts of the bank lines with this Deposit ID |
 | `BSU.withdrawals_skipped` | sc_req_item.withdrawals_skipped · Integer · read-only |
 
 ## Bank account
@@ -714,9 +714,15 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `CON.status` | Calculated: Active / Not started / Ended from start and end dates (shells: Open) |
 | `CON.line_count` | Calculated: number of billing lines filed under the contract |
 | `BSU.department` | Dot-walk: bank_account.department |
+| `BSU.deposit_total` | Calculated column "Total" (BSU decision 28): sum of the amounts of the bank lines with this Deposit ID |
+| `DEPID-01` | Deposit ID page (BSU decision 28): UI Builder page in the workspace, parameter deposit_id; header Deposit ID, bank name, bank account, statement date; ribbon Total, Lines matched (xx/yy), Unmatched amount; tabs Lines (first), Suggested matches, Allocations, Details. Not a table: deposit_id is a field on x_ar_bank_statement; the page lists the lines with that deposit_id |
+| `DEPID-DET` | Deposit ID page, Details tab: Deposit ID, Statement date, Bank name, Bank account, Payment mode, Upload (RITM), Uploaded (read-only, from the first line and its upload) |
+| `RL-DEPID-LINES` | Deposit ID page, tab Lines (first): x_ar_bank_statement where deposit_id = the page's Deposit ID; columns Payer (opens the line), Reference, Amount, Unmatched, Match, and Match line (opens the line to match it on its own, BSU decision 21) |
+| `RL-DEPID-SUG` | Deposit ID page, tab Suggested matches: issued invoices and open Collections cases ranked against the Deposit ID's unmatched total (same signals as RL-DEP-SUG; suggestion only, D5), each with Match total |
+| `RL-DEPID-ALC` | Deposit ID page, tab Allocations: the x_ar_allocation records of all its lines, with the Amount · Allocation value · Delta line (ALC-DELTA) |
 | `BSU.lines_matched` | Calculated list column "Lines matched" (BSU decision 27): xx/yy, where yy = the x_ar_bank_statement records with bsu = this upload and xx = those fully matched (unmatched amount 0) |
 | `BSU.unmatched_amount` | Calculated list column "Unmatched amount" (BSU decision 27): sum of the unmatched amount of this upload's bank lines (amount − allocation values) |
-| `BSU.deposit_ids` | Calculated list column (BSU decision 26): the distinct Deposit IDs of the x_ar_bank_statement records whose bsu = this upload (one per payment mode); list formatter or a string field filled by a business rule |
+| `BSU.deposit_ids` | RETIRED 2026-11-23 (BSU decision 28: one row per Deposit ID). Was: Calculated list column (BSU decision 26): the distinct Deposit IDs of the x_ar_bank_statement records whose bsu = this upload (one per payment mode); list formatter or a string field filled by a business rule |
 | `RQL.line_value` | Calculated: one-off amount, or recurring amount × number of periods |
 | `RQL.periods` | Calculated: number of billing dates between From and To at the frequency |
 | `SCH.next_billing_date` | Calculated: first period on or after today without an invoice |
@@ -796,6 +802,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-DEP-find` | UI action: RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Find invoice → opens the invoice finder |
 | `UA-DEP-confirm` | UI action: RETIRED 2026-11-18 (BSU decision 21: matching moved to standard record tabs). Was: Confirm match → inserts x_ar_allocation records (manual), with invoice or, for a Collections case, request set (D29) |
 | `UA-DEP-remove` | UI action: Remove match (header action on the deposit, shown when it has allocations) → deletes the deposit's allocations |
+| `UA-DEPID-line` | UI action: Match line (row action on the Deposit ID page's Lines tab, BSU decision 28) → opens that bank line's record to match it on its own |
+| `UA-DEPID-match` | UI action: Match total (row action on the Deposit ID page's Suggested matches, BSU decision 28) → opens a confirm dialog with the split: one x_ar_allocation per bank line with an unmatched amount, allocation value = the line's unmatched amount, in line order, up to the target's amount due |
+| `UA-DEPID-confirm` | UI action: Confirm dialog of Match total (BSU decision 28): lists Payer, Reference and Allocation value per line and the total; Match inserts the allocations (manual, D5), Cancel closes |
 | `UA-SUG-match` | UI action: Match (row action on Suggested matches / Suggested BSU deposits, BSU decisions 21–22) → opens the New allocation form with the deposit and the invoice / case filled and Allocation value prefilled with the smaller of the deposit's unmatched amount and the target's amount due; AR confirms or changes it and saves (UA-ALC-insert). Exception set from what is left (Exact, Short pay, Overpayment, Multi-invoice) |
 | `UA-DEP-newalloc` | UI action: New on the deposit's Allocations tab (BSU decision 21) → New allocation form with BSU deposit prefilled; AR picks an invoice or a Collection case and may change the amount |
 | `UA-INV-newalloc` | UI action: New on the invoice's Allocations tab (BSU decision 21) → New allocation form with Invoice prefilled; AR picks the BSU deposit |

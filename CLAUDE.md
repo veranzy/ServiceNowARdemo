@@ -115,6 +115,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-19 | Dev task CSV less technical: Ref, Item and Decision columns removed; the task says in plain words what to add, change or remove. | Owner |
 | 2026-11-19 | Dev tasks dropped (not useful for now): the dev task rule, `docs/DEV_TASKS.*` and `tools/devtasks.mjs` removed. | Owner |
 | 2026-11-23 | Conventions: bank name and bank account are always separate list columns. | Owner |
+| 2026-11-25 | Personas: AR-ii *Refund request* defined (#13); each row becomes an AR2 task, the submission is the case. | Owner |
 
 ## How we work: modules, one at a time
 
@@ -170,7 +171,7 @@ rebuilt later from this codebase. Do not add Claude/LLM calls here unless the ow
 
 | Persona | Role | UI | Does |
 |---|---|---|---|
-| Company project team | `x_ar.project_team` | **Portal only** (Service Portal / Employee Center look) | Picks from **16 AR forms (AR-i … AR-xvi)**; defined so far: AR-i *New AR request* (customer search, contract, invoice details), AR-ix *GIRO authorisation*, and one *Collections* form for AR-iii, AR-iv and AR-v (type chosen first, D30; shell). Every form starts with **General information** (D19). Follows **My requests** (own cases and cases they are CC'd on), replies on the ticket page |
+| Company project team | `x_ar.project_team` | **Portal only** (Service Portal / Employee Center look) | Picks from **16 AR forms (AR-i … AR-xvi)**; defined so far: AR-i *New AR request* (customer search, contract, invoice details), AR-ii *Refund request* (refund reasons, 1 to 5 rows; one AR2 task per row), AR-ix *GIRO authorisation*, and one *Collections* form for AR-iii, AR-iv and AR-v (type chosen first, D30; shell). Every form starts with **General information** (D19). Follows **My requests** (own cases and cases they are CC'd on), replies on the ticket page |
 | Accounts receivable team | `x_ar.ar_team` | **Workspace only** (configurable workspace look) | Works AR request **cases**, creates and issues invoices, uploads bank statements (**BSU**), matches deposits to invoices **manually**, maintains customers, contracts and bank accounts |
 
 Core flow: project team submits **AR-i**: searches the customer and adds it as new only if not found

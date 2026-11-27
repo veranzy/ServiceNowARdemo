@@ -39,17 +39,19 @@ The three are **one form** (D30, client request): the requester chooses AR-iii, 
         *Cost Centre** (active cost centres of the Requesting Department), *Account Code** (active, plus **Others** with a free-text *Other account code*, decision 20); 1–10 rows;
         *Allocation total* calculated (`PT-57`) and stored as the case's amount.
       - **AR-v:** *Category** first (Cash Bail / Seized Monies / Restitution), *Date of Collection* (every category), then
-        only that category's fields, none mandatory (decision 14; layout decision 19):
+        only that category's fields, none mandatory except the Yes / No fields below (decision 14 amended by decision 24; layout decision 19):
         - Cash Bail (one bailor / accused set per case): G56 Receipt Number, Bail Amount Received, Bailor Name, IB Case
           Number / WEU Number, Case Status (Case Pending / Case Closed), **Refund to** (Bailor / Accused, only when Case
-          Closed), Accused Name, **Refund Required** (checkbox) (decision 20).
+          Closed), Accused Name, **Refund Required** (Yes / No) (decisions 20, 24).
         - Seized Monies: table **Case lines** (`PT-59`, `x_ar_collection_case_line`: Case Number, Amount, Case Status
-          Case Pending / Case Closed; 0–99 rows; *Total Amount* `PT-61`), then checkboxes **Forfeit to State**, **Court
-          Order** and **Refund Required** (decision 22), *Whether the seized monies are to be invested* (Yes / No) (decision 20).
-        - Restitution: table **Case lines** (Case Status Case Pending / Case Closed, decision 22), then checkbox
-          **Court Order**.
-        - **Refund Required** (Cash Bail) or **Refund** (Seized Monies) ticked shows *Please raise a AR10* with a link
-          to the AR10 form (`PT-60`). Checkboxes stay after the case lines, not in them (decisions 19, 20).
+          Case Pending / Case Closed; 0–99 rows; *Total Amount* `PT-61`), then **Forfeit to State**, **Court
+          Order** and **Refund Required** (Yes / No; decisions 22, 24), *Whether the seized monies are to be invested* (Yes / No) (decision 20).
+        - Restitution: table **Case lines** (Case Status Case Pending / Case Closed, decision 22), then **Court Order**
+          (Yes / No; decision 24).
+        - **Refund Required**, **Forfeit to State** and **Court Order** are Yes / No dropdowns (choice, `-- None --` until
+          picked), no default, **mandatory** when shown; error *Choose Yes or No.* (decision 24, was checkboxes by decision 20).
+        - **Refund Required** = Yes (Cash Bail or Seized Monies) shows *Please raise a AR10* with a link
+          to the AR10 form (`PT-60`). These fields stay after the case lines, not in them (decisions 19, 20).
         - No G56 for Seized Monies or Restitution, no currency fields, no identity numbers or bailor address (decision 19).
    4. **Supporting Documents** (`PT-55`): optional attachments; for AR-v, the category's document guidance (`PT-54`).
    - Submit creates an `x_ar_request` case: `ar_form` = **COL**, `collection_type`, `submission_origin` = Manual, title

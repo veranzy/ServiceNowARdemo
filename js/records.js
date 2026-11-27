@@ -134,12 +134,15 @@ export function validateCOL(d) {
   const e = {}; generalInfoErrors(d, e);
   if (!d.colType) e.colType = "Choose the collection type.";
   const rows = (k, min, max) => rowErrors(d, e, k, min, max);
-  // AR-iii decisions 12–17 (#9 §7–9). AR-v: only the category is required (owner: no AR5 field mandatory yet)
+  // AR-iii decisions 12–17 (#9 §7–9). AR-v: the category, then the category's Yes / No fields (decision 24)
   if (d.colType === "AR-iii") { if (!d.colDate) e.colDate = "Enter the collection date."; rows("colTx", 1, 99); }
   if (d.colType === "AR-iv") { rows("colAlloc", 1, 10);   // AR-iii decision 20: Others needs the free text
     (d.colAlloc || []).forEach((r, i) => { if (r.accountCode === "other" && !(r.accountCodeOther || "").trim()) e[`crow:colAlloc:${i}:accountCodeOther`] = "Enter the other account code."; }); }   // AR-iii decision 19: no Requesting Department Cost Centre
   if (d.colType === "AR-v" && ["seized", "restitution"].includes(d.colCategory)) rows("ar5Lines", 0, 99);
   if (d.colType === "AR-v" && !d.colCategory) e.colCategory = "Choose the category.";
+  // AR-iii decision 24: the AR-v Yes / No fields of the chosen category are mandatory (no default)
+  if (d.colType === "AR-v") for (const [k, cats] of [["ar5Refund", ["cash_bail"]], ["ar5Forfeit", ["seized"]], ["ar5CourtOrder", ["seized", "restitution"]], ["ar5RefundS", ["seized"]]])
+    if (cats.includes(d.colCategory) && !d[k]) e[k] = "Choose Yes or No.";
   return e;
 }
 /** Collections: the Total Amount (amount; D29 matching). AR-iii: Transaction Amount total; AR-iv: allocation total;

@@ -429,19 +429,19 @@ const COL_DOCS = { cash_bail: ["G56", "Bailor identity document", "Bail Bond For
 function colDetails(d, e, f) {
   const show = k => fieldVisible("requests", reqField(k), d);
   // AR-iii decision 19: AR-iv without Requesting Department Cost Centre; AR-v Cash Bail one bailor / accused set,
-  // Seized Monies and Restitution case lines, then the checkboxes, then Refund required? (Yes: raise an AR10)
+  // Seized Monies and Restitution case lines, then Forfeit to State / Court Order / Refund Required as Yes / No (decision 24; Yes: raise an AR10)
   const keys = { "AR-iii": ["colDate"], "AR-iv": ["colDate", "colRef"],
     "AR-v": ["colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "ibCase", "caseStatus", "ar5RefundTo", "accusedName"] }[d.colType] || [];
   const after = d.colType === "AR-v" ? ["ar5Forfeit", "ar5CourtOrder", "ar5RefundS", "ar5Invest", "ar5Refund"] : [];   // AR-iii decision 22 (#12): Forfeit to State, Court Order, Refund Required   // AR-iii decision 20: client order Refund, Forfeit to State, Court Order
   const lines = d.colType === "AR-v" && ["seized", "restitution"].includes(d.colCategory);
-  const must = { colDate: d.colType === "AR-iii", colCategory: true };
+  const must = { colDate: d.colType === "AR-iii", colCategory: true, ar5Forfeit: true, ar5CourtOrder: true, ar5RefundS: true, ar5Refund: true };   // AR-iii decision 24: Yes / No, mandatory, no default
   return `<fieldset class="psec"${sn("PT-51")}><legend>3. Collection Details</legend>
     <div class="fgrid">${keys.filter(show).map(k => f(k, { mandatory: !!must[k], help: null, ...(k === "colCategory" ? { placeholder: "-- Choose the category --" } : {}), ...(k === "caseStatus" ? { placeholder: "-- Choose the case status --" } : {}) })).join("")}</div>
     ${d.colType === "AR-iii" ? colRows(d, e, "colTx", { max: 99, total: ["amount", "Total Amount", true], id: "PT-52" }) : ""}
     ${d.colType === "AR-iv" ? colRows(d, e, "colAlloc", { max: 10, total: ["amount", "Allocation total", true], id: "PT-53" }) : ""}
     ${lines ? colRows(d, e, "ar5Lines", { min: 0, max: 99, total: ["amount", "Total Amount", true], id: "PT-59" }) : ""}
-    ${after.filter(show).length ? `<div class="fgrid">${after.filter(show).map(k => f(k, { help: null })).join("")}</div>` : ""}
-    ${(show("ar5Refund") && d.ar5Refund === true) || (show("ar5RefundS") && d.ar5RefundS === true) ? `<p class="callout small"${sn("PT-60")}>Please raise a <a href="#/portal/form/AR-x">AR10</a></p>` : ""}
+    ${after.filter(show).length ? `<div class="fgrid">${after.filter(show).map(k => f(k, { mandatory: !!must[k], help: null, ...(must[k] ? { placeholder: "-- None --" } : {}) })).join("")}</div>` : ""}
+    ${(show("ar5Refund") && d.ar5Refund === "yes") || (show("ar5RefundS") && d.ar5RefundS === "yes") ? `<p class="callout small"${sn("PT-60")}>Please raise a <a href="#/portal/form/AR-x">AR10</a></p>` : ""}
   </fieldset>`;
 }
 /** Multi-row variable set for Collections (AR3 collections, AR4 allocations). Rows live in the draft under the table key. */

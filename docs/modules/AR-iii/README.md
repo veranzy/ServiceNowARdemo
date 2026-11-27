@@ -45,10 +45,10 @@ The three are **one form** (D30, client request): the requester chooses AR-iii, 
           Closed), Accused Name, **Refund Required** (Yes / No) (decisions 20, 24).
         - Seized Monies: table **Case lines** (`PT-59`, `x_ar_collection_case_line`: Case Number, Amount, Case Status
           Case Pending / Case Closed; 0–99 rows; *Total Amount* `PT-61`), then **Forfeit to State**, **Court
-          Order** and **Refund Required** (Yes / No; decisions 22, 24), *Whether the seized monies are to be invested* (Yes / No) (decision 20).
+          Order** and **Refund Required** (Yes / No; decisions 22, 24), *Whether the seized monies are to be invested* (Yes / No dropdown, mandatory; decisions 20, 25).
         - Restitution: table **Case lines** (Case Status Case Pending / Case Closed, decision 22), then **Court Order**
           (Yes / No; decision 24).
-        - **Refund Required**, **Forfeit to State** and **Court Order** are Yes / No dropdowns (choice, `-- None --` until
+        - **Refund Required**, **Forfeit to State**, **Court Order** and *Whether the seized monies are to be invested* (decision 25) are Yes / No dropdowns (choice, `-- None --` until
           picked), no default, **mandatory** when shown; error *Choose Yes or No.* (decision 24, was checkboxes by decision 20).
         - **Refund Required** = Yes (Cash Bail or Seized Monies) shows *Please raise a AR10* with a link
           to the AR10 form (`PT-60`). These fields stay after the case lines, not in them (decisions 19, 20).

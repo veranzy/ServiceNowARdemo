@@ -141,7 +141,7 @@ export function validateCOL(d) {
   if (d.colType === "AR-v" && ["seized", "restitution"].includes(d.colCategory)) rows("ar5Lines", 0, 99);
   if (d.colType === "AR-v" && !d.colCategory) e.colCategory = "Choose the category.";
   // AR-iii decision 24: the AR-v Yes / No fields of the chosen category are mandatory (no default)
-  if (d.colType === "AR-v") for (const [k, cats] of [["ar5Refund", ["cash_bail"]], ["ar5Forfeit", ["seized"]], ["ar5CourtOrder", ["seized", "restitution"]], ["ar5RefundS", ["seized"]]])
+  if (d.colType === "AR-v") for (const [k, cats] of [["ar5Refund", ["cash_bail"]], ["ar5Forfeit", ["seized"]], ["ar5CourtOrder", ["seized", "restitution"]], ["ar5RefundS", ["seized"]], ["ar5Invest", ["seized"]]])
     if (cats.includes(d.colCategory) && !d[k]) e[k] = "Choose Yes or No.";
   return e;
 }

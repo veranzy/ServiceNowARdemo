@@ -434,7 +434,7 @@ function colDetails(d, e, f) {
     "AR-v": ["colCategory", "ar5Date", "ar5Receipt", "bailAmount", "bailorName", "ibCase", "caseStatus", "ar5RefundTo", "accusedName"] }[d.colType] || [];
   const after = d.colType === "AR-v" ? ["ar5Forfeit", "ar5CourtOrder", "ar5RefundS", "ar5Invest", "ar5Refund"] : [];   // AR-iii decision 22 (#12): Forfeit to State, Court Order, Refund Required   // AR-iii decision 20: client order Refund, Forfeit to State, Court Order
   const lines = d.colType === "AR-v" && ["seized", "restitution"].includes(d.colCategory);
-  const must = { colDate: d.colType === "AR-iii", colCategory: true, ar5Forfeit: true, ar5CourtOrder: true, ar5RefundS: true, ar5Refund: true };   // AR-iii decision 24: Yes / No, mandatory, no default
+  const must = { colDate: d.colType === "AR-iii", colCategory: true, ar5Forfeit: true, ar5CourtOrder: true, ar5RefundS: true, ar5Refund: true, ar5Invest: true };   // decision 25: invested too   // AR-iii decision 24: Yes / No, mandatory, no default
   return `<fieldset class="psec"${sn("PT-51")}><legend>3. Collection Details</legend>
     <div class="fgrid">${keys.filter(show).map(k => f(k, { mandatory: !!must[k], help: null, ...(k === "colCategory" ? { placeholder: "-- Choose the category --" } : {}), ...(k === "caseStatus" ? { placeholder: "-- Choose the case status --" } : {}) })).join("")}</div>
     ${d.colType === "AR-iii" ? colRows(d, e, "colTx", { max: 99, total: ["amount", "Total Amount", true], id: "PT-52" }) : ""}

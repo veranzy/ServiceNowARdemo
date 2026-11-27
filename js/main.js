@@ -291,6 +291,13 @@ document.addEventListener("click", e => {
   if (d.sugmatch) { const [pid, tid] = d.sugmatch.split(":"), t = targetById(tid);   // BSU decision 22: AR confirms the Allocation value
     const amt = Math.min(depositMoney(recById("deposits", pid)).unapplied, invoiceState(t).open);
     return newTab("allocations", { depositId: pid, [t.kind === "case" ? "requestId" : "invoiceId"]: tid, amount: amt }, d.allocFrom); }
+  // CCI decision 24: Add in the AR-i case's Billing lines / Billing schedule tabs; the new record gets the case and its contract
+  if (d.new && d.prefillRequest) {
+    const r = S.requests.find(x => x.id === d.prefillRequest), k = r?.contractId ? S.contracts.find(x => x.id === r.contractId) : null;
+    if (d.new === "lines") return newTab("lines", { requestId: r?.id, contractId: k?.id || null });
+    if (!k) return toast("Set Link Contract Reference first: a billing schedule sits under a contract.");
+    return newTab("schedules", { contractId: k.id, customerId: k.customerId, department: r.department || k.department || "", requestId: r.id, desc: r.title, amount: r.perPeriod || 0, frequency: "monthly", firstDate: nextCycleDate(k) || k.start || "", lastDate: k.end || "" });
+  }
   if (d.new && d.prefillContract) {   // New billing schedule (CCI decisions 8–9): contract, customer, monthly, first billing date on the next cycle day
     const k = S.contracts.find(x => x.id === d.prefillContract);
     return newTab(d.new, { contractId: k?.id, customerId: k?.customerId, department: k?.department || "", frequency: "monthly", firstDate: nextCycleDate(k), lastDate: k?.end || "" });

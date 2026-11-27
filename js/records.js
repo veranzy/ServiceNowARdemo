@@ -592,7 +592,8 @@ export function saveRecord(table, id, raw) {
   if (table === "contracts" && merged.contractType === "contract" && !String(merged.number || "").trim()) errors.number = "Enter the contract number.";
   // CCI decision 23: a billing line's GST and total are calculated as on the AR-i form; a new line gets the next item number
   if (table === "lines") { const c = itemCalc(merged); Object.assign(vals, { gst: c.gst, total: c.total });
-    if (!existing) vals.seq = S.lines.filter(l => merged.requestId ? l.requestId === merged.requestId : !l.requestId && l.contractId === merged.contractId).length + 1; }
+    if (!existing) { const rq = merged.requestId ?? raw.requestId, ct = merged.contractId ?? raw.contractId;
+      vals.seq = S.lines.filter(l => rq ? l.requestId === rq : !l.requestId && l.contractId === ct).length + 1; } }
   if (table === "schedules" && merged.contractId) vals.customerId = ctrById(merged.contractId)?.customerId || merged.customerId;
   if (table === "contracts" && merged.giroStatus !== "active" && merged.giroCaseId) merged.giroCaseId = vals.giroCaseId = null;   // AR-ix decision 11
   if (table === "contracts" && merged.giroStatus === "active" && !merged.giroCaseId) errors.giroCaseId = "Choose the AR-ix case whose GIRO is active.";

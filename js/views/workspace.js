@@ -653,7 +653,7 @@ export function agingOf(i) {
   return d <= 0 ? "Current" : d <= 30 ? "1–30" : d <= 60 ? "31–60" : d <= 90 ? "61–90" : "90+";
 }
 /** "New" button in a related tab header (#10): opens a new record prefilled with its parent. */
-const newBtn = (table, label, p) => `<button type="button" class="btn small" data-new="${table}"${p.contract ? ` data-prefill-contract-ref="${p.contract}"` : ""}${p.customer ? ` data-prefill-customer="${p.customer}"` : ""}${sn(`UA-${CODE[table]}-newrel`)}>${esc(label)}</button>`;
+const newBtn = (table, label, p, id = `UA-${CODE[table]}-newrel`) => `<button type="button" class="btn small" data-new="${table}"${p.contract ? ` data-prefill-contract-ref="${p.contract}"` : ""}${p.customer ? ` data-prefill-customer="${p.customer}"` : ""}${p.request ? ` data-prefill-request="${p.request}"` : ""}${sn(id)}>${esc(label)}</button>`;
 /** Invoice document (CCI decision 13): what the PDF generated on Issue would show. Draft template, wording to confirm. */
 export function invoiceDoc(i) {
   const c = recById("customers", i.customerId), k = recById("contracts", i.contractId), its = i.requestId ? S.lines.filter(x => x.requestId === i.requestId).sort(bySeq) : [];
@@ -745,11 +745,12 @@ function related(table, rec) {
   if (table === "requests") {
     const r = rec, ok = REQ_OPEN.includes(r.state) && r.customerId && !r.newCustomer && !!r.contractId;
     // CCI decision 23: the case's billing lines are its PT-43 rows (same table and columns as on the contract)
-    return [rt("Billing lines", "lines", reqLines(r).sort(bySeq), LINE_COLS, { id: "RL-REQ-RQL" }),
+    // CCI decision 24: Add inside the tab (same records as the contract's tab); a line added before Link gets the contract when Link Contract Reference is set
+    return [rt("Billing lines", "lines", reqLines(r).sort(bySeq), LINE_COLS, { id: "RL-REQ-RQL", actions: newBtn("lines", "Add", { request: r.id }, "UA-REQ-addline") }),
     // CCI decision 8: recurring AR-i cases show the contract's billing schedules, read-only (edited on the contract)
     ...(caseRecurring(r) ? [rt("Billing schedule", "schedules", r.contractId ? S.schedules.filter(x => x.contractId === r.contractId) : [], [
       ["Number", x => refLink("schedules", x.id, x.number)], ["What is billed", x => esc(x.desc), "wrap"], ["Frequency", x => esc(freqLabel(x.frequency))], ["Amount per period", x => fmt(x.amount), "num"],
-      ["First billing date", x => esc(x.firstDate)], ["Last billing date", x => esc(x.lastDate)], ["Next billing", x => esc(nextBilling(x) || "Ended")], ["From AR request", x => x.requestId ? refLink("requests", x.requestId) : "—"]], { id: "RL-REQ-SCH" })] : []),
+      ["First billing date", x => esc(x.firstDate)], ["Last billing date", x => esc(x.lastDate)], ["Next billing", x => esc(nextBilling(x) || "Ended")], ["From AR request", x => x.requestId ? refLink("requests", x.requestId) : "—"]], { id: "RL-REQ-SCH", actions: newBtn("schedules", "Add", { request: r.id }, "UA-REQ-addschedule") })] : []),
     // CCI 2026-11-16: invoices linked to this AR-i case, including drafts made by the daily invoice check
     rt("Invoices", "invoices", S.invoices.filter(i => i.requestId === r.id).sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"],
       ["Invoice date", i => esc(i.date)], ["Amount", i => fmt(i.amount), "num"], ["State", i => invChip(i)], ["Schedule", i => i.scheduleId ? refLink("schedules", i.scheduleId) : "—"]], { id: "RL-REQ-INV" })];
@@ -785,10 +786,10 @@ function related(table, rec) {
     return [rt("AR requests", "requests", rs.sort(LISTS.requests.sort), [["Number", r => refLink("requests", r.id, r.number)], ["What", r => esc(r.title), "wrap"], ["Amount", r => fmt(r.amount), "num"], ["State", r => reqChip(r)]], { id: "RL-CON-REQ" }),
       rt("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CON-INV", actions: newBtn("invoices", "New", { contract: rec.id }) }),
       rt("Billing schedule", "schedules", per, [["No.", x => String(per.indexOf(x) + 1), "num"], ["Billing date", x => esc(x.date)], ["Draft creation date", x => esc(draftDate(x.date))], ["Linked invoice", x => x.inv ? refLink("invoices", x.inv.id, x.inv.number) : "—"], ["Amount", x => fmt(x.amount), "num"]],
-        { id: "RL-CON-SCH", actions: `${S.schedules.filter(x => x.contractId === rec.id).map(x => refLink("schedules", x.id, x.number)).join(" ")} <button type="button" class="btn small" data-new="schedules" data-prefill-contract="${rec.id}"${sn("UA-CON-newschedule")}>New billing schedule</button>` }),
+        { id: "RL-CON-SCH", actions: `${S.schedules.filter(x => x.contractId === rec.id).map(x => refLink("schedules", x.id, x.number)).join(" ")} <button type="button" class="btn small" data-new="schedules" data-prefill-contract="${rec.id}"${sn("UA-CON-addschedule")}>Add</button>` }),   // CCI decision 24
       // CCI decision 23: same billing lines table as on the AR-i case, plus the AR request each line came from
       rt("Billing lines", "lines", S.lines.filter(l => l.contractId === rec.id).sort((a, b) => String(a.requestId || "").localeCompare(String(b.requestId || "")) || bySeq(a, b)),
-        [["AR request", l => l.requestId ? refLink("requests", l.requestId) : "—"], ...LINE_COLS], { id: "RL-CON-RQL", actions: newBtn("lines", "New", { contract: rec.id }) }),
+        [["AR request", l => l.requestId ? refLink("requests", l.requestId) : "—"], ...LINE_COLS], { id: "RL-CON-RQL", actions: newBtn("lines", "Add", { contract: rec.id }) }),
       giroHistory(rec, "CON-GIRO")];
   }
   // Cost centre / account code (CCI decision 12): the AR4 allocation rows that use it

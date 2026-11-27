@@ -873,6 +873,9 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-RQL-invoice` | UI action: RETIRED 2026-11-16 (CCI decision 8): Create invoice on a one-off line. The 1st invoice is generated when the AR-i case is set to Closed complete |
 | `UA-RQL-schedule` | UI action: RETIRED 2026-11-16 (CCI decision 8): Set up billing schedule on a recurring line. AR creates the schedule on the contract (New billing schedule) and picks the AR-i case |
 | `UA-RQL-save` | UI action: Save (update, while the AR-i case is open; GST amount and total recalculated) |
+| `UA-REQ-addline` | UI action: Add in the AR-i case's Billing lines tab (CCI decision 24): new x_ar_request_line with ar_request = the case and contract = the case's contract (empty until Link Contract Reference is set; the Link business rule then sets it). Item number = next in the case |
+| `UA-REQ-addschedule` | UI action: Add in the AR-i case's Billing schedule tab (CCI decision 24): new x_ar_billing_schedule with contract = the case's contract, source_request = the case, and the case's invoice description, amount per period, Monthly, first billing date on the next cycle day, last billing date = contract end. Without a contract: message Set Link Contract Reference first |
+| `UA-CON-addschedule` | UI action: Add in the contract's Billing schedule tab (CCI decision 24; was New billing schedule): same as the header action New billing schedule |
 | `UA-REQ-geninv` | UI action: Generate invoice (CCI decision 23): beside Save on every AR-i case, any state. Saves the form, then drafts one x_ar_invoice for the case (customer and contract from the Link section; error if either is empty): short_description = case short_description, amount = total of the case's billing lines with GST, or the Invoice details amount per period (w/o GST) when there are none, invoice_date today, due = invoice date + contract payment terms. Each click makes a new draft. AR reviews it, sets Approval date and issues it |
 | `UA-PT-newcust` | UI action: Portal: Add as new customer (sets new_customer = true, copies the search text into the name) |
 | `UA-PT-additem` | UI action: Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row |
@@ -910,7 +913,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-PMD-new` | UI action: New (list action) |
 | `UA-PMD-insert` | UI action: Submit (insert) |
 | `UA-PMD-save` | UI action: Save (update) |
-| `UA-RQL-newrel` | UI action: New billing line on the contract's Billing lines tab (#10 E10.7): AR copies the AR-i line; contract filled in |
+| `UA-RQL-newrel` | UI action: Add on the contract's Billing lines tab (#10 E10.7; label Add, CCI decision 24): new billing line with the contract filled in, no AR request |
 | `UA-INV-newrel` | UI action: New invoice on the contract's Invoices tab (#10 E10.10, CCI decision 14): draft invoice with customer and contract filled in |
 | `UA-BCT-newrel` | UI action: Add billing contact on the customer's Billing contacts tab |
 | `UA-INV-insert` | UI action: Submit (insert) |

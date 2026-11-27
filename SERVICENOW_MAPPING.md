@@ -525,6 +525,9 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 | `UA-BCT-insert` | Submit (insert); several contacts per customer and department allowed (CCI decision 15, D11 amended) |
 | `UA-CUS-newcontact` | Add billing contact → new billing contact form with customer prefilled |
 | `UA-RQL-save` | Save (update, while the AR-i case is open; GST amount and total recalculated) |
+| `UA-REQ-addline` | Add in the AR-i case's Billing lines tab (CCI decision 24): new x_ar_request_line with ar_request = the case and contract = the case's contract (empty until Link Contract Reference is set; the Link business rule then sets it). Item number = next in the case |
+| `UA-REQ-addschedule` | Add in the AR-i case's Billing schedule tab (CCI decision 24): new x_ar_billing_schedule with contract = the case's contract, source_request = the case, and the case's invoice description, amount per period, Monthly, first billing date on the next cycle day, last billing date = contract end. Without a contract: message Set Link Contract Reference first |
+| `UA-CON-addschedule` | Add in the contract's Billing schedule tab (CCI decision 24; was New billing schedule): same as the header action New billing schedule |
 | `UA-REQ-geninv` | Generate invoice (CCI decision 23): beside Save on every AR-i case, any state. Saves the form, then drafts one x_ar_invoice for the case (customer and contract from the Link section; error if either is empty): short_description = case short_description, amount = total of the case's billing lines with GST, or the Invoice details amount per period (w/o GST) when there are none, invoice_date today, due = invoice date + contract payment terms. Each click makes a new draft. AR reviews it, sets Approval date and issues it |
 | `UA-PT-newcust` | Portal: Add as new customer (sets new_customer = true, copies the search text into the name) |
 | `UA-PT-additem` | Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row |
@@ -557,7 +560,7 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 | `UA-PMD-new` | New (list action) |
 | `UA-PMD-insert` | Submit (insert) |
 | `UA-PMD-save` | Save (update) |
-| `UA-RQL-newrel` | New billing line on the contract's Billing lines tab (#10 E10.7): AR copies the AR-i line; contract filled in |
+| `UA-RQL-newrel` | Add on the contract's Billing lines tab (#10 E10.7; label Add, CCI decision 24): new billing line with the contract filled in, no AR request |
 | `UA-INV-newrel` | New invoice on the contract's Invoices tab (#10 E10.10, CCI decision 14): draft invoice with customer and contract filled in |
 | `UA-BCT-newrel` | Add billing contact on the customer's Billing contacts tab |
 | `UA-INV-insert` | Submit (insert) |

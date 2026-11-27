@@ -117,6 +117,7 @@ Singapore context: SGD, local bank CSV formats, UEN / ACRA.
 | 2026-11-23 | Conventions: bank name and bank account are always separate list columns. | Owner |
 | 2026-11-25 | Personas: AR-ii *Refund request* defined (#13); each row becomes an AR2 task, the submission is the case. | Owner |
 | 2026-11-25 | Personas: AR-ii tasks come from the uploaded Excel (#15); AR-x AR10 defined (#14). Code layout: `js/excel.js` reads the Excel templates with SheetJS vendored in `vendor/`. | Owner |
+| 2026-11-27 | Core flow and checking: billing lines are the AR-i's billing line items rows (print-only, linked to case and contract); *Generate invoice* on the case replaces the 1st invoice on Closed complete (CCI decision 23). | Owner |
 
 ## How we work: modules, one at a time
 
@@ -180,13 +181,13 @@ Core flow: project team submits **AR-i**: searches the customer and adds it as n
 new, or *No contract required* → the customer's no-contract shell per department) with its **bill-to
 person** (D16, held on the contract), **invoice details** (D13 amended: one billing event per request; invoice
 description, attention to, amount per period before GST, preferred invoice date for one-invoice requests (Per Billing Cycle /
-Expedited, optional justification), optional billing line items numbered 1, 2, 3… with GST 9%, D25; submit creates one billing line: recurring monthly to the contract end when the contract type is
-Recurring, else one-off), documents only if not on file → `x_ar_request` case
+Expedited, optional justification), optional billing line items numbered 1, 2, 3… with GST 9%, D25; each billing line item row is saved as a
+**billing line** linked to the case and the contract, print-only (CCI decision 23); the request is recurring when the contract type is Recurring, else one-off), documents only if not on file → `x_ar_request` case
 (New) in the workspace → AR sets up the customer / contract / shell, bill-to and documents **by hand**, then fills the case's
 **Link** section (*Link Customer Reference*, *Link Contract Reference*; D31) → AR assigns,
-sets the **State** dropdown (AR-00 decision 4; portal reply on Awaiting requestor information returns it to Work in progress) → **Closed complete** generates
-the **1st invoice** as a draft from the AR-i (CCI decision 8; AR sets its *Approval date* and issues it) → recurring: AR creates the **billing schedule on the
-contract** for the 2nd invoice onwards and picks the case; a daily job drafts each later period 5 working days ahead, shown under the case and the contract,
+sets the **State** dropdown (AR-00 decision 4; portal reply on Awaiting requestor information returns it to Work in progress) → **Generate invoice**
+beside Save drafts an invoice from the case and its billing lines, one per click (CCI decision 23; AR sets its *Approval date* and issues it) → recurring: AR creates the **billing schedule on the
+contract** for the 2nd invoice onwards and picks the case (schedules to be redesigned); a daily job drafts each later period 5 working days ahead, shown under the case and the contract,
 and AR issues it (D12 amended). The requester sees each line's invoice or schedule on the ticket page. Each morning AR
 uploads yesterday's CSV statement per bank account (**BSU**; each upload is an RITM, D32) → deposits saved to the **Bank statements**
 table with a Deposit ID → AR matches deposits to issued invoices, or to open **Collections** cases (AR-iii, AR-iv, AR-v:
@@ -229,7 +230,7 @@ deposit (D7), matched manually to invoices or Collections cases (D5, D29).
 Serve with `python3 -m http.server` (modules don't load from `file://`). Click through: portal AR form
 AR-i with each contract option (new contract, existing contract with bill-to, no contract with existing /
 new shell); (search → add new customer with a new recurring contract; existing ad-hoc contract → one invoice;
-existing recurring contract with billing line items, GST calculated; Expedited shows the justification; recurring shows no preferred invoice date) → workspace Link section (Link Customer Reference, Link Contract Reference; lines get the contract) → State dropdown Closed complete (1st invoice draft on the Invoices tab) → ARQ0001009: Billing schedule tab, issued 1st invoice and the daily job's draft (mock data) → portal ticket shows each line's invoice / schedule; BSU upload
+existing recurring contract with billing line items, GST calculated; Expedited shows the justification; recurring shows no preferred invoice date) → workspace Link section (Link Customer Reference, Link Contract Reference; lines get the contract) → Billing lines tab (PT-43 columns, same as the contract's) → Generate invoice (Link error first on ARQ0001001; draft invoice printing the lines on ARQ0001009) → ARQ0001009: Billing schedule tab, issued 1st invoice and the daily job's draft (mock data) → portal ticket shows the case's invoices / schedule; BSU upload
 (sample file and a real CSV file, wrong-bank error); Statement uploads → Deposit ID page (Lines first, Match total with its split) and Bank lines → line → Suggested matches → Match, Allocations › New (an invoice and a Collections case), invoice → Suggested BSU deposits, Remove match;
 ID tags visible and unclipped; 400px wide in dark mode.
 No console errors.

@@ -7,7 +7,7 @@ code. Rules (labels and logic, locks, git) stay in [`CLAUDE.md`](../CLAUDE.md). 
 ## Domain model (all custom tables, see `js/schema.js`)
 
 customer → contracts (system Contract ID; Contract category Contract or No contract, `contract_type = shell`, several per customer, D15) → billing lines → invoices ← allocations ← deposits (Bank statements) ← BSU uploads ← bank accounts
-AR request → billing line (`x_ar_request_line`, code key `lines`, one per AR-i, with `contract`) → invoice (one-off) or billing schedule (recurring) · AR request → billing line items (`x_ar_request_item`, code key `items`, GST calculated)
+AR request → billing lines (`x_ar_request_line`, code key `lines`: the AR-i PT-43 rows, print-only, with `contract`; CCI decision 23) · AR request → invoices (*Generate invoice*, one draft per click) · contract → billing schedule (recurring, interim) → invoices (daily job). `x_ar_request_item` retired.
 contract → GIRO status + active AR-ix case (`giro_status`, `giro_case`; max one active GIRO per contract, D21) · contract → bill-to person (D16) · customer → billing contacts (department default for prefill, D11) · customer documents (given once, D10) · contract → billing schedules → invoices (per period, drafts from the daily invoice check)
 
 **Departments:** 11 operational departments in `DEPARTMENTS` (`js/schema.js`); bank accounts may also be Finance.
@@ -42,9 +42,9 @@ js/main.js              delegated event handling (click/change/input/submit) and
 js/state.js             S: data tables + UI state (persona, workspace tabs, portal page, drafts)
 js/schema.js            ServiceNow tables/fields/roles/record producer (no DOM)
 js/records.js           lifecycle: createRequest, requestAction (assign), issueInvoice (needs approval date),
-                        cancelInvoice, portalComment, saveRecord (state change; Closed complete → firstInvoices),
+                        cancelInvoice, portalComment, saveRecord (state change; billing line GST / total),
                         validate, numbering, journal, assignContractIds;
-                        AR-i: validateARi, lineErrors, docsOnFile, contactFor, setupStatus, linkCustomer, firstInvoices;
+                        AR-i: validateARi, docsOnFile, contactFor, setupStatus, caseRecurring, linesTotal, generateInvoice (CCI decision 23); retired firstInvoices, lineErrors, lineStatus, setupSchedule, lineInvoice;
                         lines: periodDates, lineValue, linesSummary, lineStatus (lineInvoice / setupSchedule retired);
                         schedules: schedulePeriods, periodsDue, nextBilling, cycleDay, nextCycleDate,
                         draftDate, runDailyInvoiceCheck (the daily job)

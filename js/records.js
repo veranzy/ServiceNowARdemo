@@ -288,20 +288,8 @@ export function draftLine(d) {
 /** GST on an amount in cents (GST_RATE %), rounded to the cent. */
 export const gstOf = amt => Math.round((amt || 0) * GST_RATE / 100);
 export const itemCalc = it => { const g = it.gstApplicable === "no" ? 0 : gstOf(it.amount); return { ...it, gst: g, total: (it.amount || 0) + g }; };   // AR-i decision 43: GST Yes / No
-export const reqItems = r => (S.items || []).filter(x => x.requestId === r.id);
 
-/** Errors for one billing line. */
-export function lineErrors(l) {
-  const e = {};
-  if (!String(l.desc || "").trim()) e.desc = "Describe what this line bills.";
-  if (!(l.amount > 0)) e.amount = l.lineType === "recurring" ? "Enter the amount per period." : "Enter an amount greater than zero.";
-  if (l.lineType === "recurring") {
-    if (!l.startDate) e.startDate = "Enter the first billing date.";
-    if (!l.endDate) e.endDate = "Enter the last billing date.";
-    if (l.startDate && l.endDate && l.endDate < l.startDate) e.endDate = "Must be on or after the From date.";
-  }
-  return e;
-}
+
 
 /** Billing dates of a recurring line (or schedule): start, then every n months up to and including end. */
 export function periodDates(freq, start, end, cap = 120) {
@@ -333,15 +321,12 @@ export function linesLabel(r) {
   if (r.form === "COL") return `Collections · ${r.colType || "type not set"}`;
   if (r.form === "AR-ii") { const n = S.refundTasks.filter(x => x.requestId === r.id).length; return `Refund · ${n} AR2 task${n === 1 ? "" : "s"}`; }
   if (r.form === "AR-x") { const n = S.ar10Tasks.filter(x => x.requestId === r.id).length; return `AR10 · ${n} AR10 task${n === 1 ? "" : "s"}`; }
-  const ls = r.lines || reqLines(r), s = linesSummary(ls);
-  return [s.nOne ? `${s.nOne} one-off` : "", s.nRec ? `${s.nRec} recurring` : ""].filter(Boolean).join(" · ") || "No lines";
+  return caseRecurring(r) ? "1 recurring" : "1 one-off";   // CCI decision 23: one-off / recurring is the case's (contract type), not a line's
 }
-/** A line is done when its one-off invoice is issued, or its recurring schedule exists. */
-export function lineStatus(l) {
-  if (l.lineType === "recurring") return l.scheduleId ? "scheduled" : "open";
-  const inv = l.invoiceId ? S.invoices.find(i => i.id === l.invoiceId) : null;
-  return !inv || inv.state === "cancelled" ? "open" : inv.state === "issued" ? "invoiced" : "draft";
-}
+/** CCI decision 23: an AR-i case is recurring when its contract type is Recurring (D13 as amended). */
+export const caseRecurring = r => draftLine(r).lineType === "recurring";
+/** Total of an AR-i case's billing lines (with GST). */
+export const linesTotal = ls => ls.reduce((s, l) => s + (l.total || 0), 0);
 /** Billed is no longer a state (AR-00, 2026-11-16): AR closes the case by hand; nothing automatic. */
 function updateBilled() {}   // kept as a no-op hook: callers below are unchanged
 
@@ -387,58 +372,18 @@ export function schedulePeriods(sch, horizonMonths = 3) {
 export const periodsDue = sch => schedulePeriods(sch).filter(p => p.status === "Due");
 export function nextBilling(sch) { const p = schedulePeriods(sch).find(x => !x.inv); return p ? p.date : null; }
 
-/** UI action "Set up billing schedule" on a recurring billing line. */
-export function setupSchedule(lineId) {
-  const l = S.lines.find(x => x.id === lineId); if (!l) return "Billing line not found.";
-  const r = reqById(l.requestId);
-  if (l.lineType !== "recurring") return "Only recurring lines get a billing schedule.";
-  if (!r?.customerId || r.newCustomer || !l.contractId) return "Link the request to the customer and contract first.";
-  if (l.scheduleId) return "This line already has a billing schedule.";
-  const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: l.contractId, department: r.department, desc: l.desc,
-    frequency: l.frequency || "monthly", amount: l.amount, firstDate: l.startDate, lastDate: l.endDate, requestId: r.id, lineId: l.id,
-    firstAmount: contractPro(ctrById(l.contractId))?.firstAmount || 0, lastAmount: contractPro(ctrById(l.contractId))?.lastAmount || 0 };
-  S.schedules.push(sch); l.scheduleId = sch.id; if (r.state === "new") r.state = "work_in_progress"; if (!r.assignedTo) r.assignedTo = me().id;
-  const n = periodDates(sch.frequency, sch.firstDate, sch.lastDate).length;
-  journal(r, "comment", `Recurring line "${l.desc}" set up as billing schedule ${sch.number}: ${n} ${freqLabel(sch.frequency).toLowerCase()} invoice${n === 1 ? "" : "s"} of SGD ${(sch.amount / 100).toFixed(2)}${sch.firstAmount || sch.lastAmount ? ` (prorated: first SGD ${((sch.firstAmount || sch.amount) / 100).toFixed(2)}, last SGD ${((sch.lastAmount || sch.amount) / 100).toFixed(2)})` : ""} from ${sch.firstDate} to ${sch.lastDate}. AR raises each invoice; no further AR forms are needed for this line.`);
-  updateBilled(r);
-  return { opened: sch };
-}
-
-/** CCI decision 8: setting an AR-i case to Closed complete generates its 1st invoice, a DRAFT from the AR-i form, for every
- *  billing line without one. One-off: its only invoice (preferred invoice date if later than today, else today). Recurring:
- *  the first period (line start date, or today if that has passed); the 2nd invoice onwards comes from the billing schedule
- *  that AR creates on the contract. Needs the customer and contract linked. Returns an error or the invoices created. */
-export function firstInvoices(r) {
-  if (!r.customerId || r.newCustomer || !r.contractId) return "Set Link Customer Reference and Link Contract Reference before Closed complete: the 1st invoice needs the customer and contract.";
-  const made = [], t = isoToday();
-  for (const l of reqLines(r)) {
-    if (l.invoiceId || S.invoices.some(i => i.lineId === l.id && i.state !== "cancelled")) continue;
-    const k = ctrById(l.contractId || r.contractId), c = custById(r.customerId);
-    // CCI decision 9: invoice date suggested from the AR-i's indicated start (kept even if earlier than today); AR reviews it and sets the Approval date
-    const date = (l.lineType === "recurring" ? l.startDate : l.invoiceDate) || t;
-    const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: k?.id || null, requestId: r.id, lineId: l.id,
-      periodDate: l.lineType === "recurring" ? l.startDate || "" : "", customer: c?.name || "", desc: l.desc, amount: l.amount, date, approvalDate: "",
-      due: addDays(date, termsDays(k)), currency: "SGD" };
-    S.invoices.push(inv); l.invoiceId = inv.id; made.push(inv);
-    journal(r, "work_note", `Closed complete: 1st invoice ${inv.number} generated as a draft from the AR-i (${l.lineType === "recurring" ? "first period; later invoices come from the billing schedule on the contract" : "one-off"}).`);
-  }
-  return made;
-}
-
-/** UI action "Create invoice" on a one-off billing line (RETIRED 2026-11-16, CCI decision 8: the 1st invoice comes from Closed complete). */
-export function lineInvoice(lineId) {
-  const l = S.lines.find(x => x.id === lineId); if (!l) return "Billing line not found.";
-  const r = reqById(l.requestId);
-  if (l.lineType !== "one_off") return "Recurring lines are billed from a billing schedule.";
-  if (!r?.customerId || r.newCustomer || !l.contractId) return "Set Link Customer Reference and Link Contract Reference first.";
-  if (lineStatus(l) !== "open") return "This line already has an invoice.";
-  const k = ctrById(l.contractId), c = custById(r.customerId);
-  const date = l.invoiceDate && l.invoiceDate > isoToday() ? l.invoiceDate : isoToday();
-  const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: l.contractId, requestId: r.id, lineId: l.id,
-    customer: c?.name || "", desc: l.desc, amount: l.amount, date, due: addDays(date, termsDays(k)), currency: "SGD" };
-  S.invoices.push(inv); l.invoiceId = inv.id; if (r.state === "new") r.state = "work_in_progress";
-  if (!r.assignedTo) r.assignedTo = me().id;
-  journal(r, "work_note", `Draft invoice ${inv.number} created for line "${l.desc}".`);
+/** CCI decision 23 (2026-11-27): UI action "Generate invoice" on an AR-i case, beside Save. Each click drafts one invoice for
+ *  the case, in any state, once the case is linked (Link Customer Reference, Link Contract Reference). The invoice prints the
+ *  case's billing lines; amount = their total (with GST), or the Invoice details amount (w/o GST) when there are no lines.
+ *  Invoice date today; AR reviews it, sets the Approval date and issues it. Replaces the 1st invoice on Closed complete (CCI decision 8). */
+export function generateInvoice(r) {
+  if (!r.customerId || r.newCustomer || !r.contractId || !r.linkCustomer || !r.linkContract) return "Set Link Customer Reference and Link Contract Reference first: the invoice needs the customer and contract.";
+  const k = ctrById(r.contractId), c = custById(r.customerId), ls = reqLines(r), t = isoToday();
+  const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: r.customerId, contractId: k?.id || null, requestId: r.id,
+    customer: c?.name || "", desc: r.title || "", amount: ls.length ? linesTotal(ls) : r.perPeriod || 0, date: t, approvalDate: "", due: addDays(t, termsDays(k)), currency: "SGD" };
+  S.invoices.push(inv);
+  if (r.state === "new") r.state = "work_in_progress"; if (!r.assignedTo) r.assignedTo = me().id;
+  journal(r, "work_note", `Generate invoice: draft invoice ${inv.number} (SGD ${(inv.amount / 100).toFixed(2)}${ls.length ? `, ${ls.length} billing line${ls.length === 1 ? "" : "s"}` : ", no billing lines"}).`);
   return { opened: inv };
 }
 
@@ -472,7 +417,7 @@ export function runDailyInvoiceCheck() {
       const label = new Date(date + "T00:00:00").toLocaleDateString("en-SG", { month: "short", year: "numeric" });
       const invDate = date > t ? date : t;
       const inv = { id: uid("i"), number: nextNumber("invoices"), state: "draft", customerId: c?.id || sch.customerId, contractId: sch.contractId, requestId: sch.requestId || null,
-        lineId: sch.lineId || null, scheduleId: sch.id, periodDate: date, customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount: amounts[ix] ?? sch.amount,
+        scheduleId: sch.id, periodDate: date, customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount: amounts[ix] ?? sch.amount,
         date: invDate, due: addDays(invDate, termsDays(k)), currency: "SGD" };
       S.invoices.push(inv); made.push(inv);
       const r = sch.requestId && reqById(sch.requestId);
@@ -545,10 +490,11 @@ export function createRequest(vals, o = {}) {
   req.giroOnContract = giroOnContractOf(req);
   if (req.contractOption === "existing") { const k = ctrById(req.contractId); req.typeOfBilling = k?.typeOfBilling || req.typeOfBilling || ""; }
   S.requests.push(req);
-  S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, contractId: req.contractOption === "existing" ? req.contractId || null : null, ...line, invoiceId: null, scheduleId: null });
   if (line.lineType === "recurring") { req.invoiceTiming = ""; req.expediteReason = ""; }
-  // Billing line items are numbered 1, 2, 3… in row order (AR-i decision 37)
-  if (req.needItems === "yes") items.forEach((it, i) => S.items.push({ id: uid("q"), requestId: req.id, ...itemCalc({ seq: i + 1, amount: it.amount || 0, lpiRate: it.lpiRate || 0, accountCode: it.accountCode || "", costCenter: it.costCenter || "", gstApplicable: it.gstApplicable || "yes" }) }));
+  // CCI decision 23: each PT-43 row is saved as a billing line (numbered 1, 2, 3… in row order, AR-i decision 37); none when 'Require billing line item?' = No
+  const ctr = req.contractOption === "existing" ? req.contractId || null : null;
+  if (req.needItems === "yes") items.forEach((it, i) => S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: req.id, contractId: ctr,
+    ...itemCalc({ seq: i + 1, amount: it.amount || 0, lpiRate: it.lpiRate || 0, accountCode: it.accountCode || "", costCenter: it.costCenter || "", gstApplicable: it.gstApplicable || "yes" }) }));
   const ctrText = req.contractOption === "existing" ? `under contract ${ctrById(req.contractId)?.number}` : req.contractOption === "new" ? `under new contract ${req.newCtrNumber}` : "with no contract";
   journal(req, "system", `Submitted from ${req.form || "AR-i"} on the portal${req.newCustomer ? " for a new customer" : ""} ${ctrText}, with ${linesLabel(req)}.`, req.requestedBy);
   return req;
@@ -562,7 +508,6 @@ export function validate(table, vals) {
     const v = vals[f.key];
     if (v === undefined || v === null || v === "" || (f.type === "Currency" && !(v > 0))) err[f.key] = f.type === "Currency" ? "Enter an amount greater than zero." : `${f.label} is required.`;
   }
-  if (table === "lines") Object.assign(err, lineErrors(vals));
   if (table === "contracts" && vals.lpiApplicable) {
     if (!(vals.lpiRate > 0)) err.lpiRate = "Enter the LPI rate.";
     if (!(vals.lpiMinRate > 0)) err.lpiMinRate = "Enter the minimum LPI rate.";
@@ -609,7 +554,6 @@ export function cancelInvoice(id) {
   i.state = "cancelled";
   for (const m of Object.values(S.matches)) if (m && m.status === "proposed" && m.allocations.some(a => a.invoiceId === i.id)) { m.status = "unmatched"; m.allocations = []; m.reason = `Proposal removed: ${i.number} was cancelled.`; }
   const r = reqById(i.requestId);
-  const l = i.lineId ? S.lines.find(x => x.id === i.lineId) : null; if (l && l.invoiceId === i.id) l.invoiceId = null;
   if (r) { journal(r, "work_note", `Invoice ${i.number} was cancelled.`); updateBilled(r); }
   return null;
 }
@@ -643,22 +587,19 @@ export function saveRecord(table, id, raw) {
   if (table === "contacts" && S.contacts.some(c => c.id !== merged.id && c.customerId === merged.customerId && c.department === merged.department)) errors.department = `This customer already has a ${merged.department} billing contact. Edit that one instead.`;
   if (table === "contracts" && S.contracts.some(k => k.id !== merged.id && k.number && k.number.toLowerCase() === String(merged.number || "").toLowerCase())) errors.number = `Contract ${merged.number} already exists.`;
   if (table === "contracts" && merged.contractType === "contract" && !String(merged.number || "").trim()) errors.number = "Enter the contract number.";
+  // CCI decision 23: a billing line's GST and total are calculated as on the AR-i form; a new line gets the next item number
+  if (table === "lines") { const c = itemCalc(merged); Object.assign(vals, { gst: c.gst, total: c.total });
+    if (!existing) vals.seq = S.lines.filter(l => merged.requestId ? l.requestId === merged.requestId : !l.requestId && l.contractId === merged.contractId).length + 1; }
   if (table === "schedules" && merged.contractId) vals.customerId = ctrById(merged.contractId)?.customerId || merged.customerId;
   if (table === "contracts" && merged.giroStatus !== "active" && merged.giroCaseId) merged.giroCaseId = vals.giroCaseId = null;   // AR-ix decision 11
   if (table === "contracts" && merged.giroStatus === "active" && !merged.giroCaseId) errors.giroCaseId = "Choose the AR-ix case whose GIRO is active.";
   if (table === "contracts" && merged.contractType === "shell" && !merged.department) errors.department = "A No contract record needs a department.";
   if (table === "customers" && merged.companyId && S.customers.some(c => c.id !== merged.id && c.companyId === merged.companyId)) errors.companyId = `${companyById(merged.companyId)?.name} already has a customer record. One customer per company (D26).`;
-  // CCI decision 8: Closed complete on an AR-i generates the 1st invoice (blocked until the case is linked)
-  if (table === "requests" && existing && isARi(existing) && vals.state === "closed_complete" && existing.state !== "closed_complete") {
-    const probe = { ...existing, ...vals };
-    if (!probe.linkCustomer || !probe.linkContract) errors.state = "Set Link Customer Reference and Link Contract Reference before Closed complete: the 1st invoice needs the customer and contract.";   // D31
-  }
   if (table === "schedules" && merged.firstDate && cycleDay(ctrById(merged.contractId)) && +merged.firstDate.slice(8, 10) !== cycleDay(ctrById(merged.contractId)))
     errors.firstDate = `The contract billing cycle is the ${cycleDay(ctrById(merged.contractId)) === 1 ? "1st" : "15th"} of the month: choose a first billing date on that day.`;
   if (table === "schedules" && merged.requestId) {
-    const r = reqById(merged.requestId), l = r && reqLines(r).find(x => x.lineType === "recurring");
+    const r = reqById(merged.requestId);
     if (r && r.contractId !== merged.contractId) errors.requestId = "Choose an AR-i case on this contract.";
-    else vals.lineId = l?.id || null;
   }
   if (table === "requests" && existing && isARi(existing) && merged.linkContract && merged.linkCustomer && ctrById(merged.linkContract)?.customerId !== merged.linkCustomer)
     errors.linkContract = "Choose a contract of the linked customer.";
@@ -687,11 +628,9 @@ export function saveRecord(table, id, raw) {
   const wasState = existing?.state;
   if (existing) {
     Object.assign(existing, vals);
-    if (table === "requests" && isARi(existing) && vals.state === "closed_complete" && wasState !== "closed_complete") firstInvoices(existing);
     if (table === "customers") S.invoices.forEach(i => { if (i.customerId === existing.id) i.customer = existing.name; });
     if (table === "invoices") existing.customer = custById(existing.customerId)?.name || "";
     if (table === "requests") existing.updated = isoToday();
-    if (table === "lines") { const r = reqById(existing.requestId); if (r) r.amount = linesSummary(reqLines(r)).total; }
     return { rec: existing };
   }
   const rec = { id: uid(table[0]), ...vals };

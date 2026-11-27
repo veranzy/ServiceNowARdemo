@@ -58,7 +58,7 @@ The three are **one form** (D30, client request): the requester chooses AR-iii, 
 3. **Workspace** (AR team): list **All Collections** (`LST-REQ-COL`). Case page (`REQ-FV-COL`): Details with Case
    (incl. *Submission Origin* and **Request value** = the amount to collect), General information, Collection type, Collection Details, Supporting Documents; tabs *Total number of collections for the day* (`RL-REQ-CTX`) or *Amount for Each Account Code* (`RL-REQ-CAL`) or *Case lines* (`RL-REQ-C5L`); ribbon *Collection type*,
    **Total Amount** (decision 19), *BSU deposits matched*; tab **BSU deposits matched** (`RL-REQ-ALC`). Actions: Assign to me, Save,
-   State dropdown (AR-00 decision 4). No billing lines, no Link to customer, no invoice on Closed complete.
+   State dropdown (AR-00 decision 4). No billing lines, no Link to customer, no Generate invoice.
 4. **Matching:** AR applies a BSU deposit to the open case from the case (*Suggested BSU deposits*, *BSU deposits matched › New*) or from the deposit (D29, BSU decisions 11 and 21), against its Total Amount (AR-iii cases can now be matched, decision 19).
    Matching doesn't change the case state.
 5. **Portal ticket:** Form, requester, department, Collection type; no customer, contract or billing block yet.
@@ -70,7 +70,7 @@ The three are **one form** (D30, client request): the requester chooses AR-iii, 
 | Record producer | "Collections (AR-iii, AR-iv, AR-v)" on `x_ar_request` (`PT-49`): variable sets General information (`PT-30`), Collection type (`PT-50`). Three catalogue items (AR-iii, AR-iv, AR-v) open it with `collection_type` preset (URL parameter or default value). Producer script sets `ar_form` = COL, `collection_type`, `short_description`, `watch_list`, assignment group. |
 | Case fields | Collection Details columns on `x_ar_request` (`collection_date`, `collection_reference`, `requesting_cost_centre`, `ar5_category`, `date_of_collection`, `g56_receipt_number`, `bail_amount`, `bailor_name`, `bailor_nric`, `bailor_address`, `ib_case_number`, `case_number`, `case_status`, `accused_name`, `accused_id_number`, `ar5_amount`, `ar5_currency`, `ar5_to_be_invested`, `ar5_currency_banked`; identity columns encrypted / masked, ACL by role), `submission_origin`. Child tables `x_ar_collection_tx`, `x_ar_collection_allocation` (multi-row variable sets copied by the producer script). `x_ar_request.ar_form` choice **COL** (Collections (AR-iii, AR-iv, AR-v)); `x_ar_request.collection_type` (Choice AR-iii / AR-iv / AR-v; labels to be given); `amount` = amount to collect (set by the form once its fields are defined). |
 | Workspace | Form view `REQ-FV-COL` (view rule `ar_form` = COL); list `LST-REQ-COL`; related list `RL-REQ-ALC` (`x_ar_allocation.request`). |
-| Business rule | Closed complete generates invoices **only** for AR-i (CCI decision 8); never for Collections. |
+| UI action | *Generate invoice* is on AR-i cases only (CCI decision 23); Collections cases never get an invoice. |
 
 ## Out of scope / later
 

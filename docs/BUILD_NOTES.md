@@ -110,7 +110,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-02` | Portal homepage: search + quick links widgets |
 | `PT-03` | Quick link to catalog item: record producer "AR-i New AR request" |
 | `PT-04` | Quick link to My Requests |
-| `PT-05` | Record producer "AR-i New AR request" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item |
+| `PT-05` | Record producer "AR-i New AR request" on x_ar_request. Producer script: current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; copies the billing line items multi-row variable set (PT-43) to x_ar_request_line, one billing line per row with the case's contract (CCI decision 23); no billing line when billing_line_items_required = No |
 | `PT-06` | RETIRED 2026-11-10: replaced by the General information variable set (PT-30, REQ.requester_name / REQ.requester_email) |
 | `PT-38` | RETIRED 2026-11-12: Customer point of contact block; POC name / email are now part of the customer details (PT-39) |
 | `PT-39` | AR-i Customer section, found customer (D23): read-only customer details in this order: name, UEN, address (from x_ar_customer), agency type, V@G, V@G sub-BU, POC name, POC email (copied from x_ar_customer into the request variables by a catalog client script; variables read-only via UI policy). New customer: the same fields are editable; AR copies them to the customer by hand (D23 as amended by D31) |
@@ -165,7 +165,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `PT-42` | RETIRED 2026-11-19 (AR-i decision 42: Others section removed; agent removed, cost center moved to the billing line items, Customer PO number to Invoice details). Was: AR-i variable set Others (after Customer documents; final placement to be decided by the owner): cost_center, agent_name, po_number. All optional (invoice_breakdown and account_code removed, AR-i decision 39) |
 | `PT-62` | AR-i variable set 2. Type of billing (AR-i decision 43), right after General information: type_of_billing (General, Rental, Carpark, Courses, 5, 6). UI policy: 5 or 6 hides the Customer and Contract and bill-to variable sets (no customer or contract on the request); Customer documents and Invoice details stay. Stored on the request; AR copies it to the contract by hand (D31) |
 | `PT-63` | AR-i popup (AR-i decision 43): when the chosen existing contract's type_of_billing differs from the requester's choice, a catalog client script (onChange contract, GlideAjax) replaces the value with the contract's and shows a modal (spModal.alert) titled Type of billing changed |
-| `PT-43` | AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), gst_applicable (GST Yes / No, default Yes; No sets gst_amount 0, AR-i decision 43), late_payment_interest (rate %), account_code, cost_center (right of account_code, optional, tooltip To be filled by GA; AR-i decision 42). At least one row when Yes |
+| `PT-43` | AR-i multi-row variable set Billing line items, shown when billing_line_items_required = Yes; the producer script saves each row as a billing line (x_ar_request_line, linked to the case and its contract; CCI decision 23): item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), gst_applicable (GST Yes / No, default Yes; No sets gst_amount 0, AR-i decision 43), late_payment_interest (rate %), account_code, cost_center (right of account_code, optional, tooltip To be filled by GA; AR-i decision 42). At least one row when Yes |
 | `PT-28` | No contract required: info message (UI policy on contract_option = none). AR creates the customer's no-contract shell for the department by hand if needed (x_ar_contract, contract_type = shell) and links it with Link Contract Reference, which files the lines under it (D31) |
 | `PT-25` | Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer) |
 | `PT-26` | RETIRED 2026-11-12: What to bill variable set with the Billing lines multi-row variable set; replaced by Invoice details (PT-37). One billing line is now created from the invoice details |
@@ -302,7 +302,6 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `INV.customer` | x_ar_invoice.customer · Reference → x_ar_customer · mandatory |
 | `INV.contract` | x_ar_invoice.contract · Reference → x_ar_contract |
 | `INV.ar_request` | x_ar_invoice.ar_request · Reference → x_ar_request · read-only |
-| `INV.request_line` | x_ar_invoice.request_line · Reference → x_ar_request_line · read-only |
 | `INV.billing_schedule` | x_ar_invoice.billing_schedule · Reference → x_ar_billing_schedule · read-only |
 | `INV.billing_period` | x_ar_invoice.billing_period · Date · read-only |
 | `INV.short_description` | x_ar_invoice.short_description · String · mandatory |
@@ -572,8 +571,7 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `SCH.last_billing_date` | x_ar_billing_schedule.last_billing_date · Date · mandatory |
 | `SCH.first_period_amount` | x_ar_billing_schedule.first_period_amount · Currency · Empty = amount per period |
 | `SCH.last_period_amount` | x_ar_billing_schedule.last_period_amount · Currency · Empty = amount per period |
-| `SCH.source_request` | x_ar_billing_schedule.source_request · Reference → x_ar_request · AR picks the recurring AR-i case (reference qualifier: AR-i cases with a recurring line on this contract). Invoices from this schedule are linked to that case (CCI decision 8) |
-| `SCH.source_line` | x_ar_billing_schedule.source_line · Reference → x_ar_request_line · read-only · Set from the AR request's recurring line |
+| `SCH.source_request` | x_ar_billing_schedule.source_request · Reference → x_ar_request · AR picks the recurring AR-i case (reference qualifier: recurring AR-i cases on this contract). Picking it fills empty schedule fields from the case: What is billed (invoice description), amount per period, monthly, the contract's start and end dates; AR can change them (CCI decision 23). Invoices from this schedule are linked to that case (CCI decision 8) |
 
 ## Billing line
 
@@ -590,40 +588,15 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 |---|---|
 | `RQL.number` | x_ar_request_line.number · String · read-only |
 | `RQL.ar_request` | x_ar_request_line.ar_request · Reference → x_ar_request · read-only |
-| `RQL.contract` | x_ar_request_line.contract · Reference → x_ar_contract · read-only · Billing lines are contract level (D15). Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31) |
-| `RQL.line_type` | x_ar_request_line.line_type · Choice · mandatory |
-| `RQL.short_description` | x_ar_request_line.short_description · String · mandatory |
-| `RQL.amount` | x_ar_request_line.amount · Currency · mandatory · Recurring: amount per period |
-| `RQL.preferred_invoice_date` | x_ar_request_line.preferred_invoice_date · Date · One-off only |
-| `RQL.frequency` | x_ar_request_line.frequency · Choice · Recurring only; Monthly by default (decision 10) |
-| `RQL.start_date` | x_ar_request_line.start_date · Date · Recurring only: first billing date |
-| `RQL.end_date` | x_ar_request_line.end_date · Date · Recurring only: last billing date |
-| `RQL.remarks` | x_ar_request_line.remarks · String · Recurring only, optional |
-| `RQL.invoice` | x_ar_request_line.invoice · Reference → x_ar_invoice · read-only |
-| `RQL.billing_schedule` | x_ar_request_line.billing_schedule · Reference → x_ar_billing_schedule · read-only |
-
-## Billing line item
-
-| ID | ServiceNow |
-|---|---|
-| `LST-RQI` | List: x_ar_request_item · list view layout + list menu condition |
-| `RP-RQI` | Record page (UI Builder) · x_ar_request_item |
-| `HDR-RQI` | Record header: highlighted values of x_ar_request_item |
-| `FRM-RQI` | Form view: x_ar_request_item (Default view) |
-
-## Billing line item fields
-
-| ID | ServiceNow |
-|---|---|
-| `RQI.ar_request` | x_ar_request_item.ar_request · Reference → x_ar_request · read-only |
-| `RQI.item_number` | x_ar_request_item.item_number · Integer · read-only · System number 1, 2, 3… in row order within the AR request; set by the producer script, never typed (AR-i decision 37) |
-| `RQI.amount_excl_gst` | x_ar_request_item.amount_excl_gst · Currency · mandatory |
-| `RQI.gst_amount` | x_ar_request_item.gst_amount · Currency · read-only · Calculated: amount × GST rate (9%), rounded to the cent; 0 when GST = No (AR-i decision 43) |
-| `RQI.total_amount` | x_ar_request_item.total_amount · Currency · read-only · Calculated: amount + GST |
-| `RQI.gst_applicable` | x_ar_request_item.gst_applicable · Choice · Yes / No, default Yes (AR-i decision 43). No: GST amount 0 and Total amount = Amount |
-| `RQI.late_payment_interest` | x_ar_request_item.late_payment_interest · Decimal · Rate % (to be confirmed with the users) |
-| `RQI.account_code` | x_ar_request_item.account_code · String |
-| `RQI.cost_center` | x_ar_request_item.cost_center · String · Optional, free text. To be filled by GA (AR-i decision 42: moved from the request to each item, right of Account code) |
+| `RQL.contract` | x_ar_request_line.contract · Reference → x_ar_contract · read-only · Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31) |
+| `RQL.item_number` | x_ar_request_line.item_number · Integer · read-only · System number 1, 2, 3… in row order within the AR request; set by the producer script, never typed (AR-i decision 37) |
+| `RQL.amount_excl_gst` | x_ar_request_line.amount_excl_gst · Currency · mandatory |
+| `RQL.gst_amount` | x_ar_request_line.gst_amount · Currency · read-only · Calculated: amount × GST rate (9%), rounded to the cent; 0 when GST = No (AR-i decision 43) |
+| `RQL.total_amount` | x_ar_request_line.total_amount · Currency · read-only · Calculated: amount + GST |
+| `RQL.gst_applicable` | x_ar_request_line.gst_applicable · Choice · Yes / No, default Yes (AR-i decision 43). No: GST amount 0 and Total amount = Amount |
+| `RQL.late_payment_interest` | x_ar_request_line.late_payment_interest · Decimal · Rate % (to be confirmed with the users) |
+| `RQL.account_code` | x_ar_request_line.account_code · String |
+| `RQL.cost_center` | x_ar_request_line.cost_center · String · Optional, free text. To be filled by GA (AR-i decision 42) |
 
 ## Collection
 
@@ -826,8 +799,6 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `BSU.lines_matched` | Calculated list column "Lines matched" (BSU decision 27): xx/yy, where yy = the x_ar_bank_statement records with bsu = this upload and xx = those fully matched (unmatched amount 0) |
 | `BSU.unmatched_amount` | Calculated list column "Unmatched amount" (BSU decision 27): sum of the unmatched amount of this upload's bank lines (amount − allocation values) |
 | `BSU.deposit_ids` | RETIRED 2026-11-23 (BSU decision 28: one row per Deposit ID). Was: Calculated list column (BSU decision 26): the distinct Deposit IDs of the x_ar_bank_statement records whose bsu = this upload (one per payment mode); list formatter or a string field filled by a business rule |
-| `RQL.line_value` | Calculated: one-off amount, or recurring amount × number of periods |
-| `RQL.periods` | Calculated: number of billing dates between From and To at the frequency |
 | `SCH.next_billing_date` | Calculated: first period on or after today without an invoice |
 | `SCH.periods_due` | Calculated: periods up to today without an invoice |
 | `BNK.last_statement` | Calculated: latest sc_req_item.statement_date for the account |
@@ -841,7 +812,6 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | ID | ServiceNow |
 |---|---|
 | `RL-REQ-RQL` | Related list: x_ar_request_line where ar_request = this ar request |
-| `RL-REQ-RQI` | Related list: x_ar_request_item where ar_request = this ar request |
 | `RL-REQ-INV` | Related list: x_ar_invoice where ar_request = this ar request |
 | `RL-REQ-SCH` | Related list: x_ar_billing_schedule where contract (the case's contract; read-only on the case) = this ar request |
 | `RL-CUS-BCT` | Related list: x_ar_billing_contact where customer = this customer |
@@ -902,7 +872,8 @@ Generated from `js/notes.js` and `js/schema.js` by `node tools/notes.mjs`.
 | `UA-CUS-newcontact` | UI action: Add billing contact → new billing contact form with customer prefilled |
 | `UA-RQL-invoice` | UI action: RETIRED 2026-11-16 (CCI decision 8): Create invoice on a one-off line. The 1st invoice is generated when the AR-i case is set to Closed complete |
 | `UA-RQL-schedule` | UI action: RETIRED 2026-11-16 (CCI decision 8): Set up billing schedule on a recurring line. AR creates the schedule on the contract (New billing schedule) and picks the AR-i case |
-| `UA-RQL-save` | UI action: Save (update, while the line is open) |
+| `UA-RQL-save` | UI action: Save (update, while the AR-i case is open; GST amount and total recalculated) |
+| `UA-REQ-geninv` | UI action: Generate invoice (CCI decision 23): beside Save on every AR-i case, any state. Saves the form, then drafts one x_ar_invoice for the case (customer and contract from the Link section; error if either is empty): short_description = case short_description, amount = total of the case's billing lines with GST, or the Invoice details amount per period (w/o GST) when there are none, invoice_date today, due = invoice date + contract payment terms. Each click makes a new draft. AR reviews it, sets Approval date and issues it |
 | `UA-PT-newcust` | UI action: Portal: Add as new customer (sets new_customer = true, copies the search text into the name) |
 | `UA-PT-additem` | UI action: Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row |
 | `UA-PT-addline` | UI action: RETIRED 2026-11-12: Add one-off / recurring line; the request has one billing event from the invoice details (PT-37) |

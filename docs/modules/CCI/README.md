@@ -44,7 +44,7 @@ invoices ([BSU](../BSU/README.md)).
    Part paid / Paid / Overdue, calculated); allocations related list (`RL-INV-ALC`). UI actions **Issue
    invoice** (Draft → Issued; AR closes the AR request by hand, AR-00 decision 4) and
    **Cancel invoice** (overflow menu; only when nothing is allocated; the line opens again).
-4. Invoices are created by **Closed complete** on an AR-i (the 1st invoice, decision 8) and by the **daily
+4. Invoices are drafted by **Generate invoice** on an AR-i case (decision 23) and by the **daily
    invoice check** on a billing schedule (2nd invoice onwards, D12 amended, decision 7), always as drafts.
    *Issue invoice* needs the **Approval date** (decision 9).
 
@@ -56,7 +56,7 @@ invoices ([BSU](../BSU/README.md)).
 | `x_ar_contract` | Fields `contract_type` (record type: contract / shell), `contract_category` (contract type: recurring / ad-hoc), `reference_number`, `po_number`, `department`, `contract_owners` (**Contract owner**, List → `sys_user`, project team users, several; decision 10), `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `billing_cycle` (+ `_other`), `preferred_invoice_date`, `payment_terms_choice` (+ `payment_terms_other`; `terms` days = 30 unless Others), `proration`, `proration_first`, `proration_last`, `type_of_billing` (General, Rental, Carpark, Courses, 5, 6; decision 22), LPI fields (below), `giro_status`, `giro_case` (AR-ix). Shell unique per customer + department (business rule). |
 | `x_ar_billing_contact` | Customer + department → the department's usual bill-to person; used to prefill the bill-to on a new contract or shell. Unique per customer + department. |
 | `x_ar_customer_document` | Customer documents: type (contract / PO, ACRA, billing form), file (`sys_attachment`), contract (optional), department (billing form), source AR request. |
-| `x_ar_invoice` | Number prefix `INV`; `state` draft / issued / cancelled; customer, contract, AR request, billing line, billing schedule + period; `due_date` = invoice date + the contract's payment terms (days; customers hold none, decision 18); `amount_due` and `payment_status` calculated from accepted allocations (business rule on allocation insert / update). Only issued invoices receive deposits. |
+| `x_ar_invoice` | Number prefix `INV`; `state` draft / issued / cancelled; customer, contract, AR request, billing schedule + period (the billing line reference is retired, decision 23; the invoice prints its AR request's billing lines); `due_date` = invoice date + the contract's payment terms (days; customers hold none, decision 18); `amount_due` and `payment_status` calculated from accepted allocations (business rule on allocation insert / update). Only issued invoices receive deposits. |
 | UI actions | Invoice: *Issue invoice*, *Cancel invoice*. Customer: *Add billing contact* (overflow). |
 
 Full column lists: `SERVICENOW_MAPPING.md` (generated from `js/schema.js`).
@@ -99,20 +99,20 @@ The prototype records the terms only. Nothing calculates or charges interest yet
   - Contracts list: columns Contract ID, Number, Contract category, Title, Customer, Department, Bill-to, Value, Lines, Status. One list for both categories; no separate *No contract* menu item (decision 20).
   - Customers list: columns Name, Parent group, Overdue (no *Open AR*, decision 20). Billing contacts and customer documents have no list menu item; AR sees them on the customer tabs (decision 20).
 - **Billing schedule** (`x_ar_billing_schedule`): **Contract** mandatory; Customer read-only, set from the contract (before-insert/update business rule). Billing periods list has no action column.
-- **Daily invoice check** (scheduled job `JOB-DAILYINV`, daily): for each schedule period with no live invoice whose invoice date is 5 working days (Mon–Fri) away or less, insert a draft `x_ar_invoice` (schedule, period, contract, customer, AR request, request line) and add a work note on the AR-i case. AR issues drafts with *Issue invoice*. The demo shows the result as mock data only (no button).
+- **Daily invoice check** (scheduled job `JOB-DAILYINV`, daily): for each schedule period with no live invoice whose invoice date is 5 working days (Mon–Fri) away or less, insert a draft `x_ar_invoice` (schedule, period, contract, customer, AR request) and add a work note on the AR-i case. AR issues drafts with *Issue invoice*. The demo shows the result as mock data only (no button).
 - Forecast logic, public holidays and invoice PDF: open questions 11–13.
 
-## 1st invoice, approval date and billing schedule (decisions 8–9)
+## Billing lines, Generate invoice and billing schedule (decisions 23, 9; 8 amended)
 
-1. AR-i case set to **Closed complete** (State dropdown + Save) → a business rule inserts the **1st invoice** as a **draft** for each billing line without one (one-off: its only invoice; recurring: the first period), linked to the case, line, contract and customer, with a work note. Closing is blocked with *Link to customer before Closed complete: the 1st invoice needs the customer and contract.* until both are linked.
-2. The 1st invoice is **always reviewed by hand**. Its **Invoice date** is suggested from the AR-i's indicated start (recurring: line start; one-off: preferred invoice date; else today) and kept even if earlier than today. AR sets the separate **Approval date** (`approval_date`, manual; may be earlier or later than the invoice date).
-3. *Issue invoice* is blocked on **every** invoice until the Approval date is set (*Set the Approval date before issuing.*). The button saves the form first.
-4. Recurring AR-i: AR opens the contract → **New billing schedule** (`UA-CON-newschedule`): contract, customer, department, Monthly and last billing date (contract end) prefilled; **first billing date** defaults to the next cycle day of the contract **billing cycle** (1st or 15th of the month) and is the **2nd invoice's** date. On a 1st / 15th contract the first billing date must be on that day; for *Others* AR picks it. AR picks the AR-i case in **From AR request** (`source_request`; qualifier: AR-i cases with a recurring line on the contract; `source_line` set from it).
-5. The daily job drafts each later period 5 working days ahead; the drafts appear on the case's **Invoices** tab and the contract's Invoices tab, and AR issues them (Approval date first).
-6. Recurring AR-i cases show a read-only **Billing schedule** tab: the case contract's schedules (one schedule per contract or several: open question 16, issue #7).
-7. *Create invoice* and *Set up billing schedule* on billing lines are retired.
+1. **Billing lines** (`x_ar_request_line`): one per row of the AR-i form's Billing line items table (PT-43), saved by the producer script; none when *Require billing line item?* = No. Columns are the PT-43 fields only: Item number, Amount (w/o GST), GST, GST amount, Total amount, Late payment interest (%), Account code, Cost center. Each line references the **AR-i case** and its **contract** (set at submit for an existing contract, else by Link Contract Reference, D31). The case and the contract show the **same table** (contract tab adds the AR request column; AR can also add a line there with *New*). A line carries **no logic**: it only prints as an invoice line (decision 23).
+2. **Generate invoice** (`UA-REQ-geninv`) beside Save on every AR-i case, in any state. It saves the form, then, if Link Customer Reference and Link Contract Reference are set, drafts **one** invoice: customer and contract from the case, description = the case's invoice description, amount = total of the billing lines with GST (or the Invoice details amount w/o GST when there are no lines), invoice date today, due = invoice date + payment terms. Each click drafts another invoice. Error when not linked: *Set Link Customer Reference and Link Contract Reference first: the invoice needs the customer and contract.*
+3. **Closed complete** no longer generates an invoice and no longer needs the Link section (decision 8 amended).
+4. AR reviews the draft and sets the **Approval date** (`approval_date`, manual). *Issue invoice* is blocked until it is set (decision 9) and saves the form first.
+5. The invoice's **Billing lines** tab and the **invoice PDF** print the AR request's billing lines (item number, amount w/o GST, GST amount, total); an invoice without an AR request, or a request without lines, prints its description and amount.
+6. **Billing schedules: to be redesigned** (owner). Interim: AR opens the contract → **New billing schedule**; picking **From AR request** (recurring AR-i cases on the contract) fills empty fields from the case (What is billed = invoice description, Amount per period, Monthly, first / last billing date = contract start / end); AR can change them. The daily job drafts each later period 5 working days ahead, as before; schedule invoices do not print billing lines yet (open question 19).
+7. Recurring AR-i cases show a read-only **Billing schedule** tab (the contract's schedules) and an **Invoices** tab.
 
-**Demo data:** **ARQ0001009** (AR-i, Tanjong Retail Group, recurring contract TR-TA-2025-14, billing cycle 1st of the month, monthly rent SGD 4,800) is Closed complete: 1st invoice two cycle days back (issued; approval date earlier than the invoice date), billing schedule from the 2nd invoice (last cycle day, issued), 3rd invoice drafted by the daily job once it is 5 working days away. ARQ0001001 (one-off) shows the 1st invoice being generated when AR sets Closed complete. ARQ0001002 is a new customer, not linked. Sample schedule SCH0001001 has its past periods already issued.
+**Demo data:** **ARQ0001009** (AR-i, Tanjong Retail Group, recurring contract TR-TA-2025-14, monthly rent SGD 4,800) has two billing lines (rent 4,500 with GST, service charge 300 without GST): AR pressed Generate invoice for the 1st invoice (SGD 5,205.00 with GST, issued), then set up the billing schedule for the 2nd invoice onwards (SGD 4,800 per period, from the schedule). **ARQ0001001** (one-off, not linked yet) has two billing lines; Generate invoice shows the Link error until AR sets the Link section.
 
 ## Master data rules (decision 12)
 
@@ -126,7 +126,7 @@ The prototype records the terms only. Nothing calculates or charges interest yet
 
 ## Invoice block (decision 13)
 
-Invoices are made by the system (the AR-i's 1st invoice on Closed complete; later periods by the daily job from
+Invoices are made by AR or the system (Generate invoice on an AR-i case, decision 23; later periods by the daily job from
 the billing schedule). The record page: header, ribbon (Amount, Amount due, Due), Details, Allocations, **Invoice
 preview**, Record history; actions *Issue invoice* (approval date required) and *Cancel invoice*. The preview is
 the invoice document as the PDF would show it; ServiceNow: an HTML template rendered with PDF Generation

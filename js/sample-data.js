@@ -211,11 +211,10 @@ export function loadSample() {
     opened: shiftDate("2026-10-24"), updated: shiftDate("2026-10-24"), attachments: [],
     activity: [{ at: shiftDate("2026-10-24") + "T08:40:00", by: "u_pm1", kind: "system", text: "Submitted from AR-i on the portal for a new customer under new contract ZDC-SA-2026-01, with 1 recurring." }] });
 
-  // Billing lines (D13): one per earlier request; Zephyr mixes a one-off fee with 12 months of monitoring
-  let ln = 1000;
-  const L = (r, lineType, desc, amount, extra = {}) => S.lines.push({ id: uid("l"), number: "RQL" + String(++ln).padStart(7, "0"), requestId: r.id, lineType, desc, amount,
-    invoiceDate: "", frequency: lineType === "recurring" ? "monthly" : "", startDate: "", endDate: "", invoiceId: null, scheduleId: null, ...extra });
-  S.lines = [];
+  // Billing events per earlier request (D13), used only to derive each case's request value and Invoice details below.
+  // CCI decision 23: these are not billing lines; billing lines are the PT-43 rows (built after the Invoice details).
+  const tmp = [];
+  const L = (r, lineType, desc, amount, extra = {}) => tmp.push({ requestId: r.id, lineType, desc, amount, invoiceDate: "", frequency: lineType === "recurring" ? "monthly" : "", startDate: "", endDate: "", ...extra });
   for (const r of S.requests) {
     if (r.id === "r8") {
       L(r, "recurring", r.title, cents(3500), { startDate: shiftDate("2026-12-01"), endDate: r.newCtrEnd });
@@ -223,21 +222,24 @@ export function loadSample() {
       L(r, "recurring", r.title, r.amount, { frequency: r.frequency || "monthly", startDate: r.firstBillDate, endDate: S.contracts.find(k => k.id === r.contractId)?.end || shiftDate("2027-03-31") });
       r.title = "Warehouse management services, rest of contract";
     } else {
-      L(r, "one_off", r.title, r.amount, { invoiceDate: r.invoiceDate || "", invoiceId: r.invoiceId || null });
-      const inv = r.invoiceId && S.invoices.find(i => i.id === r.invoiceId); if (inv) inv.lineId = S.lines[S.lines.length - 1].id;
+      L(r, "one_off", r.title, r.amount, { invoiceDate: r.invoiceDate || "" });
     }
     for (const k of ["requestType", "billingType", "invoiceDate", "periodStart", "periodEnd", "frequency", "firstBillDate", "lastBillDate", "invoiceId", "scheduleId"]) delete r[k];
-    const ls = S.lines.filter(l => l.requestId === r.id);
+    const ls = tmp.filter(l => l.requestId === r.id);
     r.amount = ls.reduce((sum, l) => sum + (l.lineType === "recurring" ? l.amount * monthsBetween(l.startDate, l.endDate) : l.amount), 0);
   }
 
   // Invoice details (AR-i decisions 31–33) mirror each request's billing line; Zephyr breaks its monthly charge into items
   for (const r of S.requests.filter(x => x.form !== "AR-ix")) {
-    const l = S.lines.find(x => x.requestId === r.id); if (!l) continue;
+    const l = tmp.find(x => x.requestId === r.id); if (!l) continue;
     Object.assign(r, { perPeriod: l.amount, invoiceTiming: l.lineType === "recurring" ? "" : "per_cycle", needItems: r.needItems || "no" });
   }
-  S.items = [["r8", 1, 2000, 2.5, "4100-OPS"], ["r8", 2, 1500, 2.5, "4100-MNT"]]
-    .map(([rid, seq, amt, lpiRate, accountCode]) => ({ id: uid("q"), requestId: rid, ...itemCalc({ seq, amount: cents(amt), lpiRate, accountCode }) }));
+  // CCI decision 23: billing lines = the PT-43 rows of the AR-i form (Zephyr breaks its monthly charge into two; Pacific Crest its milestone into two)
+  let ln = 1000;
+  S.lines = [["r8", 1, 2000, 2.5, "4100-OPS", "yes"], ["r8", 2, 1500, 2.5, "4100-MNT", "yes"], ["r2", 1, 12000, 0, "4300-INS", "yes"], ["r2", 2, 6300, 0, "4300-INS", "no"]]
+    .map(([rid, seq, amt, lpiRate, accountCode, gstApplicable]) => ({ id: uid("l"), number: "RQL" + String(++ln).padStart(7, "0"), requestId: rid, contractId: null,
+      ...itemCalc({ seq, amount: cents(amt), lpiRate, accountCode, costCenter: "", gstApplicable }) }));
+  for (const r of S.requests) if (S.lines.some(l => l.requestId === r.id)) r.needItems = "yes";
 
   // Billing contacts per customer per department (D11)
   const ct = [
@@ -386,9 +388,9 @@ export function loadSample() {
   // Owner 2026-11-12 (UIX decision 12): every sample case is removed so the workspace only holds cases raised from
   // the latest AR-i and AR-ix forms. Customers, contracts, invoices, schedules, documents and BSU data stay, unhooked
   // from the removed cases; GIRO is Not active on every contract until AR sets it from a new AR-ix case.
-  S.requests = []; S.lines = []; S.items = []; S.colTx = []; S.colAlloc = []; S.refundTasks = []; S.refundReasons = []; S.ar10Payees = []; S.ar10Tasks = [];
-  for (const i of S.invoices) Object.assign(i, { requestId: null, lineId: null });
-  for (const x of S.schedules) Object.assign(x, { requestId: null, lineId: null });
+  S.requests = []; S.lines = []; S.colTx = []; S.colAlloc = []; S.refundTasks = []; S.refundReasons = []; S.ar10Payees = []; S.ar10Tasks = [];
+  for (const i of S.invoices) Object.assign(i, { requestId: null });
+  for (const x of S.schedules) Object.assign(x, { requestId: null });
   for (const d of S.documents) d.requestId = null;
   for (const c of S.contacts) c.requestId = null;
   for (const k of S.contracts) Object.assign(k, { giroStatus: "none", giroCaseId: null });

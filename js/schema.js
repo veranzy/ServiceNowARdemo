@@ -198,14 +198,13 @@ export const TABLES = {
   },
   invoices: {
     table: `${SCOPE}_invoice`, label: "Invoice", plural: "Invoices", display: "number", prefix: "INV",
-    note: "System of record for customer invoices. Created by the AR team from an AR request, then issued.",
+    note: "System of record for customer invoices. Drafted by AR with Generate invoice on the AR-i case (CCI decision 23), by the daily invoice check from a billing schedule, or by hand (New); issued by AR. The invoice prints its AR request's billing lines.",
     fields: [
       { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "INV-00000" },
       { key: "state", name: "state", label: "State", type: "Choice", choices: [["draft", "Draft"], ["issued", "Issued"], ["cancelled", "Cancelled"]], readonly: true },
       { key: "customerId", name: "customer", label: "Customer", type: "Reference", ref: "customers", mandatory: true },
       { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", dependsOn: "customerId" },
       { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
-      { key: "lineId", name: "request_line", label: "Billing line", type: "Reference", ref: "lines", readonly: true },
       { key: "scheduleId", name: "billing_schedule", label: "Billing schedule", type: "Reference", ref: "schedules", readonly: true },
       { key: "periodDate", name: "billing_period", label: "Billing period", type: "Date", readonly: true },
       { key: "desc", name: "short_description", label: "Description", type: "String", wide: true, mandatory: true },
@@ -295,32 +294,16 @@ export const TABLES = {
       { key: "reason", name: "reason", label: "Reason", type: "String (1000)" }
     ]
   },
+  // CCI decision 23 (2026-11-27): a billing line is one row of the AR-i's PT-43 table, kept only to print the invoice lines.
+  // No billing logic on it (no type, dates, frequency, invoice or schedule link). Linked three ways: AR-i case, contract, line.
+  // The same table shows on the case and on the contract. Replaces x_ar_request_item (retired).
   lines: {
     table: `${SCOPE}_request_line`, label: "Billing line", plural: "Billing lines", display: "number", prefix: "RQL",
-    note: "What to bill on an AR request (D13): one-off, or recurring over a from–to date range. Portal: multi-row variable set on AR-i.",
+    note: "One row of the AR-i form's Billing line items table (PT-43), saved by the producer script; prints as an invoice line (CCI decision 23). No billing logic. Linked to the AR-i case and to its contract; the case and the contract show the same records. No rows when the requester answers 'Require billing line item?' = No.",
     fields: [
       { key: "number", name: "number", label: "Number", type: "String", readonly: true, auto: "RQL0001000" },
       { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
-      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", readonly: true, help: "Billing lines are contract level (D15). Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31)" },
-      { key: "lineType", name: "line_type", label: "Line type", type: "Choice", choices: LINE_TYPES, mandatory: true },
-      { key: "desc", name: "short_description", label: "Description", type: "String", mandatory: true, wide: true },
-      { key: "amount", name: "amount", label: "Amount", type: "Currency", mandatory: true, help: "Recurring: amount per period" },
-      { key: "invoiceDate", name: "preferred_invoice_date", label: "Preferred invoice date", type: "Date", help: "One-off only" },
-      { key: "frequency", name: "frequency", label: "Frequency", type: "Choice", choices: FREQUENCIES.map(f => [f[0], f[1]]), help: "Recurring only; Monthly by default (decision 10)" },
-      { key: "startDate", name: "start_date", label: "From", type: "Date", help: "Recurring only: first billing date" },
-      { key: "endDate", name: "end_date", label: "To", type: "Date", help: "Recurring only: last billing date" },
-      { key: "remarks", name: "remarks", label: "Remarks", type: "String", wide: true, help: "Recurring only, optional" },
-      { key: "invoiceId", name: "invoice", label: "Invoice", type: "Reference", ref: "invoices", readonly: true },
-      { key: "scheduleId", name: "billing_schedule", label: "Billing schedule", type: "Reference", ref: "schedules", readonly: true }
-    ],
-    calculated: [{ name: "periods", label: "Number of invoices", type: "Integer", how: "recurring: periods between start and end at the frequency" },
-      { name: "line_value", label: "Line value", type: "Currency", how: "one-off: amount; recurring: amount × periods, or when prorated: first month amount + amount × (periods − 2) + last month amount" }]
-  },
-  items: {
-    table: `${SCOPE}_request_item`, label: "Billing line item", plural: "Billing line items", display: "seq",
-    note: "Breakdown of an AR request's invoice (AR-i decision 32). Portal: multi-row variable set on AR-i, shown when 'Require billing line item?' is Yes. GST and total are calculated (GST_RATE).",
-    fields: [
-      { key: "requestId", name: "ar_request", label: "AR request", type: "Reference", ref: "requests", readonly: true },
+      { key: "contractId", name: "contract", label: "Contract", type: "Reference", ref: "contracts", readonly: true, help: "Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31)" },
       { key: "seq", name: "item_number", label: "Item number", type: "Integer", readonly: true, help: "System number 1, 2, 3… in row order within the AR request; set by the producer script, never typed (AR-i decision 37)" },
       { key: "amount", name: "amount_excl_gst", label: "Amount (w/o GST)", type: "Currency", mandatory: true },
       { key: "gst", name: "gst_amount", label: "GST amount", type: "Currency", readonly: true, help: "Calculated: amount × GST rate (9%), rounded to the cent; 0 when GST = No (AR-i decision 43)" },
@@ -328,7 +311,7 @@ export const TABLES = {
       { key: "gstApplicable", name: "gst_applicable", label: "GST", type: "Choice", choices: YES_NO, default: "yes", help: "Yes / No, default Yes (AR-i decision 43). No: GST amount 0 and Total amount = Amount" },
       { key: "lpiRate", name: "late_payment_interest", label: "Late payment interest (%)", type: "Decimal", help: "Rate % (to be confirmed with the users)" },
       { key: "accountCode", name: "account_code", label: "Account code", type: "String" },
-      { key: "costCenter", name: "cost_center", label: "Cost center", type: "String", help: "Optional, free text. To be filled by GA (AR-i decision 42: moved from the request to each item, right of Account code)", tooltip: "To be filled by GA" }
+      { key: "costCenter", name: "cost_center", label: "Cost center", type: "String", help: "Optional, free text. To be filled by GA (AR-i decision 42)", tooltip: "To be filled by GA" }
     ]
   },
   contacts: {
@@ -481,8 +464,7 @@ export const TABLES = {
       { key: "lastDate", name: "last_billing_date", label: "Last billing date", type: "Date", mandatory: true },
       { key: "firstAmount", name: "first_period_amount", label: "First period amount (prorated)", type: "Currency", help: "Empty = amount per period" },
       { key: "lastAmount", name: "last_period_amount", label: "Last period amount (prorated)", type: "Currency", help: "Empty = amount per period" },
-      { key: "requestId", name: "source_request", label: "From AR request", type: "Reference", ref: "requests", help: "AR picks the recurring AR-i case (reference qualifier: AR-i cases with a recurring line on this contract). Invoices from this schedule are linked to that case (CCI decision 8)" },
-      { key: "lineId", name: "source_line", label: "From billing line", type: "Reference", ref: "lines", readonly: true, help: "Set from the AR request's recurring line" }
+      { key: "requestId", name: "source_request", label: "From AR request", type: "Reference", ref: "requests", help: "AR picks the recurring AR-i case (reference qualifier: recurring AR-i cases on this contract). Picking it fills empty schedule fields from the case: What is billed (invoice description), amount per period, monthly, the contract's start and end dates; AR can change them (CCI decision 23). Invoices from this schedule are linked to that case (CCI decision 8)" }
     ],
     calculated: [{ name: "next_billing_date", label: "Next billing date", type: "Date", how: "first period on or after today without an invoice" }]
   },
@@ -612,7 +594,7 @@ export const RECORD_PRODUCER = {
     "billToName", "billToEmail", "billToPhone", "billToAddress", "title", "attnName", "attnEmail", "perPeriod", "invoiceTiming", "expediteReason", "needItems", "poNumber",
     "pocName", "pocEmail", "agencyType", "vag", "subBu", "typeOfBilling", "giroOnContract", "docContract", "docAcra", "docBillingForm", "details"],
   lineSet: "items",
-  script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item"
+  script: "current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; copies the billing line items multi-row variable set (PT-43) to x_ar_request_line, one billing line per row with the case's contract (CCI decision 23); no billing line when billing_line_items_required = No"
 };
 /** AR-ix GIRO authorisation (AR-ix module): same case table, its own variables. */
 export const RECORD_PRODUCER_ARIX = {

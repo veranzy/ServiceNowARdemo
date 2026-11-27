@@ -4,7 +4,7 @@
 // Each row goes through the same record-producer logic as a portal submission (createRequest), so a CSV case and a
 // portal case open on the same reusable Record page.
 import { parseCSV } from "./io.js";
-import { createRequest, termsDays, draftDate, firstInvoices, journal, nextCycleDate, nextNumber, periodAmounts, periodDates, runDailyInvoiceCheck } from "./records.js";
+import { createRequest, itemCalc, caseRecurring, generateInvoice, termsDays, draftDate, journal, nextCycleDate, nextNumber, periodAmounts, periodDates, runDailyInvoiceCheck } from "./records.js";
 import { allocate } from "./matching.js";
 import { depositId } from "./bsu.js";
 import { TEMPLATES, sampleRows } from "./excel.js";
@@ -20,6 +20,8 @@ const GIRO_SET_BY_AR = [["HL-2026-01", "ARQ0001007"]];
  *  it); AR then created the billing schedule on the contract from the 2nd invoice (last cycle day, drafted by the daily job and
  *  issued); the 3rd invoice is drafted by the daily job once its date is 5 working days away. */
 const CLOSED_RECURRING = ["ARQ0001009"];
+/** CCI decision 23 (demo): PT-43 rows for two CSV cases (the CSV holds no multi-row data). [case, amount w/o GST, GST, account code, cost center] */
+const DEMO_LINES = { ARQ0001001: [[12000, "yes", "4300-ENG", "ENG-DES"], [6000, "yes", "4300-ENG", ""]], ARQ0001009: [[4500, "yes", "4200-RNT", "FAC-RTL"], [300, "no", "4200-SVC", ""]] };
 
 const ymd = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 const addMonths = (iso, n) => { const d = new Date(iso + "T00:00:00"), day = d.getDate(); d.setMonth(d.getMonth() + n); if (d.getDate() !== day) d.setDate(0); return ymd(d); };
@@ -35,7 +37,7 @@ function scheduleHistory() {
       if (draftDate(date) > t || S.invoices.some(i => i.scheduleId === sch.id && i.periodDate === date && i.state !== "cancelled")) return;
       const k = S.contracts.find(x => x.id === sch.contractId), c = S.customers.find(x => x.id === (sch.customerId || k?.customerId));
       const label = new Date(date + "T00:00:00").toLocaleDateString("en-SG", { month: "short", year: "numeric" });
-      S.invoices.push({ id: uid("i"), number: nextNumber("invoices"), state: "issued", customerId: c?.id, contractId: sch.contractId, requestId: sch.requestId || null, lineId: sch.lineId || null,
+      S.invoices.push({ id: uid("i"), number: nextNumber("invoices"), state: "issued", customerId: c?.id, contractId: sch.contractId, requestId: sch.requestId || null,
         scheduleId: sch.id, periodDate: date, customer: c?.name || "", desc: `${sch.desc} – ${label}`, amount: amounts[ix] ?? sch.amount, date, approvalDate: draftDate(date), due: addDays(date, termsDays(k)), currency: "SGD" });
     });
   }
@@ -186,20 +188,28 @@ export function addCases(text) {
     S.history.push({ table: "requests", id: r.id, at, by: r.requestedBy, kind: "created" });
     n++;
   }
+  for (const [num, rows] of Object.entries(DEMO_LINES)) {
+    const r = S.requests.find(x => x.number === num); if (!r) continue;
+    r.needItems = "yes";
+    rows.forEach(([amt, gstApplicable, accountCode, costCenter], i) => S.lines.push({ id: uid("l"), number: nextNumber("lines"), requestId: r.id, contractId: r.contractId || null,
+      ...itemCalc({ seq: i + 1, amount: cents(amt), lpiRate: 0, accountCode, costCenter, gstApplicable }) }));
+  }
   collectionCases();   // AR-iii decision 23 (replaces the decision 21 set)
   refundCases();       // AR-ii (#13)
   scheduleHistory();
   for (const num of CLOSED_RECURRING) {
-    const r = S.requests.find(x => x.number === num), l = r && S.lines.find(x => x.requestId === r.id && x.lineType === "recurring");
-    if (!l) continue;
+    const r = S.requests.find(x => x.number === num);
+    if (!r || !caseRecurring(r) || !r.contractId) continue;
     const k = S.contracts.find(x => x.id === r.contractId), next = nextCycleDate(k) || addWorkingDays(isoToday(), 3);
     const second = addMonths(next, -1), first = addMonths(next, -2), at = first + "T10:00:00";
-    l.startDate = first;
+    // CCI decision 23: AR linked the case and pressed Generate invoice for the 1st invoice, then issued it
+    r.linkCustomer ||= r.customerId; r.linkContract ||= r.contractId;
+    const res = generateInvoice(r);
+    if (res?.opened) Object.assign(res.opened, { state: "issued", date: first, periodDate: first, approvalDate: addDays(first, -3), due: addDays(first, 30) });
     r.state = "closed_complete"; journal(r, "system", "State changed to Closed complete.", r.assignedTo);
-    for (const inv of [].concat(firstInvoices(r) || [])) if (inv?.id) Object.assign(inv, { state: "issued", approvalDate: addDays(first, -3), due: addDays(first, 30) });
-    const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: r.contractId, department: r.department, desc: l.desc, frequency: "monthly",
-      amount: l.amount, firstDate: second, lastDate: l.endDate, firstAmount: 0, lastAmount: 0, requestId: r.id, lineId: l.id };
-    S.schedules.push(sch); l.scheduleId = sch.id;
+    const sch = { id: uid("s"), number: nextNumber("schedules"), customerId: r.customerId, contractId: r.contractId, department: r.department, desc: r.title, frequency: "monthly",
+      amount: r.perPeriod || 0, firstDate: second, lastDate: k?.end || "", firstAmount: 0, lastAmount: 0, requestId: r.id };
+    S.schedules.push(sch);
     journal(r, "work_note", `Billing schedule ${sch.number} set up on the contract for the 2nd invoice onwards.`, r.assignedTo);
     r.opened = addDays(first, -10); r.activity.forEach(e => { e.at = at; }); r.updated = first;
   }

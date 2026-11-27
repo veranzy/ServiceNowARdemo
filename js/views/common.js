@@ -1,6 +1,6 @@
 // Shared view helpers: state chips, form fields from the schema, related lists, icons, build-note attributes.
 import { ctrById, custById, invoiceUse } from "../ledger.js";
-import { REQ_OPEN, REQ_STATE, displayOf, recById, userById } from "../records.js";
+import { caseRecurring, isARi, REQ_OPEN, REQ_STATE, displayOf, recById, userById } from "../records.js";
 import { CODE, noteText } from "../notes.js";
 import { BANKS, COLLECTION_FORMS, TABLES } from "../schema.js";
 import { S } from "../state.js";
@@ -70,8 +70,8 @@ function refOptionsAll(f, rec, formVals) {
   if (f.ref === "users") return S.users.filter(u => !f.refFilter || u.team === f.refFilter).map(u => [u.id, u.name]);
   if (f.ref === "companies") return S.companies.filter(co => co.id === rec.companyId || !S.customers.some(c => c.companyId === co.id)).sort((a, b) => a.name.localeCompare(b.name)).map(co => [co.id, co.name]);
   // Active GIRO case (contract): AR-ix cases on this contract (AR-ix decision 11)
-  // Billing schedule "From AR request" (CCI decision 8): AR-i cases with a recurring line on the schedule's contract
-  if (f.name === "source_request") { const c = formVals?.contractId || rec.contractId; return S.requests.filter(r => r.form !== "AR-ix" && (!c || r.contractId === c) && S.lines.some(l => l.requestId === r.id && l.lineType === "recurring")).map(r => [r.id, `${r.number} · ${r.title}`]); }
+  // Billing schedule "From AR request" (CCI decisions 8, 23): recurring AR-i cases on the schedule's contract
+  if (f.name === "source_request") { const c = formVals?.contractId || rec.contractId; return S.requests.filter(r => isARi(r) && (!c || r.contractId === c) && caseRecurring(r)).map(r => [r.id, `${r.number} · ${r.title}`]); }
   if (f.key === "giroCaseId") return S.requests.filter(r => r.form === "AR-ix" && r.giroType === "add" && r.contractId === rec.id).map(r => [r.id, `${r.number} · ${r.title}`]);
   // D31 Link section: customers by UEN; contracts by Contract ID, of the linked customer (AR-i) or the case's customer (AR-ix)
   if (f.key === "linkCustomer") return S.customers.slice().sort((a, b) => String(a.uen || "~").localeCompare(String(b.uen || "~"))).map(c => [c.id, `${c.uen || "No UEN"} · ${c.name}`]);

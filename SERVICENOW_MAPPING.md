@@ -223,33 +223,13 @@ Case raised by the project team through an AR form record producer (AR-i … AR-
 
 ### Billing line — `x_ar_request_line`
 
-What to bill on an AR request (D13): one-off, or recurring over a from–to date range. Portal: multi-row variable set on AR-i. Number prefix: `RQL`.
+One row of the AR-i form's Billing line items table (PT-43), saved by the producer script; prints as an invoice line (CCI decision 23). No billing logic. Linked to the AR-i case and to its contract; the case and the contract show the same records. No rows when the requester answers 'Require billing line item?' = No. Number prefix: `RQL`.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
 | `number` | Number | String | Read-only on form |
 | `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
-| `contract` | Contract | Reference | → `x_ar_contract`. Read-only on form. Billing lines are contract level (D15). Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31) |
-| `line_type` | Line type | Choice | Choices: One-off (`one_off`), Recurring (`recurring`). Mandatory |
-| `short_description` | Description | String | Mandatory |
-| `amount` | Amount | Currency | Mandatory. Recurring: amount per period |
-| `preferred_invoice_date` | Preferred invoice date | Date | One-off only |
-| `frequency` | Frequency | Choice | Choices: Monthly (`monthly`), Quarterly (`quarterly`), Half-yearly (`half_yearly`), Annually (`annually`). Recurring only; Monthly by default (decision 10) |
-| `start_date` | From | Date | Recurring only: first billing date |
-| `end_date` | To | Date | Recurring only: last billing date |
-| `remarks` | Remarks | String | Recurring only, optional |
-| `invoice` | Invoice | Reference | → `x_ar_invoice`. Read-only on form |
-| `billing_schedule` | Billing schedule | Reference | → `x_ar_billing_schedule`. Read-only on form |
-| `periods` | Number of invoices | Integer | Calculated: recurring: periods between start and end at the frequency |
-| `line_value` | Line value | Currency | Calculated: one-off: amount; recurring: amount × periods, or when prorated: first month amount + amount × (periods − 2) + last month amount |
-
-### Billing line item — `x_ar_request_item`
-
-Breakdown of an AR request's invoice (AR-i decision 32). Portal: multi-row variable set on AR-i, shown when 'Require billing line item?' is Yes. GST and total are calculated (GST_RATE).
-
-| Column | Label | Type | Notes |
-|---|---|---|---|
-| `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
+| `contract` | Contract | Reference | → `x_ar_contract`. Read-only on form. Existing contract at submit; otherwise set when AR saves Link Contract Reference on the case (D31) |
 | `item_number` | Item number | Integer | Read-only on form. System number 1, 2, 3… in row order within the AR request; set by the producer script, never typed (AR-i decision 37) |
 | `amount_excl_gst` | Amount (w/o GST) | Currency | Mandatory |
 | `gst_amount` | GST amount | Currency | Read-only on form. Calculated: amount × GST rate (9%), rounded to the cent; 0 when GST = No (AR-i decision 43) |
@@ -257,7 +237,7 @@ Breakdown of an AR request's invoice (AR-i decision 32). Portal: multi-row varia
 | `gst_applicable` | GST | Choice | Choices: Yes (`yes`), No (`no`). Yes / No, default Yes (AR-i decision 43). No: GST amount 0 and Total amount = Amount. Default: yes |
 | `late_payment_interest` | Late payment interest (%) | Decimal | Rate % (to be confirmed with the users) |
 | `account_code` | Account code | String |  |
-| `cost_center` | Cost center | String | Optional, free text. To be filled by GA (AR-i decision 42: moved from the request to each item, right of Account code). Tooltip: "To be filled by GA" |
+| `cost_center` | Cost center | String | Optional, free text. To be filled by GA (AR-i decision 42). Tooltip: "To be filled by GA" |
 
 ### Billing schedule — `x_ar_billing_schedule`
 
@@ -276,13 +256,12 @@ Recurring billing from the 2nd invoice onwards (CCI decision 8): AR creates the 
 | `last_billing_date` | Last billing date | Date | Mandatory |
 | `first_period_amount` | First period amount (prorated) | Currency | Empty = amount per period |
 | `last_period_amount` | Last period amount (prorated) | Currency | Empty = amount per period |
-| `source_request` | From AR request | Reference | → `x_ar_request`. AR picks the recurring AR-i case (reference qualifier: AR-i cases with a recurring line on this contract). Invoices from this schedule are linked to that case (CCI decision 8) |
-| `source_line` | From billing line | Reference | → `x_ar_request_line`. Read-only on form. Set from the AR request's recurring line |
+| `source_request` | From AR request | Reference | → `x_ar_request`. AR picks the recurring AR-i case (reference qualifier: recurring AR-i cases on this contract). Picking it fills empty schedule fields from the case: What is billed (invoice description), amount per period, monthly, the contract's start and end dates; AR can change them (CCI decision 23). Invoices from this schedule are linked to that case (CCI decision 8) |
 | `next_billing_date` | Next billing date | Date | Calculated: first period on or after today without an invoice |
 
 ### Invoice — `x_ar_invoice`
 
-System of record for customer invoices. Created by the AR team from an AR request, then issued. Number prefix: `INV`.
+System of record for customer invoices. Drafted by AR with Generate invoice on the AR-i case (CCI decision 23), by the daily invoice check from a billing schedule, or by hand (New); issued by AR. The invoice prints its AR request's billing lines. Number prefix: `INV`.
 
 | Column | Label | Type | Notes |
 |---|---|---|---|
@@ -291,7 +270,6 @@ System of record for customer invoices. Created by the AR team from an AR reques
 | `customer` | Customer | Reference | → `x_ar_customer`. Mandatory |
 | `contract` | Contract | Reference | → `x_ar_contract`, filtered by customer |
 | `ar_request` | AR request | Reference | → `x_ar_request`. Read-only on form |
-| `request_line` | Billing line | Reference | → `x_ar_request_line`. Read-only on form |
 | `billing_schedule` | Billing schedule | Reference | → `x_ar_billing_schedule`. Read-only on form |
 | `billing_period` | Billing period | Date | Read-only on form |
 | `short_description` | Description | String | Mandatory |
@@ -496,7 +474,7 @@ Master data (CCI decision 11, #9 §8): account codes for AR4 allocations with th
 ## Portal (project team)
 
 - **Record producer "AR-i New AR request"** on `x_ar_request`. Variables: `requester_name`, `requester_email`, `department`, `department_sub_bu`, `cc_list`, `customer`, `new_customer`, `new_customer_name`, `new_customer_uen`, `new_customer_address`, `contract_option`, `contract`, `new_contract_type`, `new_contract_number`, `new_contract_ref`, `new_contract_po`, `new_contract_title`, `new_contract_start`, `new_contract_end`, `new_contract_value`, `new_contract_billing_cycle`, `new_contract_billing_cycle_other`, `new_contract_invoice_date`, `new_contract_payment_terms`, `new_contract_payment_terms_other`, `new_contract_proration`, `new_contract_proration_first`, `new_contract_proration_last`, `bill_to_name`, `bill_to_email`, `bill_to_phone`, `bill_to_address`, `short_description`, `attention_name`, `attention_email`, `amount_per_period`, `preferred_invoice_date_choice`, `preferred_invoice_date_justification`, `billing_line_items_required`, `po_number`, `customer_poc_name`, `customer_poc_email`, `agency_type`, `vag`, `sub_bu`, `type_of_billing`, `giro_on_contract`, `doc_contract_po`, `doc_acra`, `doc_billing_form`, `description`, plus attachments.
-  - Producer script: `current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; creates one x_ar_request_line from the invoice details (recurring when the contract type is Recurring, else one-off, D13 as amended); copies the billing line items multi-row variable set to x_ar_request_item`
+  - Producer script: `current.opened_by = gs.getUserID(); current.state = 'new'; current.assignment_group = <AR team group>; copies the billing line items multi-row variable set (PT-43) to x_ar_request_line, one billing line per row with the case's contract (CCI decision 23); no billing line when billing_line_items_required = No`
   - Catalog client script on contract change: show contract value, invoiced to date, requested-not-invoiced and remaining (GlideAjax to a Script Include). Warn when the request exceeds the remaining value.
   - Contract reference qualifier: contracts of the selected customer.
 - **Variable set "General information"** (D19), first section of every AR form: `requester_name` (default: current user's name), `requester_email` (from SSO, read-only), `department`, `cc_list` (emails; the producer script adds them to the case `watch_list` so they can view it on the portal).
@@ -546,7 +524,8 @@ Generated from `UI_ACTIONS` in `js/notes.js` (active actions only; retired IDs a
 | `UA-BCT-new` | New (list action) |
 | `UA-BCT-insert` | Submit (insert); several contacts per customer and department allowed (CCI decision 15, D11 amended) |
 | `UA-CUS-newcontact` | Add billing contact → new billing contact form with customer prefilled |
-| `UA-RQL-save` | Save (update, while the line is open) |
+| `UA-RQL-save` | Save (update, while the AR-i case is open; GST amount and total recalculated) |
+| `UA-REQ-geninv` | Generate invoice (CCI decision 23): beside Save on every AR-i case, any state. Saves the form, then drafts one x_ar_invoice for the case (customer and contract from the Link section; error if either is empty): short_description = case short_description, amount = total of the case's billing lines with GST, or the Invoice details amount per period (w/o GST) when there are none, invoice_date today, due = invoice date + contract payment terms. Each click makes a new draft. AR reviews it, sets Approval date and issues it |
 | `UA-PT-newcust` | Portal: Add as new customer (sets new_customer = true, copies the search text into the name) |
 | `UA-PT-additem` | Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row |
 | `UA-REQ-post` | Post work note / additional comment to the activity stream |

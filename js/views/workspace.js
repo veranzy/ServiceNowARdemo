@@ -1,7 +1,7 @@
 // AR team experience: a ServiceNow configurable workspace (UI Builder) — unified header, left rail,
 // list menu, tabbed records, landing page, list pages and record pages with UI actions and activity stream.
 import { ctrById, ctrStatus, custById, invoiceState, rollup } from "../ledger.js";
-import { onForm, inExcel, draftDate, isARi, DOC_LABEL, reqItems, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, lineStatus, lineValue, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById, freeCompanies } from "../records.js";
+import { onForm, inExcel, caseRecurring, linesTotal, draftDate, isARi, DOC_LABEL, periodAmounts, GIRO_PURPOSE, LINE_TYPE, REQ_OPEN, ccEmails, contactFor, activeGiroCase, giroCases, giroLabel, ctrLabel, displayOf, historyOf, isShell, freqLabel, linesLabel, me, nextBilling, periodDates, periodsDue, recById, reqLines, schedulePeriods, setupStatus, userById, freeCompanies } from "../records.js";
 import { CODE } from "../notes.js";
 import { COLLECTION_FORMS, ROLES, TABLES, fieldVisible } from "../schema.js";
 import { S } from "../state.js";
@@ -455,9 +455,8 @@ const LAYOUT = {
     ["6. Supporting documents", ["@attachments"], isAR10]],
   refundTasks: [["AR2 task", ["number", "requestId", "seq", "collectionRef", "reason", "amount", "caseRef", "payee", "nonSgd", "state", "assignedTo"]]],
   ar10Tasks: [["AR10 task", ["number", "requestId", "seq", "payee", "amount", "state", "assignedTo"]]],
-  lines: [["Billing line", ["number", "requestId", "contractId", "lineType", "desc", "amount", "invoiceDate", "frequency", "startDate", "endDate", "invoiceId", "scheduleId"]],
-    ["Recurring options", ["remarks", "prorate", "firstAmount", "lastAmount"], l => l.lineType === "recurring"]],
-  invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "lineId", "scheduleId", "periodDate"]]],
+  lines: [["Billing line", ["number", "requestId", "contractId", "seq", "amount", "gstApplicable", "gst", "total", "lpiRate", "accountCode", "costCenter"]]],   // CCI decision 23: PT-43 columns
+  invoices: [["Invoice", ["customerId", "contractId", "desc", "amount", "date", "approvalDate", "due"]], ["Source", ["state", "requestId", "scheduleId", "periodDate"]]],
   allocations: [["Allocation", ["depositId", "invoiceId", "requestId", "amount", "reason"]]],   // BSU decision 21: New allocation form
   deposits: [["Deposit", ["number", "bankAccountId", "uploadId", "date", "amount", "txnId", "paymentModeId", "bankRef", "payer", "reference"]]],
   paymentModes: [["Payment mode", ["bankAccountId", "name", "prefix", "suffix", "accountCode", "costCentre", "active"]]],
@@ -484,7 +483,7 @@ function editable(table, rec) {
   if (table === "requests") return REQ_OPEN.includes(rec.state);
   if (table === "invoices") return rec.state === "draft";
   if (table === "deposits" || table === "uploads" || table === "documents") return false;
-  if (table === "lines") { const r = recById("requests", rec.requestId); return !!r && REQ_OPEN.includes(r.state) && lineStatus(rec) === "open"; }
+  if (table === "lines") { const r = recById("requests", rec.requestId); return !r || REQ_OPEN.includes(r.state); }   // CCI decision 23: no line status
   return true;
 }
 
@@ -513,7 +512,7 @@ function headerFields(table, rec) {
   if (table === "schedules") return [hf("Customer", refLink("customers", rec.customerId)), hf("Contract", refLink("contracts", rec.contractId)), hf("Frequency", esc(freqLabel(rec.frequency))), hf("Department", esc(rec.department))];
   if (table === "refundTasks") return [hf("State", taskChip(table, rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Name of Payee", esc(rec.payee || "—")), hf("Amount ($)", `<span class="mono">${fmt(rec.amount)}</span>`), hf("Assigned to", esc(userById(rec.assignedTo)?.name || "Unassigned"))];
   if (table === "ar10Tasks") return [hf("State", taskChip(table, rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Name of Beneficiary /Vendor", esc(rec.payee || "—")), hf("Amount (SGD)", `<span class="mono">${fmt(rec.amount)}</span>`), hf("On the form", onFormChip(rec)), hf("Assigned to", esc(userById(rec.assignedTo)?.name || "Unassigned"))];
-  if (table === "lines") return [hf("Type", esc(LINE_TYPE[rec.lineType])), hf("Status", lineChip(rec)), hf("AR request", refLink("requests", rec.requestId)), hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : "Set by Link Contract Reference")];
+  if (table === "lines") return [hf("Item number", esc(rec.seq ?? "—")), hf("AR request", rec.requestId ? refLink("requests", rec.requestId) : "—"), hf("Contract", rec.contractId ? refLink("contracts", rec.contractId) : "Set by Link Contract Reference"), hf("Total amount", `<span class="mono">${fmt(rec.total || 0)}</span>`)];
   if (table === "contacts") return [hf("Customer", refLink("customers", rec.customerId)), hf("Department", esc(rec.department)), hf("Email", esc(rec.email || "—"))];
   if (table === "documents") return [hf("Customer", refLink("customers", rec.customerId)), hf("Type", esc(DOC_LABEL[rec.docType])), hf("Received", esc(rec.received)), hf("From request", refLink("requests", rec.requestId))];
   return [];
@@ -542,9 +541,10 @@ function ribbon(table, rec, tab) {
     const matched = Object.values(S.matches).filter(m => m && m.status === "accepted").flatMap(m => m.allocations).filter(a => a.requestId === rec.id).reduce((s, a) => s + a.amount, 0);
     ws = [w("Collection type", esc(rec.colType || "—")), w("Total Amount", `SGD ${fmt(rec.amount)}`), w("BSU deposits matched", `SGD ${fmt(matched)}`, rec.amount ? `${fmt(Math.max(0, rec.amount - matched))} still to match` : "", bar(matched, rec.amount, "var(--ok)"))];
   } else if (table === "requests") {
-    const ls = reqLines(rec), done = ls.filter(l => ["invoiced", "scheduled"].includes(lineStatus(l))).length;
+    const ls = reqLines(rec), inv = S.invoices.filter(i => i.requestId === rec.id && i.state !== "cancelled");
     const checks = [!!rec.linkCustomer, !!rec.linkContract], ok = checks.filter(Boolean).length;   // D31 Link section
-    ws = [w("Request value", `SGD ${fmt(rec.amount)}`, esc(linesLabel(rec))), w("Billing lines done", `${done} of ${ls.length}`, done === ls.length && ls.length ? "Every line invoiced or scheduled" : "Invoice or schedule each line", bar(done, ls.length, "var(--ok)")),
+    ws = [w("Request value", `SGD ${fmt(rec.amount)}`, esc(linesLabel(rec))), w("Billing lines", String(ls.length), ls.length ? `Total SGD ${fmt(linesTotal(ls))} with GST` : "No billing line items on the form"),
+      w("Invoices", String(inv.length), `${inv.filter(i => i.state === "issued").length} issued · ${inv.filter(i => i.state === "draft").length} draft`),
       w("Customer setup", `${ok} of ${checks.length}`, ok === checks.length ? "Customer and contract linked" : "Set the Link section on Details", bar(ok, checks.length))];
   } else if (table === "invoices") { const m = invMoney(rec);
     ws = [w("Amount", `SGD ${fmt(rec.amount)}`), w("Amount due", `SGD ${fmt(m.open)}`, m.applied ? `SGD ${fmt(m.applied)} matched from BSU deposits` : "", bar(m.applied, rec.amount, "var(--ok)")),
@@ -560,7 +560,7 @@ function ribbon(table, rec, tab) {
   } else if (table === "schedules") { const per = periodDates(rec.frequency, rec.firstDate, rec.lastDate), inv = S.invoices.filter(i => i.scheduleId === rec.id && i.state !== "cancelled").length, due = periodsDue(rec).length;
     ws = [w("Amount per period", `SGD ${fmt(rec.amount)}`), w("Next billing", esc(nextBilling(rec) || "Ended")), w("Periods due", due ? `<span class="chip c-warn">${due} due</span>` : `<span class="chip c-ok">Up to date</span>`),
       w("Invoiced", `${inv} of ${per.length}`, "", bar(inv, per.length, "var(--ok)"))];
-  } else if (table === "lines") ws = [w("Line value", `SGD ${fmt(lineValue(rec))}`, rec.lineType === "recurring" ? `${periodDates(rec.frequency, rec.startDate, rec.endDate).length} × SGD ${fmt(rec.amount)}` : "")];
+  }
   if (!ws.length) return "";
   const open = !tab.ribbonClosed;
   return `<section class="ribbon${open ? "" : " closed"}"${sn("WS-12")}>
@@ -594,6 +594,8 @@ function actionsFor(table, rec, isNew, canEdit) {
   if (table === "customers") { a.push(btn(`<button type="button" class="btn" data-new="contracts" data-prefill-customer="${rec.id}"${sn("UA-CUS-newcontract")}>New contract</button>`));
     a.push(btn(`<button type="button" class="btn" data-new="contacts" data-prefill-customer="${rec.id}"${sn("UA-CUS-newcontact")}>Add billing contact</button>`, true)); }
   if (canEdit) a.splice(Math.min(a.filter(x => !x.ovf).length, a.length), 0, action(table, "Save", "save"));
+  // CCI decision 23: Generate invoice beside Save on every AR-i case (any state); each click drafts one invoice once the case is linked
+  if (table === "requests" && isARi(rec)) a.push(action(table, "Generate invoice", "geninv"));
   return a;
 }
 
@@ -604,8 +606,11 @@ function actionBar(items) {
     ${more.length ? `<details class="ovf"><summary class="btn" aria-label="More actions">${icon("dots", 16)}<span class="sr">More actions</span></summary><div class="ovf-menu" role="menu">${more.map(x => x.html).join("")}</div></details>` : ""}</div>`;
 }
 
-const LINE_CHIP = { open: ["Open", "c-neutral"], draft: ["Invoice draft", "c-accent"], invoiced: ["Invoiced", "c-ok"], scheduled: ["Scheduled", "c-ok"] };
-const lineChip = l => { const [lab, c] = LINE_CHIP[lineStatus(l)]; return `<span class="chip ${c}">${lab}</span>`; };
+/** CCI decision 23: billing line columns (the AR-i form's PT-43 table), shown the same on the case, the contract and the invoice. */
+const LINE_COLS = [["Item number", l => refLink("lines", l.id, String(l.seq ?? l.number))], ["Amount (w/o GST)", l => fmt(l.amount), "num"], ["GST", l => l.gstApplicable === "no" ? "No" : "Yes"],
+  ["GST amount", l => fmt(l.gst || 0), "num"], ["Total amount", l => fmt(l.total || 0), "num"], ["Late payment interest (%)", l => l.lpiRate ? `${esc(l.lpiRate)}%` : "—"],
+  ["Account code", l => esc(l.accountCode || "—")], ["Cost center", l => esc(l.costCenter || "—")]];
+const bySeq = (a, b) => (a.seq || 0) - (b.seq || 0);
 
 
 /** Attachment names on a case (portal attachments and the AR-i document variables). */
@@ -651,7 +656,7 @@ export function agingOf(i) {
 const newBtn = (table, label, p) => `<button type="button" class="btn small" data-new="${table}"${p.contract ? ` data-prefill-contract-ref="${p.contract}"` : ""}${p.customer ? ` data-prefill-customer="${p.customer}"` : ""}${sn(`UA-${CODE[table]}-newrel`)}>${esc(label)}</button>`;
 /** Invoice document (CCI decision 13): what the PDF generated on Issue would show. Draft template, wording to confirm. */
 export function invoiceDoc(i) {
-  const c = recById("customers", i.customerId), k = recById("contracts", i.contractId), its = i.requestId ? S.items.filter(x => x.requestId === i.requestId).sort((a, b) => a.seq - b.seq) : [];
+  const c = recById("customers", i.customerId), k = recById("contracts", i.contractId), its = i.requestId ? S.lines.filter(x => x.requestId === i.requestId).sort(bySeq) : [];
   const pay = S.bankAccounts.find(a => a.accountType === "revenue" && a.active !== false), billTo = k?.billToName ? [k.billToName, k.billToAddress, k.billToEmail] : [c?.pocName, c?.address, c?.pocEmail];
   return `<div class="invdoc-wrap"><div class="row end"><button type="button" class="btn" data-printinv="${i.id}"${sn("UA-INV-pdf")}>${icon("doc", 15)} Print or save as PDF</button></div>
   <article class="invdoc" id="invdoc-${i.id}"${sn("INV-PDF")}>
@@ -660,10 +665,13 @@ export function invoiceDoc(i) {
       <div class="invdoc-title"><h2>Tax invoice</h2><dl><dt>Invoice no.</dt><dd class="mono">${esc(i.number)}</dd><dt>Invoice date</dt><dd>${esc(i.date || "—")}</dd><dt>Due date</dt><dd>${esc(i.due || "—")}</dd></dl></div></header>
     <section class="invdoc-to"><div><h3>Bill to</h3><p><b>${esc(c?.name || i.customer || "—")}</b>${c?.uen ? `<br>UEN ${esc(c.uen)}` : ""}${billTo.filter(Boolean).map(x => `<br>${esc(x)}`).join("")}</p></div>
       <div><h3>Reference</h3><p>${k ? `Contract ${esc(k.number)}${k.ctrId ? ` (${esc(k.ctrId)})` : ""}` : "—"}${k?.poNumber ? `<br>PO ${esc(k.poNumber)}` : ""}${i.requestId ? `<br>AR request ${esc(recById("requests", i.requestId)?.number || "")}` : ""}</p></div></section>
-    <table class="invdoc-lines"><thead><tr><th>Description</th><th class="num">Amount (SGD)</th></tr></thead>
-      <tbody><tr><td>${esc(i.desc || "—")}</td><td class="num">${fmt(i.amount)}</td></tr>
-      ${its.length ? `<tr><td colspan="2" class="small muted">Breakdown on the AR request: ${its.map(x => `item ${x.seq} ${fmt(x.amount)} + GST ${fmt(x.gst)} = ${fmt(x.total)}`).map(esc).join("; ")}</td></tr>` : ""}</tbody>
-      <tfoot><tr><th>Total</th><td class="num"><b>SGD ${fmt(i.amount)}</b></td></tr></tfoot></table>
+    ${its.length ? `<p class="invdoc-desc"><b>${esc(i.desc || "—")}</b></p>
+    <table class="invdoc-lines"><thead><tr><th>Item number</th><th class="num">Amount (w/o GST)</th><th class="num">GST amount</th><th class="num">Total amount</th></tr></thead>
+      <tbody>${its.map(x => `<tr><td>${esc(x.seq)}</td><td class="num">${fmt(x.amount)}</td><td class="num">${fmt(x.gst || 0)}</td><td class="num">${fmt(x.total || 0)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><th colspan="3">Total</th><td class="num"><b>SGD ${fmt(i.amount)}</b></td></tr></tfoot></table>`
+    : `<table class="invdoc-lines"><thead><tr><th>Description</th><th class="num">Amount (SGD)</th></tr></thead>
+      <tbody><tr><td>${esc(i.desc || "—")}</td><td class="num">${fmt(i.amount)}</td></tr></tbody>
+      <tfoot><tr><th>Total</th><td class="num"><b>SGD ${fmt(i.amount)}</b></td></tr></tfoot></table>`}
     <footer class="invdoc-foot"><p>Please pay by the due date${pay ? ` to ${esc(BANKS[pay.bank].name)} account ${esc(pay.number)}` : ""}, quoting the invoice number.</p></footer>
   </article></div>`;
 }
@@ -736,19 +744,10 @@ function related(table, rec) {
   }
   if (table === "requests") {
     const r = rec, ok = REQ_OPEN.includes(r.state) && r.customerId && !r.newCustomer && !!r.contractId;
-    return [rt("Billing lines", "lines", reqLines(r), [
-      ["Line", l => refLink("lines", l.id, l.number)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"],
-      ["Billing", l => l.lineType === "recurring" ? `${esc(freqLabel(l.frequency))} · ${esc(l.startDate)} to ${esc(l.endDate)}<span class="desc">${periodDates(l.frequency, l.startDate, l.endDate).length} invoices</span>` : esc(l.invoiceDate ? `around ${l.invoiceDate}` : "As soon as possible")],
-      ["Amount", l => `${fmt(l.amount)}${l.lineType === "recurring" ? `<span class="desc">per period</span>` : ""}`, "num"], ["Value", l => fmt(lineValue(l)), "num"],
-      ["Status", l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId);
-        return `${lineChip(l)}${inv ? ` ${refLink("invoices", inv.id, inv.number)}` : ""}${sch ? ` ${refLink("schedules", sch.id, sch.number)}` : ""}`; }],
-    ], { id: "RL-REQ-RQL" }),   // CCI decision 8: read-only; Closed complete generates the 1st invoice
-    ...(r.needItems === "yes" || reqItems(r).length ? [rt("Billing line items", "items", reqItems(r), [
-      ["Item number", q => esc(q.seq)], ["Amount (w/o GST)", q => fmt(q.amount), "num"], ["GST amount", q => fmt(q.gst), "num"], ["Total amount", q => fmt(q.total), "num"],
-      ["Late payment interest", q => q.lpiRate ? `${esc(q.lpiRate)}%` : "—"], ["Account code", q => esc(q.accountCode || "—")]
-    ], { id: "RL-REQ-RQI" })] : []),
+    // CCI decision 23: the case's billing lines are its PT-43 rows (same table and columns as on the contract)
+    return [rt("Billing lines", "lines", reqLines(r).sort(bySeq), LINE_COLS, { id: "RL-REQ-RQL" }),
     // CCI decision 8: recurring AR-i cases show the contract's billing schedules, read-only (edited on the contract)
-    ...(reqLines(r).some(l => l.lineType === "recurring") ? [rt("Billing schedule", "schedules", r.contractId ? S.schedules.filter(x => x.contractId === r.contractId) : [], [
+    ...(caseRecurring(r) ? [rt("Billing schedule", "schedules", r.contractId ? S.schedules.filter(x => x.contractId === r.contractId) : [], [
       ["Number", x => refLink("schedules", x.id, x.number)], ["What is billed", x => esc(x.desc), "wrap"], ["Frequency", x => esc(freqLabel(x.frequency))], ["Amount per period", x => fmt(x.amount), "num"],
       ["First billing date", x => esc(x.firstDate)], ["Last billing date", x => esc(x.lastDate)], ["Next billing", x => esc(nextBilling(x) || "Ended")], ["From AR request", x => x.requestId ? refLink("requests", x.requestId) : "—"]], { id: "RL-REQ-SCH" })] : []),
     // CCI 2026-11-16: invoices linked to this AR-i case, including drafts made by the daily invoice check
@@ -787,8 +786,9 @@ function related(table, rec) {
       rt("Invoices", "invoices", is.sort(LISTS.invoices.sort), [["Number", i => refLink("invoices", i.id, i.number)], ["Description", i => esc(i.desc), "wrap"], ["Amount", i => fmt(i.amount), "num"], ["Due", i => esc(i.due || "—")], ["Status", i => invChip(i)]], { id: "RL-CON-INV", actions: newBtn("invoices", "New", { contract: rec.id }) }),
       rt("Billing schedule", "schedules", per, [["No.", x => String(per.indexOf(x) + 1), "num"], ["Billing date", x => esc(x.date)], ["Draft creation date", x => esc(draftDate(x.date))], ["Linked invoice", x => x.inv ? refLink("invoices", x.inv.id, x.inv.number) : "—"], ["Amount", x => fmt(x.amount), "num"]],
         { id: "RL-CON-SCH", actions: `${S.schedules.filter(x => x.contractId === rec.id).map(x => refLink("schedules", x.id, x.number)).join(" ")} <button type="button" class="btn small" data-new="schedules" data-prefill-contract="${rec.id}"${sn("UA-CON-newschedule")}>New billing schedule</button>` }),
-      rt("Billing lines", "lines", S.lines.filter(l => l.contractId === rec.id), [["Line", l => refLink("lines", l.id, l.number)], ["AR request", l => refLink("requests", l.requestId)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"], ["Value", l => fmt(lineValue(l)), "num"],
-        ["Billed as", l => { const inv = l.invoiceId && S.invoices.find(i => i.id === l.invoiceId), sch = l.scheduleId && S.schedules.find(x => x.id === l.scheduleId); return `${lineChip(l)}${inv ? ` ${refLink("invoices", inv.id, inv.number)}` : ""}${sch ? ` ${refLink("schedules", sch.id, sch.number)}` : ""}`; }]], { id: "RL-CON-RQL", actions: newBtn("lines", "New", { contract: rec.id }) }),
+      // CCI decision 23: same billing lines table as on the AR-i case, plus the AR request each line came from
+      rt("Billing lines", "lines", S.lines.filter(l => l.contractId === rec.id).sort((a, b) => String(a.requestId || "").localeCompare(String(b.requestId || "")) || bySeq(a, b)),
+        [["AR request", l => l.requestId ? refLink("requests", l.requestId) : "—"], ...LINE_COLS], { id: "RL-CON-RQL", actions: newBtn("lines", "New", { contract: rec.id }) }),
       giroHistory(rec, "CON-GIRO")];
   }
   // Cost centre / account code (CCI decision 12): the AR4 allocation rows that use it
@@ -815,8 +815,9 @@ function related(table, rec) {
       actions: (table === "invoices" ? rec.state === "issued" && invMoney(rec).open > 0 : depositMoney(rec).unapplied > 0) ? newAllocBtn(`${table}:${rec.id}`, table === "invoices" ? "UA-INV-newalloc" : "UA-DEP-newalloc") : "" });   // New only while something is left to match
     // Invoice block (CCI decision 13): a preview of the invoice document, printable to PDF
     // #10 E10.11: the invoice's billing line(s): its AR-i / contract line, or the line its schedule bills
-    const bl = table === "invoices" ? S.lines.filter(l => l.id === rec.lineId || l.invoiceId === rec.id || (rec.scheduleId && l.scheduleId === rec.scheduleId)) : [];
-    const blt = rt("Billing lines", "lines", bl, [["Line", l => refLink("lines", l.id, l.number)], ["Type", l => esc(LINE_TYPE[l.lineType])], ["Description", l => esc(l.desc), "wrap"], ["Amount", l => fmt(l.amount), "num"]], { id: "RL-INV-RQL" });
+    // CCI decision 23: the invoice prints its AR request's billing lines
+    const bl = table === "invoices" && rec.requestId ? S.lines.filter(l => l.requestId === rec.requestId).sort(bySeq) : [];
+    const blt = rt("Billing lines", "lines", bl, LINE_COLS, { id: "RL-INV-RQL" });
     return table === "invoices" ? [blt, alc, targetSuggestions(rec, "RL-INV-SUG"), { key: "INV-PDF", label: "Invoice preview", html: invoiceDoc(rec) }] : [depositSuggestions(rec), alc];
   }
   return [];

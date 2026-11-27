@@ -5,7 +5,7 @@ import { acctById, parseStatement, sampleCSV, saveUpload } from "./bsu.js";
 import { act, allocate, targetById } from "./matching.js";
 import { invoiceState } from "./ledger.js";
 import { depositMoney } from "./views/common.js";
-import { giroPurposesFor, giroContracts, custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, lineInvoice, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, setupSchedule, validateARi } from "./records.js";
+import { giroPurposesFor, giroContracts, custDetailsOf, itemCalc, targetContract, giroTarget, giroTypesFor, nextCycleDate, cancelInvoice, createRequest, linkContract, issueInvoice, journal, me, needBillTo, portalComment, prefillBillTo, recById, requestAction, saveRecord, validateARi, generateInvoice } from "./records.js";
 import { loadSample } from "./sample-data.js";
 import { BILLING_KINDS, TABLES, clearHidden, fieldVisible } from "./schema.js";
 import { $, S } from "./state.js";
@@ -66,6 +66,13 @@ function uiAction(name) {
     toast(c.kind === "comment" ? "Comment posted. The requester can see it on the portal." : "Work note posted."); return render();
   }
   if (!saveActive(tab, { quiet: true })) return render();
+  // CCI decision 23: Generate invoice on an AR-i case (the form is saved first, as a ServiceNow UI action would)
+  if (tab.table === "requests" && name === "geninv") {
+    const res = generateInvoice(recById("requests", tab.id));
+    if (typeof res === "string") { tab.msg = { kind: "err", text: res }; return render(); }
+    toast(`Draft invoice ${res.opened.number} generated. Review it, set the Approval date and issue it.`);
+    return openTab("invoices", res.opened.id);
+  }
   if (tab.table === "requests") {
     const res = requestAction(tab.id, name);
     if (typeof res === "string") { tab.msg = { kind: "err", text: res }; return render(); }
@@ -299,12 +306,6 @@ document.addEventListener("click", e => {
   if (d.bsuAcct) { Object.assign(S.bsu, { acctId: d.bsuAcct, text: "", fileName: "", parsed: null, error: "" }); return showMain({ kind: "bsu" }); }
   if (d.bsu) return bsuAction(d.bsu);
   // cash application
-  if (d.lineact) {
-    const [what, lid] = d.lineact.split(":"), res = what === "schedule" ? setupSchedule(lid) : lineInvoice(lid);
-    if (typeof res === "string") return toast(res);
-    toast(what === "schedule" ? `Billing schedule ${res.opened.number} set up. The requester can see it on the portal.` : `Draft invoice ${res.opened.number} created for this line.`);
-    return openTab(what === "schedule" ? "schedules" : "invoices", res.opened.id);
-  }
   if (d.act) return act(d.id, d.act);   // Remove match (deposit record)
 });
 
@@ -337,7 +338,7 @@ document.addEventListener("change", e => {
   if (el.id === "pfXl") { const f = el.files[0]; if (f) readXl(f); el.value = ""; return; }
   if (el.id === "pfAttach") { P().draft.attachments.push(...[...el.files].map(f => f.name)); return render(); }
   // portal AR form: billing line item fields
-  if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
+  if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("lines", k, el); return itemUpdated(el, +i); }
   if (el.closest("#arForm") && el.name?.startsWith("crow:")) { const [, t, i, k] = el.name.split(":"); P().draft[t][+i][k] = t && TABLES[t].fields.find(x => x.key === k)?.type === "Integer" ? (el.value === "" ? 0 : Math.trunc(+el.value)) : coerce(t, k, el); return colRowUpdated(el, t); }
   // portal AR form: dependent fields re-render
   if (el.closest("#arForm") && el.name) {
@@ -362,6 +363,13 @@ document.addEventListener("change", e => {
     const tab = W().tabs.find(x => x.key === rf.dataset.rform); if (!tab) return;
     (tab.vals ||= {})[el.name] = coerce(tab.table, el.name, el);
     if (el.name === "linkCustomer") { const cur = tab.vals.linkContract ?? recById(tab.table, tab.id)?.linkContract; if (cur && S.contracts.find(k => k.id === cur)?.customerId !== tab.vals.linkCustomer) tab.vals.linkContract = null; render(); }
+    // CCI decision 23: billing schedule "From AR request" fills the empty schedule fields from the case; AR can change them
+    if (tab.table === "schedules" && el.name === "requestId" && tab.vals.requestId) {
+      const r = recById("requests", tab.vals.requestId), cur = { ...(tab.id.startsWith("new") ? {} : recById("schedules", tab.id)), ...tab.vals }, k = r && recById("contracts", r.contractId);
+      if (r) { const fill = { desc: r.title, amount: r.perPeriod, frequency: "monthly", firstDate: k?.start, lastDate: k?.end, department: r.department };
+        for (const [f, v] of Object.entries(fill)) if (!cur[f] && v) tab.vals[f] = v; }
+      render();
+    }
     if (el.name === "customerId") { const cur = tab.vals.contractId ?? recById(tab.table, tab.id)?.contractId; if (cur && S.contracts.find(k => k.id === cur)?.customerId !== tab.vals.customerId) tab.vals.contractId = null; render(); }
     // UI policy: a parent of showIf fields changed → blank the now-hidden children and redraw
     if (TABLES[tab.table].fields.some(f => f.choiceDependsOn === el.name)) {
@@ -382,7 +390,7 @@ document.addEventListener("input", e => {
   if (el.id === "listQ") { W().q = el.value; const m = W().main; const { rows, html } = listRows(m.table, m.filter); $("listBody").innerHTML = html; $("listCount").textContent = rows.length; return; }
   if (el.dataset.composer) { const c = W().composer[el.dataset.composer] ||= { kind: "work_note", text: "" }; c.text = el.value; return; }
   if (el.id === "pfCustQ") { P().draft.custQ = el.value; const n = $("pfCustResults"); if (n) n.outerHTML = custResults(P().draft); return; }
-  if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("items", k, el); return itemUpdated(el, +i); }
+  if (el.closest("#arForm") && el.name?.startsWith("item:")) { const [, i, k] = el.name.split(":"); P().draft.items[+i][k] = coerce("lines", k, el); return itemUpdated(el, +i); }
   if (el.closest("#arForm") && el.name?.startsWith("crow:")) { const [, t, i, k] = el.name.split(":"); P().draft[t][+i][k] = t && TABLES[t].fields.find(x => x.key === k)?.type === "Integer" ? (el.value === "" ? 0 : Math.trunc(+el.value)) : coerce(t, k, el); if (k === "accountCode") return render();   // AR-iii decision 20: Others shows the free text
     return colRowUpdated(el, t); }
   if (el.closest("#arForm") && el.name && el.tagName !== "SELECT") { P().draft[el.name] = coerce("requests", el.name, el); portalFieldUpdated(el); return invUpdated(); }

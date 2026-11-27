@@ -4,7 +4,7 @@
 import { RECORD_PRODUCER, RECORD_PRODUCER_ARIX, ROLES, SCOPE, TABLES } from "./schema.js";
 
 /** Short code per table, used as the prefix of field IDs (e.g. INV.due_date) and record-page IDs. */
-export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", items: "RQI", colTx: "CTX", colAlloc: "CAL", ar5Lines: "C5L", refundTasks: "RFT", refundReasons: "RFR", ar10Payees: "PYR", ar10Tasks: "PYT", costCentres: "CCT", accountCodes: "ACT", paymentModes: "PMD" };
+export const CODE = { requests: "REQ", invoices: "INV", deposits: "DEP", uploads: "BSU", bankAccounts: "BNK", allocations: "ALC", companies: "CMP", customers: "CUS", contracts: "CON", contacts: "BCT", documents: "DOC", schedules: "SCH", lines: "RQL", colTx: "CTX", colAlloc: "CAL", ar5Lines: "C5L", refundTasks: "RFT", refundReasons: "RFR", ar10Payees: "PYR", ar10Tasks: "PYT", costCentres: "CCT", accountCodes: "ACT", paymentModes: "PMD" };
 const T = Object.fromEntries(Object.entries(CODE).map(([k, c]) => [c, k]));
 
 /** Screen elements that aren't a field, list, record page, related list or UI action. */
@@ -131,7 +131,7 @@ export const NOTES = {
   "PT-42": "RETIRED 2026-11-19 (AR-i decision 42: Others section removed; agent removed, cost center moved to the billing line items, Customer PO number to Invoice details). Was: AR-i variable set Others (after Customer documents; final placement to be decided by the owner): cost_center, agent_name, po_number. All optional (invoice_breakdown and account_code removed, AR-i decision 39)",
   "PT-62": "AR-i variable set 2. Type of billing (AR-i decision 43), right after General information: type_of_billing (General, Rental, Carpark, Courses, 5, 6). UI policy: 5 or 6 hides the Customer and Contract and bill-to variable sets (no customer or contract on the request); Customer documents and Invoice details stay. Stored on the request; AR copies it to the contract by hand (D31)",
   "PT-63": "AR-i popup (AR-i decision 43): when the chosen existing contract's type_of_billing differs from the requester's choice, a catalog client script (onChange contract, GlideAjax) replaces the value with the contract's and shows a modal (spModal.alert) titled Type of billing changed",
-  "PT-43": "AR-i multi-row variable set Billing line items (x_ar_request_item), shown when billing_line_items_required = Yes: item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), gst_applicable (GST Yes / No, default Yes; No sets gst_amount 0, AR-i decision 43), late_payment_interest (rate %), account_code, cost_center (right of account_code, optional, tooltip To be filled by GA; AR-i decision 42). At least one row when Yes",
+  "PT-43": "AR-i multi-row variable set Billing line items, shown when billing_line_items_required = Yes; the producer script saves each row as a billing line (x_ar_request_line, linked to the case and its contract; CCI decision 23): item_number (row number 1, 2, 3…, read-only; the producer script sets it in row order), amount_excl_gst*, gst_amount and total_amount (calculated by catalog client script at the GST rate, read-only), gst_applicable (GST Yes / No, default Yes; No sets gst_amount 0, AR-i decision 43), late_payment_interest (rate %), account_code, cost_center (right of account_code, optional, tooltip To be filled by GA; AR-i decision 42). At least one row when Yes",
   "PT-28": "No contract required: info message (UI policy on contract_option = none). AR creates the customer's no-contract shell for the department by hand if needed (x_ar_contract, contract_type = shell) and links it with Link Contract Reference, which files the lines under it (D31)",
   "PT-25": "Variable set Customer (D14): search x_ar_customer by name/UEN (type-ahead); Add as new customer reveals name, UEN, address (UI policy on new_customer)",
   "PT-26": "RETIRED 2026-11-12: What to bill variable set with the Billing lines multi-row variable set; replaced by Invoice details (PT-37). One billing line is now created from the invoice details",
@@ -165,7 +165,8 @@ export const UI_ACTIONS = {
   "UA-CUS-newcontact": "Add billing contact → new billing contact form with customer prefilled",
   "UA-RQL-invoice": "RETIRED 2026-11-16 (CCI decision 8): Create invoice on a one-off line. The 1st invoice is generated when the AR-i case is set to Closed complete",
   "UA-RQL-schedule": "RETIRED 2026-11-16 (CCI decision 8): Set up billing schedule on a recurring line. AR creates the schedule on the contract (New billing schedule) and picks the AR-i case",
-  "UA-RQL-save": "Save (update, while the line is open)",
+  "UA-RQL-save": "Save (update, while the AR-i case is open; GST amount and total recalculated)",
+  "UA-REQ-geninv": "Generate invoice (CCI decision 23): beside Save on every AR-i case, any state. Saves the form, then drafts one x_ar_invoice for the case (customer and contract from the Link section; error if either is empty): short_description = case short_description, amount = total of the case's billing lines with GST, or the Invoice details amount per period (w/o GST) when there are none, invoice_date today, due = invoice date + contract payment terms. Each click makes a new draft. AR reviews it, sets Approval date and issues it",
   "UA-PT-newcust": "Portal: Add as new customer (sets new_customer = true, copies the search text into the name)",
   "UA-PT-additem": "Portal: Add item (row in the Billing line items multi-row variable set); Remove deletes a row",
   "UA-PT-addline": "RETIRED 2026-11-12: Add one-off / recurring line; the request has one billing event from the invoice details (PT-37)",
@@ -200,7 +201,7 @@ export const UI_ACTIONS = {
 
 /** Related lists: "RL-<PARENT>-<CHILD>" with the reference field that links them. */
 export const RELATED = {
-  "RL-REQ-RQL": "ar_request", "RL-REQ-RQI": "ar_request", "RL-REQ-INV": "ar_request", "RL-REQ-SCH": "contract (the case's contract; read-only on the case)",
+  "RL-REQ-RQL": "ar_request", "RL-REQ-INV": "ar_request", "RL-REQ-SCH": "contract (the case's contract; read-only on the case)",
   "RL-CUS-BCT": "customer", "RL-CUS-DOC": "customer", "RL-CUS-SCH": "customer", "RL-SCH-INV": "billing_schedule",
   "RL-CUS-CON": "customer", "RL-CUS-INV": "customer", "RL-CUS-REQ": "customer",
   "RL-CON-INV": "contract", "RL-CON-REQ": "contract", "RL-CON-RQL": "contract", "RL-CON-SCH": "contract",
@@ -231,8 +232,6 @@ export const CALC_COLS = {
   "BSU.lines_matched": `Calculated list column "Lines matched" (BSU decision 27): xx/yy, where yy = the ${TABLES.deposits.table} records with bsu = this upload and xx = those fully matched (unmatched amount 0)`,
   "BSU.unmatched_amount": `Calculated list column "Unmatched amount" (BSU decision 27): sum of the unmatched amount of this upload's bank lines (amount − allocation values)`,
   "BSU.deposit_ids": `RETIRED 2026-11-23 (BSU decision 28: one row per Deposit ID). Was: Calculated list column (BSU decision 26): the distinct Deposit IDs of the ${TABLES.deposits.table} records whose bsu = this upload (one per payment mode); list formatter or a string field filled by a business rule`,
-  "RQL.line_value": "Calculated: one-off amount, or recurring amount × number of periods",
-  "RQL.periods": "Calculated: number of billing dates between From and To at the frequency",
   "SCH.next_billing_date": "Calculated: first period on or after today without an invoice",
   "SCH.periods_due": "Calculated: periods up to today without an invoice",
   "BNK.last_statement": `Calculated: latest ${TABLES.uploads.table}.statement_date for the account`,
